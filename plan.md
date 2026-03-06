@@ -314,6 +314,28 @@ An Oracle review was performed and its recommendations were incorporated, includ
 
 ---
 
+## 14) Vercel Linux Build Fix
+
+### Files updated
+- `frontend/package.json`
+- `frontend/package-lock.json`
+- `plan.md`
+
+### What changed
+- Removed the explicit `@rollup/rollup-darwin-arm64` dev dependency from the frontend project.
+
+### Why
+- That package is macOS ARM-only.
+- Vercel builds the frontend on Linux, so the explicit dependency caused `EBADPLATFORM` and blocked deployment.
+- Rollup already manages platform-specific native packages through its own optional dependency tree, so the explicit top-level dependency was not safe to keep.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
 ## 10) Repository Initialization
 
 ### Git setup
