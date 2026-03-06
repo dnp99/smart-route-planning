@@ -1,4 +1,4 @@
-# Navigate Easy
+# Samrt Route Planner
 
 React frontend + Next.js backend route planner.
 
