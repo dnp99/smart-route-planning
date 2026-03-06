@@ -274,6 +274,25 @@ An Oracle review was performed and its recommendations were incorporated, includ
 
 ---
 
+## 12) Remove GitHub Workflows
+
+### Files updated
+- `.github/workflows/ci.yml`
+- `.github/workflows/deploy.yml`
+- `plan.md`
+
+### What changed
+- Removed the GitHub Actions CI workflow.
+- Removed the GitHub Actions deploy workflow.
+
+### Why
+- The workflows are being disabled for now and should no longer run from this repository.
+
+### Verification
+- Confirmed both workflow files were removed from the working tree.
+
+---
+
 ## 10) Repository Initialization
 
 ### Git setup
