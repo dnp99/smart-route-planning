@@ -1,0 +1,248 @@
+import { NextResponse } from "next/server";
+
+type AutocompleteSuggestion = {
+  displayName: string;
+  lat: number;
+  lon: number;
+};
+
+const MAX_QUERY_LENGTH = 200;
+const MAX_SUGGESTIONS = 5;
+const AUTOCOMPLETE_TIMEOUT_MS = 8000;
+const MIN_QUERY_LENGTH = 3;
+const CACHE_TTL_MS = 60_000;
+const RATE_LIMIT_WINDOW_MS = 1_000;
+
+const queryCache = new Map<string, { suggestions: AutocompleteSuggestion[]; expiresAt: number }>();
+const lastRequestAtByClient = new Map<string, number>();
+
+class HttpError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
+}
+
+const resolveAllowedOrigin = (request: Request) => {
+  const configuredOrigins = process.env.ALLOWED_ORIGINS
+    ?.split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  if (!configuredOrigins || configuredOrigins.length === 0) {
+    return "*";
+  }
+
+  const requestOrigin = request.headers.get("origin");
+  if (!requestOrigin) {
+    return configuredOrigins[0];
+  }
+
+  if (requestOrigin && configuredOrigins.indexOf(requestOrigin) !== -1) {
+    return requestOrigin;
+  }
+
+  throw new HttpError(403, "Origin is not allowed.");
+};
+
+const buildCorsHeaders = (request: Request) => ({
+  "Access-Control-Allow-Origin": resolveAllowedOrigin(request),
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+});
+
+const parseAndValidateQuery = (request: Request) => {
+  const url = new URL(request.url);
+  const rawQuery = url.searchParams.get("query") ?? "";
+  const query = rawQuery.trim();
+
+  if (query.length > MAX_QUERY_LENGTH) {
+    throw new HttpError(400, `Query must be at most ${MAX_QUERY_LENGTH} characters.`);
+  }
+
+  return query;
+};
+
+const normalizeQueryKey = (query: string) => query.trim().toLowerCase();
+
+const getCachedSuggestions = (query: string) => {
+  const now = Date.now();
+  const cacheKey = normalizeQueryKey(query);
+  const cached = queryCache.get(cacheKey);
+
+  if (!cached) {
+    return null;
+  }
+
+  if (cached.expiresAt <= now) {
+    queryCache.delete(cacheKey);
+    return null;
+  }
+
+  return cached.suggestions;
+};
+
+const setCachedSuggestions = (query: string, suggestions: AutocompleteSuggestion[]) => {
+  const cacheKey = normalizeQueryKey(query);
+  queryCache.set(cacheKey, {
+    suggestions,
+    expiresAt: Date.now() + CACHE_TTL_MS,
+  });
+};
+
+const resolveClientKey = (request: Request) => {
+  const forwardedFor = request.headers.get("x-forwarded-for");
+  if (forwardedFor) {
+    const firstIp = forwardedFor.split(",")[0]?.trim();
+    if (firstIp) {
+      return firstIp;
+    }
+  }
+
+  const realIp = request.headers.get("x-real-ip")?.trim();
+  if (realIp) {
+    return realIp;
+  }
+
+  return "anonymous";
+};
+
+const enforceRateLimit = (clientKey: string) => {
+  const now = Date.now();
+  const lastRequestAt = lastRequestAtByClient.get(clientKey) ?? 0;
+
+  if (now - lastRequestAt < RATE_LIMIT_WINDOW_MS) {
+    throw new HttpError(429, "Please wait before requesting more address suggestions.");
+  }
+
+  lastRequestAtByClient.set(clientKey, now);
+};
+
+const fetchAutocompleteSuggestions = async (query: string): Promise<AutocompleteSuggestion[]> => {
+  const searchParams = new URLSearchParams({
+    q: query,
+    format: "jsonv2",
+    limit: String(MAX_SUGGESTIONS),
+    addressdetails: "0",
+    dedupe: "1",
+    countrycodes: "ca",
+  });
+
+  const configuredContactEmail = process.env.NOMINATIM_CONTACT_EMAIL?.trim();
+  if (configuredContactEmail) {
+    searchParams.set("email", configuredContactEmail);
+  }
+
+  const userAgentContact = configuredContactEmail || "support@navigate-easy.local";
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, AUTOCOMPLETE_TIMEOUT_MS);
+
+  let response: Response;
+
+  try {
+    response = await fetch(`https://nominatim.openstreetmap.org/search?${searchParams}`, {
+      headers: {
+        "User-Agent": `navigate-easy/1.0 (contact: ${userAgentContact})`,
+        Accept: "application/json",
+      },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch {
+    throw new HttpError(503, "Address suggestion service is currently unavailable.");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      throw new HttpError(503, "Address suggestion service is rate-limited. Please try again shortly.");
+    }
+
+    throw new HttpError(503, "Address suggestion service returned an unexpected error.");
+  }
+
+  const rawResults = (await response.json()) as Array<{
+    display_name?: unknown;
+    lat?: unknown;
+    lon?: unknown;
+  }>;
+
+  if (!Array.isArray(rawResults)) {
+    throw new HttpError(503, "Address suggestion service returned an invalid response.");
+  }
+
+  const suggestions: AutocompleteSuggestion[] = [];
+
+  rawResults.forEach((item) => {
+    if (typeof item.display_name !== "string") {
+      return;
+    }
+
+    const lat = Number(item.lat);
+    const lon = Number(item.lon);
+
+    if (lat !== lat || lon !== lon) {
+      return;
+    }
+
+    suggestions.push({
+      displayName: item.display_name,
+      lat,
+      lon,
+    });
+  });
+
+  return suggestions;
+};
+
+export async function OPTIONS(request: Request) {
+  try {
+    return new NextResponse(null, {
+      status: 204,
+      headers: buildCorsHeaders(request),
+    });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+
+    return NextResponse.json({ error: "Failed to process preflight request." }, { status: 500 });
+  }
+}
+
+export async function GET(request: Request) {
+  const corsHeaders = buildCorsHeaders(request);
+
+  try {
+    const query = parseAndValidateQuery(request);
+
+    if (query.length < MIN_QUERY_LENGTH) {
+      return NextResponse.json({ suggestions: [] }, { headers: corsHeaders });
+    }
+
+    const cachedSuggestions = getCachedSuggestions(query);
+    if (cachedSuggestions) {
+      return NextResponse.json({ suggestions: cachedSuggestions }, { headers: corsHeaders });
+    }
+
+    const clientKey = resolveClientKey(request);
+    enforceRateLimit(clientKey);
+
+    const suggestions = await fetchAutocompleteSuggestions(query);
+    setCachedSuggestions(query, suggestions);
+
+    return NextResponse.json({ suggestions }, { headers: corsHeaders });
+  } catch (error) {
+    if (error instanceof HttpError) {
+      return NextResponse.json({ error: error.message }, { status: error.status, headers: corsHeaders });
+    }
+
+    return NextResponse.json({ error: "Failed to fetch address suggestions." }, { status: 500, headers: corsHeaders });
+  }
+}

@@ -1,0 +1,119 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, develop]
+  workflow_dispatch:
+
+jobs:
+  deploy-backend:
+    name: Deploy backend (Vercel)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment
+        run: |
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            vercel pull --yes --environment=production --token="${VERCEL_TOKEN}"
+          else
+            vercel pull --yes --environment=preview --token="${VERCEL_TOKEN}"
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+
+      - name: Build deployment artifact
+        run: vercel build --token="${VERCEL_TOKEN}"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+
+      - name: Deploy artifact
+        run: |
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            vercel deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
+          else
+            vercel deploy --prebuilt --token="${VERCEL_TOKEN}"
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+
+  deploy-frontend:
+    name: Deploy frontend (Vercel)
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+    environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment
+        run: |
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            vercel pull --yes --environment=production --token="${VERCEL_TOKEN}"
+          else
+            vercel pull --yes --environment=preview --token="${VERCEL_TOKEN}"
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
+
+      - name: Build deployment artifact
+        run: vercel build --token="${VERCEL_TOKEN}"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
+
+      - name: Deploy artifact
+        run: |
+          if [ "${GITHUB_REF}" = "refs/heads/main" ]; then
+            vercel deploy --prebuilt --prod --token="${VERCEL_TOKEN}"
+          else
+            vercel deploy --prebuilt --token="${VERCEL_TOKEN}"
+          fi
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
