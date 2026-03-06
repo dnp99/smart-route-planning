@@ -243,6 +243,37 @@ An Oracle review was performed and its recommendations were incorporated, includ
 
 ---
 
+## 11) Docs And Local Runtime Cleanup
+
+### Files updated
+- `README.md`
+- `frontend/README.md`
+- `backend/README.md`
+- `backend/package.json`
+- `backend/src/app/layout.tsx`
+
+### What changed
+- Replaced scaffold README content in frontend and backend with project-specific documentation.
+- Corrected the root quickstart to remove the missing `.env.example` step and document the runtime API base URL behavior.
+- Changed backend `npm run dev` to use `next dev --webpack` by default to match the working local development path.
+- Removed `next/font/google` usage from the backend layout and switched to the existing CSS font stack.
+- Updated backend metadata text to reflect the actual project instead of the create-next-app defaults.
+
+### Why
+- The repository docs did not match the current application structure or local startup flow.
+- Local backend development was more reliable with webpack than the default Turbopack path in this environment.
+- Backend production builds were not self-contained because they depended on fetching Google fonts during `next build`.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Backend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
 ## 10) Repository Initialization
 
 ### Git setup

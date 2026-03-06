@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Backend
 
-## Getting Started
+This folder contains the Next.js backend for Navigate Easy.
 
-First, run the development server:
+## Responsibilities
+
+- Expose `POST /api/optimize-route` for route optimization.
+- Expose `GET /api/address-autocomplete` for address suggestions.
+- Geocode addresses through OpenStreetMap Nominatim.
+- Enforce request validation, timeouts, CORS, and lightweight rate limiting.
+
+## Local development
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The backend runs on `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+`npm run dev` uses webpack mode by default for local reliability.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Environment variables
 
-## Learn More
+- `ALLOWED_ORIGINS`
+  - Optional comma-separated CORS allowlist.
+  - Example: `http://localhost:5173`
+- `NOMINATIM_CONTACT_EMAIL`
+  - Recommended for production or shared environments to identify requests to the upstream geocoding provider.
 
-To learn more about Next.js, take a look at the following resources:
+## API endpoints
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- `POST /api/optimize-route`
+  - Accepts `startAddress`, `endAddress`, and `addresses[]`
+  - Returns geocoded stops in greedy nearest-neighbor order plus total distance
+- `GET /api/address-autocomplete?query=...`
+  - Returns up to 5 suggestions
+  - Uses short in-memory caching and per-client rate limiting
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Key files
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `src/app/api/optimize-route/route.ts`
+- `src/app/api/address-autocomplete/route.ts`

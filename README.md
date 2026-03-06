@@ -22,11 +22,17 @@ Frontend implementation note:
 
 ## Run locally
 
+Install dependencies once:
+
+```bash
+cd backend && npm ci
+cd ../frontend && npm ci
+```
+
 ### 1) Backend
 
 ```bash
 cd backend
-npm install
 npm run dev
 ```
 
@@ -42,12 +48,18 @@ ALLOWED_ORIGINS=http://localhost:5173 npm run dev
 
 ```bash
 cd frontend
-cp .env.example .env
-npm install
 npm run dev
 ```
 
-Runs on `http://localhost:5173` and calls backend using `VITE_API_BASE_URL`.
+Runs on `http://localhost:5173`.
+
+Frontend API base URL defaults to `http://localhost:3000`. For deployed environments, set:
+
+```html
+<script>
+  window.__NAVIGATE_EASY_API_BASE_URL__ = "https://api.yourdomain.com";
+</script>
+```
 
 ## API request example
 
@@ -70,3 +82,4 @@ Runs on `http://localhost:5173` and calls backend using `VITE_API_BASE_URL`.
 - Geocoding uses OpenStreetMap Nominatim.
 - Route ordering uses greedy nearest-neighbor logic (nearest next stop from current stop).
 - Distance is based on straight-line (haversine) approximation, not road network travel time.
+- Backend development uses webpack mode by default because that is the stable local startup path for this project.
