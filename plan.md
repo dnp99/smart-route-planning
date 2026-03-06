@@ -293,6 +293,27 @@ An Oracle review was performed and its recommendations were incorporated, includ
 
 ---
 
+## 13) Frontend Vercel API Configuration
+
+### Files updated
+- `frontend/src/components/apiBaseUrl.ts`
+- `plan.md`
+
+### What changed
+- Updated frontend API base URL resolution to support `import.meta.env.VITE_API_BASE_URL`.
+- Added URL normalization so configured values do not keep trailing slashes.
+- Preserved the existing runtime `window.__NAVIGATE_EASY_API_BASE_URL__` override and localhost fallback.
+
+### Why
+- The frontend needed a build-time configuration path for Vercel so production requests can target the deployed backend instead of `http://localhost:3000`.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
 ## 10) Repository Initialization
 
 ### Git setup
