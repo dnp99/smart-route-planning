@@ -224,6 +224,28 @@ An Oracle review was performed and its recommendations were incorporated, includ
 ## 10) Repository Initialization
 
 ### Git setup
+- **Added:** `.gitignore`
+- **Updated:** root repository metadata
+- Initialized a new Git repository at the project root.
+- Removed nested Git metadata from `backend/.git` so the backend is tracked inside the root repository.
+- Renamed the default branch to `main`.
+- Added GitHub SSH remote:
+  - `git@github.com:dvnp19/smart-route-planner.git`
+
+### Why
+- The project needed a single root repository so frontend, backend, docs, workflows, and scripts are versioned together.
+- A root `.gitignore` was needed so dependencies, build outputs, and local editor files are not committed.
+
+### Verification
+- Confirmed current branch is `main`.
+- Confirmed `git remote -v` points to the provided GitHub SSH origin.
+- Created initial commit successfully.
+
+---
+
+## 10) Repository Initialization
+
+### Git setup
 - **Updated:** repository metadata at project root
 - Initialized a new Git repository at the project root.
 - Removed nested Git metadata from `backend/.git` so the backend is tracked as part of the root repository instead of as an embedded repository.
