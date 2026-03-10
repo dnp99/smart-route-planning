@@ -35,21 +35,17 @@ cd ../frontend && npm ci
 
 ```bash
 cd backend
+cp .env.local.example .env.local
 npm run dev
 ```
 
 Runs on `http://localhost:3000`.
 
-Optional CORS allowlist:
+Required local backend envs live in `backend/.env.local`, for example:
 
 ```bash
-ALLOWED_ORIGINS=http://localhost:5173 npm run dev
-```
-
-Required for Phase 1 driving routes:
-
-```bash
-GOOGLE_MAPS_API_KEY=your_google_maps_key npm run dev
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+ALLOWED_ORIGINS=http://localhost:5173
 ```
 
 ### 2) Frontend

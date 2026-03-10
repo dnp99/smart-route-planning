@@ -13,6 +13,7 @@ This folder contains the Next.js backend for Navigate Easy.
 
 ```bash
 npm ci
+cp .env.local.example .env.local
 npm run dev
 ```
 
@@ -29,6 +30,14 @@ The backend runs on `http://localhost:3000`.
   - Required for driving route distance, duration, and route geometry.
 - `NOMINATIM_CONTACT_EMAIL`
   - Recommended for production or shared environments to identify requests to the upstream geocoding provider.
+
+Example local file:
+
+```bash
+GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+ALLOWED_ORIGINS=http://localhost:5173
+NOMINATIM_CONTACT_EMAIL=you@example.com
+```
 
 ## API endpoints
 

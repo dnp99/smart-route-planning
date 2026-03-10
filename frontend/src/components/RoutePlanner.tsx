@@ -274,6 +274,21 @@ function RoutePlanner() {
           <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
             <h2 className="m-0 text-lg font-semibold text-slate-900 dark:text-slate-100">Optimized Route</h2>
 
+            <div className="mt-3 grid gap-2 rounded-xl border border-slate-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/70">
+              <p className="m-0 text-base font-semibold text-slate-800 dark:text-slate-100">
+                Total driving distance:{' '}
+                <strong className="text-lg font-bold text-slate-950 dark:text-white">
+                  {result.totalDistanceKm} km
+                </strong>
+              </p>
+              <p className="m-0 text-base font-semibold text-slate-800 dark:text-slate-100">
+                Total driving time:{' '}
+                <strong className="text-lg font-bold text-slate-950 dark:text-white">
+                  {formatDuration(result.totalDurationSeconds)}
+                </strong>
+              </p>
+            </div>
+
             <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
               <strong className="text-slate-900 dark:text-slate-100">Start:</strong> {result.start.address}
             </p>
@@ -295,17 +310,6 @@ function RoutePlanner() {
                 </li>
               ))}
             </ol>
-
-            <p className="mb-0 mt-3 text-sm text-slate-700 dark:text-slate-300">
-              Total driving distance:{' '}
-              <strong className="text-slate-900 dark:text-slate-100">{result.totalDistanceKm} km</strong>
-            </p>
-            <p className="mb-0 mt-1 text-sm text-slate-700 dark:text-slate-300">
-              Total driving time:{' '}
-              <strong className="text-slate-900 dark:text-slate-100">
-                {formatDuration(result.totalDurationSeconds)}
-              </strong>
-            </p>
           </section>
         )}
       </section>

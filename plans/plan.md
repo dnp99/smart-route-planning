@@ -58,6 +58,46 @@ Current active planning document:
 - Route ordering still uses haversine nearest-neighbor in this phase.
 - `GOOGLE_MAPS_API_KEY` must be set in the backend environment before the updated optimize-route API can succeed.
 
+---
+
+## 16) Route Summary UI Emphasis
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/plan.md`
+
+### What changed
+- Moved total driving distance and total driving time to the top of the optimized-route result card.
+- Increased the visual emphasis of both values with larger, bolder styling.
+
+### Why
+- The total trip summary is the most important output and should be visible before the stop-by-stop details.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 17) Backend Local Env Example
+
+### Files updated
+- `backend/.env.local.example`
+- `backend/README.md`
+- `README.md`
+- `plans/plan.md`
+
+### What changed
+- Added a backend local environment example file with `GOOGLE_MAPS_API_KEY`, `ALLOWED_ORIGINS`, and `NOMINATIM_CONTACT_EMAIL`.
+- Updated local setup docs to tell users to copy `.env.local.example` to `.env.local` before starting the backend.
+
+### Why
+- Phase 1 now requires `GOOGLE_MAPS_API_KEY`, so local setup needed an explicit, repeatable env-file path.
+
+### Verification
+- Documentation/configuration only.
+
 ## 1) Project Scaffolding
 
 ### Created app structure
