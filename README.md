@@ -1,4 +1,4 @@
-# Samrt Route Planner
+# Smart Route Planner
 
 React frontend + Next.js backend route planner.
 
@@ -9,7 +9,9 @@ React frontend + Next.js backend route planner.
 - User enters multiple **destination addresses** (one per line).
 - Backend geocodes addresses and returns a route ordered by **nearest next stop first**, then
   ends at the provided ending point.
-- Frontend renders a **Leaflet map** with the ordered route polyline and stop markers.
+- Backend enriches the ordered route with **Google driving distance, duration, and route geometry**
+  for each leg.
+- Frontend renders a **Leaflet map** with the actual driving path and stop markers.
 - Frontend uses **Tailwind CSS** and includes a light/dark mode toggle.
 
 ## Project structure
@@ -42,6 +44,12 @@ Optional CORS allowlist:
 
 ```bash
 ALLOWED_ORIGINS=http://localhost:5173 npm run dev
+```
+
+Required for Phase 1 driving routes:
+
+```bash
+GOOGLE_MAPS_API_KEY=your_google_maps_key npm run dev
 ```
 
 ### 2) Frontend
@@ -80,6 +88,8 @@ Frontend API base URL defaults to `http://localhost:3000`. For deployed environm
 ## Notes
 
 - Geocoding uses OpenStreetMap Nominatim.
+- Driving route distance, duration, and geometry use Google Routes API.
 - Route ordering uses greedy nearest-neighbor logic (nearest next stop from current stop).
-- Distance is based on straight-line (haversine) approximation, not road network travel time.
+- Stop ordering still uses straight-line nearest-neighbor in Phase 1, but displayed route metrics
+  and map geometry are road-network based.
 - Backend development uses webpack mode by default because that is the stable local startup path for this project.

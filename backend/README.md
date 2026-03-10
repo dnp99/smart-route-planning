@@ -25,6 +25,8 @@ The backend runs on `http://localhost:3000`.
 - `ALLOWED_ORIGINS`
   - Optional comma-separated CORS allowlist.
   - Example: `http://localhost:5173`
+- `GOOGLE_MAPS_API_KEY`
+  - Required for driving route distance, duration, and route geometry.
 - `NOMINATIM_CONTACT_EMAIL`
   - Recommended for production or shared environments to identify requests to the upstream geocoding provider.
 
@@ -32,7 +34,7 @@ The backend runs on `http://localhost:3000`.
 
 - `POST /api/optimize-route`
   - Accepts `startAddress`, `endAddress`, and `addresses[]`
-  - Returns geocoded stops in greedy nearest-neighbor order plus total distance
+  - Returns geocoded stops in greedy nearest-neighbor order plus Google driving route legs, total distance, and total duration
 - `GET /api/address-autocomplete?query=...`
   - Returns up to 5 suggestions
   - Uses short in-memory caching and per-client rate limiting

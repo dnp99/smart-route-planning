@@ -20,11 +20,18 @@ The app runs on `http://localhost:5173`.
 
 ## Runtime API configuration
 
-The frontend reads its API base URL from `window.__NAVIGATE_EASY_API_BASE_URL__`.
+The frontend reads its API base URL from `VITE_API_BASE_URL` first, then falls back to
+`window.__NAVIGATE_EASY_API_BASE_URL__`.
 
 If the value is not provided, it defaults to `http://localhost:3000`.
 
 Example:
+
+```bash
+VITE_API_BASE_URL=https://smart-route-planning-backend.vercel.app
+```
+
+or:
 
 ```html
 <script>

@@ -10,6 +10,20 @@ type GeocodedStop = {
   coords: LatLng;
 };
 
+type OrderedStop = GeocodedStop & {
+  distanceFromPreviousKm: number;
+  durationFromPreviousSeconds: number;
+  isEndingPoint?: boolean;
+};
+
+type RouteLeg = {
+  fromAddress: string;
+  toAddress: string;
+  distanceMeters: number;
+  durationSeconds: number;
+  encodedPolyline: string;
+};
+
 type OptimizeRouteRequest = {
   startAddress: string;
   endAddress: string;
@@ -19,6 +33,7 @@ type OptimizeRouteRequest = {
 const MAX_DESTINATIONS = 25;
 const MAX_ADDRESS_LENGTH = 200;
 const GEOCODE_TIMEOUT_MS = 8000;
+const GOOGLE_ROUTES_TIMEOUT_MS = 10000;
 
 class HttpError extends Error {
   status: number;
@@ -153,10 +168,7 @@ const computeNearestNeighborRoute = (
   end: GeocodedStop,
 ) => {
   const remaining = [...stops];
-  const orderedStops: Array<
-    GeocodedStop & { distanceFromPreviousKm: number; isEndingPoint?: boolean }
-  > = [];
-  let totalDistanceKm = 0;
+  const orderedStops: OrderedStop[] = [];
   let current = start;
 
   while (remaining.length > 0) {
@@ -174,27 +186,169 @@ const computeNearestNeighborRoute = (
     }
 
     const [nextStop] = remaining.splice(closestIndex, 1);
-    totalDistanceKm += closestDistance;
-
     orderedStops.push({
       ...nextStop,
       distanceFromPreviousKm: Number(closestDistance.toFixed(2)),
+      durationFromPreviousSeconds: 0,
     });
     current = nextStop;
   }
 
   const distanceToEndKm = haversineDistanceKm(current.coords, end.coords);
-  totalDistanceKm += distanceToEndKm;
 
   orderedStops.push({
     ...end,
     distanceFromPreviousKm: Number(distanceToEndKm.toFixed(2)),
+    durationFromPreviousSeconds: 0,
     isEndingPoint: true,
   });
 
+  return orderedStops;
+};
+
+const parseGoogleDurationSeconds = (duration: unknown) => {
+  if (typeof duration !== "string" || !duration.endsWith("s")) {
+    throw new HttpError(503, "Google Routes returned an invalid duration.");
+  }
+
+  const seconds = Number(duration.slice(0, -1));
+  if (seconds !== seconds || !isFinite(seconds)) {
+    throw new HttpError(503, "Google Routes returned an invalid duration.");
+  }
+
+  return Math.round(seconds);
+};
+
+const fetchDrivingRouteLeg = async (
+  from: GeocodedStop,
+  to: GeocodedStop,
+  apiKey: string,
+): Promise<RouteLeg> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, GOOGLE_ROUTES_TIMEOUT_MS);
+
+  let response: Response;
+
+  try {
+    response = await fetch("https://routes.googleapis.com/directions/v2:computeRoutes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask":
+          "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline",
+      },
+      body: JSON.stringify({
+        origin: {
+          location: {
+            latLng: {
+              latitude: from.coords.lat,
+              longitude: from.coords.lon,
+            },
+          },
+        },
+        destination: {
+          location: {
+            latLng: {
+              latitude: to.coords.lat,
+              longitude: to.coords.lon,
+            },
+          },
+        },
+        travelMode: "DRIVE",
+      }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch {
+    throw new HttpError(503, "Driving route service is currently unavailable.");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new HttpError(500, "Google Routes API key is invalid or not authorized.");
+    }
+
+    if (response.status === 429) {
+      throw new HttpError(503, "Driving route service is rate-limited. Please try again shortly.");
+    }
+
+    throw new HttpError(503, "Driving route service returned an unexpected error.");
+  }
+
+  const payload = (await response.json()) as {
+    routes?: Array<{
+      distanceMeters?: unknown;
+      duration?: unknown;
+      polyline?: {
+        encodedPolyline?: unknown;
+      };
+    }>;
+  };
+
+  const firstRoute = payload.routes?.[0];
+  if (!firstRoute) {
+    throw new HttpError(503, "No driving route was found for one of the trip legs.");
+  }
+
+  if (
+    typeof firstRoute.distanceMeters !== "number" ||
+    firstRoute.distanceMeters !== firstRoute.distanceMeters ||
+    !isFinite(firstRoute.distanceMeters)
+  ) {
+    throw new HttpError(503, "Google Routes returned an invalid distance.");
+  }
+
+  const encodedPolyline = firstRoute.polyline?.encodedPolyline;
+  if (typeof encodedPolyline !== "string" || !encodedPolyline) {
+    throw new HttpError(503, "Google Routes returned an invalid route path.");
+  }
+
   return {
-    orderedStops,
-    totalDistanceKm: Number(totalDistanceKm.toFixed(2)),
+    fromAddress: from.address,
+    toAddress: to.address,
+    distanceMeters: Math.round(firstRoute.distanceMeters),
+    durationSeconds: parseGoogleDurationSeconds(firstRoute.duration),
+    encodedPolyline,
+  };
+};
+
+const buildDrivingRoute = async (
+  start: GeocodedStop,
+  orderedStops: OrderedStop[],
+  apiKey: string,
+) => {
+  const routeLegs: RouteLeg[] = [];
+  const updatedOrderedStops: OrderedStop[] = [];
+  let previousStop = start;
+  let totalDistanceMeters = 0;
+  let totalDurationSeconds = 0;
+
+  for (const stop of orderedStops) {
+    const leg = await fetchDrivingRouteLeg(previousStop, stop, apiKey);
+
+    routeLegs.push(leg);
+    updatedOrderedStops.push({
+      ...stop,
+      distanceFromPreviousKm: Number((leg.distanceMeters / 1000).toFixed(2)),
+      durationFromPreviousSeconds: leg.durationSeconds,
+    });
+
+    totalDistanceMeters += leg.distanceMeters;
+    totalDurationSeconds += leg.durationSeconds;
+    previousStop = stop;
+  }
+
+  return {
+    orderedStops: updatedOrderedStops,
+    routeLegs,
+    totalDistanceMeters,
+    totalDistanceKm: Number((totalDistanceMeters / 1000).toFixed(2)),
+    totalDurationSeconds,
   };
 };
 
@@ -267,6 +421,14 @@ export async function POST(request: Request) {
   const corsHeaders = buildCorsHeaders(request);
 
   try {
+    const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY?.trim();
+    if (!googleMapsApiKey) {
+      return NextResponse.json(
+        { error: "Server is missing GOOGLE_MAPS_API_KEY configuration." },
+        { status: 500, headers: corsHeaders },
+      );
+    }
+
     let body: unknown;
     try {
       body = await request.json();
@@ -328,7 +490,8 @@ export async function POST(request: Request) {
       coords: getCoordsOrThrow(endAddress),
     };
 
-    const optimized = computeNearestNeighborRoute(geocodedStart, geocodedStops, geocodedEnd);
+    const orderedStops = computeNearestNeighborRoute(geocodedStart, geocodedStops, geocodedEnd);
+    const optimized = await buildDrivingRoute(geocodedStart, orderedStops, googleMapsApiKey);
 
     return NextResponse.json(
       {

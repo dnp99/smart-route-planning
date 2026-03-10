@@ -10,6 +10,22 @@ type OptimizeRouteErrorResponse = {
   error?: string;
 };
 
+const formatDuration = (durationSeconds: number) => {
+  const totalMinutes = Math.round(durationSeconds / 60);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+
+  if (hours === 0) {
+    return `${minutes} min`;
+  }
+
+  if (minutes === 0) {
+    return `${hours} hr`;
+  }
+
+  return `${hours} hr ${minutes} min`;
+};
+
 const isOptimizeRouteResponse = (payload: unknown): payload is OptimizeRouteResponse => {
   if (typeof payload !== 'object' || payload === null) {
     return false;
@@ -18,9 +34,12 @@ const isOptimizeRouteResponse = (payload: unknown): payload is OptimizeRouteResp
   const maybePayload = payload as Partial<OptimizeRouteResponse>;
   return (
     typeof maybePayload.totalDistanceKm === 'number' &&
+    typeof maybePayload.totalDistanceMeters === 'number' &&
+    typeof maybePayload.totalDurationSeconds === 'number' &&
     typeof maybePayload.start?.address === 'string' &&
     typeof maybePayload.end?.address === 'string' &&
-    Array.isArray(maybePayload.orderedStops)
+    Array.isArray(maybePayload.orderedStops) &&
+    Array.isArray(maybePayload.routeLegs)
   );
 };
 
@@ -262,14 +281,15 @@ function RoutePlanner() {
               <strong className="text-slate-900 dark:text-slate-100">End:</strong> {result.end.address}
             </p>
 
-            <RouteMap start={result.start} orderedStops={result.orderedStops} />
+            <RouteMap start={result.start} orderedStops={result.orderedStops} routeLegs={result.routeLegs} />
 
             <ol className="mb-0 mt-2 list-decimal space-y-2 pl-5">
               {result.orderedStops.map((stop, index) => (
                 <li key={`${stop.address}-${index}`} className="text-sm text-slate-800 dark:text-slate-200">
                   <span>{stop.address}</span>
                   <small className="block text-xs text-slate-500 dark:text-slate-400">
-                    {stop.distanceFromPreviousKm} km from previous stop
+                    {stop.distanceFromPreviousKm} km • {formatDuration(stop.durationFromPreviousSeconds)} from
+                    previous stop
                     {stop.isEndingPoint ? ' • ending point' : ''}
                   </small>
                 </li>
@@ -277,8 +297,14 @@ function RoutePlanner() {
             </ol>
 
             <p className="mb-0 mt-3 text-sm text-slate-700 dark:text-slate-300">
-              Total approximate distance:{' '}
+              Total driving distance:{' '}
               <strong className="text-slate-900 dark:text-slate-100">{result.totalDistanceKm} km</strong>
+            </p>
+            <p className="mb-0 mt-1 text-sm text-slate-700 dark:text-slate-300">
+              Total driving time:{' '}
+              <strong className="text-slate-900 dark:text-slate-100">
+                {formatDuration(result.totalDurationSeconds)}
+              </strong>
             </p>
           </section>
         )}

@@ -12,6 +12,52 @@ Current active planning document:
 
 - `plans/google-routes-phase-1-plan.md` - planned Phase 1 migration from straight-line routing to Google driving route distance, duration, and geometry
 
+---
+
+## 15) Google Routes Phase 1 Implementation
+
+### Files updated
+- `backend/src/app/api/optimize-route/route.ts`
+- `frontend/src/components/types.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/components/RouteMap.tsx`
+- `README.md`
+- `backend/README.md`
+- `frontend/README.md`
+- `plans/plan.md`
+
+### What changed
+- Kept the existing nearest-neighbor stop-ordering logic in the backend.
+- Added Google Routes API integration for each trip leg after stop order is chosen.
+- Extended the optimize-route response with:
+  - `routeLegs`
+  - `totalDistanceMeters`
+  - `totalDistanceKm`
+  - `totalDurationSeconds`
+- Updated ordered stops to include:
+  - `distanceFromPreviousKm`
+  - `durationFromPreviousSeconds`
+- Updated the frontend result panel to display driving distance and total driving time.
+- Updated the map component to decode Google encoded polylines and render the actual driving path instead of straight-line segments.
+- Updated docs to describe the new `GOOGLE_MAPS_API_KEY` requirement and the Phase 1 routing behavior.
+
+### Why
+- The app needed real road-network route geometry and ETA rather than straight-line approximations.
+- Phase 1 intentionally limits scope to route metrics and map rendering while preserving the existing stop-order algorithm.
+
+### Verification
+- Backend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+### Notes
+- Geocoding still uses Nominatim in this phase.
+- Route ordering still uses haversine nearest-neighbor in this phase.
+- `GOOGLE_MAPS_API_KEY` must be set in the backend environment before the updated optimize-route API can succeed.
+
 ## 1) Project Scaffolding
 
 ### Created app structure
