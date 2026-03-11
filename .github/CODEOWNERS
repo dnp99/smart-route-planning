@@ -1,0 +1,12 @@
+# Default ownership for the repository.
+* @dnp99 @dvnp19
+
+# Application areas.
+/backend/ @dnp99 @dvnp19
+/frontend/ @dnp99 @dvnp19
+
+# Repository configuration and documentation.
+/.github/ @dnp99 @dvnp19
+/*.md @dnp99 @dvnp19
+/plans/ @dnp99 @dvnp19
+/scripts/ @dnp99 @dvnp19
