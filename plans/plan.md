@@ -432,6 +432,25 @@ Current active planning document:
   - a fullscreen overlay route view
   - close and Escape-key support for returning to the normal summary layout
 - Updated the optimized-route stop list so it is hidden when the trip has no intermediate destinations and only contains the ending point.
+- Added lightweight backend analytics/logging with:
+  - in-memory counters and recent-event tracking for `optimize-route` and `address-autocomplete`
+  - structured console logging for requests, successes, failures, cache hits, and rate limits
+  - a new `GET /api/analytics` endpoint for inspecting the current snapshot
+  - optional `ANALYTICS_API_KEY` protection via the `x-analytics-key` header
+- Updated the frontend browser-tab title from the scaffold default to `Smart Route Planner`.
+- Replaced the default Vite browser-tab icon with a custom car favicon for the frontend.
+- Added a tiny, low-visibility frontend debug panel at the bottom of the page that:
+  - stays collapsed by default
+  - fetches analytics only when opened
+  - shows basic counters and recent backend events without affecting the main route-planning UI
+- Added CORS and preflight handling to `GET /api/analytics`, including support for the optional `x-analytics-key` header, so the frontend debug panel can fetch analytics from the backend without browser blocking.
+- Fixed the frontend debug panel analytics loop by limiting it to one fetch per open cycle and adding an explicit retry action on failure instead of automatic repeated refetching.
+- Fixed a follow-up debug-panel issue where the analytics request canceled itself immediately because the fetch effect depended on `isLoading`, causing cleanup to abort the in-flight request.
+- Replaced the debug panel’s per-open fetch guard from React state to a ref so the initial analytics request no longer cancels itself on the rerender triggered by the guard update.
+- Updated the debug panel to fetch analytics once when opened and refresh only when the user clicks `Refresh`, instead of polling while the modal stays open.
+- Moved the debug access into the header as a small icon button beside the theme toggle and converted the debug panel from a footer disclosure into a modal overlay with close and Escape support.
+- Swapped the header icon order so the theme toggle appears before the debug icon in the title row.
+- Updated the debug modal subtitle copy to clarify that it shows a lightweight Google API analytics snapshot since the last deployment.
 
 ## 1) Project Scaffolding
 

@@ -29,6 +29,9 @@ The backend runs on `http://localhost:3000`.
   - Example: `http://localhost:5173`
 - `GOOGLE_MAPS_API_KEY`
   - Required for Google driving route distance, duration, route geometry, and address suggestions.
+- `ANALYTICS_API_KEY`
+  - Optional.
+  - If set, `GET /api/analytics` requires this value in the `x-analytics-key` header.
 - `NOMINATIM_CONTACT_EMAIL`
   - Recommended for production or shared environments to identify requests to the upstream geocoding provider.
 
@@ -37,6 +40,7 @@ Example local file:
 ```bash
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ALLOWED_ORIGINS=http://localhost:5173
+ANALYTICS_API_KEY=your_optional_analytics_key
 NOMINATIM_CONTACT_EMAIL=you@example.com
 ```
 
@@ -48,6 +52,9 @@ NOMINATIM_CONTACT_EMAIL=you@example.com
 - `GET /api/address-autocomplete?query=...`
   - Returns up to 5 suggestions
   - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
+- `GET /api/analytics`
+  - Returns in-memory request counters and recent backend events
+  - Optional `x-analytics-key` header required if `ANALYTICS_API_KEY` is configured
 
 ## Key files
 

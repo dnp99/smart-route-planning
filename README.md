@@ -47,6 +47,7 @@ Required local backend envs live in `backend/.env.local`, for example:
 ```bash
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ALLOWED_ORIGINS=http://localhost:5173
+ANALYTICS_API_KEY=your_optional_analytics_key
 ```
 
 ### 2) Frontend
@@ -87,6 +88,7 @@ Frontend API base URL defaults to `http://localhost:3000`. For deployed environm
 - Geocoding uses OpenStreetMap Nominatim.
 - Driving route distance, duration, and geometry use Google Routes API.
 - Address suggestions use Google Places API.
+- Backend includes lightweight in-memory analytics for optimize-route and autocomplete usage.
 - Route ordering uses greedy nearest-neighbor logic (nearest next stop from current stop).
 - Stop ordering still uses straight-line nearest-neighbor in Phase 1, but displayed route metrics
   and map geometry are road-network based.

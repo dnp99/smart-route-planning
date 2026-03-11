@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 
 type AutocompleteSuggestion = {
   displayName: string;
@@ -113,6 +114,7 @@ const enforceRateLimit = (clientKey: string) => {
   const lastRequestAt = lastRequestAtByClient.get(clientKey) ?? 0;
 
   if (now - lastRequestAt < RATE_LIMIT_WINDOW_MS) {
+    trackAnalyticsEvent("address-autocomplete", "rate-limit", { clientKey });
     throw new HttpError(429, "Please wait before requesting more address suggestions.");
   }
 
@@ -219,8 +221,13 @@ export async function GET(request: Request) {
   const corsHeaders = buildCorsHeaders(request);
 
   try {
+    trackAnalyticsEvent("address-autocomplete", "request");
+
     const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY?.trim();
     if (!googleMapsApiKey) {
+      trackAnalyticsEvent("address-autocomplete", "failure", {
+        reason: "missing_google_maps_api_key",
+      });
       return NextResponse.json(
         { error: "Server is missing GOOGLE_MAPS_API_KEY configuration." },
         { status: 500, headers: corsHeaders },
@@ -235,6 +242,15 @@ export async function GET(request: Request) {
 
     const cachedSuggestions = getCachedSuggestions(query);
     if (cachedSuggestions) {
+      trackAnalyticsEvent("address-autocomplete", "cache-hit", {
+        queryLength: query.length,
+        suggestions: cachedSuggestions.length,
+      });
+      trackAnalyticsEvent("address-autocomplete", "success", {
+        source: "cache",
+        queryLength: query.length,
+        suggestions: cachedSuggestions.length,
+      });
       return NextResponse.json({ suggestions: cachedSuggestions }, { headers: corsHeaders });
     }
 
@@ -243,13 +259,26 @@ export async function GET(request: Request) {
 
     const suggestions = await fetchAutocompleteSuggestions(query, googleMapsApiKey);
     setCachedSuggestions(query, suggestions);
+    trackAnalyticsEvent("address-autocomplete", "success", {
+      source: "google_places",
+      queryLength: query.length,
+      suggestions: suggestions.length,
+    });
 
     return NextResponse.json({ suggestions }, { headers: corsHeaders });
   } catch (error) {
     if (error instanceof HttpError) {
+      trackAnalyticsEvent("address-autocomplete", "failure", {
+        status: error.status,
+        message: error.message,
+      });
       return NextResponse.json({ error: error.message }, { status: error.status, headers: corsHeaders });
     }
 
+    trackAnalyticsEvent("address-autocomplete", "failure", {
+      status: 500,
+      message: "Failed to fetch address suggestions.",
+    });
     return NextResponse.json({ error: "Failed to fetch address suggestions." }, { status: 500, headers: corsHeaders });
   }
 }

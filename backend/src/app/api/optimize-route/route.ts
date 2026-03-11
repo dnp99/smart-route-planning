@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { trackAnalyticsEvent } from "@/lib/analytics";
 
 type LatLng = {
   lat: number;
@@ -421,8 +422,13 @@ export async function POST(request: Request) {
   const corsHeaders = buildCorsHeaders(request);
 
   try {
+    trackAnalyticsEvent("optimize-route", "request");
+
     const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY?.trim();
     if (!googleMapsApiKey) {
+      trackAnalyticsEvent("optimize-route", "failure", {
+        reason: "missing_google_maps_api_key",
+      });
       return NextResponse.json(
         { error: "Server is missing GOOGLE_MAPS_API_KEY configuration." },
         { status: 500, headers: corsHeaders },
@@ -433,6 +439,10 @@ export async function POST(request: Request) {
     try {
       body = await request.json();
     } catch {
+      trackAnalyticsEvent("optimize-route", "failure", {
+        status: 400,
+        message: "Request body must be valid JSON.",
+      });
       return NextResponse.json(
         { error: "Request body must be valid JSON." },
         { status: 400, headers: corsHeaders },
@@ -492,6 +502,12 @@ export async function POST(request: Request) {
 
     const orderedStops = computeNearestNeighborRoute(geocodedStart, geocodedStops, geocodedEnd);
     const optimized = await buildDrivingRoute(geocodedStart, orderedStops, googleMapsApiKey);
+    trackAnalyticsEvent("optimize-route", "success", {
+      destinations: destinationAddresses.length,
+      orderedStops: optimized.orderedStops.length,
+      totalDistanceKm: optimized.totalDistanceKm,
+      totalDurationSeconds: optimized.totalDurationSeconds,
+    });
 
     return NextResponse.json(
       {
@@ -503,12 +519,20 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     if (error instanceof HttpError) {
+      trackAnalyticsEvent("optimize-route", "failure", {
+        status: error.status,
+        message: error.message,
+      });
       return NextResponse.json(
         { error: error.message },
         { status: error.status, headers: corsHeaders },
       );
     }
 
+    trackAnalyticsEvent("optimize-route", "failure", {
+      status: 500,
+      message: "Failed to optimize route.",
+    });
     return NextResponse.json(
       { error: "Failed to optimize route." },
       { status: 500, headers: corsHeaders },
