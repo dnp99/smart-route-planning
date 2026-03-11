@@ -1,12 +1,12 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("./routePlannerService", () => ({
+vi.mock("../../components/routePlanner/routePlannerService", () => ({
   requestOptimizedRoute: vi.fn(),
 }));
 
-import { requestOptimizedRoute } from "./routePlannerService";
-import { useRouteOptimization } from "./useRouteOptimization";
+import { requestOptimizedRoute } from "../../components/routePlanner/routePlannerService";
+import { useRouteOptimization } from "../../components/routePlanner/useRouteOptimization";
 
 const mockedRequestOptimizedRoute = vi.mocked(requestOptimizedRoute);
 

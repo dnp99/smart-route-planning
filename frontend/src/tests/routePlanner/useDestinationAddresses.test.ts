@@ -1,6 +1,6 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { useDestinationAddresses } from "./useDestinationAddresses";
+import { useDestinationAddresses } from "../../components/routePlanner/useDestinationAddresses";
 
 describe("useDestinationAddresses", () => {
   it("starts with no destinations", () => {

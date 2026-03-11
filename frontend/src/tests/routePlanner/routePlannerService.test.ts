@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { requestOptimizedRoute } from "./routePlannerService";
+import { requestOptimizedRoute } from "../../components/routePlanner/routePlannerService";
 
-vi.mock("../apiBaseUrl", () => ({
+vi.mock("../../components/apiBaseUrl", () => ({
   resolveApiBaseUrl: () => "http://api.example.com",
 }));
 
