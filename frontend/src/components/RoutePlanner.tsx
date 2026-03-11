@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import AdminDebugPanel from "./AdminDebugPanel";
 import AddressAutocompleteInput from "./AddressAutocompleteInput";
 import { resolveApiBaseUrl } from "./apiBaseUrl";
 import RouteMap from "./RouteMap";
@@ -99,7 +98,6 @@ function RoutePlanner() {
   const [hasAttemptedOptimize, setHasAttemptedOptimize] = useState(false);
   const [startTouched, setStartTouched] = useState(false);
   const [endTouched, setEndTouched] = useState(false);
-  const [isDebugPanelOpen, setIsDebugPanelOpen] = useState(false);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -274,18 +272,7 @@ function RoutePlanner() {
             <h1 className="m-0 text-2xl font-bold text-slate-900 dark:text-slate-100">
               Smart Route Planner
             </h1>
-            <div className="flex items-center gap-2">
-              <ThemeToggle theme={theme} onToggle={toggleTheme} />
-              <button
-                type="button"
-                onClick={() => setIsDebugPanelOpen(true)}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-slate-300 bg-white text-lg text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                aria-label="Open debug analytics panel"
-                title="Open debug analytics panel"
-              >
-                <span aria-hidden="true">⌘</span>
-              </button>
-            </div>
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
           </div>
           <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
             Enter your starting point, ending point, and destination
@@ -516,11 +503,6 @@ function RoutePlanner() {
           </section>
         )}
       </section>
-
-      <AdminDebugPanel
-        isOpen={isDebugPanelOpen}
-        onClose={() => setIsDebugPanelOpen(false)}
-      />
     </main>
   );
 }
