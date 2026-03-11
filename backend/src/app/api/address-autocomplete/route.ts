@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { HttpError, buildCorsHeaders, toErrorResponse } from "../../../lib/http";
 
 type AutocompleteSuggestion = {
   displayName: string;
@@ -14,43 +15,6 @@ const RATE_LIMIT_WINDOW_MS = 1_000;
 
 const queryCache = new Map<string, { suggestions: AutocompleteSuggestion[]; expiresAt: number }>();
 const lastRequestAtByClient = new Map<string, number>();
-
-class HttpError extends Error {
-  status: number;
-
-  constructor(status: number, message: string) {
-    super(message);
-    this.status = status;
-  }
-}
-
-const resolveAllowedOrigin = (request: Request) => {
-  const configuredOrigins = process.env.ALLOWED_ORIGINS
-    ?.split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
-
-  if (!configuredOrigins || configuredOrigins.length === 0) {
-    return "*";
-  }
-
-  const requestOrigin = request.headers.get("origin");
-  if (!requestOrigin) {
-    return configuredOrigins[0];
-  }
-
-  if (requestOrigin && configuredOrigins.indexOf(requestOrigin) !== -1) {
-    return requestOrigin;
-  }
-
-  throw new HttpError(403, "Origin is not allowed.");
-};
-
-const buildCorsHeaders = (request: Request) => ({
-  "Access-Control-Allow-Origin": resolveAllowedOrigin(request),
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
-});
 
 const parseAndValidateQuery = (request: Request) => {
   const url = new URL(request.url);
@@ -94,7 +58,7 @@ const setCachedSuggestions = (query: string, suggestions: AutocompleteSuggestion
 const resolveClientKey = (request: Request) => {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
-    const firstIp = forwardedFor.split(",")[0]?.trim();
+    const firstIp = forwardedFor.split(",")[0].trim();
     if (firstIp) {
       return firstIp;
     }
@@ -202,23 +166,29 @@ const fetchAutocompleteSuggestions = async (
 
 export async function OPTIONS(request: Request) {
   try {
+    const corsHeaders = buildCorsHeaders(request, {
+      methods: "GET, OPTIONS",
+      originPolicy: "strict",
+    });
+
     return new NextResponse(null, {
       status: 204,
-      headers: buildCorsHeaders(request),
+      headers: corsHeaders,
     });
   } catch (error) {
-    if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status });
-    }
-
-    return NextResponse.json({ error: "Failed to process preflight request." }, { status: 500 });
+    return toErrorResponse(error, "Failed to process preflight request.");
   }
 }
 
 export async function GET(request: Request) {
-  const corsHeaders = buildCorsHeaders(request);
+  let corsHeaders: Record<string, string> | undefined;
 
   try {
+    corsHeaders = buildCorsHeaders(request, {
+      methods: "GET, OPTIONS",
+      originPolicy: "strict",
+    });
+
     const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY?.trim();
     if (!googleMapsApiKey) {
       return NextResponse.json(
@@ -246,10 +216,6 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ suggestions }, { headers: corsHeaders });
   } catch (error) {
-    if (error instanceof HttpError) {
-      return NextResponse.json({ error: error.message }, { status: error.status, headers: corsHeaders });
-    }
-
-    return NextResponse.json({ error: "Failed to fetch address suggestions." }, { status: 500, headers: corsHeaders });
+    return toErrorResponse(error, "Failed to fetch address suggestions.", corsHeaders);
   }
 }

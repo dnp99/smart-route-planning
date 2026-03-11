@@ -12,19 +12,30 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change record
 
 ### Change
-Updated `AGENT.md` with a mandatory branch workflow: always pull latest `main` first, then create a new working branch before making changes.
+Increased frontend test coverage above 80% and added enforced frontend coverage thresholds.
 
 ### Files added/updated/deleted
+- Added:
+  - `frontend/vitest.config.ts`
+  - `frontend/src/components/apiBaseUrl.test.ts`
+  - `frontend/src/components/routePlanner/useTheme.test.ts`
+  - `frontend/src/components/routePlanner/useDestinationAddresses.test.ts`
+  - `frontend/src/components/routePlanner/useRouteOptimization.test.ts`
 - Updated:
-  - `AGENT.md`
+  - `frontend/package.json`
+  - `frontend/package-lock.json`
   - `plan.md`
   - `plans/plan.md`
 
 ### Why
-`main` is protected and should remain clean and in sync; enforcing an explicit pull-then-branch workflow prevents accidental commits on `main` and reduces branch divergence.
+You requested higher frontend coverage. Enforcing coverage thresholds and adding focused unit tests for route-planner modules ensures frontend behavior is protected before further UI refactors.
 
 ### Verification
-- Confirmed `AGENT.md` includes the new mandatory branch workflow and recovery steps.
-- Confirmed this change is recorded in both `plan.md` and `plans/plan.md`.
+- `frontend`: `npm run test:coverage` ✅
+  - Coverage: **97.61% statements, 93.22% branches, 100% functions, 97.60% lines**
+  - Threshold target (>=80%) passed
+- `frontend`: `npm run lint`, `npm run build` ✅
 
-For full implementation details, see `plans/plan.md` section **32) Mandatory Pull-Main-Then-Branch Workflow**.
+For full implementation details, see `plans/plan.md` section **38) Frontend Coverage Increased to >=80%**.
+
+For full implementation details, see `plans/plan.md` section **33) Shared Backend HTTP/CORS/Error Helpers**.
