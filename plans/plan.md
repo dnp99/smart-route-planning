@@ -499,6 +499,137 @@ Current active planning document:
 - Verified `AGENT.md` contains the new mandatory workflow and recovery steps.
 - Verified the change is logged in both `plan.md` and `plans/plan.md`.
 
+---
+
+## 33) Shared Backend HTTP/CORS/Error Helpers
+
+### Files added
+- `backend/src/lib/http.ts`
+
+### Files updated
+- `backend/src/app/api/optimize-route/route.ts`
+- `backend/src/app/api/address-autocomplete/route.ts`
+- `plan.md`
+- `plans/plan.md`
+
+### What changed
+- Extracted shared backend HTTP concerns into `backend/src/lib/http.ts`:
+  - `HttpError`
+  - `buildCorsHeaders`
+  - `toErrorResponse`
+- Added explicit CORS origin-policy support in the shared helper:
+  - `fallback-first` (used by optimize-route)
+  - `strict` (used by address-autocomplete)
+- Updated both API routes to import and use the shared helpers instead of route-local duplicates.
+- Simplified route-level error responses by centralizing unknown/HttpError handling via `toErrorResponse`.
+
+### Why
+- Both API handlers had duplicated HTTP/CORS/error boilerplate that could diverge over time.
+- A shared helper keeps route files focused on endpoint logic and makes CORS/error behavior consistent and easier to maintain.
+- Preserving explicit per-route origin policy keeps existing intent clear while removing duplication.
+
+### Verification
+- Backend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Duplication check:
+  - `backend/src/app/api/*/route.ts` no longer define local `HttpError`, `resolveAllowedOrigin`, or `buildCorsHeaders` ✅
+
+---
+
+## 34) Split Optimize Route Backend and RoutePlanner Frontend Modules
+
+### Files added
+- `backend/src/app/api/optimize-route/types.ts`
+- `backend/src/app/api/optimize-route/validation.ts`
+- `backend/src/app/api/optimize-route/geocoding.ts`
+- `backend/src/app/api/optimize-route/routing.ts`
+- `backend/src/app/api/optimize-route/optimizeRouteService.ts`
+- `frontend/src/components/routePlanner/routePlannerUtils.ts`
+- `frontend/src/components/routePlanner/routePlannerService.ts`
+- `frontend/src/components/routePlanner/useTheme.ts`
+- `frontend/src/components/routePlanner/useDestinationAddresses.ts`
+- `frontend/src/components/routePlanner/useRouteOptimization.ts`
+
+### Files updated
+- `backend/src/app/api/optimize-route/route.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `plan.md`
+- `plans/plan.md`
+
+### What changed
+- Refactored optimize-route backend into smaller modules:
+  - request validation logic moved to `validation.ts`
+  - geocoding IO logic moved to `geocoding.ts`
+  - route ordering + Google Routes leg logic moved to `routing.ts`
+  - orchestration moved to `optimizeRouteService.ts`
+  - shared route types moved to `types.ts`
+- Slimmed `backend/src/app/api/optimize-route/route.ts` into a thin HTTP handler that only handles CORS, request JSON parsing, env checks, and response mapping.
+- Refactored `RoutePlanner.tsx` by extracting:
+  - theme state/effects to `useTheme.ts`
+  - destination list state/operations to `useDestinationAddresses.ts`
+  - optimize-route request lifecycle (loading/result/error/success state) to `useRouteOptimization.ts`
+  - API request contract/response guards to `routePlannerService.ts`
+  - display/URL pure helpers to `routePlannerUtils.ts`
+- Kept existing API payload shape and visible UI behavior intact.
+
+### Why
+- The previous backend route and frontend component combined many responsibilities in single files.
+- Splitting into pure modules/hooks/services improves readability and long-term maintainability while preserving current functionality.
+
+### Verification
+- Backend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 35) Backend Tests for Validation, Error Mapping, and Response Shaping
+
+### Files added
+- `backend/src/app/api/optimize-route/validation.test.ts`
+- `backend/src/app/api/optimize-route/route.test.ts`
+- `backend/src/app/api/optimize-route/optimizeRouteService.test.ts`
+
+### Files updated
+- `backend/package.json`
+- `backend/package-lock.json`
+- `plan.md`
+- `plans/plan.md`
+
+### What changed
+- Added backend test runner support with Vitest (`npm run test`).
+- Added request validation tests for `parseAndValidateBody` covering normalization and error cases.
+- Added route handler tests for `/api/optimize-route` covering:
+  - missing API key mapping to 500
+  - invalid JSON mapping to 400
+  - `HttpError` mapping to exact status/message
+  - unknown errors mapping to generic 500
+  - success response payload passthrough/shape
+- Added optimize service tests covering:
+  - route response shaping from service orchestration
+  - destination filtering and geocode input deduplication
+  - incomplete geocode lookup mapping to `HttpError(500)`
+
+### Why
+- Tests were requested before additional large refactors.
+- This coverage hardens core request handling and output shaping behavior so future structural changes are safer.
+
+### Verification
+- Backend:
+  - `npm run test` ✅ (11 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend regression:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
 ## 1) Project Scaffolding
 
 ### Created app structure

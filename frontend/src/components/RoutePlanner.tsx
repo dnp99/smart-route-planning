@@ -1,245 +1,53 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import AddressAutocompleteInput from "./AddressAutocompleteInput";
-import { resolveApiBaseUrl } from "./apiBaseUrl";
 import RouteMap from "./RouteMap";
 import { responsiveStyles } from "./responsiveStyles";
 import ThemeToggle from "./ThemeToggle";
-import type { OptimizeRouteResponse, Theme } from "./types";
-
-type OptimizeRouteErrorResponse = {
-  error?: string;
-};
-
-const formatDuration = (durationSeconds: number) => {
-  const totalMinutes = Math.round(durationSeconds / 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-
-  if (hours === 0) {
-    return `${minutes} min`;
-  }
-
-  if (minutes === 0) {
-    return `${hours} hr`;
-  }
-
-  return `${hours} hr ${minutes} min`;
-};
-
-const buildGoogleMapsTripUrl = (result: OptimizeRouteResponse) => {
-  const baseUrl = new URL("https://www.google.com/maps/dir/");
-  baseUrl.searchParams.set("api", "1");
-  baseUrl.searchParams.set("travelmode", "driving");
-  baseUrl.searchParams.set("origin", result.start.address);
-  baseUrl.searchParams.set("destination", result.end.address);
-
-  const waypointAddresses = result.orderedStops
-    .filter((stop) => !stop.isEndingPoint)
-    .map((stop) => stop.address);
-
-  if (waypointAddresses.length > 0) {
-    baseUrl.searchParams.set("waypoints", waypointAddresses.join("|"));
-  }
-
-  return baseUrl.toString();
-};
-
-const isOptimizeRouteResponse = (
-  payload: unknown,
-): payload is OptimizeRouteResponse => {
-  if (typeof payload !== "object" || payload === null) {
-    return false;
-  }
-
-  const maybePayload = payload as Partial<OptimizeRouteResponse>;
-  return (
-    typeof maybePayload.totalDistanceKm === "number" &&
-    typeof maybePayload.totalDistanceMeters === "number" &&
-    typeof maybePayload.totalDurationSeconds === "number" &&
-    typeof maybePayload.start?.address === "string" &&
-    typeof maybePayload.end?.address === "string" &&
-    Array.isArray(maybePayload.orderedStops) &&
-    Array.isArray(maybePayload.routeLegs)
-  );
-};
-
-const extractOptimizeRouteErrorMessage = (payload: unknown) => {
-  if (typeof payload !== "object" || payload === null) {
-    return null;
-  }
-
-  const maybePayload = payload as OptimizeRouteErrorResponse;
-  return typeof maybePayload.error === "string" ? maybePayload.error : null;
-};
-
-const resolveInitialTheme = (): Theme => {
-  const savedTheme = localStorage.getItem("theme");
-
-  if (savedTheme === "light" || savedTheme === "dark") {
-    return savedTheme;
-  }
-
-  return "dark";
-};
+import { useDestinationAddresses } from "./routePlanner/useDestinationAddresses";
+import { useRouteOptimization } from "./routePlanner/useRouteOptimization";
+import { formatDuration, buildGoogleMapsTripUrl } from "./routePlanner/routePlannerUtils";
+import { useTheme } from "./routePlanner/useTheme";
 
 function RoutePlanner() {
-  const [theme, setTheme] = useState<Theme>(resolveInitialTheme);
+  const { theme, toggleTheme } = useTheme();
   const [startAddress, setStartAddress] = useState(
     "3361 Ingram Road, Mississauga, ON",
   );
   const [endAddress, setEndAddress] = useState("");
-  const [addressesText, setAddressesText] = useState("");
-  const [destinationDraft, setDestinationDraft] = useState("");
-  const [result, setResult] = useState<OptimizeRouteResponse | null>(null);
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [showOptimizeSuccess, setShowOptimizeSuccess] = useState(false);
-  const [hasAttemptedOptimize, setHasAttemptedOptimize] = useState(false);
   const [startTouched, setStartTouched] = useState(false);
   const [endTouched, setEndTouched] = useState(false);
 
-  useEffect(() => {
-    const root = document.documentElement;
+  const {
+    addressCount,
+    destinationAddresses,
+    destinationDraft,
+    setDestinationDraft,
+    addDestinationAddress,
+    removeDestinationAddress,
+  } = useDestinationAddresses();
 
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
-    }
+  const {
+    result,
+    error,
+    isLoading,
+    showOptimizeSuccess,
+    hasAttemptedOptimize,
+    optimizeRoute,
+  } = useRouteOptimization();
 
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+  const canOptimize =
+    startAddress.trim().length > 0 && endAddress.trim().length > 0;
 
-  useEffect(() => {
-    if (!showOptimizeSuccess) {
-      return;
-    }
+  const startFieldError =
+    (hasAttemptedOptimize || startTouched) && startAddress.trim().length === 0
+      ? "Starting point is required."
+      : undefined;
 
-    const timeoutId = window.setTimeout(() => {
-      setShowOptimizeSuccess(false);
-    }, 750);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [showOptimizeSuccess]);
-
-  const addressCount = useMemo(() => {
-    return addressesText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean).length;
-  }, [addressesText]);
-
-  const destinationAddresses = useMemo(() => {
-    return addressesText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
-  }, [addressesText]);
-
-  const addDestinationAddress = (address: string) => {
-    const trimmedAddress = address.trim();
-
-    if (!trimmedAddress) {
-      return;
-    }
-
-    setAddressesText((currentText) => {
-      const existingAddresses = currentText
-        .split("\n")
-        .map((line) => line.trim().toLowerCase())
-        .filter(Boolean);
-
-      if (existingAddresses.indexOf(trimmedAddress.toLowerCase()) !== -1) {
-        return currentText;
-      }
-
-      if (!currentText.trim()) {
-        return trimmedAddress;
-      }
-
-      return `${currentText.replace(/\s+$/, "")}\n${trimmedAddress}`;
-    });
-
-    setDestinationDraft("");
-  };
-
-  const removeDestinationAddress = (indexToRemove: number) => {
-    setAddressesText((currentText) =>
-      currentText
-        .split("\n")
-        .map((line) => line.trim())
-        .filter(Boolean)
-        .filter((_, index) => index !== indexToRemove)
-        .join("\n"),
-    );
-  };
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError("");
-    setResult(null);
-    setHasAttemptedOptimize(true);
-
-    if (!canOptimize) {
-      return;
-    }
-
-    setIsLoading(true);
-
-    const addresses = destinationAddresses;
-
-    const apiBaseUrl = resolveApiBaseUrl();
-
-    fetch(`${apiBaseUrl}/api/optimize-route`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        startAddress,
-        endAddress,
-        addresses,
-      }),
-    })
-      .then((response) =>
-        response.json().then((payload) => ({
-          response,
-          payload,
-        })),
-      )
-      .then(({ response, payload }) => {
-        if (!response.ok) {
-          throw new Error(
-            extractOptimizeRouteErrorMessage(payload) ??
-              "Unable to optimize route.",
-          );
-        }
-
-        if (!isOptimizeRouteResponse(payload)) {
-          throw new Error("Unexpected API response format.");
-        }
-
-        setResult(payload);
-        setShowOptimizeSuccess(true);
-      })
-      .catch((apiError) => {
-        setError(
-          apiError instanceof Error
-            ? apiError.message
-            : "Something went wrong.",
-        );
-      })
-      .then(() => {
-        setIsLoading(false);
-      });
-  };
-
-  const toggleTheme = () => {
-    setTheme((currentTheme) => (currentTheme === "dark" ? "light" : "dark"));
-  };
+  const endFieldError =
+    (hasAttemptedOptimize || endTouched) && endAddress.trim().length === 0
+      ? "Ending point is required."
+      : undefined;
 
   const googleMapsTripUrl = useMemo(() => {
     if (!result) {
@@ -248,21 +56,22 @@ function RoutePlanner() {
 
     return buildGoogleMapsTripUrl(result);
   }, [result]);
+
   const hasIntermediateStops = useMemo(
     () => Boolean(result?.orderedStops.some((stop) => !stop.isEndingPoint)),
     [result],
   );
 
-  const canOptimize =
-    startAddress.trim().length > 0 && endAddress.trim().length > 0;
-  const startFieldError =
-    (hasAttemptedOptimize || startTouched) && startAddress.trim().length === 0
-      ? "Starting point is required."
-      : undefined;
-  const endFieldError =
-    (hasAttemptedOptimize || endTouched) && endAddress.trim().length === 0
-      ? "Ending point is required."
-      : undefined;
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    void optimizeRoute({
+      startAddress,
+      endAddress,
+      destinationAddresses,
+      canOptimize,
+    });
+  };
 
   return (
     <main className={responsiveStyles.page}>

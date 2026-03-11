@@ -12,19 +12,27 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change record
 
 ### Change
-Updated `AGENT.md` with a mandatory branch workflow: always pull latest `main` first, then create a new working branch before making changes.
+Added backend test coverage around optimize-route request validation, route handler error mapping, and response shaping.
 
 ### Files added/updated/deleted
+- Added:
+  - `backend/src/app/api/optimize-route/validation.test.ts`
+  - `backend/src/app/api/optimize-route/route.test.ts`
+  - `backend/src/app/api/optimize-route/optimizeRouteService.test.ts`
 - Updated:
-  - `AGENT.md`
+  - `backend/package.json`
+  - `backend/package-lock.json`
   - `plan.md`
   - `plans/plan.md`
 
 ### Why
-`main` is protected and should remain clean and in sync; enforcing an explicit pull-then-branch workflow prevents accidental commits on `main` and reduces branch divergence.
+Tests were requested before additional large refactors so backend behavior can be validated and regressions can be caught early.
 
 ### Verification
-- Confirmed `AGENT.md` includes the new mandatory branch workflow and recovery steps.
-- Confirmed this change is recorded in both `plan.md` and `plans/plan.md`.
+- `backend`: `npm run test` ✅ (11 tests)
+- `backend`: `npm run lint`, `npm run build` ✅
+- `frontend`: `npm run lint`, `npm run build` ✅
 
-For full implementation details, see `plans/plan.md` section **32) Mandatory Pull-Main-Then-Branch Workflow**.
+For full implementation details, see `plans/plan.md` section **35) Backend Tests for Validation, Error Mapping, and Response Shaping**.
+
+For full implementation details, see `plans/plan.md` section **33) Shared Backend HTTP/CORS/Error Helpers**.
