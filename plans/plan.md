@@ -473,6 +473,32 @@ Current active planning document:
 - Repo-wide checks:
   - search for `analytics|ANALYTICS_API_KEY|/api/analytics|AdminDebugPanel` returned no matches ✅
 
+---
+
+## 32) Mandatory Pull-Main-Then-Branch Workflow
+
+### Files updated
+- `AGENT.md`
+- `plan.md`
+- `plans/plan.md`
+
+### What changed
+- Added a mandatory branch workflow rule to `AGENT.md` requiring:
+  - `git switch main`
+  - `git pull --ff-only origin main`
+  - `git switch -c <descriptive-branch-name>`
+- Added a recovery procedure in `AGENT.md` for accidental commits on `main`.
+- Updated both plan files to record this governance/process change.
+
+### Why
+- `main` is protected and should remain commit-clean.
+- A strict pull-main-then-branch workflow prevents accidental direct commits on `main` and keeps feature branches based on the latest upstream state.
+
+### Verification
+- Documentation/process change only.
+- Verified `AGENT.md` contains the new mandatory workflow and recovery steps.
+- Verified the change is logged in both `plan.md` and `plans/plan.md`.
+
 ## 1) Project Scaffolding
 
 ### Created app structure

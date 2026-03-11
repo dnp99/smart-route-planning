@@ -12,27 +12,19 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change record
 
 ### Change
-Removed the analytics feature end-to-end from backend, frontend, and docs.
+Updated `AGENT.md` with a mandatory branch workflow: always pull latest `main` first, then create a new working branch before making changes.
 
 ### Files added/updated/deleted
 - Updated:
-  - `backend/src/app/api/optimize-route/route.ts`
-  - `backend/src/app/api/address-autocomplete/route.ts`
-  - `frontend/src/components/RoutePlanner.tsx`
-  - `README.md`
-  - `backend/README.md`
+  - `AGENT.md`
+  - `plan.md`
   - `plans/plan.md`
-- Deleted:
-  - `backend/src/app/api/analytics/route.ts`
-  - `backend/src/lib/analytics.ts`
-  - `frontend/src/components/AdminDebugPanel.tsx`
 
 ### Why
-Analytics was intentionally removed to simplify the app surface and eliminate unused endpoint/UI maintenance.
+`main` is protected and should remain clean and in sync; enforcing an explicit pull-then-branch workflow prevents accidental commits on `main` and reduces branch divergence.
 
 ### Verification
-- `backend`: `npm run lint`, `npm run build` ✅
-- `frontend`: `npm run lint`, `npm run build` ✅
-- repo-wide analytics-reference search returned no matches ✅
+- Confirmed `AGENT.md` includes the new mandatory branch workflow and recovery steps.
+- Confirmed this change is recorded in both `plan.md` and `plans/plan.md`.
 
-For full implementation details, see `plans/plan.md` section **31) Remove Analytics Feature**.
+For full implementation details, see `plans/plan.md` section **32) Mandatory Pull-Main-Then-Branch Workflow**.
