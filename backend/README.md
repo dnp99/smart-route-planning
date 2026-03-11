@@ -29,6 +29,17 @@ The backend runs on `http://localhost:3000`.
   - Example: `http://localhost:5173`
 - `GOOGLE_MAPS_API_KEY`
   - Required for Google driving route distance, duration, route geometry, and address suggestions.
+- `OPTIMIZE_ROUTE_API_KEY`
+  - Optional.
+  - If set, `POST /api/optimize-route` requires this value in the `x-optimize-route-key` header.
+- `OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS`
+  - Optional.
+  - Max optimize-route requests per client within the rate-limit window.
+  - Default: `30`.
+- `OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS`
+  - Optional.
+  - Optimize-route rate-limit window in milliseconds.
+  - Default: `60000`.
 - `NOMINATIM_CONTACT_EMAIL`
   - Recommended for production or shared environments to identify requests to the upstream geocoding provider.
 
@@ -37,6 +48,9 @@ Example local file:
 ```bash
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ALLOWED_ORIGINS=http://localhost:5173
+OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
+OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS=30
+OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS=60000
 NOMINATIM_CONTACT_EMAIL=you@example.com
 ```
 
@@ -45,6 +59,8 @@ NOMINATIM_CONTACT_EMAIL=you@example.com
 - `POST /api/optimize-route`
   - Accepts `startAddress`, `endAddress`, and `addresses[]`
   - Returns geocoded stops in greedy nearest-neighbor order plus Google driving route legs, total distance, and total duration
+  - Enforces per-client in-memory rate limiting
+  - If `OPTIMIZE_ROUTE_API_KEY` is configured, requires `x-optimize-route-key` request header
 - `GET /api/address-autocomplete?query=...`
   - Returns up to 5 suggestions
   - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting

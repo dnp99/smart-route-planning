@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpError } from "../../../lib/http";
 import type { OptimizeRouteResult } from "./types";
+import { __resetOptimizeRouteRateLimitForTests } from "./requestGuards";
 
 vi.mock("./optimizeRouteService", () => ({
   optimizeRoute: vi.fn(),
@@ -17,27 +18,59 @@ const validRequestBody = {
   addresses: ["Stop A", "Stop B"],
 };
 
-const buildPostRequest = (body: string) =>
-  new Request("http://localhost:3000/api/optimize-route", {
+let requestCounter = 0;
+
+const buildPostRequest = (body: string, extraHeaders?: Record<string, string>) => {
+  requestCounter += 1;
+
+  return new Request("http://localhost:3000/api/optimize-route", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-forwarded-for": `10.0.1.${requestCounter}`,
+      ...extraHeaders,
     },
     body,
   });
+};
 
 describe("optimize-route route handler", () => {
   const originalApiKey = process.env.GOOGLE_MAPS_API_KEY;
+  const originalOptimizeRouteApiKey = process.env.OPTIMIZE_ROUTE_API_KEY;
+  const originalRateLimitWindow = process.env.OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS;
+  const originalRateLimitMax = process.env.OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS;
 
   beforeEach(() => {
     mockedOptimizeRoute.mockReset();
+    __resetOptimizeRouteRateLimitForTests();
+    requestCounter = 0;
   });
 
   afterEach(() => {
+    __resetOptimizeRouteRateLimitForTests();
+
     if (originalApiKey === undefined) {
       delete process.env.GOOGLE_MAPS_API_KEY;
     } else {
       process.env.GOOGLE_MAPS_API_KEY = originalApiKey;
+    }
+
+    if (originalOptimizeRouteApiKey === undefined) {
+      delete process.env.OPTIMIZE_ROUTE_API_KEY;
+    } else {
+      process.env.OPTIMIZE_ROUTE_API_KEY = originalOptimizeRouteApiKey;
+    }
+
+    if (originalRateLimitWindow === undefined) {
+      delete process.env.OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS;
+    } else {
+      process.env.OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS = originalRateLimitWindow;
+    }
+
+    if (originalRateLimitMax === undefined) {
+      delete process.env.OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS;
+    } else {
+      process.env.OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS = originalRateLimitMax;
     }
   });
 
@@ -58,6 +91,76 @@ describe("optimize-route route handler", () => {
 
     expect(response.status).toBe(204);
     expect(response.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toBe(
+      "Content-Type, x-optimize-route-key",
+    );
+  });
+
+  it("returns 401 when OPTIMIZE_ROUTE_API_KEY is configured but request header is missing", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    process.env.OPTIMIZE_ROUTE_API_KEY = "secret-key";
+
+    const response = await POST(buildPostRequest(JSON.stringify(validRequestBody)));
+    const payload = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(payload).toEqual({ error: "Missing or invalid optimize-route API key." });
+  });
+
+  it("accepts matching x-optimize-route-key header when OPTIMIZE_ROUTE_API_KEY is configured", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    process.env.OPTIMIZE_ROUTE_API_KEY = "secret-key";
+
+    mockedOptimizeRoute.mockResolvedValue({
+      start: { address: "Start Address", coords: { lat: 0, lon: 0 } },
+      end: { address: "End Address", coords: { lat: 1, lon: 1 } },
+      orderedStops: [],
+      routeLegs: [],
+      totalDistanceMeters: 0,
+      totalDistanceKm: 0,
+      totalDurationSeconds: 0,
+    });
+
+    const response = await POST(
+      buildPostRequest(JSON.stringify(validRequestBody), {
+        "x-optimize-route-key": "secret-key",
+      }),
+    );
+
+    expect(response.status).toBe(200);
+  });
+
+  it("returns 429 when optimize-route rate limit is exceeded", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    process.env.OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS = "1";
+    process.env.OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS = "60000";
+
+    mockedOptimizeRoute.mockResolvedValue({
+      start: { address: "Start Address", coords: { lat: 0, lon: 0 } },
+      end: { address: "End Address", coords: { lat: 1, lon: 1 } },
+      orderedStops: [],
+      routeLegs: [],
+      totalDistanceMeters: 0,
+      totalDistanceKm: 0,
+      totalDurationSeconds: 0,
+    });
+
+    const firstResponse = await POST(
+      buildPostRequest(JSON.stringify(validRequestBody), {
+        "x-forwarded-for": "10.99.0.1",
+      }),
+    );
+    const secondResponse = await POST(
+      buildPostRequest(JSON.stringify(validRequestBody), {
+        "x-forwarded-for": "10.99.0.1",
+      }),
+    );
+
+    expect(firstResponse.status).toBe(200);
+    expect(secondResponse.status).toBe(429);
+    await expect(secondResponse.json()).resolves.toEqual({
+      error: "Too many optimize route requests. Please try again shortly.",
+    });
   });
 
   it("maps invalid JSON request bodies to 400", async () => {

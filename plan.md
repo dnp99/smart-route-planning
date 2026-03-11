@@ -12,30 +12,18 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change record
 
 ### Change
-Increased frontend test coverage above 80% and added enforced frontend coverage thresholds.
+Removed `@dvnp19` ownership entries from CODEOWNERS.
 
 ### Files added/updated/deleted
-- Added:
-  - `frontend/vitest.config.ts`
-  - `frontend/src/components/apiBaseUrl.test.ts`
-  - `frontend/src/components/routePlanner/useTheme.test.ts`
-  - `frontend/src/components/routePlanner/useDestinationAddresses.test.ts`
-  - `frontend/src/components/routePlanner/useRouteOptimization.test.ts`
 - Updated:
-  - `frontend/package.json`
-  - `frontend/package-lock.json`
+  - `.github/CODEOWNERS`
   - `plan.md`
   - `plans/plan.md`
 
 ### Why
-You requested higher frontend coverage. Enforcing coverage thresholds and adding focused unit tests for route-planner modules ensures frontend behavior is protected before further UI refactors.
+You requested removing `dvnp19` from CODEOWNERS so ownership and review assignment only uses the remaining owner entries.
 
 ### Verification
-- `frontend`: `npm run test:coverage` ✅
-  - Coverage: **97.61% statements, 93.22% branches, 100% functions, 97.60% lines**
-  - Threshold target (>=80%) passed
-- `frontend`: `npm run lint`, `npm run build` ✅
+- Verified `.github/CODEOWNERS` has no `dvnp19` references ✅
 
-For full implementation details, see `plans/plan.md` section **38) Frontend Coverage Increased to >=80%**.
-
-For full implementation details, see `plans/plan.md` section **33) Shared Backend HTTP/CORS/Error Helpers**.
+For full implementation details, see `plans/plan.md` section **40) Remove dvnp19 from CODEOWNERS**.

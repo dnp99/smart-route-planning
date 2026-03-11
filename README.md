@@ -47,6 +47,7 @@ Required local backend envs live in `backend/.env.local`, for example:
 ```bash
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ALLOWED_ORIGINS=http://localhost:5173
+OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
 ```
 
 ### 2) Frontend
@@ -80,6 +81,12 @@ Frontend API base URL defaults to `http://localhost:3000`. For deployed environm
     "500 Terry A Francois Blvd, San Francisco"
   ]
 }
+```
+
+If `OPTIMIZE_ROUTE_API_KEY` is configured on the backend, include this header:
+
+```http
+x-optimize-route-key: your_optional_optimize_route_key
 ```
 
 ## Notes
