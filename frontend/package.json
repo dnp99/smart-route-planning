@@ -9,6 +9,7 @@
     "check:es-compat": "node ../scripts/check-es-compat.mjs src",
     "lint": "eslint . && npm run check:es-compat",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -19,16 +20,19 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@testing-library/react": "^16.3.2",
     "@types/geojson": "^7946.0.16",
     "@types/leaflet": "^1.9.21",
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.1",
+    "@vitest/coverage-v8": "^4.0.18",
     "autoprefixer": "^10.4.27",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "jsdom": "^28.1.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.17",
     "vite": "^7.3.1",

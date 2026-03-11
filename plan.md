@@ -12,33 +12,30 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change record
 
 ### Change
-Raised backend test coverage to 100% (statements/branches/functions/lines) with strict coverage enforcement.
+Increased frontend test coverage above 80% and added enforced frontend coverage thresholds.
 
 ### Files added/updated/deleted
 - Added:
-  - `backend/vitest.config.ts`
-  - `backend/src/lib/http.test.ts`
-  - `backend/src/app/api/address-autocomplete/route.test.ts`
-  - `backend/src/app/api/optimize-route/geocoding.test.ts`
-  - `backend/src/app/api/optimize-route/routing.test.ts`
+  - `frontend/vitest.config.ts`
+  - `frontend/src/components/apiBaseUrl.test.ts`
+  - `frontend/src/components/routePlanner/useTheme.test.ts`
+  - `frontend/src/components/routePlanner/useDestinationAddresses.test.ts`
+  - `frontend/src/components/routePlanner/useRouteOptimization.test.ts`
 - Updated:
-  - `backend/package.json`
-  - `backend/package-lock.json`
-  - `backend/src/app/api/address-autocomplete/route.ts`
-  - `backend/src/app/api/optimize-route/validation.test.ts`
-  - `backend/src/app/api/optimize-route/route.test.ts`
-  - `backend/src/app/api/optimize-route/geocoding.test.ts`
-  - `backend/src/app/api/optimize-route/routing.test.ts`
+  - `frontend/package.json`
+  - `frontend/package-lock.json`
   - `plan.md`
   - `plans/plan.md`
 
 ### Why
-You requested backend coverage at 100%; strict thresholds and targeted branch tests were needed so all critical backend API and HTTP helper paths are fully exercised.
+You requested higher frontend coverage. Enforcing coverage thresholds and adding focused unit tests for route-planner modules ensures frontend behavior is protected before further UI refactors.
 
 ### Verification
-- `backend`: `npm run test:coverage` ✅ (100% statements/branches/functions/lines)
-- `backend`: `npm run lint`, `npm run build` ✅
+- `frontend`: `npm run test:coverage` ✅
+  - Coverage: **97.61% statements, 93.22% branches, 100% functions, 97.60% lines**
+  - Threshold target (>=80%) passed
+- `frontend`: `npm run lint`, `npm run build` ✅
 
-For full implementation details, see `plans/plan.md` section **37) Backend Coverage Raised to 100%**.
+For full implementation details, see `plans/plan.md` section **38) Frontend Coverage Increased to >=80%**.
 
 For full implementation details, see `plans/plan.md` section **33) Shared Backend HTTP/CORS/Error Helpers**.
