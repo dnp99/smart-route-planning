@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import type { OptimizeRouteResponse } from "../types";
-import { buildGoogleMapsTripUrl, formatDuration } from "./routePlannerUtils";
+import type { OptimizeRouteResponse } from "../../components/types";
+import { buildGoogleMapsTripUrl, formatDuration } from "../../components/routePlanner/routePlannerUtils";
 
 describe("routePlannerUtils", () => {
   it("formats durations into minutes/hours text", () => {

@@ -1,49 +1,15 @@
 import { resolveApiBaseUrl } from "../apiBaseUrl";
-import type { OptimizeRouteResponse } from "../types";
-
-type OptimizeRouteErrorResponse = {
-  error?: string;
-};
-
-const isOptimizeRouteResponse = (
-  payload: unknown,
-): payload is OptimizeRouteResponse => {
-  if (typeof payload !== "object" || payload === null) {
-    return false;
-  }
-
-  const maybePayload = payload as Partial<OptimizeRouteResponse>;
-  return (
-    typeof maybePayload.totalDistanceKm === "number" &&
-    typeof maybePayload.totalDistanceMeters === "number" &&
-    typeof maybePayload.totalDurationSeconds === "number" &&
-    typeof maybePayload.start?.address === "string" &&
-    typeof maybePayload.end?.address === "string" &&
-    Array.isArray(maybePayload.orderedStops) &&
-    Array.isArray(maybePayload.routeLegs)
-  );
-};
-
-const extractOptimizeRouteErrorMessage = (payload: unknown) => {
-  if (typeof payload !== "object" || payload === null) {
-    return null;
-  }
-
-  const maybePayload = payload as OptimizeRouteErrorResponse;
-  return typeof maybePayload.error === "string" ? maybePayload.error : null;
-};
-
-type OptimizeRouteParams = {
-  startAddress: string;
-  endAddress: string;
-  addresses: string[];
-};
+import {
+  extractApiErrorMessage,
+  parseOptimizeRouteResponse,
+  type OptimizeRouteRequest,
+} from "../../../../shared/contracts";
 
 export const requestOptimizedRoute = async ({
   startAddress,
   endAddress,
   addresses,
-}: OptimizeRouteParams) => {
+}: OptimizeRouteRequest) => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/optimize-route`, {
     method: "POST",
@@ -61,14 +27,15 @@ export const requestOptimizedRoute = async ({
 
   if (!response.ok) {
     throw new Error(
-      extractOptimizeRouteErrorMessage(payload) ??
+      extractApiErrorMessage(payload) ??
         "Unable to optimize route.",
     );
   }
 
-  if (!isOptimizeRouteResponse(payload)) {
+  const parsedResponse = parseOptimizeRouteResponse(payload);
+  if (!parsedResponse) {
     throw new Error("Unexpected API response format.");
   }
 
-  return payload;
+  return parsedResponse;
 };

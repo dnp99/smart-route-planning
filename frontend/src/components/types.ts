@@ -1,40 +1,17 @@
-export type Theme = 'light' | 'dark';
+import type {
+  AddressSuggestion as SharedAddressSuggestion,
+  GeocodedStop as SharedGeocodedStop,
+  LatLng as SharedLatLng,
+  OptimizeRouteResponse as SharedOptimizeRouteResponse,
+  OrderedStop as SharedOrderedStop,
+  RouteLeg as SharedRouteLeg,
+} from "../../../shared/contracts";
 
-export type LatLng = {
-  lat: number;
-  lon: number;
-};
+export type Theme = "light" | "dark";
 
-export type GeocodedStop = {
-  address: string;
-  coords: LatLng;
-};
-
-export type OrderedStop = GeocodedStop & {
-  distanceFromPreviousKm: number;
-  durationFromPreviousSeconds: number;
-  isEndingPoint?: boolean;
-};
-
-export type RouteLeg = {
-  fromAddress: string;
-  toAddress: string;
-  distanceMeters: number;
-  durationSeconds: number;
-  encodedPolyline: string;
-};
-
-export type AddressSuggestion = {
-  displayName: string;
-  placeId: string;
-};
-
-export type OptimizeRouteResponse = {
-  start: GeocodedStop;
-  end: GeocodedStop;
-  orderedStops: OrderedStop[];
-  routeLegs: RouteLeg[];
-  totalDistanceMeters: number;
-  totalDistanceKm: number;
-  totalDurationSeconds: number;
-};
+export type LatLng = SharedLatLng;
+export type GeocodedStop = SharedGeocodedStop;
+export type OrderedStop = SharedOrderedStop;
+export type RouteLeg = SharedRouteLeg;
+export type AddressSuggestion = SharedAddressSuggestion;
+export type OptimizeRouteResponse = SharedOptimizeRouteResponse;

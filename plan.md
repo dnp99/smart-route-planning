@@ -12,30 +12,42 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change record
 
 ### Change
-Increased frontend test coverage above 80% and added enforced frontend coverage thresholds.
+Implemented address-autocomplete modular refactor and introduced shared FE/BE API contracts with runtime validation helpers.
 
 ### Files added/updated/deleted
 - Added:
-  - `frontend/vitest.config.ts`
-  - `frontend/src/components/apiBaseUrl.test.ts`
-  - `frontend/src/components/routePlanner/useTheme.test.ts`
-  - `frontend/src/components/routePlanner/useDestinationAddresses.test.ts`
-  - `frontend/src/components/routePlanner/useRouteOptimization.test.ts`
+  - `shared/contracts/common.ts`
+  - `shared/contracts/optimizeRoute.ts`
+  - `shared/contracts/addressAutocomplete.ts`
+  - `shared/contracts/index.ts`
+  - `backend/src/app/api/address-autocomplete/constants.ts`
+  - `backend/src/app/api/address-autocomplete/validation.ts`
+  - `backend/src/app/api/address-autocomplete/cacheAndRateLimit.ts`
+  - `backend/src/app/api/address-autocomplete/googlePlacesClient.ts`
+  - `backend/src/app/api/address-autocomplete/addressAutocompleteService.ts`
 - Updated:
-  - `frontend/package.json`
-  - `frontend/package-lock.json`
+  - `backend/src/app/api/address-autocomplete/route.ts`
+  - `backend/src/app/api/optimize-route/route.ts`
+  - `backend/src/app/api/optimize-route/types.ts`
+  - `backend/src/app/api/optimize-route/route.test.ts`
+  - `backend/next.config.ts`
+  - `backend/tsconfig.json`
+  - `frontend/src/components/AddressAutocompleteInput.tsx`
+  - `frontend/src/components/routePlanner/routePlannerService.ts`
+  - `frontend/src/components/types.ts`
+  - `frontend/vite.config.js`
   - `plan.md`
   - `plans/plan.md`
 
 ### Why
-You requested higher frontend coverage. Enforcing coverage thresholds and adding focused unit tests for route-planner modules ensures frontend behavior is protected before further UI refactors.
+You asked for (1) `address-autocomplete` split into smaller modules and (2) shared contract validation/schema. This change keeps route handlers thin, centralizes API contract logic, and ensures frontend parsing and backend shaping use the same shared definitions.
 
 ### Verification
-- `frontend`: `npm run test:coverage` ✅
-  - Coverage: **97.61% statements, 93.22% branches, 100% functions, 97.60% lines**
-  - Threshold target (>=80%) passed
+- `backend`: `npm run test:coverage` ✅ (100% statements/branches/functions/lines)
+- `backend`: `npm run lint`, `npm run build` ✅
+- `frontend`: `npm run test:coverage` ✅ (97.61% statements / 93.22% branches / 100% functions / 97.60% lines)
 - `frontend`: `npm run lint`, `npm run build` ✅
 
-For full implementation details, see `plans/plan.md` section **38) Frontend Coverage Increased to >=80%**.
+For full implementation details, see `plans/plan.md` section **40) Address-Autocomplete Modular Refactor + Shared API Contracts**.
 
 For full implementation details, see `plans/plan.md` section **33) Shared Backend HTTP/CORS/Error Helpers**.
