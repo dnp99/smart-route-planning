@@ -7,7 +7,7 @@ vi.mock("./optimizeRouteService", () => ({
 }));
 
 import { optimizeRoute } from "./optimizeRouteService";
-import { POST } from "./route";
+import { OPTIONS, POST } from "./route";
 
 const mockedOptimizeRoute = vi.mocked(optimizeRoute);
 
@@ -51,6 +51,13 @@ describe("optimize-route route handler", () => {
     expect(payload).toEqual({
       error: "Server is missing GOOGLE_MAPS_API_KEY configuration.",
     });
+  });
+
+  it("returns OPTIONS preflight response with CORS headers", async () => {
+    const response = await OPTIONS(new Request("http://localhost:3000/api/optimize-route"));
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
   });
 
   it("maps invalid JSON request bodies to 400", async () => {

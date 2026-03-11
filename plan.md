@@ -12,27 +12,33 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change record
 
 ### Change
-Added backend test coverage around optimize-route request validation, route handler error mapping, and response shaping.
+Raised backend test coverage to 100% (statements/branches/functions/lines) with strict coverage enforcement.
 
 ### Files added/updated/deleted
 - Added:
-  - `backend/src/app/api/optimize-route/validation.test.ts`
-  - `backend/src/app/api/optimize-route/route.test.ts`
-  - `backend/src/app/api/optimize-route/optimizeRouteService.test.ts`
+  - `backend/vitest.config.ts`
+  - `backend/src/lib/http.test.ts`
+  - `backend/src/app/api/address-autocomplete/route.test.ts`
+  - `backend/src/app/api/optimize-route/geocoding.test.ts`
+  - `backend/src/app/api/optimize-route/routing.test.ts`
 - Updated:
   - `backend/package.json`
   - `backend/package-lock.json`
+  - `backend/src/app/api/address-autocomplete/route.ts`
+  - `backend/src/app/api/optimize-route/validation.test.ts`
+  - `backend/src/app/api/optimize-route/route.test.ts`
+  - `backend/src/app/api/optimize-route/geocoding.test.ts`
+  - `backend/src/app/api/optimize-route/routing.test.ts`
   - `plan.md`
   - `plans/plan.md`
 
 ### Why
-Tests were requested before additional large refactors so backend behavior can be validated and regressions can be caught early.
+You requested backend coverage at 100%; strict thresholds and targeted branch tests were needed so all critical backend API and HTTP helper paths are fully exercised.
 
 ### Verification
-- `backend`: `npm run test` ✅ (11 tests)
+- `backend`: `npm run test:coverage` ✅ (100% statements/branches/functions/lines)
 - `backend`: `npm run lint`, `npm run build` ✅
-- `frontend`: `npm run lint`, `npm run build` ✅
 
-For full implementation details, see `plans/plan.md` section **35) Backend Tests for Validation, Error Mapping, and Response Shaping**.
+For full implementation details, see `plans/plan.md` section **37) Backend Coverage Raised to 100%**.
 
 For full implementation details, see `plans/plan.md` section **33) Shared Backend HTTP/CORS/Error Helpers**.

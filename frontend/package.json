@@ -8,6 +8,7 @@
     "build": "vite build",
     "check:es-compat": "node ../scripts/check-es-compat.mjs src",
     "lint": "eslint . && npm run check:es-compat",
+    "test": "vitest run",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -30,6 +31,7 @@
     "globals": "^16.5.0",
     "postcss": "^8.5.8",
     "tailwindcss": "^3.4.17",
-    "vite": "^7.3.1"
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
   }
 }

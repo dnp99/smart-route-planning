@@ -58,7 +58,7 @@ const setCachedSuggestions = (query: string, suggestions: AutocompleteSuggestion
 const resolveClientKey = (request: Request) => {
   const forwardedFor = request.headers.get("x-forwarded-for");
   if (forwardedFor) {
-    const firstIp = forwardedFor.split(",")[0]?.trim();
+    const firstIp = forwardedFor.split(",")[0].trim();
     if (firstIp) {
       return firstIp;
     }
