@@ -7,6 +7,7 @@ This folder contains the Next.js backend for Navigate Easy.
 - Expose `POST /api/optimize-route` for route optimization.
 - Expose `GET /api/address-autocomplete` for address suggestions.
 - Geocode addresses through OpenStreetMap Nominatim.
+- Fetch address suggestions through Google Places API.
 - Enforce request validation, timeouts, CORS, and lightweight rate limiting.
 
 ## Local development
@@ -27,7 +28,7 @@ The backend runs on `http://localhost:3000`.
   - Optional comma-separated CORS allowlist.
   - Example: `http://localhost:5173`
 - `GOOGLE_MAPS_API_KEY`
-  - Required for driving route distance, duration, and route geometry.
+  - Required for Google driving route distance, duration, route geometry, and address suggestions.
 - `NOMINATIM_CONTACT_EMAIL`
   - Recommended for production or shared environments to identify requests to the upstream geocoding provider.
 
@@ -46,7 +47,7 @@ NOMINATIM_CONTACT_EMAIL=you@example.com
   - Returns geocoded stops in greedy nearest-neighbor order plus Google driving route legs, total distance, and total duration
 - `GET /api/address-autocomplete?query=...`
   - Returns up to 5 suggestions
-  - Uses short in-memory caching and per-client rate limiting
+  - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
 
 ## Key files
 

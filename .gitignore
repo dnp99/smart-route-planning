@@ -14,7 +14,12 @@ build/
 # Environment and local config
 .env
 .env.*
+.env.local
+.env.local.*
+backend/.env.local
+frontend/.env.local
 *.local
+!backend/.env.local.example
 
 # Logs
 logs/

@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 
 type AutocompleteSuggestion = {
   displayName: string;
-  lat: number;
-  lon: number;
+  placeId: string;
 };
 
 const MAX_QUERY_LENGTH = 200;
@@ -120,23 +119,10 @@ const enforceRateLimit = (clientKey: string) => {
   lastRequestAtByClient.set(clientKey, now);
 };
 
-const fetchAutocompleteSuggestions = async (query: string): Promise<AutocompleteSuggestion[]> => {
-  const searchParams = new URLSearchParams({
-    q: query,
-    format: "jsonv2",
-    limit: String(MAX_SUGGESTIONS),
-    addressdetails: "0",
-    dedupe: "1",
-    countrycodes: "ca",
-  });
-
-  const configuredContactEmail = process.env.NOMINATIM_CONTACT_EMAIL?.trim();
-  if (configuredContactEmail) {
-    searchParams.set("email", configuredContactEmail);
-  }
-
-  const userAgentContact = configuredContactEmail || "support@navigate-easy.local";
-
+const fetchAutocompleteSuggestions = async (
+  query: string,
+  apiKey: string,
+): Promise<AutocompleteSuggestion[]> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();
@@ -145,11 +131,19 @@ const fetchAutocompleteSuggestions = async (query: string): Promise<Autocomplete
   let response: Response;
 
   try {
-    response = await fetch(`https://nominatim.openstreetmap.org/search?${searchParams}`, {
+    response = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
+      method: "POST",
       headers: {
-        "User-Agent": `navigate-easy/1.0 (contact: ${userAgentContact})`,
-        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask":
+          "suggestions.placePrediction.placeId,suggestions.placePrediction.text.text",
       },
+      body: JSON.stringify({
+        input: query,
+        includedRegionCodes: ["ca"],
+        regionCode: "ca",
+      }),
       cache: "no-store",
       signal: controller.signal,
     });
@@ -160,6 +154,10 @@ const fetchAutocompleteSuggestions = async (query: string): Promise<Autocomplete
   }
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new HttpError(500, "Google Places API key is invalid or not authorized.");
+    }
+
     if (response.status === 429) {
       throw new HttpError(503, "Address suggestion service is rate-limited. Please try again shortly.");
     }
@@ -167,34 +165,35 @@ const fetchAutocompleteSuggestions = async (query: string): Promise<Autocomplete
     throw new HttpError(503, "Address suggestion service returned an unexpected error.");
   }
 
-  const rawResults = (await response.json()) as Array<{
-    display_name?: unknown;
-    lat?: unknown;
-    lon?: unknown;
-  }>;
+  const payload = (await response.json()) as {
+    suggestions?: Array<{
+      placePrediction?: {
+        placeId?: unknown;
+        text?: {
+          text?: unknown;
+        };
+      };
+    }>;
+  };
 
-  if (!Array.isArray(rawResults)) {
+  if (!Array.isArray(payload.suggestions)) {
     throw new HttpError(503, "Address suggestion service returned an invalid response.");
   }
 
   const suggestions: AutocompleteSuggestion[] = [];
 
-  rawResults.forEach((item) => {
-    if (typeof item.display_name !== "string") {
-      return;
-    }
+  payload.suggestions.slice(0, MAX_SUGGESTIONS).forEach((item) => {
+    const placePrediction = item.placePrediction;
+    const displayName = placePrediction?.text?.text;
+    const placeId = placePrediction?.placeId;
 
-    const lat = Number(item.lat);
-    const lon = Number(item.lon);
-
-    if (lat !== lat || lon !== lon) {
+    if (typeof displayName !== "string" || typeof placeId !== "string") {
       return;
     }
 
     suggestions.push({
-      displayName: item.display_name,
-      lat,
-      lon,
+      displayName,
+      placeId,
     });
   });
 
@@ -220,6 +219,14 @@ export async function GET(request: Request) {
   const corsHeaders = buildCorsHeaders(request);
 
   try {
+    const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY?.trim();
+    if (!googleMapsApiKey) {
+      return NextResponse.json(
+        { error: "Server is missing GOOGLE_MAPS_API_KEY configuration." },
+        { status: 500, headers: corsHeaders },
+      );
+    }
+
     const query = parseAndValidateQuery(request);
 
     if (query.length < MIN_QUERY_LENGTH) {
@@ -234,7 +241,7 @@ export async function GET(request: Request) {
     const clientKey = resolveClientKey(request);
     enforceRateLimit(clientKey);
 
-    const suggestions = await fetchAutocompleteSuggestions(query);
+    const suggestions = await fetchAutocompleteSuggestions(query, googleMapsApiKey);
     setCachedSuggestions(query, suggestions);
 
     return NextResponse.json({ suggestions }, { headers: corsHeaders });

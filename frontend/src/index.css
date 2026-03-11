@@ -17,3 +17,80 @@
     @apply m-0 min-h-screen bg-slate-100 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
   }
 }
+
+@layer components {
+  .optimize-route-button {
+    position: relative;
+    overflow: hidden;
+    transform: translateZ(0);
+  }
+
+  .optimize-route-button:not(:disabled):active {
+    transform: scale(0.985);
+  }
+
+  .optimize-route-button::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      110deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.12) 35%,
+      rgba(255, 255, 255, 0.28) 50%,
+      rgba(255, 255, 255, 0.12) 65%,
+      transparent 100%
+    );
+    transform: translateX(-140%);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .optimize-route-button[data-loading="true"]::after {
+    opacity: 1;
+    animation: route-button-shimmer 1.15s linear infinite;
+  }
+
+  .optimize-route-button[data-success="true"] {
+    animation: route-button-success 700ms ease-out;
+  }
+}
+
+@keyframes route-button-shimmer {
+  from {
+    transform: translateX(-140%);
+  }
+
+  to {
+    transform: translateX(140%);
+  }
+}
+
+@keyframes route-button-success {
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    transform: scale(1);
+  }
+
+  35% {
+    box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.16);
+    transform: scale(1.01);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .optimize-route-button,
+  .optimize-route-button::after {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  .optimize-route-button:not(:disabled):active {
+    transform: none;
+  }
+}

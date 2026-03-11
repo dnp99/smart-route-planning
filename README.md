@@ -11,6 +11,7 @@ React frontend + Next.js backend route planner.
   ends at the provided ending point.
 - Backend enriches the ordered route with **Google driving distance, duration, and route geometry**
   for each leg.
+- Backend also provides **Google Places-based address suggestions** while typing.
 - Frontend renders a **Leaflet map** with the actual driving path and stop markers.
 - Frontend uses **Tailwind CSS** and includes a light/dark mode toggle.
 
@@ -85,6 +86,7 @@ Frontend API base URL defaults to `http://localhost:3000`. For deployed environm
 
 - Geocoding uses OpenStreetMap Nominatim.
 - Driving route distance, duration, and geometry use Google Routes API.
+- Address suggestions use Google Places API.
 - Route ordering uses greedy nearest-neighbor logic (nearest next stop from current stop).
 - Stop ordering still uses straight-line nearest-neighbor in Phase 1, but displayed route metrics
   and map geometry are road-network based.

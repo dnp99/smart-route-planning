@@ -1,5 +1,7 @@
-import { useEffect, useMemo } from 'react';
-import { CircleMarker, MapContainer, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
+import { useEffect, useMemo, useState } from 'react';
+import { divIcon } from 'leaflet';
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
+import { responsiveStyles } from './responsiveStyles';
 import type { GeocodedStop, OrderedStop, RouteLeg } from './types';
 
 type RouteMapProps = {
@@ -13,6 +15,8 @@ type RoutePoint = {
   address: string;
   lat: number;
   lon: number;
+  markerText: string;
+  markerVariant: 'start' | 'stop' | 'end';
   isEndingPoint?: boolean;
 };
 
@@ -76,14 +80,93 @@ function FitToRoute({ points }: FitToRouteProps) {
     }
 
     map.fitBounds(points, {
-      padding: [24, 24],
+      padding: [36, 36],
     });
   }, [map, points]);
 
   return null;
 }
 
+type RouteMapCanvasProps = {
+  defaultCenter: [number, number];
+  polylinePoints: Array<[number, number]>;
+  routePoints: RoutePoint[];
+  className: string;
+};
+
+const markerVariantClasses: Record<RoutePoint['markerVariant'], string> = {
+  start:
+    'border-emerald-200 bg-emerald-500 text-white shadow-emerald-900/30',
+  stop: 'border-blue-200 bg-blue-600 text-white shadow-blue-900/30',
+  end: 'border-rose-200 bg-rose-500 text-white shadow-rose-900/30',
+};
+
+const createRouteMarkerIcon = (point: RoutePoint) =>
+  divIcon({
+    className: 'bg-transparent border-0',
+    html: `
+      <div class="flex h-8 w-8 items-center justify-center rounded-full border-2 text-sm font-bold shadow-lg ${markerVariantClasses[point.markerVariant]}">
+        ${point.markerText}
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16],
+    popupAnchor: [0, -14],
+  });
+
+function RouteMapCanvas({
+  defaultCenter,
+  polylinePoints,
+  routePoints,
+  className,
+}: RouteMapCanvasProps) {
+  return (
+    <MapContainer
+      center={defaultCenter}
+      zoom={12}
+      className={className}
+      scrollWheelZoom
+    >
+      <TileLayer
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+      />
+
+      <FitToRoute points={polylinePoints} />
+
+      <Polyline
+        positions={polylinePoints}
+        color="#0f172a"
+        weight={8}
+        opacity={0.18}
+      />
+      <Polyline
+        positions={polylinePoints}
+        color="#2563eb"
+        weight={5}
+        opacity={0.95}
+      />
+
+      {routePoints.map((point, index) => (
+        <Marker
+          key={`${point.label}-${point.address}-${index}`}
+          position={[point.lat, point.lon]}
+          icon={createRouteMarkerIcon(point)}
+        >
+          <Popup>
+            <strong>{point.label}</strong>
+            <br />
+            {point.address}
+          </Popup>
+        </Marker>
+      ))}
+    </MapContainer>
+  );
+}
+
 function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+
   const routePoints = useMemo<RoutePoint[]>(() => {
     const points: RoutePoint[] = [];
 
@@ -93,6 +176,8 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
         address: start.address,
         lat: start.coords.lat,
         lon: start.coords.lon,
+        markerText: 'S',
+        markerVariant: 'start',
       });
     }
 
@@ -105,6 +190,8 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
           address: stop.address,
           lat: stop.coords.lat,
           lon: stop.coords.lon,
+          markerText: isEndingPoint ? 'E' : String(index + 1),
+          markerVariant: isEndingPoint ? 'end' : 'stop',
           isEndingPoint,
         });
       }
@@ -141,43 +228,74 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
 
   const defaultCenter = polylinePoints[0];
 
+  useEffect(() => {
+    if (!isExpanded) {
+      return;
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsExpanded(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isExpanded]);
+
   return (
-    <div className="mb-3 mt-3">
-      <MapContainer
-        center={defaultCenter}
-        zoom={12}
-        className="h-64 w-full overflow-hidden rounded-xl border border-slate-300 dark:border-slate-700"
-        scrollWheelZoom
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
-
-        <FitToRoute points={polylinePoints} />
-
-        <Polyline positions={polylinePoints} color="#2563eb" weight={4} />
-
-        {routePoints.map((point, index) => (
-          <CircleMarker
-            key={`${point.label}-${point.address}-${index}`}
-            center={[point.lat, point.lon]}
-            radius={index === 0 ? 8 : 6}
-            pathOptions={{
-              color: index === 0 ? '#16a34a' : point.isEndingPoint ? '#dc2626' : '#1d4ed8',
-              fillColor: index === 0 ? '#16a34a' : point.isEndingPoint ? '#dc2626' : '#1d4ed8',
-              fillOpacity: 0.9,
-            }}
+    <>
+      <div className="mb-3 mt-3">
+        <div className="relative">
+          <button
+            type="button"
+            onClick={() => setIsExpanded(true)}
+            className="absolute right-3 top-3 z-[500] inline-flex items-center justify-center rounded-lg border border-slate-200 bg-white/90 px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm backdrop-blur transition hover:bg-white dark:border-slate-700 dark:bg-slate-950/85 dark:text-slate-200 dark:hover:bg-slate-950"
           >
-            <Popup>
-              <strong>{point.label}</strong>
-              <br />
-              {point.address}
-            </Popup>
-          </CircleMarker>
-        ))}
-      </MapContainer>
-    </div>
+            Expand map
+          </button>
+          <RouteMapCanvas
+            defaultCenter={defaultCenter}
+            polylinePoints={polylinePoints}
+            routePoints={routePoints}
+            className={responsiveStyles.map}
+          />
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="fixed inset-0 z-[1200] bg-slate-950/80 p-3 backdrop-blur-sm sm:p-6">
+          <div className="mx-auto flex h-full w-full max-w-6xl flex-col gap-3 rounded-2xl border border-slate-700 bg-slate-900 p-3 shadow-2xl sm:p-4">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <h3 className="m-0 text-base font-semibold text-slate-100">
+                  Full-size Route Map
+                </h3>
+                <p className="m-0 text-sm text-slate-400">
+                  Press Escape or use close to return to the route summary.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsExpanded(false)}
+                className="inline-flex items-center justify-center rounded-lg border border-slate-700 bg-slate-950 px-3 py-1.5 text-sm font-medium text-slate-200 transition hover:bg-slate-800"
+              >
+                Close
+              </button>
+            </div>
+            <RouteMapCanvas
+              defaultCenter={defaultCenter}
+              polylinePoints={polylinePoints}
+              routePoints={routePoints}
+              className="h-full min-h-[24rem] w-full overflow-hidden rounded-xl border border-slate-700"
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

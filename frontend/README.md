@@ -5,7 +5,7 @@ This folder contains the Vite + React frontend for Navigate Easy.
 ## Responsibilities
 
 - Collect starting point, ending point, and intermediate destinations.
-- Fetch address suggestions from the backend autocomplete endpoint.
+- Fetch Google Places-backed address suggestions from the backend autocomplete endpoint.
 - Submit route optimization requests to the backend.
 - Render the optimized route with Leaflet.
 

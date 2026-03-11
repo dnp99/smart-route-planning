@@ -26,8 +26,7 @@ export type RouteLeg = {
 
 export type AddressSuggestion = {
   displayName: string;
-  lat: number;
-  lon: number;
+  placeId: string;
 };
 
 export type OptimizeRouteResponse = {

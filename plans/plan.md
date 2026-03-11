@@ -98,6 +98,341 @@ Current active planning document:
 ### Verification
 - Documentation/configuration only.
 
+---
+
+## 18) Local Env Ignore Hardening
+
+### Files updated
+- `.gitignore`
+- `plans/plan.md`
+
+### What changed
+- Added explicit ignore entries for local environment files such as `.env.local` and app-specific local env files.
+- Added an explicit allow entry so `backend/.env.local.example` remains trackable.
+
+### Why
+- Local setup now uses a backend env file with secrets, so the repository ignore rules needed to make accidental commits of real API keys less likely.
+
+### Verification
+- Documentation/configuration only.
+
+---
+
+## 19) Google Places Autocomplete In Backend
+
+### Files updated
+- `backend/src/app/api/address-autocomplete/route.ts`
+- `frontend/src/components/types.ts`
+- `frontend/src/components/AddressAutocompleteInput.tsx`
+- `backend/README.md`
+- `frontend/README.md`
+- `README.md`
+- `plans/plan.md`
+
+### What changed
+- Replaced the backend autocomplete provider from Nominatim search to Google Places autocomplete.
+- Updated the autocomplete response shape to use:
+  - `displayName`
+  - `placeId`
+- Reused the existing `GOOGLE_MAPS_API_KEY` backend env var for autocomplete requests.
+- Kept the frontend calling the same backend endpoint so no UI flow changes were required.
+
+### Why
+- The app already uses Google for route legs, so moving autocomplete to Google improves consistency and suggestion quality.
+- Keeping the Google key in the backend avoids exposing it in the frontend.
+
+### Verification
+- Backend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 20) Custom Autocomplete Dropdown UI
+
+### Files updated
+- `frontend/src/components/AddressAutocompleteInput.tsx`
+- `plans/plan.md`
+
+### What changed
+- Replaced the browser-native `datalist` autocomplete with a custom dropdown listbox.
+- Added styled suggestion rows, hover/active states, and a more polished dropdown panel.
+- Added keyboard navigation:
+  - Arrow Up / Down
+  - Enter to select
+  - Escape to close
+- Preserved the existing backend autocomplete endpoint and form integration.
+
+### Why
+- Native `datalist` styling is inconsistent and too limited for a polished, UI-friendly suggestion experience.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+### Follow-up fix
+- Restored full-width input layout by making the autocomplete wrapper and input explicitly `w-full` after the custom dropdown replacement caused the text fields to shrink.
+- Suppressed immediate re-opening of suggestions after selecting an item by tracking the selected suggestion text until the user edits the field again.
+
+---
+
+## 21) Editable Destination List
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/plan.md`
+
+### What changed
+- Made the destination textarea editable again so users can add, remove, and update destination lines directly.
+- Kept the autocomplete add flow intact.
+- Added a `Clear` action for the autocomplete draft input.
+
+### Why
+- Users need to be able to edit the destination list after adding items instead of being forced into append-only behavior.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+### Follow-up fix
+- Updated the destination autocomplete flow so selecting a suggestion inserts the full selected address into the destination list immediately instead of leaving the partially typed draft text in place.
+- Restyled the destination count indicator as a warning/status pill so it stands out more clearly than neutral helper text.
+- Replaced the editable textarea with a numbered, non-editable destination list plus per-item remove actions so numbering stays consistent and only plain address strings are sent to the backend.
+- Replaced browser list markers with explicit rendered index numbers so `1.`, `2.`, `3.` remain visible regardless of layout or dark-mode styling.
+
+---
+
+## 22) Google Maps Planned Trip Link
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/plan.md`
+
+### What changed
+- Added an `Open Planned Trip in Google Maps` link to the optimized-route section.
+- Built the link from the optimized route result using:
+  - `origin` = start address
+  - `destination` = end address
+  - `waypoints` = optimized intermediate stops only
+
+### Why
+- Users can now hand off the optimized route directly to Google Maps for live navigation using the same stop order shown in the app.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 23) Responsive Style Extraction
+
+### Files updated
+- `frontend/src/components/responsiveStyles.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/components/RouteMap.tsx`
+- `plans/plan.md`
+
+### What changed
+- Added a dedicated responsive style module to centralize shared mobile/tablet/desktop class decisions.
+- Applied the extracted responsive classes to:
+  - planner page spacing
+  - section headers and card padding
+  - action rows and button groups
+  - destination list rows and remove buttons
+  - optimized-route header and Google Maps CTA
+  - map height by breakpoint
+
+### Why
+- The page needed a cleaner way to manage responsive behavior without adding runtime screen-size logic.
+- Centralizing the class groups keeps the JSX more maintainable while making it easier to tune mobile, tablet, and desktop layouts in one place.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 24) Optimize Button Validation Gate
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/plan.md`
+
+### What changed
+- Updated the `Optimize Route` button so it is enabled only when both the starting point and ending point contain non-empty values.
+- Left destination addresses optional, so the route can still be optimized with no intermediate stops.
+
+### Why
+- The app requires a valid trip start and end, but intermediate destination stops are optional.
+- The button state should reflect that requirement directly in the form UI.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 25) Required Start And End Field Errors
+
+### Files updated
+- `frontend/src/components/AddressAutocompleteInput.tsx`
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/plan.md`
+
+### What changed
+- Added explicit required badges to required autocomplete fields.
+- Added red error styling and inline validation messaging for missing starting point and ending point fields.
+- Triggered the error state after field blur or an optimize attempt so users can see why the route action is unavailable.
+
+### Why
+- The form already depends on starting and ending points, but the UI did not make that requirement explicit enough.
+- Users now get immediate visual feedback instead of inferring the requirement from a disabled button alone.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 26) Default Starting Point
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/plan.md`
+
+### What changed
+- Set the default starting point form value to `3361 Ingram Road, Mississauga, ON`.
+
+### Why
+- The app now opens with a prefilled start address for the intended POC workflow instead of an empty starting-point field.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 27) Suppress Initial Default Start Suggestions
+
+### Files updated
+- `frontend/src/components/AddressAutocompleteInput.tsx`
+- `plans/plan.md`
+
+### What changed
+- Treated the initial input value as an already selected suggestion so the autocomplete component does not call the Google suggestions API immediately for the prefilled default starting point.
+- Kept the normal autocomplete behavior after the user edits the field.
+
+### Why
+- The default starting point is a convenience value, not a user query.
+- Avoiding the initial request reduces unnecessary Google Places usage while preserving suggestions once the field is actively edited.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 28) Theme-Aware Disabled Optimize Button
+
+### Files updated
+- `frontend/src/components/responsiveStyles.ts`
+- `plans/plan.md`
+
+### What changed
+- Changed the disabled `Optimize Route` button styling to be theme-aware:
+  - light mode uses a neutral slate disabled treatment
+  - dark mode uses the desaturated navy treatment
+
+### Why
+- The dark-mode navy treatment looked acceptable, but it felt too heavy in light mode.
+- Using separate disabled colors per theme keeps the button clearly inactive without clashing with the surrounding surface.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 29) ETA Clarification Copy
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/plan.md`
+
+### What changed
+- Renamed `Total driving time` to `Estimated driving time` in the optimized route summary.
+- Added a note under the Google Maps trip link explaining that Google Maps may show a different ETA based on live traffic.
+
+### Why
+- The app currently uses a non-traffic-aware Google Routes request, while Google Maps may recalculate with live traffic and different address resolution.
+- The UI should make that distinction explicit so users do not assume both ETA values must match exactly.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 30) Optimized Route Section UI Polish
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/components/responsiveStyles.ts`
+- `plans/plan.md`
+
+### What changed
+- Reworked the optimized-route header into a clearer title plus supporting description.
+- Restyled the Google Maps ETA disclaimer as a softer inline info note.
+- Replaced the stacked summary text block with two stat cards for distance and estimated time.
+- Grouped the start and end addresses into a dedicated metadata block with lighter visual separation.
+
+### Why
+- The previous layout felt like a stack of similar bordered boxes and helper text.
+- Breaking the section into header, note, stat cards, and endpoint metadata gives it clearer hierarchy and better scanability on both mobile and desktop.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+### Follow-up adjustment
+- Reordered the optimized-route content so the Google Maps CTA appears first, followed by the info note, the route map, and then the summary/detail cards.
+- This brings the visual route and navigation action higher in the section hierarchy.
+- Updated the Google Maps CTA to a green-accent treatment and the supporting info note to a neutral slate treatment so they no longer blend into the surrounding blue-toned card.
+- Refined the info note with a lighter layout and subtle info icon so it reads as guidance instead of another heavy callout.
+- Simplified the top layout into a full-width vertical stack so the CTA, info note, and summary cards no longer sit in an awkward right-heavy desktop arrangement.
+- Kept the distance and estimated-time cards above the map, but removed the forced desktop width coupling that made the section feel unbalanced.
+- Reduced the distance and estimated-time card height by tightening padding and value/meta spacing so the summary block feels less bulky.
+- Aligned the distance and estimated-time card containers with the same visual style as the start/end cards to reduce competing card treatments in the section.
+- Further compacted the distance and estimated-time cards by keeping the meta line but reducing padding and value sizing so they read as tighter summary blocks without losing context.
+- Upgraded the Leaflet route map with explicit `S / 1 / 2 / … / E` markers, clearer start/end distinction, stronger route fit padding, and a two-layer polyline so the route path stands out more clearly against the tile background.
+- Moved the theme toggle into the top title row and converted it to an icon-only button so it sits in the top-right corner beside `Smart Route Planner` instead of consuming its own full-width row.
+- Changed the app’s default theme fallback to dark mode and expanded the theme-toggle tooltip text so the icon clearly communicates the current theme state and the click action.
+- Added a subtle `Optimize Route` animation treatment:
+  - press feedback on click
+  - shimmer while loading
+  - short success pulse after a successful route result
+  - reduced-motion fallback to disable the effect when appropriate
+- Fixed a Leaflet regression in the custom route-marker pass by switching the `Marker` prop from `center` to `position`, which resolved the `Cannot read properties of undefined (reading 'lat')` runtime error after route optimization.
+- Added an expandable full-size map option in the optimized-route section with:
+  - an `Expand map` control on the embedded Leaflet map
+  - a fullscreen overlay route view
+  - close and Escape-key support for returning to the normal summary layout
+- Updated the optimized-route stop list so it is hidden when the trip has no intermediate destinations and only contains the ending point.
+
 ## 1) Project Scaffolding
 
 ### Created app structure
