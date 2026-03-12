@@ -204,3 +204,23 @@ Aligned the CareFlow branding update with a responsive patients-page refactor an
   - `npm test` ✅ (12 files, 40 tests)
 - Backend:
   - `npm test` ✅ (14 files, 141 tests)
+
+## Latest change addendum
+
+### Change
+Added a future-work note for the remaining nurse/patient execution-plan gaps and the intentional Patients-page UX deviation.
+
+### Files added/updated/deleted
+- Added:
+  - `plans/nurse-patient-management-follow-ups.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- Preserve a concrete record of what is still not fully aligned with `plans/nurse-patient-management-execution-plan.md`.
+- Make the remaining route-contract and request-behavior gaps explicit for a future pass.
+- Record that the current patients-page modal/table UX is an intentional divergence from the original split-panel page plan.
+
+### Verification
+- Documentation-only change
+- No code paths changed
