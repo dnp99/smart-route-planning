@@ -89,6 +89,9 @@ If `OPTIMIZE_ROUTE_API_KEY` is configured on the backend, include this header:
 x-optimize-route-key: your_optional_optimize_route_key
 ```
 
+Current production note:
+- `OPTIMIZE_ROUTE_API_KEY` is not set in production right now, so production requests do not send or require `x-optimize-route-key`.
+
 ## Notes
 
 - Geocoding uses OpenStreetMap Nominatim.
