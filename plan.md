@@ -48,3 +48,22 @@ Completed backend-first nurse/patient work by fixing patient update semantics an
   - `npm run build` ✅
 
 For full implementation history, see `plans/change-log.md`.
+
+## Latest change addendum
+
+### Change
+Reduced backend test coverage thresholds from 100% to 90%.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/vitest.config.ts`
+  - `plan.md`
+
+### Why
+- The requested backend quality gate is 90% minimum coverage instead of 100%.
+
+### Verification
+- LSP diagnostics:
+  - `backend/vitest.config.ts` ✅ no diagnostics
+- Backend coverage run:
+  - `npm run test:coverage` ✅ passes with thresholds at 90%
