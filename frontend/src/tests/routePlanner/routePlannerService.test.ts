@@ -61,7 +61,6 @@ describe("requestOptimizedRoute", () => {
         body: JSON.stringify({
           startAddress: "Start",
           endAddress: "End",
-          addresses: undefined,
           destinations: [
             {
               address: "A",

@@ -18,23 +18,6 @@ const expectHttpError = (
 };
 
 describe("parseAndValidateBody", () => {
-  it("returns normalized destinations from legacy addresses", () => {
-    const payload = parseAndValidateBody({
-      startAddress: "  Start Address  ",
-      endAddress: "  End Address  ",
-      addresses: ["  Stop One  ", "Stop One", "", "Stop Two"],
-    });
-
-    expect(payload).toEqual({
-      startAddress: "Start Address",
-      endAddress: "End Address",
-      destinations: [
-        { address: "Stop One", googlePlaceId: null },
-        { address: "Stop Two", googlePlaceId: null },
-      ],
-    });
-  });
-
   it("returns normalized destinations from patient destination payload", () => {
     const payload = parseAndValidateBody({
       startAddress: "Start Address",
@@ -89,21 +72,7 @@ describe("parseAndValidateBody", () => {
     expect(payload.destinations).toHaveLength(2);
   });
 
-  it("throws when both addresses and destinations are provided", () => {
-    expectHttpError(
-      () =>
-        parseAndValidateBody({
-          startAddress: "Start",
-          endAddress: "End",
-          addresses: ["Stop"],
-          destinations: [{ address: "Stop" }],
-        }),
-      400,
-      "Provide either addresses or destinations, but not both.",
-    );
-  });
-
-  it("throws when neither addresses nor destinations is provided", () => {
+  it("throws when destinations is missing", () => {
     expectHttpError(
       () =>
         parseAndValidateBody({
@@ -111,7 +80,7 @@ describe("parseAndValidateBody", () => {
           endAddress: "End",
         }),
       400,
-      "Either addresses or destinations is required.",
+      "destinations must be an array.",
     );
   });
 
@@ -122,26 +91,26 @@ describe("parseAndValidateBody", () => {
   it("throws HttpError with status for missing starting point", () => {
     expectHttpError(
       () =>
-      parseAndValidateBody({
-        startAddress: "   ",
-        endAddress: "End",
-        addresses: [],
-      }),
+        parseAndValidateBody({
+          startAddress: "   ",
+          endAddress: "End",
+          destinations: [],
+        }),
       400,
       "Please provide a starting point.",
     );
   });
 
-  it("throws HttpError when addresses is not an array of strings", () => {
+  it("throws when destinations is not an array", () => {
     expectHttpError(
       () =>
       parseAndValidateBody({
         startAddress: "Start",
         endAddress: "End",
-        addresses: ["valid", 123],
+        destinations: "invalid",
       }),
       400,
-      "addresses must be an array of strings.",
+      "destinations must be an array.",
     );
   });
 
@@ -151,7 +120,7 @@ describe("parseAndValidateBody", () => {
         parseAndValidateBody({
           startAddress: 123,
           endAddress: "End",
-          addresses: [],
+          destinations: [],
         }),
       400,
       "startAddress must be a string.",
@@ -164,7 +133,7 @@ describe("parseAndValidateBody", () => {
         parseAndValidateBody({
           startAddress: "Start",
           endAddress: 123,
-          addresses: [],
+          destinations: [],
         }),
       400,
       "endAddress must be a string.",
@@ -177,7 +146,7 @@ describe("parseAndValidateBody", () => {
         parseAndValidateBody({
           startAddress: "Start",
           endAddress: "   ",
-          addresses: [],
+          destinations: [],
         }),
       400,
       "Please provide an ending point.",
@@ -190,7 +159,7 @@ describe("parseAndValidateBody", () => {
         parseAndValidateBody({
           startAddress: "S".repeat(201),
           endAddress: "End",
-          addresses: [],
+          destinations: [],
         }),
       400,
       "Starting point must be at most 200 characters.",
@@ -203,7 +172,7 @@ describe("parseAndValidateBody", () => {
         parseAndValidateBody({
           startAddress: "Start",
           endAddress: "E".repeat(201),
-          addresses: [],
+          destinations: [],
         }),
       400,
       "Ending point must be at most 200 characters.",
@@ -216,7 +185,11 @@ describe("parseAndValidateBody", () => {
         parseAndValidateBody({
           startAddress: "Start",
           endAddress: "End",
-          addresses: Array.from({ length: 26 }, (_, index) => `Stop ${index}`),
+          destinations: Array.from({ length: 26 }, (_, index) => ({
+            patientId: `patient-${index}`,
+            patientName: `Patient ${index}`,
+            address: `Stop ${index}`,
+          })),
         }),
       400,
       "Please provide at most 25 destinations.",
@@ -229,14 +202,43 @@ describe("parseAndValidateBody", () => {
         parseAndValidateBody({
           startAddress: "Start",
           endAddress: "End",
-          addresses: ["short", "D".repeat(201)],
+          destinations: [
+            {
+              patientId: "patient-1",
+              patientName: "Jane Doe",
+              address: "short",
+            },
+            {
+              patientId: "patient-2",
+              patientName: "John Doe",
+              address: "D".repeat(201),
+            },
+          ],
         }),
       400,
       "Each destination address must be at most 200 characters.",
     );
   });
 
-  it("throws when destination patient metadata is incomplete", () => {
+  it("throws when destination patientId is missing", () => {
+    expectHttpError(
+      () =>
+        parseAndValidateBody({
+          startAddress: "Start",
+          endAddress: "End",
+          destinations: [
+            {
+              patientName: "Jane Doe",
+              address: "100 Main St",
+            },
+          ],
+        }),
+      400,
+      "destinations[0].patientId must be a string.",
+    );
+  });
+
+  it("throws when destination patientName is missing", () => {
     expectHttpError(
       () =>
         parseAndValidateBody({
@@ -250,7 +252,7 @@ describe("parseAndValidateBody", () => {
           ],
         }),
       400,
-      "destinations[0] must include both patientId and patientName when patient metadata is provided.",
+      "destinations[0].patientName must be a string.",
     );
   });
 

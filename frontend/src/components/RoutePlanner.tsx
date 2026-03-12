@@ -140,13 +140,21 @@ function RoutePlanner() {
     [result],
   );
 
+  const requestDestinations = useMemo(() => {
+    if (endMode !== "patient" || !selectedEndPatient) {
+      return selectedDestinations;
+    }
+
+    return [...selectedDestinations, selectedEndPatient];
+  }, [endMode, selectedDestinations, selectedEndPatient]);
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     void optimizeRoute({
       startAddress,
       endAddress: resolvedEndAddress,
-      destinations: selectedDestinations,
+      destinations: requestDestinations,
       canOptimize,
     });
   };

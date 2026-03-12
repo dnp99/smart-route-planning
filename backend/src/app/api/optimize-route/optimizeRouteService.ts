@@ -11,6 +11,10 @@ export const optimizeRoute = async (
   const { startAddress, endAddress, destinations } = request;
   const startKey = normalizeAddressKey(startAddress);
   const endKey = normalizeAddressKey(endAddress);
+  const endDestination =
+    [...destinations]
+      .reverse()
+      .find((destination) => normalizeAddressKey(destination.address) === endKey) ?? null;
 
   const destinationStops = destinations.filter((destination) => {
     const normalized = normalizeAddressKey(destination.address);
@@ -62,6 +66,9 @@ export const optimizeRoute = async (
   const geocodedEnd: GeocodedStop = {
     address: endAddress,
     coords: getCoordsOrThrow(endAddress),
+    patientId: endDestination?.patientId,
+    patientName: endDestination?.patientName,
+    googlePlaceId: endDestination?.googlePlaceId,
   };
 
   const orderedStops = computeNearestNeighborRoute(geocodedStart, geocodedStops, geocodedEnd);

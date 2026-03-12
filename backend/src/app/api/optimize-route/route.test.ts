@@ -15,7 +15,20 @@ const mockedOptimizeRoute = vi.mocked(optimizeRoute);
 const validRequestBody = {
   startAddress: "Start Address",
   endAddress: "End Address",
-  addresses: ["Stop A", "Stop B"],
+  destinations: [
+    {
+      patientId: "patient-1",
+      patientName: "Jane Doe",
+      address: "Stop A",
+      googlePlaceId: null,
+    },
+    {
+      patientId: "patient-2",
+      patientName: "John Doe",
+      address: "Stop B",
+      googlePlaceId: null,
+    },
+  ],
 };
 
 let requestCounter = 0;
@@ -255,8 +268,18 @@ describe("optimize-route route handler", () => {
         startAddress: "Start Address",
         endAddress: "End Address",
         destinations: [
-          { address: "Stop A", googlePlaceId: null },
-          { address: "Stop B", googlePlaceId: null },
+          {
+            patientId: "patient-1",
+            patientName: "Jane Doe",
+            address: "Stop A",
+            googlePlaceId: null,
+          },
+          {
+            patientId: "patient-2",
+            patientName: "John Doe",
+            address: "Stop B",
+            googlePlaceId: null,
+          },
         ],
       },
       "test-key",

@@ -75,7 +75,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Jane Doe/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit patient Jane Doe/i })[0]);
 
     expect(screen.getByText("Edit Patient")).toBeTruthy();
     expect((screen.getByLabelText("First name") as HTMLInputElement).value).toBe("Jane");
@@ -92,6 +92,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
+    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });
@@ -108,9 +109,9 @@ describe("PatientsPage", () => {
       expect(mockedCreatePatient).toHaveBeenCalledTimes(1);
     });
 
-    expect(screen.getByText("Create Patient")).toBeTruthy();
-    expect((screen.getByLabelText("First name") as HTMLInputElement).value).toBe("");
-    expect((screen.getByLabelText("Last name") as HTMLInputElement).value).toBe("");
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
   });
 
   it("deletes selected patient after confirmation", async () => {
@@ -126,17 +127,13 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Jane Doe/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Delete patient/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Delete patient Jane Doe/i })[0]);
 
     await waitFor(() => {
       expect(mockedDeletePatient).toHaveBeenCalledWith("patient-1");
     });
 
     expect(confirmSpy).toHaveBeenCalled();
-    await waitFor(() => {
-      expect(screen.getByText("Create Patient")).toBeTruthy();
-    });
 
     confirmSpy.mockRestore();
   });
@@ -161,8 +158,8 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Jane Doe/i })).toBeTruthy();
-      expect(screen.getByRole("button", { name: /John Smith/i })).toBeTruthy();
+      expect(screen.getAllByText("Jane Doe").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("John Smith").length).toBeGreaterThan(0);
     });
 
     fireEvent.change(screen.getByLabelText("Search patients"), {
@@ -171,8 +168,8 @@ describe("PatientsPage", () => {
 
     await waitFor(() => {
       expect(mockedListPatients).toHaveBeenLastCalledWith("smi");
-      expect(screen.queryByRole("button", { name: /Jane Doe/i })).toBeNull();
-      expect(screen.getByRole("button", { name: /John Smith/i })).toBeTruthy();
+      expect(screen.queryAllByText("Jane Doe")).toHaveLength(0);
+      expect(screen.getAllByText("John Smith").length).toBeGreaterThan(0);
     });
   });
 
@@ -189,8 +186,8 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(screen.getByText("123 Main St")).toBeTruthy();
-      expect(screen.getByText("789 Dundas St")).toBeTruthy();
+      expect(screen.getAllByText("123 Main St").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("789 Dundas St").length).toBeGreaterThan(0);
     });
   });
 
@@ -203,6 +200,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
+    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
     fireEvent.change(screen.getByPlaceholderText("Search and select an address"), {
       target: { value: "123 Main St" },
     });

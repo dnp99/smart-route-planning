@@ -29,17 +29,16 @@ export type RouteLeg = {
 };
 
 export type OptimizeRouteDestination = {
+  patientId: string;
+  patientName: string;
   address: string;
-  patientId?: string;
-  patientName?: string;
   googlePlaceId?: string | null;
 };
 
 export type OptimizeRouteRequest = {
   startAddress: string;
   endAddress: string;
-  addresses?: string[];
-  destinations?: OptimizeRouteDestination[];
+  destinations: OptimizeRouteDestination[];
 };
 
 export type OptimizeRouteResponse = {
@@ -81,6 +80,12 @@ const isGeocodedStop = (value: unknown): value is GeocodedStop => {
     return false;
   }
 
+  const hasPatientId = value.patientId !== undefined;
+  const hasPatientName = value.patientName !== undefined;
+  if (hasPatientId !== hasPatientName) {
+    return false;
+  }
+
   return true;
 };
 
@@ -93,11 +98,7 @@ const isOptimizeRouteDestination = (value: unknown): value is OptimizeRouteDesti
     return false;
   }
 
-  if (value.patientId !== undefined && typeof value.patientId !== "string") {
-    return false;
-  }
-
-  if (value.patientName !== undefined && typeof value.patientName !== "string") {
+  if (typeof value.patientId !== "string" || typeof value.patientName !== "string") {
     return false;
   }
 
@@ -152,24 +153,9 @@ export const isOptimizeRouteRequest = (payload: unknown): payload is OptimizeRou
     return false;
   }
 
-  const hasAddresses = payload.addresses !== undefined;
-  const hasDestinations = payload.destinations !== undefined;
-
-  if (!hasAddresses && !hasDestinations) {
-    return false;
-  }
-
-  if (hasAddresses && hasDestinations) {
-    return false;
-  }
-
-  if (hasAddresses && (!Array.isArray(payload.addresses) || payload.addresses.some((value) => typeof value !== "string"))) {
-    return false;
-  }
-
   if (
-    hasDestinations &&
-    (!Array.isArray(payload.destinations) || payload.destinations.some((destination) => !isOptimizeRouteDestination(destination)))
+    !Array.isArray(payload.destinations) ||
+    payload.destinations.some((destination) => !isOptimizeRouteDestination(destination))
   ) {
     return false;
   }

@@ -6,18 +6,14 @@ const MAX_ADDRESS_LENGTH = 200;
 
 const normalizeAddressKey = (value: string) => value.trim().toLowerCase();
 
-const trimOptionalString = (value: unknown, fieldName: string) => {
-  if (value === undefined) {
-    return undefined;
-  }
-
+const trimRequiredString = (value: unknown, fieldName: string) => {
   if (typeof value !== "string") {
-    throw new HttpError(400, `${fieldName} must be a string when provided.`);
+    throw new HttpError(400, `${fieldName} must be a string.`);
   }
 
   const trimmed = value.trim();
   if (!trimmed) {
-    throw new HttpError(400, `${fieldName} must not be empty when provided.`);
+    throw new HttpError(400, `${fieldName} is required.`);
   }
 
   return trimmed;
@@ -63,16 +59,8 @@ const parseDestination = (value: unknown, index: number): OptimizeRouteDestinati
     );
   }
 
-  const patientId = trimOptionalString(candidate.patientId, `destinations[${index}].patientId`);
-  const patientName = trimOptionalString(candidate.patientName, `destinations[${index}].patientName`);
-
-  const includesPatientMetadata = patientId !== undefined || patientName !== undefined;
-  if (includesPatientMetadata && (patientId === undefined || patientName === undefined)) {
-    throw new HttpError(
-      400,
-      `destinations[${index}] must include both patientId and patientName when patient metadata is provided.`,
-    );
-  }
+  const patientId = trimRequiredString(candidate.patientId, `destinations[${index}].patientId`);
+  const patientName = trimRequiredString(candidate.patientName, `destinations[${index}].patientName`);
 
   const googlePlaceId = parseOptionalStringOrNull(
     candidate.googlePlaceId,
@@ -85,31 +73,6 @@ const parseDestination = (value: unknown, index: number): OptimizeRouteDestinati
     patientName,
     googlePlaceId,
   };
-};
-
-const normalizeLegacyAddresses = (addresses: string[]) => {
-  const normalizedDestinations: OptimizeRouteDestination[] = [];
-  const seen = new Set<string>();
-
-  for (const rawAddress of addresses) {
-    const address = rawAddress.trim();
-    if (!address) {
-      continue;
-    }
-
-    const key = normalizeAddressKey(address);
-    if (seen.has(key)) {
-      continue;
-    }
-
-    seen.add(key);
-    normalizedDestinations.push({
-      address,
-      googlePlaceId: null,
-    });
-  }
-
-  return normalizedDestinations;
 };
 
 const normalizeDestinations = (destinations: OptimizeRouteDestination[]) => {
@@ -156,31 +119,13 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteReque
   const startAddress = payload.startAddress.trim();
   const endAddress = payload.endAddress.trim();
 
-  const hasAddresses = payload.addresses !== undefined;
-  const hasDestinations = payload.destinations !== undefined;
-
-  if (!hasAddresses && !hasDestinations) {
-    throw new HttpError(400, "Either addresses or destinations is required.");
+  if (!Array.isArray(payload.destinations)) {
+    throw new HttpError(400, "destinations must be an array.");
   }
 
-  if (hasAddresses && hasDestinations) {
-    throw new HttpError(400, "Provide either addresses or destinations, but not both.");
-  }
-
-  let destinations: OptimizeRouteDestination[];
-  if (hasDestinations) {
-    if (!Array.isArray(payload.destinations)) {
-      throw new HttpError(400, "destinations must be an array.");
-    }
-
-    destinations = normalizeDestinations(payload.destinations.map((destination, index) => parseDestination(destination, index)));
-  } else {
-    if (!Array.isArray(payload.addresses) || payload.addresses.some((item) => typeof item !== "string")) {
-      throw new HttpError(400, "addresses must be an array of strings.");
-    }
-
-    destinations = normalizeLegacyAddresses(payload.addresses);
-  }
+  const destinations = normalizeDestinations(
+    payload.destinations.map((destination, index) => parseDestination(destination, index)),
+  );
 
   if (!startAddress) {
     throw new HttpError(400, "Please provide a starting point.");

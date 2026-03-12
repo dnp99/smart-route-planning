@@ -99,10 +99,10 @@ const requestOptimizedRouteMock = vi.fn<
   (request: {
     startAddress: string;
     endAddress: string;
-    destinations?: Array<{
+    destinations: Array<{
       address: string;
-      patientId?: string;
-      patientName?: string;
+      patientId: string;
+      patientName: string;
       googlePlaceId?: string | null;
     }>;
   }) =>
@@ -125,7 +125,7 @@ const requestOptimizedRouteMock = vi.fn<
       totalDurationSeconds: number;
     }>
 >(async (request) => {
-  const orderedStops = (request.destinations ?? []).map((destination, index) => ({
+  const orderedStops = request.destinations.map((destination, index) => ({
     address: destination.address,
     coords: { lat: 43.0 + index, lon: -79.0 - index },
     patientId: destination.patientId,
@@ -229,6 +229,7 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });
@@ -241,7 +242,7 @@ describe("patients and route planner integration", () => {
     fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Jane Doe/i })).toBeTruthy();
+      expect(screen.getAllByText("Jane Doe").length).toBeGreaterThan(0);
     });
 
     fireEvent.change(screen.getByLabelText("Search patients"), {
@@ -252,18 +253,17 @@ describe("patients and route planner integration", () => {
       expect(listPatientsMock).toHaveBeenLastCalledWith("doe");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Jane Doe/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit patient Jane Doe/i })[0]);
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Janet" },
     });
     fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /Janet Doe/i })).toBeTruthy();
+      expect(screen.getAllByText("Janet Doe").length).toBeGreaterThan(0);
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Janet Doe/i }));
-    fireEvent.click(screen.getByRole("button", { name: /Delete patient/i }));
+    fireEvent.click(screen.getAllByRole("button", { name: /Delete patient Janet Doe/i })[0]);
 
     await waitFor(() => {
       expect(deletePatientMock).toHaveBeenCalledTimes(1);
@@ -281,6 +281,7 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
+    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "John" },
     });
@@ -293,7 +294,7 @@ describe("patients and route planner integration", () => {
     fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole("button", { name: /John Smith/i })).toBeTruthy();
+      expect(screen.getAllByText("John Smith").length).toBeGreaterThan(0);
     });
 
     fireEvent.click(screen.getByRole("link", { name: "Route Planner" }));

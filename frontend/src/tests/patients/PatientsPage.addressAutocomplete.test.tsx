@@ -85,6 +85,7 @@ describe("PatientsPage address autocomplete integration", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
+    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });
