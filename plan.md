@@ -67,3 +67,68 @@ Reduced backend test coverage thresholds from 100% to 90%.
   - `backend/vitest.config.ts` ✅ no diagnostics
 - Backend coverage run:
   - `npm run test:coverage` ✅ passes with thresholds at 90%
+
+## Latest change addendum
+
+### Change
+Implemented phase-1 frontend routing and Patients UI surface (`/patients` and `/route-planner`) with patient search/list/create/edit/delete flows backed by the new patient APIs.
+
+### Files added/updated/deleted
+- Added:
+  - `frontend/src/components/patients/PatientsPage.tsx`
+  - `frontend/src/components/patients/patientService.ts`
+  - `frontend/src/tests/patients/PatientsPage.test.tsx`
+  - `frontend/src/tests/patients/patientService.test.ts`
+  - `frontend/src/tests/appRoutes.test.tsx`
+- Updated:
+  - `frontend/src/App.jsx`
+  - `frontend/src/main.jsx`
+  - `frontend/src/components/AddressAutocompleteInput.tsx`
+  - `frontend/vitest.config.ts`
+  - `frontend/package.json`
+  - `frontend/package-lock.json`
+  - `plan.md`
+
+### Why
+- Add locked client-side navigation and dedicated patient-management page before route-planner patient-selection integration.
+- Provide typed frontend API access for patient CRUD/search and keep behavior consistent with backend phase-1 contract.
+- Extend autocomplete component with suggestion metadata callbacks so patient forms can capture `googlePlaceId` when available.
+
+### Verification
+- Frontend:
+  - `npm test` ✅ (9 files, 29 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
+Completed route-planner phase-1 patient integration by replacing free-text destination workflow with saved-patient selection, adding manual-vs-patient end mode, and submitting patient-linked `destinations[]` to optimize-route.
+
+### Files added/updated/deleted
+- Added:
+  - `frontend/src/components/routePlanner/usePatientSearch.ts`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/components/routePlanner/useRouteOptimization.ts`
+  - `frontend/src/components/routePlanner/routePlannerService.ts`
+  - `frontend/src/components/AddressAutocompleteInput.tsx`
+  - `frontend/src/tests/routePlanner/useRouteOptimization.test.ts`
+  - `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+  - `frontend/vitest.config.ts`
+  - `plan.md`
+
+### Why
+- Route-planner destinations now need patient identity preservation (`patientId`, `patientName`, `googlePlaceId`) for deterministic UI mapping and backend parity with the nurse/patient execution plan.
+- End-point selection now supports explicit mode switching so nurses can choose either manual end address input or a saved patient end address before optimizing.
+
+### Verification
+- Frontend:
+  - `npm test` ✅ (10 files, 32 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Backend regression:
+  - `npm test` ✅ (14 files, 142 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅

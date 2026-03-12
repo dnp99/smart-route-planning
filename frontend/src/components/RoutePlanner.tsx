@@ -4,28 +4,67 @@ import AddressAutocompleteInput from "./AddressAutocompleteInput";
 import RouteMap from "./RouteMap";
 import { responsiveStyles } from "./responsiveStyles";
 import ThemeToggle from "./ThemeToggle";
-import { useDestinationAddresses } from "./routePlanner/useDestinationAddresses";
+import type { Patient } from "../../../shared/contracts";
+import { usePatientSearch } from "./routePlanner/usePatientSearch";
 import { useRouteOptimization } from "./routePlanner/useRouteOptimization";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlanner/routePlannerUtils";
 import { useTheme } from "./routePlanner/useTheme";
+
+type EndMode = "manual" | "patient";
+
+type SelectedPatientDestination = {
+  patientId: string;
+  patientName: string;
+  address: string;
+  googlePlaceId: string | null;
+};
+
+const toSelectedPatientDestination = (
+  patient: Patient,
+): SelectedPatientDestination => ({
+  patientId: patient.id,
+  patientName: `${patient.firstName} ${patient.lastName}`.trim(),
+  address: patient.address,
+  googlePlaceId: patient.googlePlaceId,
+});
 
 function RoutePlanner() {
   const { theme, toggleTheme } = useTheme();
   const [startAddress, setStartAddress] = useState(
     "3361 Ingram Road, Mississauga, ON",
   );
-  const [endAddress, setEndAddress] = useState("");
+  const [manualEndAddress, setManualEndAddress] = useState("");
+  const [endMode, setEndMode] = useState<EndMode>("manual");
+
   const [startTouched, setStartTouched] = useState(false);
   const [endTouched, setEndTouched] = useState(false);
 
+  const [destinationSearchQuery, setDestinationSearchQuery] = useState("");
+  const [endPatientSearchQuery, setEndPatientSearchQuery] = useState("");
+  const [selectedDestinations, setSelectedDestinations] = useState<
+    SelectedPatientDestination[]
+  >([]);
+  const [selectedEndPatient, setSelectedEndPatient] = useState<
+    SelectedPatientDestination | null
+  >(null);
+
   const {
-    addressCount,
-    destinationAddresses,
-    destinationDraft,
-    setDestinationDraft,
-    addDestinationAddress,
-    removeDestinationAddress,
-  } = useDestinationAddresses();
+    patients: destinationSearchPatients,
+    isLoading: isDestinationSearchLoading,
+    error: destinationSearchError,
+  } = usePatientSearch({
+    query: destinationSearchQuery,
+    enabled: true,
+  });
+
+  const {
+    patients: endPatientSearchPatients,
+    isLoading: isEndPatientSearchLoading,
+    error: endPatientSearchError,
+  } = usePatientSearch({
+    query: endPatientSearchQuery,
+    enabled: endMode === "patient",
+  });
 
   const {
     result,
@@ -36,18 +75,57 @@ function RoutePlanner() {
     optimizeRoute,
   } = useRouteOptimization();
 
+  const selectedDestinationIdSet = useMemo(
+    () => new Set(selectedDestinations.map((destination) => destination.patientId)),
+    [selectedDestinations],
+  );
+
+  const destinationSearchResults = useMemo(() => {
+    return destinationSearchPatients.filter((patient) => {
+      if (selectedDestinationIdSet.has(patient.id)) {
+        return false;
+      }
+
+      return selectedEndPatient?.patientId !== patient.id;
+    });
+  }, [destinationSearchPatients, selectedDestinationIdSet, selectedEndPatient]);
+
+  const endPatientSearchResults = useMemo(() => {
+    return endPatientSearchPatients;
+  }, [endPatientSearchPatients]);
+
+  const resolvedEndAddress =
+    endMode === "manual" ? manualEndAddress : selectedEndPatient?.address ?? "";
+
   const canOptimize =
-    startAddress.trim().length > 0 && endAddress.trim().length > 0;
+    startAddress.trim().length > 0 && resolvedEndAddress.trim().length > 0;
 
   const startFieldError =
     (hasAttemptedOptimize || startTouched) && startAddress.trim().length === 0
       ? "Starting point is required."
       : undefined;
 
-  const endFieldError =
-    (hasAttemptedOptimize || endTouched) && endAddress.trim().length === 0
-      ? "Ending point is required."
-      : undefined;
+  const endFieldError = useMemo(() => {
+    if (!(hasAttemptedOptimize || endTouched)) {
+      return undefined;
+    }
+
+    if (endMode === "manual" && manualEndAddress.trim().length === 0) {
+      return "Ending point is required in manual mode.";
+    }
+
+    if (endMode === "patient" && !selectedEndPatient) {
+      return "Select a patient as the ending point.";
+    }
+
+    return undefined;
+  }, [
+    endMode,
+    endTouched,
+    hasAttemptedOptimize,
+    manualEndAddress,
+    selectedEndPatient,
+  ]);
 
   const googleMapsTripUrl = useMemo(() => {
     if (!result) {
@@ -67,11 +145,49 @@ function RoutePlanner() {
 
     void optimizeRoute({
       startAddress,
-      endAddress,
-      destinationAddresses,
+      endAddress: resolvedEndAddress,
+      destinations: selectedDestinations,
       canOptimize,
     });
   };
+
+  const addDestinationPatient = (patient: Patient) => {
+    const destination = toSelectedPatientDestination(patient);
+
+    if (selectedEndPatient?.patientId === destination.patientId) {
+      return;
+    }
+
+    setSelectedDestinations((current) => {
+      if (current.some((entry) => entry.patientId === destination.patientId)) {
+        return current;
+      }
+
+      return [...current, destination];
+    });
+  };
+
+  const removeDestinationPatient = (patientId: string) => {
+    setSelectedDestinations((current) =>
+      current.filter((entry) => entry.patientId !== patientId),
+    );
+  };
+
+  const selectEndPatient = (patient: Patient) => {
+    const destination = toSelectedPatientDestination(patient);
+    setSelectedEndPatient(destination);
+    setSelectedDestinations((current) =>
+      current.filter((entry) => entry.patientId !== destination.patientId),
+    );
+    setEndTouched(true);
+  };
+
+  const clearEndPatient = () => {
+    setSelectedEndPatient(null);
+    setEndTouched(true);
+  };
+
+  const destinationCount = selectedDestinations.length;
 
   return (
     <main className={responsiveStyles.page}>
@@ -107,72 +223,223 @@ function RoutePlanner() {
             id="endAddress"
             label="Ending point"
             placeholder="e.g. Pearson International Airport"
-            value={endAddress}
-            onChange={setEndAddress}
-            onBlur={() => setEndTouched(true)}
-            helperText="Type at least 3 characters to see suggestions."
-            errorText={endFieldError}
-            required
+            value={manualEndAddress}
+            onChange={setManualEndAddress}
+            onBlur={() => {
+              if (endMode === "manual") {
+                setEndTouched(true);
+              }
+            }}
+            helperText={
+              endMode === "manual"
+                ? "Type at least 3 characters to see suggestions."
+                : "Switch to Manual end address mode to edit this field."
+            }
+            errorText={endMode === "manual" ? endFieldError : undefined}
+            required={endMode === "manual"}
+            disabled={endMode !== "manual"}
           />
 
-          <AddressAutocompleteInput
-            id="destinationAddressAutocomplete"
-            label="Add destination with autocomplete"
-            placeholder="Type destination and press Enter or click Add destination"
-            value={destinationDraft}
-            onChange={setDestinationDraft}
-            onEnterKey={() => addDestinationAddress(destinationDraft)}
-            onSuggestionSelect={addDestinationAddress}
-            helperText="Pick a suggestion, then press Enter or click Add destination."
-          />
+          <fieldset className="grid gap-2 rounded-xl border border-slate-300 px-3 py-2 dark:border-slate-700">
+            <legend className="px-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+              End mode
+            </legend>
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+              <input
+                type="radio"
+                name="end-mode"
+                checked={endMode === "manual"}
+                onChange={() => {
+                  setEndMode("manual");
+                  setEndTouched(false);
+                }}
+              />
+              Manual end address
+            </label>
+            <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+              <input
+                type="radio"
+                name="end-mode"
+                checked={endMode === "patient"}
+                onChange={() => {
+                  setEndMode("patient");
+                  setEndTouched(false);
+                }}
+              />
+              Patient end address
+            </label>
+          </fieldset>
 
-          <div className={responsiveStyles.actionRow}>
-            <div className={responsiveStyles.actionButtons}>
-              <button
-                type="button"
-                onClick={() => setDestinationDraft("")}
-                disabled={!destinationDraft.trim()}
-                className={responsiveStyles.secondaryButton}
+          {endMode === "patient" && (
+            <div className="grid gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+              <label
+                htmlFor="end-patient-search"
+                className="text-sm font-semibold text-slate-800 dark:text-slate-200"
               >
-                Clear
-              </button>
-              <button
-                type="button"
-                onClick={() => addDestinationAddress(destinationDraft)}
-                disabled={!destinationDraft.trim()}
-                className={responsiveStyles.primaryButton}
-              >
-                Add destination
-              </button>
+                Select end patient
+              </label>
+              <input
+                id="end-patient-search"
+                type="search"
+                value={endPatientSearchQuery}
+                onChange={(event) => setEndPatientSearchQuery(event.target.value)}
+                onBlur={() => setEndTouched(true)}
+                placeholder="Search patient by first or last name"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              />
+
+              {endFieldError && (
+                <p className="m-0 text-xs text-red-600 dark:text-red-400">
+                  {endFieldError}
+                </p>
+              )}
+
+              {selectedEndPatient ? (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                  <p className="m-0 text-sm font-semibold text-emerald-800 dark:text-emerald-200">
+                    End patient: {selectedEndPatient.patientName}
+                  </p>
+                  <p className="m-0 text-sm text-emerald-700 dark:text-emerald-300">
+                    {selectedEndPatient.address}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={clearEndPatient}
+                    className="mt-2 rounded-lg border border-emerald-300 px-2 py-1 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+                  >
+                    Clear end patient
+                  </button>
+                </div>
+              ) : (
+                <p className="m-0 text-sm text-slate-500 dark:text-slate-400">
+                  No end patient selected yet.
+                </p>
+              )}
+
+              {isEndPatientSearchLoading && (
+                <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                  Loading patients…
+                </p>
+              )}
+
+              {endPatientSearchError && (
+                <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
+                  {endPatientSearchError}
+                </p>
+              )}
+
+              {endPatientSearchResults.length > 0 && (
+                <ul className="m-0 max-h-48 list-none space-y-2 overflow-y-auto p-0">
+                  {endPatientSearchResults.map((patient) => {
+                    const patientName = `${patient.firstName} ${patient.lastName}`.trim();
+
+                    return (
+                      <li key={patient.id}>
+                        <button
+                          type="button"
+                          onClick={() => selectEndPatient(patient)}
+                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900"
+                        >
+                          <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
+                            {patientName}
+                          </p>
+                          <p className="m-0 text-slate-600 dark:text-slate-300">
+                            {patient.address}
+                          </p>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </div>
+          )}
+
+          <div className="grid gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
+            <label
+              htmlFor="destination-patient-search"
+              className="text-sm font-semibold text-slate-800 dark:text-slate-200"
+            >
+              Destination patient search
+            </label>
+            <input
+              id="destination-patient-search"
+              type="search"
+              value={destinationSearchQuery}
+              onChange={(event) => setDestinationSearchQuery(event.target.value)}
+              placeholder="Search saved patients by first or last name"
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            />
+
+            {isDestinationSearchLoading && (
+              <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                Loading patients…
+              </p>
+            )}
+
+            {destinationSearchError && (
+              <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
+                {destinationSearchError}
+              </p>
+            )}
+
+            {destinationSearchResults.length > 0 && (
+              <ul className="m-0 max-h-48 list-none space-y-2 overflow-y-auto p-0">
+                {destinationSearchResults.map((patient) => {
+                  const patientName = `${patient.firstName} ${patient.lastName}`.trim();
+
+                  return (
+                    <li key={patient.id}>
+                      <button
+                        type="button"
+                        onClick={() => addDestinationPatient(patient)}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900"
+                      >
+                        <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
+                          {patientName}
+                        </p>
+                        <p className="m-0 text-slate-600 dark:text-slate-300">
+                          {patient.address}
+                        </p>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
           </div>
 
           <label className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-            Destination addresses (one per line, optional)
+            Selected destination patients
           </label>
           <div className={responsiveStyles.destinationList}>
-            {destinationAddresses.length === 0 ? (
+            {selectedDestinations.length === 0 ? (
               <p className="m-0 text-sm text-slate-400 dark:text-slate-500">
-                No destinations added yet.
+                No destination patients selected yet.
               </p>
             ) : (
               <ol className="m-0 space-y-2">
-                {destinationAddresses.map((address, index) => (
+                {selectedDestinations.map((destination, index) => (
                   <li
-                    key={`${address}-${index}`}
+                    key={destination.patientId}
                     className={responsiveStyles.destinationItem}
                   >
                     <div className={responsiveStyles.destinationItemBody}>
                       <span className="min-w-8 text-sm font-semibold text-slate-500 dark:text-slate-400">
                         {index + 1}.
                       </span>
-                      <span className="min-w-0 flex-1 break-words">
-                        {address}
+                      <span className="min-w-0 flex-1 break-words text-sm">
+                        <span className="block font-semibold text-slate-900 dark:text-slate-100">
+                          {destination.patientName}
+                        </span>
+                        <span className="block text-slate-600 dark:text-slate-300">
+                          {destination.address}
+                        </span>
                       </span>
                     </div>
                     <button
                       type="button"
-                      onClick={() => removeDestinationAddress(index)}
+                      onClick={() => removeDestinationPatient(destination.patientId)}
                       className={responsiveStyles.destinationRemove}
                     >
                       Remove
@@ -185,7 +452,7 @@ function RoutePlanner() {
 
           <div className={responsiveStyles.footerRow}>
             <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200">
-              {addressCount} destination(s) detected
+              {destinationCount} destination(s) detected
             </span>
             <button
               type="submit"
@@ -298,10 +565,15 @@ function RoutePlanner() {
                     key={`${stop.address}-${index}`}
                     className="text-sm text-slate-800 dark:text-slate-200"
                   >
-                    <span>{stop.address}</span>
-                    <small className="block text-xs text-slate-500 dark:text-slate-400">
-                      {stop.distanceFromPreviousKm} km •{" "}
-                      {formatDuration(stop.durationFromPreviousSeconds)} from
+                      <span>{stop.address}</span>
+                      {stop.patientName && (
+                        <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
+                          Patient: {stop.patientName}
+                        </small>
+                      )}
+                      <small className="block text-xs text-slate-500 dark:text-slate-400">
+                        {stop.distanceFromPreviousKm} km •{" "}
+                        {formatDuration(stop.durationFromPreviousSeconds)} from
                       previous stop
                       {stop.isEndingPoint ? " • ending point" : ""}
                     </small>

@@ -27,7 +27,7 @@ describe("useRouteOptimization", () => {
       await result.current.optimizeRoute({
         startAddress: "",
         endAddress: "",
-        destinationAddresses: [],
+        destinations: [],
         canOptimize: false,
       });
     });
@@ -56,7 +56,14 @@ describe("useRouteOptimization", () => {
       await result.current.optimizeRoute({
         startAddress: "Start",
         endAddress: "End",
-        destinationAddresses: ["A"],
+        destinations: [
+          {
+            address: "A",
+            patientId: "patient-1",
+            patientName: "Jane Doe",
+            googlePlaceId: null,
+          },
+        ],
         canOptimize: true,
       });
     });
@@ -65,6 +72,18 @@ describe("useRouteOptimization", () => {
     expect(result.current.error).toBe("");
     expect(result.current.showOptimizeSuccess).toBe(true);
     expect(result.current.isLoading).toBe(false);
+    expect(mockedRequestOptimizedRoute).toHaveBeenCalledWith({
+      startAddress: "Start",
+      endAddress: "End",
+      destinations: [
+        {
+          address: "A",
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          googlePlaceId: null,
+        },
+      ],
+    });
 
     await act(async () => {
       await vi.advanceTimersByTimeAsync(750);
@@ -82,7 +101,7 @@ describe("useRouteOptimization", () => {
       await result.current.optimizeRoute({
         startAddress: "Start",
         endAddress: "End",
-        destinationAddresses: [],
+        destinations: [],
         canOptimize: true,
       });
     });
@@ -101,7 +120,7 @@ describe("useRouteOptimization", () => {
       await result.current.optimizeRoute({
         startAddress: "Start",
         endAddress: "End",
-        destinationAddresses: [],
+        destinations: [],
         canOptimize: true,
       });
     });

@@ -12,11 +12,13 @@ type AddressAutocompleteInputProps = {
   placeholder: string;
   value: string;
   required?: boolean;
+  disabled?: boolean;
   helperText?: string;
   errorText?: string;
   onChange: (value: string) => void;
   onEnterKey?: () => void;
   onSuggestionSelect?: (value: string) => void;
+  onSuggestionPick?: (suggestion: AddressSuggestion) => void;
   onBlur?: () => void;
 };
 
@@ -30,11 +32,13 @@ function AddressAutocompleteInput({
   placeholder,
   value,
   required = false,
+  disabled = false,
   helperText,
   errorText,
   onChange,
   onEnterKey,
   onSuggestionSelect,
+  onSuggestionPick,
   onBlur,
 }: AddressAutocompleteInputProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
@@ -124,6 +128,7 @@ function AddressAutocompleteInput({
     setIsDropdownOpen(false);
     setActiveSuggestionIndex(-1);
     onSuggestionSelect?.(suggestion.displayName);
+    onSuggestionPick?.(suggestion);
   };
 
   return (
@@ -224,6 +229,7 @@ function AddressAutocompleteInput({
               : 'border-slate-300 ring-blue-500 dark:border-slate-700',
           ].join(' ')}
           required={required}
+          disabled={disabled}
         />
 
         {showSuggestions && (
