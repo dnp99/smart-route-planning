@@ -191,7 +191,7 @@ const PatientsPage = () => {
           </p>
         )}
 
-        <section className={responsiveStyles.surfaceCard}>
+        <div>
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
             <label htmlFor="patient-search" className="sr-only">
               Search patients
@@ -225,7 +225,7 @@ const PatientsPage = () => {
             onDelete={handleDelete}
             onEdit={openEditModal}
           />
-        </section>
+        </div>
 
         <PatientFormModal
           formMode={formMode}

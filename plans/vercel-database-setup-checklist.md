@@ -41,6 +41,9 @@ Optional variables if used:
 ## 4. Apply the database schema
 
 - Run the committed Drizzle migration(s) against the target database.
+- Use:
+  - `DATABASE_URL_UNPOOLED` for migration runs
+  - `DATABASE_URL` for the deployed app runtime
 - Confirm these tables exist:
   - `nurses`
   - `patients`
@@ -49,7 +52,7 @@ Optional variables if used:
 
 - Confirm the default nurse row exists with:
   - `external_key = 'default-nurse'`
-- If needed, run the seed flow or insert it manually once.
+- The baseline Drizzle migration now inserts this row idempotently.
 
 ## 6. Deploy and verify
 

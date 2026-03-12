@@ -263,3 +263,48 @@ Polished Patients-page and Route Planner UI consistency with shared card, search
 ### Verification
 - Frontend:
   - `npm test` ✅
+
+## Latest change addendum
+
+### Change
+Removed the extra wrapper and inner card styling around the Patients search-and-list surface to reduce unnecessary mobile padding.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/patients/PatientsPage.tsx`
+  - `plan.md`
+
+### Why
+- The additional wrapper around the patient search bar and list was unnecessary and added extra padding in mobile layouts.
+
+### Verification
+- UI-only structural change
+- Tests not rerun
+
+## Latest change addendum
+
+### Change
+Repaired the backend migration pipeline by switching to Drizzle-managed migration output, generating baseline metadata, and replacing the hand-written initial SQL migration with a committed Drizzle baseline.
+
+### Files added/updated/deleted
+- Added:
+  - `backend/drizzle/0000_swift_shiver_man.sql`
+  - `backend/drizzle/meta/0000_snapshot.json`
+  - `backend/drizzle/meta/_journal.json`
+- Updated:
+  - `backend/drizzle.config.ts`
+  - `backend/package.json`
+  - `backend/README.md`
+  - `plans/vercel-database-setup-checklist.md`
+  - `plan.md`
+- Deleted:
+  - `backend/src/db/migrations/0000_create_nurses_and_patients.sql`
+
+### Why
+- `drizzle-kit migrate` could not run because the repository was missing Drizzle migration metadata such as `meta/_journal.json`.
+- Moving to a Drizzle-managed migration folder makes future schema changes generate and apply consistently.
+- The baseline migration now includes the `pgcrypto` extension and default nurse seed so first-time database setup works through `db:migrate`.
+
+### Verification
+- Backend:
+  - `npm run db:generate` ✅
