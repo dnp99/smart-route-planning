@@ -30,5 +30,6 @@ CREATE INDEX "patients_nurse_id_idx" ON "patients" USING btree ("nurse_id");--> 
 CREATE INDEX "patients_nurse_name_idx" ON "patients" USING btree ("nurse_id","last_name","first_name");
 --> statement-breakpoint
 INSERT INTO "nurses" ("external_key", "display_name")
-VALUES ('default-nurse', 'Default Nurse')
-ON CONFLICT ("external_key") DO NOTHING;
+VALUES ('default-nurse', 'Nicole Su')
+ON CONFLICT ("external_key") DO UPDATE
+SET "display_name" = EXCLUDED."display_name";

@@ -289,12 +289,14 @@ An Oracle review was performed and its recommendations were incorporated, includ
 ### Documentation updates
 - Updated:
   - `backend/README.md`
-  - `plans/vercel-database-setup-checklist.md`
 - Documented the new migration flow:
   - use `DATABASE_URL_UNPOOLED` for migration runs,
   - use `DATABASE_URL` for deployed runtime,
   - run `npm run db:generate` when schema changes,
   - run `npm run db:migrate` to apply committed migrations.
+
+### Completed setup follow-through
+- The temporary planning checklist `plans/vercel-database-setup-checklist.md` was removed after the Neon/Vercel database setup was completed and validated.
 
 ### Verification
 - Frontend:

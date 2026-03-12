@@ -8,10 +8,13 @@ export const seedDefaultNurse = async () => {
     .insert(nurses)
     .values({
       externalKey: defaultNurseExternalKey,
-      displayName: "Default Nurse",
+      displayName: "Nicole Su",
     })
-    .onConflictDoNothing({
+    .onConflictDoUpdate({
       target: nurses.externalKey,
+      set: {
+        displayName: "Nicole Su",
+      },
     });
 };
 

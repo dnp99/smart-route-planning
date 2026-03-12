@@ -324,3 +324,38 @@ Recorded the completed CareFlow UI polish and Drizzle migration-pipeline repair 
 
 ### Verification
 - Documentation-only change
+
+## Latest change addendum
+
+### Change
+Removed the completed Vercel database setup checklist planning document now that the Neon/Vercel setup and migration flow are implemented.
+
+### Files added/updated/deleted
+- Updated:
+  - `plan.md`
+- Deleted:
+  - `plans/vercel-database-setup-checklist.md`
+
+### Why
+- The checklist had served its purpose and no longer represents pending work.
+
+### Verification
+- Documentation-only change
+
+## Latest change addendum
+
+### Change
+Updated the default seeded nurse display name from `Default Nurse` to `Nicole Su` and made the seed path update existing rows idempotently.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/db/seed-default-nurse.ts`
+  - `backend/drizzle/0000_swift_shiver_man.sql`
+  - `plan.md`
+
+### Why
+- New and existing environments should use the real default nurse display name instead of the placeholder seed value.
+
+### Verification
+- Code change only
+- Tests not rerun
