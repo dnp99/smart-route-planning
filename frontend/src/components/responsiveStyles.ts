@@ -2,8 +2,23 @@ export const responsiveStyles = {
   page: "mt-3 w-full sm:mt-4 md:mt-6",
   section:
     "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5 md:p-6",
+  surfaceCard:
+    "rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
   sectionHeader: "mb-4 grid gap-3",
+  cardHeader: "mb-3 grid gap-1",
+  cardTitle: "m-0 text-lg font-semibold text-slate-900 dark:text-slate-100",
+  cardDescription: "m-0 text-sm text-slate-500 dark:text-slate-400",
   form: "grid gap-3",
+  searchInput:
+    "w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+  panel:
+    "grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/85 p-4 dark:border-slate-800 dark:bg-slate-950/35",
+  panelMuted:
+    "rounded-2xl border border-slate-200 bg-white px-4 py-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
+  selectableList:
+    "m-0 max-h-48 list-none space-y-2 overflow-y-auto p-0",
+  selectableItemButton:
+    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900",
   actionRow: "flex justify-end",
   actionButtons:
     "flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center",
@@ -12,7 +27,7 @@ export const responsiveStyles = {
   primaryButton:
     "w-full rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto sm:py-1.5",
   destinationList:
-    "rounded-xl border border-slate-300 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-950",
+    "rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900",
   destinationItem:
     "flex flex-col gap-2 text-sm text-slate-900 dark:text-slate-200 sm:flex-row sm:items-start sm:justify-between sm:gap-3",
   destinationItemBody: "flex min-w-0 flex-1 items-start gap-3",
@@ -20,6 +35,8 @@ export const responsiveStyles = {
     "rounded-lg border border-red-200 px-2 py-1 text-xs font-medium text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30 sm:self-start",
   footerRow:
     "mt-1 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between",
+  countPill:
+    "rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200",
   optimizeButton:
     "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto",
   resultHeader: "flex flex-col gap-2",

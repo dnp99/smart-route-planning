@@ -224,3 +224,103 @@ Added a future-work note for the remaining nurse/patient execution-plan gaps and
 ### Verification
 - Documentation-only change
 - No code paths changed
+
+## Latest change addendum
+
+### Change
+Added a deferred Vercel database setup checklist for enabling deployed patient-management functionality later.
+
+### Files added/updated/deleted
+- Added:
+  - `plans/vercel-database-setup-checklist.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- The deployed patient feature cannot work until a Postgres database and required Vercel environment variables exist.
+- A simple checklist reduces the chance of missing schema, seed, or env configuration steps when this is picked up later.
+
+### Verification
+- Documentation-only change
+- No code paths changed
+
+## Latest change addendum
+
+### Change
+Polished Patients-page and Route Planner UI consistency with shared card, search, and panel treatments for a cleaner local demo experience.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/components/patients/PatientsPage.tsx`
+  - `frontend/src/components/responsiveStyles.ts`
+  - `plan.md`
+
+### Why
+- The Patients page and Route Planner had started to diverge in spacing, panel treatment, and search/list styling, which made the demo feel inconsistent even though the workflows were related.
+- Consolidating shared surface, panel, and input styles improves mobile and desktop presentation without depending on backend or database setup.
+
+### Verification
+- Frontend:
+  - `npm test` ✅
+
+## Latest change addendum
+
+### Change
+Removed the extra wrapper and inner card styling around the Patients search-and-list surface to reduce unnecessary mobile padding.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/patients/PatientsPage.tsx`
+  - `plan.md`
+
+### Why
+- The additional wrapper around the patient search bar and list was unnecessary and added extra padding in mobile layouts.
+
+### Verification
+- UI-only structural change
+- Tests not rerun
+
+## Latest change addendum
+
+### Change
+Repaired the backend migration pipeline by switching to Drizzle-managed migration output, generating baseline metadata, and replacing the hand-written initial SQL migration with a committed Drizzle baseline.
+
+### Files added/updated/deleted
+- Added:
+  - `backend/drizzle/0000_swift_shiver_man.sql`
+  - `backend/drizzle/meta/0000_snapshot.json`
+  - `backend/drizzle/meta/_journal.json`
+- Updated:
+  - `backend/drizzle.config.ts`
+  - `backend/package.json`
+  - `backend/README.md`
+  - `plans/vercel-database-setup-checklist.md`
+  - `plan.md`
+- Deleted:
+  - `backend/src/db/migrations/0000_create_nurses_and_patients.sql`
+
+### Why
+- `drizzle-kit migrate` could not run because the repository was missing Drizzle migration metadata such as `meta/_journal.json`.
+- Moving to a Drizzle-managed migration folder makes future schema changes generate and apply consistently.
+- The baseline migration now includes the `pgcrypto` extension and default nurse seed so first-time database setup works through `db:migrate`.
+
+### Verification
+- Backend:
+  - `npm run db:generate` ✅
+
+## Latest change addendum
+
+### Change
+Recorded the completed CareFlow UI polish and Drizzle migration-pipeline repair in `plans/change-log.md`.
+
+### Files added/updated/deleted
+- Updated:
+  - `plans/change-log.md`
+  - `plan.md`
+
+### Why
+- The repository keeps `plans/change-log.md` as the implementation history for completed work, so the recent UI and migration changes needed to be added there explicitly.
+
+### Verification
+- Documentation-only change

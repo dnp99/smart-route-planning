@@ -15,6 +15,7 @@ This folder contains the Next.js backend for CareFlow.
 ```bash
 npm ci
 cp .env.local.example .env.local
+npm run db:generate
 npm run db:migrate
 npm run dev
 ```
@@ -23,7 +24,9 @@ The backend runs on `http://localhost:3000`.
 
 `npm run dev` uses webpack mode by default for local reliability.
 
-`npm run db:migrate` runs Drizzle SQL migrations and seeds the default phase-1 nurse row (`external_key=default-nurse`) idempotently.
+`npm run db:generate` creates Drizzle-managed SQL migrations and metadata in `backend/drizzle`.
+
+`npm run db:migrate` applies committed Drizzle migrations and seeds the default phase-1 nurse row (`external_key=default-nurse`) idempotently via the baseline migration.
 
 ## Environment variables
 
@@ -113,3 +116,4 @@ Patient update behavior note:
 - `src/app/api/patients/[id]/route.ts`
 - `src/lib/patients/`
 - `src/db/schema.ts`
+- `drizzle/`

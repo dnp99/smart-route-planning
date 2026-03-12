@@ -259,6 +259,51 @@ An Oracle review was performed and its recommendations were incorporated, includ
 
 ## 10) Repository Initialization
 
+---
+
+## 11) CareFlow UI Polish and Drizzle Migration Repair
+
+### Patients page and route planner polish
+- Updated the CareFlow UI to make the Patients page and Route Planner feel more consistent for demos.
+- Standardized shared surface, panel, and search-input styling.
+- Aligned Route Planner patient-search, selected-destination, and results sections with the Patients page treatment.
+- Simplified the Patients page search/list wrapper to remove unnecessary extra mobile padding.
+
+### Branding and layout continuity
+- Continued the CareFlow presentation work by keeping header, page shell, and card spacing visually aligned across routes.
+- Preserved responsive behavior for desktop and mobile while reducing redundant nested containers.
+
+### Backend migration pipeline repair
+- Replaced the hand-written initial SQL migration with a Drizzle-managed baseline migration.
+- Added:
+  - `backend/drizzle/0000_swift_shiver_man.sql`
+  - `backend/drizzle/meta/0000_snapshot.json`
+  - `backend/drizzle/meta/_journal.json`
+- Updated:
+  - `backend/drizzle.config.ts`
+  - `backend/package.json`
+- Added `db:generate` so future schema changes can generate tracked migrations before `db:migrate`.
+- Switched Drizzle migration output to `backend/drizzle/` so `drizzle-kit migrate` now has the required journal metadata.
+- Included `pgcrypto` extension creation and idempotent `default-nurse` seed in the baseline migration.
+
+### Documentation updates
+- Updated:
+  - `backend/README.md`
+  - `plans/vercel-database-setup-checklist.md`
+- Documented the new migration flow:
+  - use `DATABASE_URL_UNPOOLED` for migration runs,
+  - use `DATABASE_URL` for deployed runtime,
+  - run `npm run db:generate` when schema changes,
+  - run `npm run db:migrate` to apply committed migrations.
+
+### Verification
+- Frontend:
+  - `npm test`
+  - Result: ✅ `40/40` tests passed
+- Backend migration generation:
+  - `npm run db:generate`
+  - Result: ✅ baseline migration and Drizzle metadata created successfully
+
 ### Git setup
 - **Added:** `.gitignore`
 - **Updated:** root repository metadata
