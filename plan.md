@@ -159,3 +159,48 @@ Filled remaining phase-1 frontend automated test gaps from the nurse/patient exe
   - `npm test` ✅ (12 files, 39 tests)
   - `npm run lint` ✅
   - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
+Aligned the CareFlow branding update with a responsive patients-page refactor and finalized the breaking optimize-route contract update so patient-linked destinations are required end to end.
+
+### Files added/updated/deleted
+- Added:
+  - `frontend/src/components/patients/PatientFormModal.tsx`
+  - `frontend/src/components/patients/PatientsTable.tsx`
+  - `frontend/src/components/patients/patientForm.ts`
+- Updated:
+  - `shared/contracts/optimizeRoute.ts`
+  - `backend/src/app/api/optimize-route/validation.ts`
+  - `backend/src/app/api/optimize-route/optimizeRouteService.ts`
+  - `backend/src/app/api/optimize-route/validation.test.ts`
+  - `backend/src/app/api/optimize-route/optimizeRouteService.test.ts`
+  - `backend/src/app/api/optimize-route/route.test.ts`
+  - `backend/README.md`
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/components/routePlanner/routePlannerService.ts`
+  - `frontend/src/components/patients/PatientsPage.tsx`
+  - `frontend/src/components/responsiveStyles.ts`
+  - `frontend/src/App.jsx`
+  - `frontend/index.html`
+  - `frontend/public/car.svg`
+  - `frontend/README.md`
+  - `frontend/src/tests/patients/PatientsPage.test.tsx`
+  - `frontend/src/tests/patients/PatientsPage.addressAutocomplete.test.tsx`
+  - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+  - `plan.md`
+
+### Why
+- The optimize-route contract needed to match the locked execution plan by removing legacy `addresses[]` support and preserving patient identity for end-point routing.
+- The patients page had grown too large and was not responsive enough; splitting it into modal/table/form helper modules makes the UI easier to maintain and better on mobile.
+- The product name and browser/title branding were updated from `Navigate Easy` to `CareFlow` to fit the wider nurse-operations scope.
+- Shared shell spacing was normalized so the app header and page content align consistently.
+
+### Verification
+- Frontend:
+  - `npm test` ✅ (12 files, 40 tests)
+- Backend:
+  - `npm test` ✅ (14 files, 141 tests)
