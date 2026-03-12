@@ -308,3 +308,19 @@ Repaired the backend migration pipeline by switching to Drizzle-managed migratio
 ### Verification
 - Backend:
   - `npm run db:generate` ✅
+
+## Latest change addendum
+
+### Change
+Recorded the completed CareFlow UI polish and Drizzle migration-pipeline repair in `plans/change-log.md`.
+
+### Files added/updated/deleted
+- Updated:
+  - `plans/change-log.md`
+  - `plan.md`
+
+### Why
+- The repository keeps `plans/change-log.md` as the implementation history for completed work, so the recent UI and migration changes needed to be added there explicitly.
+
+### Verification
+- Documentation-only change
