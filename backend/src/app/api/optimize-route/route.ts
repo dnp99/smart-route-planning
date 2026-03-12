@@ -2,19 +2,29 @@ import { NextResponse } from "next/server";
 import { parseOptimizeRouteResponse } from "../../../../../shared/contracts";
 import { HttpError, buildCorsHeaders, toErrorResponse } from "../../../lib/http";
 import { optimizeRoute } from "./optimizeRouteService";
+import { enforceOptimizeRouteRateLimit, requireOptimizeRouteApiKey } from "./requestGuards";
 import { parseAndValidateBody } from "./validation";
 
 export async function OPTIONS(request: Request) {
   return new NextResponse(null, {
     status: 204,
-    headers: buildCorsHeaders(request, { methods: "POST, OPTIONS" }),
+    headers: buildCorsHeaders(request, {
+      methods: "POST, OPTIONS",
+      allowedHeaders: "Content-Type, x-optimize-route-key",
+    }),
   });
 }
 
 export async function POST(request: Request) {
-  const corsHeaders = buildCorsHeaders(request, { methods: "POST, OPTIONS" });
+  const corsHeaders = buildCorsHeaders(request, {
+    methods: "POST, OPTIONS",
+    allowedHeaders: "Content-Type, x-optimize-route-key",
+  });
 
   try {
+    requireOptimizeRouteApiKey(request);
+    enforceOptimizeRouteRateLimit(request);
+
     const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY?.trim();
     if (!googleMapsApiKey) {
       return NextResponse.json(

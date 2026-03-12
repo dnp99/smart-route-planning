@@ -12,6 +12,11 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change record
 
 ### Change
+Removed `@dvnp19` ownership entries from CODEOWNERS.
+
+### Files added/updated/deleted
+- Updated:
+  - `.github/CODEOWNERS`
 Implemented address-autocomplete modular refactor and introduced shared FE/BE API contracts with runtime validation helpers.
 
 ### Files added/updated/deleted
@@ -40,6 +45,12 @@ Implemented address-autocomplete modular refactor and introduced shared FE/BE AP
   - `plans/plan.md`
 
 ### Why
+You requested removing `dvnp19` from CODEOWNERS so ownership and review assignment only uses the remaining owner entries.
+
+### Verification
+- Verified `.github/CODEOWNERS` has no `dvnp19` references ✅
+
+For full implementation details, see `plans/plan.md` section **40) Remove dvnp19 from CODEOWNERS**.
 You asked for (1) `address-autocomplete` split into smaller modules and (2) shared contract validation/schema. This change keeps route handlers thin, centralizes API contract logic, and ensures frontend parsing and backend shaping use the same shared definitions.
 
 ### Verification

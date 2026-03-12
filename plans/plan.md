@@ -750,6 +750,64 @@ Current active planning document:
 
 ---
 
+## 39) Optimize-Route Hardening + Backend Status Page + CI Quality Gates
+
+### Files added
+- `.github/workflows/ci.yml`
+- `backend/src/app/api/optimize-route/requestGuards.ts`
+- `backend/src/app/api/optimize-route/requestGuards.test.ts`
+
+### Files updated
+- `backend/src/app/api/optimize-route/route.ts`
+- `backend/src/app/api/optimize-route/route.test.ts`
+- `backend/src/app/page.tsx`
+- `backend/.env.local.example`
+- `backend/README.md`
+- `README.md`
+- `plan.md`
+- `plans/plan.md`
+
+### Files deleted
+- `backend/src/app/page.module.css`
+
+### What changed
+- Hardened `POST /api/optimize-route` with:
+  - optional API key protection (`OPTIMIZE_ROUTE_API_KEY` + `x-optimize-route-key` header)
+  - per-client in-memory rate limiting (`OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS`, `OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS`)
+  - CORS preflight header allowance for `x-optimize-route-key`
+- Added focused guard tests (`requestGuards.test.ts`) and route-level tests for:
+  - missing/matching optimize-route API key behavior
+  - rate-limit behavior and 429 mapping
+  - updated OPTIONS CORS header assertions
+- Replaced default backend scaffold page with a minimal backend status page and removed unused scaffold CSS.
+- Added CI workflow (`.github/workflows/ci.yml`) with quality gates for both backend and frontend:
+  - install dependencies
+  - lint
+  - coverage tests
+  - build
+
+### Why
+- `/api/optimize-route` is a high-cost endpoint (geocoding + routing calls) and needed stronger abuse/cost controls.
+- Removing scaffold leftovers improves repository hygiene and clarity.
+- CI quality gates are needed so lint/test/build regressions are blocked on PRs and pushes.
+
+### Verification
+- Backend:
+  - `npm run test:coverage` ✅
+  - Result: **100% statements / 100% branches / 100% functions / 100% lines**
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm run test:coverage` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 40) Remove dvnp19 from CODEOWNERS
+
+### Files updated
+- `.github/CODEOWNERS`
 ## 39) Frontend Tests Centralized Under src/tests
 
 ### Files added
@@ -821,6 +879,14 @@ Current active planning document:
 - `plans/plan.md`
 
 ### What changed
+- Removed `@dvnp19` from all ownership rules in `.github/CODEOWNERS`.
+- Kept existing repository ownership scope lines while retaining only `@dnp99` as owner in each rule.
+
+### Why
+- Ownership and review assignment needed to stop including `dvnp19`.
+
+### Verification
+- Verified `.github/CODEOWNERS` contains no `dvnp19` references.
 - Split `backend/src/app/api/address-autocomplete/route.ts` into a thin route adapter backed by focused modules:
   - constants (`constants.ts`)
   - query validation (`validation.ts`)
