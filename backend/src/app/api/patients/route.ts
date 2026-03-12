@@ -1,0 +1,80 @@
+import { NextResponse } from "next/server";
+import { buildCorsHeaders, toErrorResponse } from "../../../lib/http";
+import { toPatientDto } from "../../../lib/patients/patientDto";
+import {
+  createPatientForNurse,
+  listPatientsByNurse,
+} from "../../../lib/patients/patientRepository";
+import { resolveNurseContext } from "../../../lib/patients/nurseContext";
+import { validateCreatePatientPayload } from "../../../lib/patients/patientValidation";
+
+export async function OPTIONS(request: Request) {
+  try {
+    const corsHeaders = buildCorsHeaders(request, {
+      methods: "GET, POST, OPTIONS",
+      originPolicy: "strict",
+    });
+
+    return new NextResponse(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  } catch (error) {
+    return toErrorResponse(error, "Failed to process preflight request.");
+  }
+}
+
+export async function GET(request: Request) {
+  let corsHeaders: Record<string, string> | undefined;
+
+  try {
+    corsHeaders = buildCorsHeaders(request, {
+      methods: "GET, POST, OPTIONS",
+      originPolicy: "strict",
+    });
+
+    const nurseContext = await resolveNurseContext();
+    const requestUrl = new URL(request.url);
+    const query = requestUrl.searchParams.get("query") ?? "";
+
+    const patients = await listPatientsByNurse(nurseContext.nurseId, query);
+    return NextResponse.json(
+      {
+        patients: patients.map(toPatientDto),
+      },
+      { headers: corsHeaders },
+    );
+  } catch (error) {
+    return toErrorResponse(error, "Failed to list patients.", corsHeaders);
+  }
+}
+
+export async function POST(request: Request) {
+  let corsHeaders: Record<string, string> | undefined;
+
+  try {
+    corsHeaders = buildCorsHeaders(request, {
+      methods: "GET, POST, OPTIONS",
+      originPolicy: "strict",
+    });
+
+    const nurseContext = await resolveNurseContext();
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Request body must be valid JSON." },
+        { status: 400, headers: corsHeaders },
+      );
+    }
+
+    const payload = validateCreatePatientPayload(body);
+    const created = await createPatientForNurse(nurseContext.nurseId, payload);
+
+    return NextResponse.json(toPatientDto(created), { status: 201, headers: corsHeaders });
+  } catch (error) {
+    return toErrorResponse(error, "Failed to create patient.", corsHeaders);
+  }
+}

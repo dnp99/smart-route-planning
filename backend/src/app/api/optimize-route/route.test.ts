@@ -250,7 +250,65 @@ describe("optimize-route route handler", () => {
 
     expect(response.status).toBe(200);
     expect(payload).toEqual(optimizedResult);
-    expect(mockedOptimizeRoute).toHaveBeenCalledWith(validRequestBody, "test-key");
+    expect(mockedOptimizeRoute).toHaveBeenCalledWith(
+      {
+        startAddress: "Start Address",
+        endAddress: "End Address",
+        destinations: [
+          { address: "Stop A", googlePlaceId: null },
+          { address: "Stop B", googlePlaceId: null },
+        ],
+      },
+      "test-key",
+    );
+  });
+
+  it("accepts destinations payload and forwards normalized patient-linked destinations", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+
+    mockedOptimizeRoute.mockResolvedValue({
+      start: { address: "Start Address", coords: { lat: 0, lon: 0 } },
+      end: { address: "End Address", coords: { lat: 1, lon: 1 } },
+      orderedStops: [],
+      routeLegs: [],
+      totalDistanceMeters: 0,
+      totalDistanceKm: 0,
+      totalDurationSeconds: 0,
+    });
+
+    const response = await POST(
+      buildPostRequest(
+        JSON.stringify({
+          startAddress: "Start Address",
+          endAddress: "End Address",
+          destinations: [
+            {
+              patientId: " patient-1 ",
+              patientName: " Jane Doe ",
+              address: " 100 Main St ",
+              googlePlaceId: " place-1 ",
+            },
+          ],
+        }),
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockedOptimizeRoute).toHaveBeenCalledWith(
+      {
+        startAddress: "Start Address",
+        endAddress: "End Address",
+        destinations: [
+          {
+            patientId: "patient-1",
+            patientName: "Jane Doe",
+            address: "100 Main St",
+            googlePlaceId: "place-1",
+          },
+        ],
+      },
+      "test-key",
+    );
   });
 
   it("maps invalid optimize service response shape to 500", async () => {

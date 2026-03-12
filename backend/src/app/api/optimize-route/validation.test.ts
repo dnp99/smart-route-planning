@@ -18,7 +18,7 @@ const expectHttpError = (
 };
 
 describe("parseAndValidateBody", () => {
-  it("returns trimmed and deduplicated addresses", () => {
+  it("returns normalized destinations from legacy addresses", () => {
     const payload = parseAndValidateBody({
       startAddress: "  Start Address  ",
       endAddress: "  End Address  ",
@@ -28,8 +28,91 @@ describe("parseAndValidateBody", () => {
     expect(payload).toEqual({
       startAddress: "Start Address",
       endAddress: "End Address",
-      addresses: ["Stop One", "Stop Two"],
+      destinations: [
+        { address: "Stop One", googlePlaceId: null },
+        { address: "Stop Two", googlePlaceId: null },
+      ],
     });
+  });
+
+  it("returns normalized destinations from patient destination payload", () => {
+    const payload = parseAndValidateBody({
+      startAddress: "Start Address",
+      endAddress: "End Address",
+      destinations: [
+        {
+          patientId: " patient-1 ",
+          patientName: " Jane Doe ",
+          address: " 100 Main St ",
+          googlePlaceId: "  place-1 ",
+        },
+        {
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "100 Main St",
+        },
+      ],
+    });
+
+    expect(payload).toEqual({
+      startAddress: "Start Address",
+      endAddress: "End Address",
+      destinations: [
+        {
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "100 Main St",
+          googlePlaceId: "place-1",
+        },
+      ],
+    });
+  });
+
+  it("keeps same-address destinations when patient ids differ", () => {
+    const payload = parseAndValidateBody({
+      startAddress: "Start Address",
+      endAddress: "End Address",
+      destinations: [
+        {
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "100 Main St",
+        },
+        {
+          patientId: "patient-2",
+          patientName: "John Doe",
+          address: "100 Main St",
+        },
+      ],
+    });
+
+    expect(payload.destinations).toHaveLength(2);
+  });
+
+  it("throws when both addresses and destinations are provided", () => {
+    expectHttpError(
+      () =>
+        parseAndValidateBody({
+          startAddress: "Start",
+          endAddress: "End",
+          addresses: ["Stop"],
+          destinations: [{ address: "Stop" }],
+        }),
+      400,
+      "Provide either addresses or destinations, but not both.",
+    );
+  });
+
+  it("throws when neither addresses nor destinations is provided", () => {
+    expectHttpError(
+      () =>
+        parseAndValidateBody({
+          startAddress: "Start",
+          endAddress: "End",
+        }),
+      400,
+      "Either addresses or destinations is required.",
+    );
   });
 
   it("throws HttpError for invalid body shape", () => {
@@ -136,7 +219,7 @@ describe("parseAndValidateBody", () => {
           addresses: Array.from({ length: 26 }, (_, index) => `Stop ${index}`),
         }),
       400,
-      "Please provide at most 25 destination addresses.",
+      "Please provide at most 25 destinations.",
     );
   });
 
@@ -149,7 +232,45 @@ describe("parseAndValidateBody", () => {
           addresses: ["short", "D".repeat(201)],
         }),
       400,
-      "Each destination must be at most 200 characters.",
+      "Each destination address must be at most 200 characters.",
+    );
+  });
+
+  it("throws when destination patient metadata is incomplete", () => {
+    expectHttpError(
+      () =>
+        parseAndValidateBody({
+          startAddress: "Start",
+          endAddress: "End",
+          destinations: [
+            {
+              patientId: "patient-1",
+              address: "100 Main St",
+            },
+          ],
+        }),
+      400,
+      "destinations[0] must include both patientId and patientName when patient metadata is provided.",
+    );
+  });
+
+  it("throws when destination googlePlaceId has invalid type", () => {
+    expectHttpError(
+      () =>
+        parseAndValidateBody({
+          startAddress: "Start",
+          endAddress: "End",
+          destinations: [
+            {
+              patientId: "patient-1",
+              patientName: "Jane Doe",
+              address: "100 Main St",
+              googlePlaceId: 123,
+            },
+          ],
+        }),
+      400,
+      "destinations[0].googlePlaceId must be a string when provided.",
     );
   });
 });
