@@ -191,7 +191,7 @@ const PatientsPage = () => {
           </p>
         )}
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+        <section className={responsiveStyles.surfaceCard}>
           <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
             <label htmlFor="patient-search" className="sr-only">
               Search patients
@@ -204,7 +204,7 @@ const PatientsPage = () => {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search by first or last name"
-                className="w-full rounded-2xl border border-slate-300 px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className={responsiveStyles.searchInput}
               />
             </div>
 

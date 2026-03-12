@@ -28,6 +28,9 @@ const toSelectedPatientDestination = (
   googlePlaceId: patient.googlePlaceId,
 });
 
+const panelEmptyTextClassName =
+  "m-0 text-sm text-slate-500 dark:text-slate-400";
+
 function RoutePlanner() {
   const { theme, toggleTheme } = useTheme();
   const [startAddress, setStartAddress] = useState(
@@ -215,85 +218,95 @@ function RoutePlanner() {
         </div>
 
         <form className={responsiveStyles.form} onSubmit={handleSubmit}>
-          <AddressAutocompleteInput
-            id="startAddress"
-            label="Starting point"
-            placeholder="e.g. 1 Apple Park Way, Cupertino"
-            value={startAddress}
-            onChange={setStartAddress}
-            onBlur={() => setStartTouched(true)}
-            helperText="Type at least 3 characters to see suggestions."
-            errorText={startFieldError}
-            required
-          />
+          <section className={responsiveStyles.panel}>
+            <div className={responsiveStyles.cardHeader}>
+              <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
+              <p className={responsiveStyles.cardDescription}>
+                Define where the nurse starts and how the route should end.
+              </p>
+            </div>
 
-          <AddressAutocompleteInput
-            id="endAddress"
-            label="Ending point"
-            placeholder="e.g. Pearson International Airport"
-            value={manualEndAddress}
-            onChange={setManualEndAddress}
-            onBlur={() => {
-              if (endMode === "manual") {
-                setEndTouched(true);
+            <AddressAutocompleteInput
+              id="startAddress"
+              label="Starting point"
+              placeholder="e.g. 1 Apple Park Way, Cupertino"
+              value={startAddress}
+              onChange={setStartAddress}
+              onBlur={() => setStartTouched(true)}
+              helperText="Type at least 3 characters to see suggestions."
+              errorText={startFieldError}
+              required
+            />
+
+            <AddressAutocompleteInput
+              id="endAddress"
+              label="Ending point"
+              placeholder="e.g. Pearson International Airport"
+              value={manualEndAddress}
+              onChange={setManualEndAddress}
+              onBlur={() => {
+                if (endMode === "manual") {
+                  setEndTouched(true);
+                }
+              }}
+              helperText={
+                endMode === "manual"
+                  ? "Type at least 3 characters to see suggestions."
+                  : "Switch to Manual end address mode to edit this field."
               }
-            }}
-            helperText={
-              endMode === "manual"
-                ? "Type at least 3 characters to see suggestions."
-                : "Switch to Manual end address mode to edit this field."
-            }
-            errorText={endMode === "manual" ? endFieldError : undefined}
-            required={endMode === "manual"}
-            disabled={endMode !== "manual"}
-          />
+              errorText={endMode === "manual" ? endFieldError : undefined}
+              required={endMode === "manual"}
+              disabled={endMode !== "manual"}
+            />
 
-          <fieldset className="grid gap-2 rounded-xl border border-slate-300 px-3 py-2 dark:border-slate-700">
-            <legend className="px-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
-              End mode
-            </legend>
-            <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-              <input
-                type="radio"
-                name="end-mode"
-                checked={endMode === "manual"}
-                onChange={() => {
-                  setEndMode("manual");
-                  setEndTouched(false);
-                }}
-              />
-              Manual end address
-            </label>
-            <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-              <input
-                type="radio"
-                name="end-mode"
-                checked={endMode === "patient"}
-                onChange={() => {
-                  setEndMode("patient");
-                  setEndTouched(false);
-                }}
-              />
-              Patient end address
-            </label>
-          </fieldset>
+            <fieldset className="grid gap-2 rounded-xl border border-slate-300 px-3 py-2 dark:border-slate-700">
+              <legend className="px-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                End mode
+              </legend>
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <input
+                  type="radio"
+                  name="end-mode"
+                  checked={endMode === "manual"}
+                  onChange={() => {
+                    setEndMode("manual");
+                    setEndTouched(false);
+                  }}
+                />
+                Manual end address
+              </label>
+              <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                <input
+                  type="radio"
+                  name="end-mode"
+                  checked={endMode === "patient"}
+                  onChange={() => {
+                    setEndMode("patient");
+                    setEndTouched(false);
+                  }}
+                />
+                Patient end address
+              </label>
+            </fieldset>
+          </section>
 
           {endMode === "patient" && (
-            <div className="grid gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
-              <label
-                htmlFor="end-patient-search"
-                className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-              >
-                Select end patient
-              </label>
+            <section className={responsiveStyles.panel}>
+              <div className={responsiveStyles.cardHeader}>
+                <h2 className={responsiveStyles.cardTitle}>Select end patient</h2>
+                <p className={responsiveStyles.cardDescription}>
+                  Search the patient roster and set the final stop for the day.
+                </p>
+              </div>
               <input
                 id="end-patient-search"
                 type="search"
+                aria-label="Select end patient"
                 value={endPatientSearchQuery}
                 onChange={(event) => setEndPatientSearchQuery(event.target.value)}
                 onBlur={() => setEndTouched(true)}
                 placeholder="Search patient by first or last name"
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className={responsiveStyles.searchInput}
               />
 
               {endFieldError && (
@@ -319,7 +332,7 @@ function RoutePlanner() {
                   </button>
                 </div>
               ) : (
-                <p className="m-0 text-sm text-slate-500 dark:text-slate-400">
+                <p className={panelEmptyTextClassName}>
                   No end patient selected yet.
                 </p>
               )}
@@ -337,7 +350,7 @@ function RoutePlanner() {
               )}
 
               {endPatientSearchResults.length > 0 && (
-                <ul className="m-0 max-h-48 list-none space-y-2 overflow-y-auto p-0">
+                <ul className={responsiveStyles.selectableList}>
                   {endPatientSearchResults.map((patient) => {
                     const patientName = `${patient.firstName} ${patient.lastName}`.trim();
 
@@ -346,7 +359,7 @@ function RoutePlanner() {
                         <button
                           type="button"
                           onClick={() => selectEndPatient(patient)}
-                          className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900"
+                          className={responsiveStyles.selectableItemButton}
                         >
                           <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
                             {patientName}
@@ -360,23 +373,26 @@ function RoutePlanner() {
                   })}
                 </ul>
               )}
-            </div>
+            </section>
           )}
 
-          <div className="grid gap-2 rounded-xl border border-slate-300 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-900/40">
-            <label
-              htmlFor="destination-patient-search"
-              className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-            >
-              Destination patient search
-            </label>
+          <section className={responsiveStyles.panel}>
+            <div className={responsiveStyles.cardHeader}>
+              <h2 className={responsiveStyles.cardTitle}>
+                Destination patient search
+              </h2>
+              <p className={responsiveStyles.cardDescription}>
+                Add saved patients as route stops before optimizing the visit order.
+              </p>
+            </div>
             <input
               id="destination-patient-search"
               type="search"
+              aria-label="Destination patient search"
               value={destinationSearchQuery}
               onChange={(event) => setDestinationSearchQuery(event.target.value)}
               placeholder="Search saved patients by first or last name"
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              className={responsiveStyles.searchInput}
             />
 
             {isDestinationSearchLoading && (
@@ -392,7 +408,7 @@ function RoutePlanner() {
             )}
 
             {destinationSearchResults.length > 0 && (
-              <ul className="m-0 max-h-48 list-none space-y-2 overflow-y-auto p-0">
+              <ul className={responsiveStyles.selectableList}>
                 {destinationSearchResults.map((patient) => {
                   const patientName = `${patient.firstName} ${patient.lastName}`.trim();
 
@@ -401,7 +417,7 @@ function RoutePlanner() {
                       <button
                         type="button"
                         onClick={() => addDestinationPatient(patient)}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900"
+                        className={responsiveStyles.selectableItemButton}
                       >
                         <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
                           {patientName}
@@ -415,14 +431,20 @@ function RoutePlanner() {
                 })}
               </ul>
             )}
-          </div>
+          </section>
 
-          <label className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-            Selected destination patients
-          </label>
-          <div className={responsiveStyles.destinationList}>
+          <section className={responsiveStyles.panel}>
+            <div className={responsiveStyles.cardHeader}>
+              <h2 className={responsiveStyles.cardTitle}>
+                Selected destination patients
+              </h2>
+              <p className={responsiveStyles.cardDescription}>
+                Review the patients included in the route before you optimize it.
+              </p>
+            </div>
+            <div className={responsiveStyles.destinationList}>
             {selectedDestinations.length === 0 ? (
-              <p className="m-0 text-sm text-slate-400 dark:text-slate-500">
+              <p className={panelEmptyTextClassName}>
                 No destination patients selected yet.
               </p>
             ) : (
@@ -456,10 +478,11 @@ function RoutePlanner() {
                 ))}
               </ol>
             )}
-          </div>
+            </div>
+          </section>
 
           <div className={responsiveStyles.footerRow}>
-            <span className="rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-sm font-medium text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200">
+            <span className={responsiveStyles.countPill}>
               {destinationCount} destination(s) detected
             </span>
             <button
@@ -487,7 +510,7 @@ function RoutePlanner() {
         )}
 
         {result && (
-          <section className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/60">
+          <section className={`mt-4 ${responsiveStyles.surfaceCard}`}>
             <div className={responsiveStyles.resultHeader}>
               <h2 className="m-0 text-lg font-semibold text-slate-900 dark:text-slate-100">
                 Optimized Route

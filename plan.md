@@ -224,3 +224,42 @@ Added a future-work note for the remaining nurse/patient execution-plan gaps and
 ### Verification
 - Documentation-only change
 - No code paths changed
+
+## Latest change addendum
+
+### Change
+Added a deferred Vercel database setup checklist for enabling deployed patient-management functionality later.
+
+### Files added/updated/deleted
+- Added:
+  - `plans/vercel-database-setup-checklist.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- The deployed patient feature cannot work until a Postgres database and required Vercel environment variables exist.
+- A simple checklist reduces the chance of missing schema, seed, or env configuration steps when this is picked up later.
+
+### Verification
+- Documentation-only change
+- No code paths changed
+
+## Latest change addendum
+
+### Change
+Polished Patients-page and Route Planner UI consistency with shared card, search, and panel treatments for a cleaner local demo experience.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/components/patients/PatientsPage.tsx`
+  - `frontend/src/components/responsiveStyles.ts`
+  - `plan.md`
+
+### Why
+- The Patients page and Route Planner had started to diverge in spacing, panel treatment, and search/list styling, which made the demo feel inconsistent even though the workflows were related.
+- Consolidating shared surface, panel, and input styles improves mobile and desktop presentation without depending on backend or database setup.
+
+### Verification
+- Frontend:
+  - `npm test` ✅
