@@ -15,15 +15,15 @@ const resolveNavLinkClassName = ({ isActive }) =>
 
 function App() {
   return (
-    <>
-      <header className="mx-auto mt-3 w-full max-w-4xl rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:mt-4 sm:p-4 md:mt-6">
+    <div className="mx-auto w-full max-w-4xl p-3 sm:p-4 md:p-6">
+      <header className="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">
-              Navigate Easy
+              CareFlow
             </p>
             <p className="m-0 text-sm text-slate-500 dark:text-slate-400">
-              Nurse operations workspace
+              Nurse operations workspace for Su Mei ❤️
             </p>
           </div>
 
@@ -44,7 +44,7 @@ function App() {
         <Route path="/" element={<Navigate to="/route-planner" replace />} />
         <Route path="*" element={<Navigate to="/route-planner" replace />} />
       </Routes>
-    </>
+    </div>
   );
 }
 

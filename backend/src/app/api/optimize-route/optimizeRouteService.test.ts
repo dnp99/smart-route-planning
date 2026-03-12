@@ -101,7 +101,13 @@ describe("optimizeRoute service", () => {
 
     expect(result).toEqual({
       start: { address: "Start Address", coords: { lat: 43.1, lon: -79.1 } },
-      end: { address: "End Address", coords: { lat: 43.3, lon: -79.3 } },
+      end: {
+        address: "End Address",
+        coords: { lat: 43.3, lon: -79.3 },
+        patientId: "patient-end",
+        patientName: "End Patient",
+        googlePlaceId: undefined,
+      },
       orderedStops,
       routeLegs: [
         {
@@ -128,7 +134,13 @@ describe("optimizeRoute service", () => {
         {
           startAddress: "Start Address",
           endAddress: "End Address",
-          destinations: [],
+          destinations: [
+            {
+              patientId: "patient-1",
+              patientName: "Jane Doe",
+              address: "Stop A",
+            },
+          ],
         },
         "google-key",
       ),

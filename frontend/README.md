@@ -1,6 +1,6 @@
 # Frontend
 
-This folder contains the Vite + React frontend for Navigate Easy.
+This folder contains the Vite + React frontend for CareFlow.
 
 ## Responsibilities
 

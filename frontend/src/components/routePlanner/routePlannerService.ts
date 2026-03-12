@@ -8,7 +8,6 @@ import {
 export const requestOptimizedRoute = async ({
   startAddress,
   endAddress,
-  addresses,
   destinations,
 }: OptimizeRouteRequest) => {
   const apiBaseUrl = resolveApiBaseUrl();
@@ -20,7 +19,6 @@ export const requestOptimizedRoute = async ({
     body: JSON.stringify({
       startAddress,
       endAddress,
-      addresses,
       destinations,
     }),
   });

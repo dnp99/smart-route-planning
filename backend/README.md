@@ -1,6 +1,6 @@
 # Backend
 
-This folder contains the Next.js backend for Navigate Easy.
+This folder contains the Next.js backend for CareFlow.
 
 ## Responsibilities
 
@@ -72,9 +72,8 @@ NOMINATIM_CONTACT_EMAIL=you@example.com
 ## API endpoints
 
 - `POST /api/optimize-route`
-  - Accepts `startAddress`, `endAddress`, and either:
-    - legacy `addresses[]` (string destinations), or
-    - `destinations[]` objects with `address` and optional patient metadata (`patientId`, `patientName`, `googlePlaceId`)
+  - Accepts `startAddress`, `endAddress`, and `destinations[]`
+  - Each destination must include `patientId`, `patientName`, `address`, and optional `googlePlaceId`
   - Returns geocoded stops in greedy nearest-neighbor order plus Google driving route legs, total distance, and total duration
   - Enforces per-client in-memory rate limiting
   - If `OPTIMIZE_ROUTE_API_KEY` is configured, requires `x-optimize-route-key` request header

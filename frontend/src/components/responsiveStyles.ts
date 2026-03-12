@@ -1,5 +1,5 @@
 export const responsiveStyles = {
-  page: "mx-auto w-full max-w-4xl p-3 sm:p-4 md:p-6",
+  page: "mt-3 w-full sm:mt-4 md:mt-6",
   section:
     "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5 md:p-6",
   sectionHeader: "mb-4 grid gap-3",
