@@ -31,7 +31,19 @@ describe("optimizeRoute service", () => {
     const request = {
       startAddress: "Start Address",
       endAddress: "End Address",
-      addresses: ["Stop A", "start address", "END ADDRESS", "Stop A"],
+      destinations: [
+        {
+          address: "Stop A",
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          googlePlaceId: "place-1",
+        },
+        {
+          address: "END ADDRESS",
+          patientId: "patient-end",
+          patientName: "End Patient",
+        },
+      ],
     };
 
     const geocodedLookups: GeocodedStop[] = [
@@ -44,6 +56,9 @@ describe("optimizeRoute service", () => {
       {
         address: "Stop A",
         coords: { lat: 43.2, lon: -79.2 },
+        patientId: "patient-1",
+        patientName: "Jane Doe",
+        googlePlaceId: "place-1",
         distanceFromPreviousKm: 5,
         durationFromPreviousSeconds: 0,
       },
@@ -113,7 +128,7 @@ describe("optimizeRoute service", () => {
         {
           startAddress: "Start Address",
           endAddress: "End Address",
-          addresses: [],
+          destinations: [],
         },
         "google-key",
       ),

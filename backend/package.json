@@ -6,13 +6,16 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
+    "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "check:es-compat": "node ../scripts/check-es-compat.mjs src",
     "lint": "eslint && npm run check:es-compat",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "drizzle-orm": "^0.44.6",
     "next": "16.1.6",
+    "postgres": "^3.4.7",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
@@ -21,6 +24,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitest/coverage-v8": "^4.0.18",
+    "drizzle-kit": "^0.31.7",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "typescript": "^5",

@@ -1,4 +1,4 @@
-# Implementation Plan & Change Log
+# Change Log
 
 This file documents all changes completed for the React frontend + Next.js backend route planner.
 
@@ -6,11 +6,13 @@ This file documents all changes completed for the React frontend + Next.js backe
 
 This file remains the implementation log for completed work.
 
+Note: this change log was renamed from `plans/plan.md` to `plans/change-log.md`. Older entries may reference the previous path.
+
 Upcoming or not-yet-implemented work should be stored as separate planning documents under `plans/`.
 
-Current active planning document:
+Current planning documents:
 
-- `plans/google-routes-phase-1-plan.md` - planned Phase 1 migration from straight-line routing to Google driving route distance, duration, and geometry
+- `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
 
 ---
 
@@ -940,7 +942,7 @@ An Oracle review was performed and its recommendations were incorporated, includ
 ### Verification
 - Documentation/process change only.
 - Verified `AGENT.md` contains the new mandatory workflow and recovery steps.
-- Verified the change is logged in both `plan.md` and `plans/plan.md`.
+- Verified the change is logged in both `plan.md` and `plans/change-log.md`.
 
 ---
 
@@ -953,7 +955,7 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - `backend/src/app/api/optimize-route/route.ts`
 - `backend/src/app/api/address-autocomplete/route.ts`
 - `plan.md`
-- `plans/plan.md`
+ - `plans/change-log.md`
 
 ### What changed
 - Extracted shared backend HTTP concerns into `backend/src/lib/http.ts`:
@@ -1305,7 +1307,7 @@ An Oracle review was performed and its recommendations were incorporated, includ
 
 ### Files updated
 - `plan.md`
-- `plans/plan.md`
+- `plans/change-log.md`
 
 ### What changed
 - Moved all frontend `*.test.ts` files out of `src/components/**` into a single centralized `src/tests/` folder.
@@ -1409,3 +1411,48 @@ An Oracle review was performed and its recommendations were incorporated, includ
 
 ### Verification
 - Verified `plans/plan.md` now runs in order from `## 1)` through `## 46)` with no duplicate section numbers.
+
+---
+
+## 47) Remove Google Routes Phase 1 Plan Document
+
+### Files deleted
+- `plans/google-routes-phase-1-plan.md`
+
+### Files updated
+- `plan.md`
+- `plans/plan.md`
+
+### What changed
+- Removed the obsolete Phase 1 Google Routes planning document from `plans/`.
+ - Updated `plans/change-log.md` planning document references to remove the stale “active plan” pointer.
+- Updated the root `plan.md` index to reflect current planning documents.
+
+### Why
+- Google Routes Phase 1 is already implemented; keeping the Phase 1 plan referenced as active was stale and confusing.
+
+### Verification
+ - Verified `plans/google-routes-phase-1-plan.md` no longer exists.
+ - Verified the planning document lists were updated in `plan.md` and `plans/change-log.md`.
+
+---
+
+## 48) Rename Change Log File
+
+### Files renamed
+- `plans/plan.md` -> `plans/change-log.md`
+
+### Files updated
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Renamed the implementation log file to `plans/change-log.md` to make its role obvious.
+- Added a short note near the top of the change log explaining the rename.
+
+### Why
+- The previous name `plans/plan.md` was ambiguous and easy to confuse with an active planning document.
+
+### Verification
+- Verified `plans/change-log.md` exists and contains the prior change log content.
+- Verified `plans/plan.md` no longer exists.

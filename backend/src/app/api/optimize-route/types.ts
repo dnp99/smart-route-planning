@@ -1,6 +1,7 @@
 export type {
   GeocodedStop,
   LatLng,
+  OptimizeRouteDestination,
   OptimizeRouteRequest,
   OptimizeRouteResponse as OptimizeRouteResult,
   OrderedStop,

@@ -9,6 +9,9 @@ export type LatLng = {
 export type GeocodedStop = {
   address: string;
   coords: LatLng;
+  patientId?: string;
+  patientName?: string;
+  googlePlaceId?: string | null;
 };
 
 export type OrderedStop = GeocodedStop & {
@@ -25,10 +28,18 @@ export type RouteLeg = {
   encodedPolyline: string;
 };
 
+export type OptimizeRouteDestination = {
+  address: string;
+  patientId?: string;
+  patientName?: string;
+  googlePlaceId?: string | null;
+};
+
 export type OptimizeRouteRequest = {
   startAddress: string;
   endAddress: string;
-  addresses: string[];
+  addresses?: string[];
+  destinations?: OptimizeRouteDestination[];
 };
 
 export type OptimizeRouteResponse = {
@@ -54,7 +65,47 @@ const isGeocodedStop = (value: unknown): value is GeocodedStop => {
     return false;
   }
 
-  return typeof value.address === "string" && isLatLng(value.coords);
+  if (typeof value.address !== "string" || !isLatLng(value.coords)) {
+    return false;
+  }
+
+  if (value.patientId !== undefined && typeof value.patientId !== "string") {
+    return false;
+  }
+
+  if (value.patientName !== undefined && typeof value.patientName !== "string") {
+    return false;
+  }
+
+  if (value.googlePlaceId !== undefined && value.googlePlaceId !== null && typeof value.googlePlaceId !== "string") {
+    return false;
+  }
+
+  return true;
+};
+
+const isOptimizeRouteDestination = (value: unknown): value is OptimizeRouteDestination => {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  if (typeof value.address !== "string") {
+    return false;
+  }
+
+  if (value.patientId !== undefined && typeof value.patientId !== "string") {
+    return false;
+  }
+
+  if (value.patientName !== undefined && typeof value.patientName !== "string") {
+    return false;
+  }
+
+  if (value.googlePlaceId !== undefined && value.googlePlaceId !== null && typeof value.googlePlaceId !== "string") {
+    return false;
+  }
+
+  return true;
 };
 
 const isOrderedStop = (value: unknown): value is OrderedStop => {
@@ -97,12 +148,33 @@ export const isOptimizeRouteRequest = (payload: unknown): payload is OptimizeRou
     return false;
   }
 
-  return (
-    typeof payload.startAddress === "string" &&
-    typeof payload.endAddress === "string" &&
-    Array.isArray(payload.addresses) &&
-    payload.addresses.every((value) => typeof value === "string")
-  );
+  if (typeof payload.startAddress !== "string" || typeof payload.endAddress !== "string") {
+    return false;
+  }
+
+  const hasAddresses = payload.addresses !== undefined;
+  const hasDestinations = payload.destinations !== undefined;
+
+  if (!hasAddresses && !hasDestinations) {
+    return false;
+  }
+
+  if (hasAddresses && hasDestinations) {
+    return false;
+  }
+
+  if (hasAddresses && (!Array.isArray(payload.addresses) || payload.addresses.some((value) => typeof value !== "string"))) {
+    return false;
+  }
+
+  if (
+    hasDestinations &&
+    (!Array.isArray(payload.destinations) || payload.destinations.some((destination) => !isOptimizeRouteDestination(destination)))
+  ) {
+    return false;
+  }
+
+  return true;
 };
 
 export const parseOptimizeRouteResponse = (payload: unknown): OptimizeRouteResponse | null => {

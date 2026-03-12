@@ -1,31 +1,34 @@
 import { HttpError } from "../../../lib/http";
 import { geocodeAddressesSequentially, normalizeAddressKey } from "./geocoding";
 import { buildDrivingRoute, computeNearestNeighborRoute } from "./routing";
-import type { GeocodedStop, OptimizeRouteRequest, OptimizeRouteResult, LatLng } from "./types";
+import type { GeocodedStop, OptimizeRouteResult, LatLng } from "./types";
+import type { ValidatedOptimizeRouteRequest } from "./validation";
 
 export const optimizeRoute = async (
-  request: OptimizeRouteRequest,
+  request: ValidatedOptimizeRouteRequest,
   googleMapsApiKey: string,
 ): Promise<OptimizeRouteResult> => {
-  const { startAddress, endAddress, addresses } = request;
+  const { startAddress, endAddress, destinations } = request;
   const startKey = normalizeAddressKey(startAddress);
   const endKey = normalizeAddressKey(endAddress);
 
-  const destinationAddresses = addresses.filter((address) => {
-    const normalized = normalizeAddressKey(address);
+  const destinationStops = destinations.filter((destination) => {
+    const normalized = normalizeAddressKey(destination.address);
     return normalized !== startKey && normalized !== endKey;
   });
 
   const uniqueAddressesToGeocode: string[] = [];
   const seenAddressKeys = new Set<string>();
 
-  [startAddress, ...destinationAddresses, endAddress].forEach((address) => {
-    const key = normalizeAddressKey(address);
-    if (!seenAddressKeys.has(key)) {
-      seenAddressKeys.add(key);
-      uniqueAddressesToGeocode.push(address);
-    }
-  });
+  [startAddress, ...destinationStops.map((destination) => destination.address), endAddress].forEach(
+    (address) => {
+      const key = normalizeAddressKey(address);
+      if (!seenAddressKeys.has(key)) {
+        seenAddressKeys.add(key);
+        uniqueAddressesToGeocode.push(address);
+      }
+    },
+  );
 
   const geocodedLookups = await geocodeAddressesSequentially(uniqueAddressesToGeocode);
   const geocodedByAddressKey = new Map<string, LatLng>();
@@ -48,9 +51,12 @@ export const optimizeRoute = async (
     coords: getCoordsOrThrow(startAddress),
   };
 
-  const geocodedStops: GeocodedStop[] = destinationAddresses.map((address) => ({
-    address,
-    coords: getCoordsOrThrow(address),
+  const geocodedStops: GeocodedStop[] = destinationStops.map((destination) => ({
+    address: destination.address,
+    coords: getCoordsOrThrow(destination.address),
+    patientId: destination.patientId,
+    patientName: destination.patientName,
+    googlePlaceId: destination.googlePlaceId,
   }));
 
   const geocodedEnd: GeocodedStop = {
