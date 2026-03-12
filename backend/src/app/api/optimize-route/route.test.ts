@@ -252,4 +252,15 @@ describe("optimize-route route handler", () => {
     expect(payload).toEqual(optimizedResult);
     expect(mockedOptimizeRoute).toHaveBeenCalledWith(validRequestBody, "test-key");
   });
+
+  it("maps invalid optimize service response shape to 500", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    mockedOptimizeRoute.mockResolvedValue({ invalid: true } as never);
+
+    const response = await POST(buildPostRequest(JSON.stringify(validRequestBody)));
+    const payload = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(payload).toEqual({ error: "Failed to shape optimize-route response." });
+  });
 });

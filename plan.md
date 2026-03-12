@@ -17,6 +17,30 @@ Removed `@dvnp19` ownership entries from CODEOWNERS.
 ### Files added/updated/deleted
 - Updated:
   - `.github/CODEOWNERS`
+Implemented address-autocomplete modular refactor and introduced shared FE/BE API contracts with runtime validation helpers.
+
+### Files added/updated/deleted
+- Added:
+  - `shared/contracts/common.ts`
+  - `shared/contracts/optimizeRoute.ts`
+  - `shared/contracts/addressAutocomplete.ts`
+  - `shared/contracts/index.ts`
+  - `backend/src/app/api/address-autocomplete/constants.ts`
+  - `backend/src/app/api/address-autocomplete/validation.ts`
+  - `backend/src/app/api/address-autocomplete/cacheAndRateLimit.ts`
+  - `backend/src/app/api/address-autocomplete/googlePlacesClient.ts`
+  - `backend/src/app/api/address-autocomplete/addressAutocompleteService.ts`
+- Updated:
+  - `backend/src/app/api/address-autocomplete/route.ts`
+  - `backend/src/app/api/optimize-route/route.ts`
+  - `backend/src/app/api/optimize-route/types.ts`
+  - `backend/src/app/api/optimize-route/route.test.ts`
+  - `backend/next.config.ts`
+  - `backend/tsconfig.json`
+  - `frontend/src/components/AddressAutocompleteInput.tsx`
+  - `frontend/src/components/routePlanner/routePlannerService.ts`
+  - `frontend/src/components/types.ts`
+  - `frontend/vite.config.js`
   - `plan.md`
   - `plans/plan.md`
 
@@ -27,3 +51,14 @@ You requested removing `dvnp19` from CODEOWNERS so ownership and review assignme
 - Verified `.github/CODEOWNERS` has no `dvnp19` references ✅
 
 For full implementation details, see `plans/plan.md` section **40) Remove dvnp19 from CODEOWNERS**.
+You asked for (1) `address-autocomplete` split into smaller modules and (2) shared contract validation/schema. This change keeps route handlers thin, centralizes API contract logic, and ensures frontend parsing and backend shaping use the same shared definitions.
+
+### Verification
+- `backend`: `npm run test:coverage` ✅ (100% statements/branches/functions/lines)
+- `backend`: `npm run lint`, `npm run build` ✅
+- `frontend`: `npm run test:coverage` ✅ (97.61% statements / 93.22% branches / 100% functions / 97.60% lines)
+- `frontend`: `npm run lint`, `npm run build` ✅
+
+For full implementation details, see `plans/plan.md` section **40) Address-Autocomplete Modular Refactor + Shared API Contracts**.
+
+For full implementation details, see `plans/plan.md` section **33) Shared Backend HTTP/CORS/Error Helpers**.

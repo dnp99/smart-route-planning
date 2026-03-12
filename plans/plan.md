@@ -808,6 +808,73 @@ Current active planning document:
 
 ### Files updated
 - `.github/CODEOWNERS`
+## 39) Frontend Tests Centralized Under src/tests
+
+### Files added
+- `frontend/src/tests/apiBaseUrl.test.ts`
+- `frontend/src/tests/routePlanner/routePlannerUtils.test.ts`
+- `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+- `frontend/src/tests/routePlanner/useTheme.test.ts`
+- `frontend/src/tests/routePlanner/useDestinationAddresses.test.ts`
+- `frontend/src/tests/routePlanner/useRouteOptimization.test.ts`
+
+### Files deleted
+- `frontend/src/components/apiBaseUrl.test.ts`
+- `frontend/src/components/routePlanner/routePlannerUtils.test.ts`
+- `frontend/src/components/routePlanner/routePlannerService.test.ts`
+- `frontend/src/components/routePlanner/useTheme.test.ts`
+- `frontend/src/components/routePlanner/useDestinationAddresses.test.ts`
+- `frontend/src/components/routePlanner/useRouteOptimization.test.ts`
+
+### Files updated
+- `plan.md`
+- `plans/plan.md`
+
+### What changed
+- Moved all frontend `*.test.ts` files out of `src/components/**` into a single centralized `src/tests/` folder.
+- Kept logical grouping by using a `src/tests/routePlanner/` subfolder for route-planner-related tests.
+- Updated import paths in moved tests to point to component/hook/service modules from their new location.
+
+### Why
+- Frontend test files were requested to be centralized in one tests folder.
+- The new structure keeps tests easier to discover and enforces a consistent testing layout.
+
+### Verification
+- Test discovery:
+  - `frontend/src/**/*.test.ts` now resolves only under `src/tests/` ✅
+- Frontend quality/build:
+  - `npm run test:coverage` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Coverage retained after migration:
+  - **97.61% statements / 93.22% branches / 100% functions / 97.60% lines** ✅
+
+---
+
+## 40) Address-Autocomplete Modular Refactor + Shared API Contracts
+
+### Files added
+- `shared/contracts/common.ts`
+- `shared/contracts/optimizeRoute.ts`
+- `shared/contracts/addressAutocomplete.ts`
+- `shared/contracts/index.ts`
+- `backend/src/app/api/address-autocomplete/constants.ts`
+- `backend/src/app/api/address-autocomplete/validation.ts`
+- `backend/src/app/api/address-autocomplete/cacheAndRateLimit.ts`
+- `backend/src/app/api/address-autocomplete/googlePlacesClient.ts`
+- `backend/src/app/api/address-autocomplete/addressAutocompleteService.ts`
+
+### Files updated
+- `backend/src/app/api/address-autocomplete/route.ts`
+- `backend/src/app/api/optimize-route/route.ts`
+- `backend/src/app/api/optimize-route/types.ts`
+- `backend/src/app/api/optimize-route/route.test.ts`
+- `backend/next.config.ts`
+- `backend/tsconfig.json`
+- `frontend/src/components/AddressAutocompleteInput.tsx`
+- `frontend/src/components/routePlanner/routePlannerService.ts`
+- `frontend/src/components/types.ts`
+- `frontend/vite.config.js`
 - `plan.md`
 - `plans/plan.md`
 
@@ -820,6 +887,38 @@ Current active planning document:
 
 ### Verification
 - Verified `.github/CODEOWNERS` contains no `dvnp19` references.
+- Split `backend/src/app/api/address-autocomplete/route.ts` into a thin route adapter backed by focused modules:
+  - constants (`constants.ts`)
+  - query validation (`validation.ts`)
+  - cache + rate limiting + client key resolution (`cacheAndRateLimit.ts`)
+  - Google Places client/payload mapping (`googlePlacesClient.ts`)
+  - orchestration service (`addressAutocompleteService.ts`)
+- Added shared FE/BE API contract module under `shared/contracts` with runtime parse/guard helpers for:
+  - common API error payloads
+  - optimize-route request/response shapes
+  - address-autocomplete response/suggestion shapes
+- Updated frontend to consume shared contract helpers:
+  - `routePlannerService.ts` now uses shared optimize-route response parsing and shared error extraction
+  - `AddressAutocompleteInput.tsx` now uses shared autocomplete response parsing and shared error extraction
+- Updated frontend component contract types (`types.ts`) to re-export shared API contract types.
+- Added backend optimize-route response-shape guard before serialization to keep runtime response contracts explicit.
+- Updated backend Next config to allow shared external-dir imports and frontend Vite dev server FS allow-list for shared folder usage.
+
+### Why
+- Address-autocomplete route had become a large multi-responsibility file and needed the same modularity pattern as optimize-route.
+- Shared runtime contracts reduce FE/BE schema drift and keep response validation logic consistent across both apps.
+
+### Verification
+- Backend:
+  - `npm run test:coverage` ✅
+  - Result: **100% statements / 100% branches / 100% functions / 100% lines**
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm run test:coverage` ✅
+  - Result: **97.61% statements / 93.22% branches / 100% functions / 97.60% lines**
+  - `npm run lint` ✅
+  - `npm run build` ✅
 
 ## 1) Project Scaffolding
 

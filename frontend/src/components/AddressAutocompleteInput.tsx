@@ -1,11 +1,10 @@
 import { useEffect, useId, useMemo, useState } from 'react';
 import { resolveApiBaseUrl } from './apiBaseUrl';
 import type { AddressSuggestion } from './types';
-
-type AddressAutocompleteResponse = {
-  suggestions?: unknown;
-  error?: string;
-};
+import {
+  extractApiErrorMessage,
+  parseAddressAutocompleteResponse,
+} from '../../../shared/contracts';
 
 type AddressAutocompleteInputProps = {
   id: string;
@@ -24,28 +23,6 @@ type AddressAutocompleteInputProps = {
 const MIN_QUERY_LENGTH = 3;
 const MAX_SUGGESTIONS = 5;
 const AUTOCOMPLETE_DEBOUNCE_MS = 500;
-
-const isAddressSuggestion = (value: unknown): value is AddressSuggestion => {
-  if (typeof value !== 'object' || value === null) {
-    return false;
-  }
-
-  const candidate = value as Partial<AddressSuggestion>;
-  return typeof candidate.displayName === 'string' && typeof candidate.placeId === 'string';
-};
-
-const extractSuggestions = (payload: unknown): AddressSuggestion[] => {
-  if (typeof payload !== 'object' || payload === null) {
-    return [];
-  }
-
-  const response = payload as AddressAutocompleteResponse;
-  if (!Array.isArray(response.suggestions)) {
-    return [];
-  }
-
-  return response.suggestions.filter(isAddressSuggestion).slice(0, MAX_SUGGESTIONS);
-};
 
 function AddressAutocompleteInput({
   id,
@@ -101,14 +78,14 @@ function AddressAutocompleteInput({
           signal: controller.signal,
         });
 
-        const payload = (await response.json().catch(() => null)) as AddressAutocompleteResponse | null;
+        const payload = await response.json().catch(() => null);
 
         if (!response.ok) {
-          throw new Error(payload?.error ?? 'Unable to load address suggestions.');
+          throw new Error(extractApiErrorMessage(payload) ?? 'Unable to load address suggestions.');
         }
 
         if (isSubscribed) {
-          const nextSuggestions = extractSuggestions(payload);
+          const nextSuggestions = parseAddressAutocompleteResponse(payload, MAX_SUGGESTIONS);
           setSuggestions(nextSuggestions);
           setIsDropdownOpen(nextSuggestions.length > 0);
           setActiveSuggestionIndex(nextSuggestions.length > 0 ? 0 : -1);
