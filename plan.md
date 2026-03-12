@@ -132,3 +132,30 @@ Completed route-planner phase-1 patient integration by replacing free-text desti
   - `npm test` ✅ (14 files, 142 tests)
   - `npm run lint` ✅
   - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
+Filled remaining phase-1 frontend automated test gaps from the nurse/patient execution plan, including patients-page validation/search/duplicate coverage, route-planner destination-removal coverage, and integration-style cross-page lifecycle coverage.
+
+### Files added/updated/deleted
+- Added:
+  - `frontend/src/tests/patients/PatientsPage.addressAutocomplete.test.tsx`
+  - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+- Updated:
+  - `frontend/src/tests/patients/PatientsPage.test.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### Why
+- Close plan-specified automated coverage for:
+  - patients-page search and validation behaviors,
+  - duplicate-name disambiguation behavior,
+  - route-planner destination removal behavior,
+  - integration lifecycle and `/patients` → `/route-planner` handoff behavior.
+
+### Verification
+- Frontend:
+  - `npm test` ✅ (12 files, 39 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅

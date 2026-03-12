@@ -1,0 +1,332 @@
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router-dom";
+
+type PatientRecord = {
+  id: string;
+  nurseId: string;
+  firstName: string;
+  lastName: string;
+  address: string;
+  googlePlaceId: string | null;
+  preferredVisitStartTime: string;
+  preferredVisitEndTime: string;
+  visitTimeType: "fixed" | "flexible";
+  createdAt: string;
+  updatedAt: string;
+};
+
+let patientStore: PatientRecord[] = [];
+let patientCounter = 1;
+
+const listPatientsMock = vi.fn(async (query: string) => {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) {
+    return patientStore;
+  }
+
+  return patientStore.filter((patient) => {
+    return (
+      patient.firstName.toLowerCase().indexOf(normalized) !== -1 ||
+      patient.lastName.toLowerCase().indexOf(normalized) !== -1
+    );
+  });
+});
+
+const createPatientMock = vi.fn<
+  (request: {
+    firstName: string;
+    lastName: string;
+    address: string;
+    googlePlaceId?: string | null;
+    preferredVisitStartTime: string;
+    preferredVisitEndTime: string;
+    visitTimeType: "fixed" | "flexible";
+  }) => Promise<PatientRecord>
+>(async (request) => {
+  const createdAt = new Date().toISOString();
+  const createdPatient: PatientRecord = {
+    id: `patient-${patientCounter}`,
+    nurseId: "nurse-1",
+    firstName: request.firstName,
+    lastName: request.lastName,
+    address: request.address,
+    googlePlaceId: request.googlePlaceId ?? null,
+    preferredVisitStartTime: `${request.preferredVisitStartTime}:00`,
+    preferredVisitEndTime: `${request.preferredVisitEndTime}:00`,
+    visitTimeType: request.visitTimeType,
+    createdAt,
+    updatedAt: createdAt,
+  };
+
+  patientCounter += 1;
+  patientStore = [...patientStore, createdPatient];
+  return createdPatient;
+});
+
+const updatePatientMock = vi.fn<
+  (patientId: string, request: Partial<PatientRecord>) => Promise<PatientRecord>
+>(async (patientId, request) => {
+  const existingPatient = patientStore.find((patient) => patient.id === patientId);
+  if (!existingPatient) {
+    throw new Error("Patient not found.");
+  }
+
+  const updatedAt = new Date().toISOString();
+  const updatedPatient: PatientRecord = {
+    ...existingPatient,
+    ...request,
+    preferredVisitStartTime:
+      request.preferredVisitStartTime ?? existingPatient.preferredVisitStartTime,
+    preferredVisitEndTime:
+      request.preferredVisitEndTime ?? existingPatient.preferredVisitEndTime,
+    updatedAt,
+  };
+
+  patientStore = patientStore.map((patient) =>
+    patient.id === patientId ? updatedPatient : patient,
+  );
+
+  return updatedPatient;
+});
+
+const deletePatientMock = vi.fn(async (patientId: string) => {
+  patientStore = patientStore.filter((patient) => patient.id !== patientId);
+  return { deleted: true as const, id: patientId };
+});
+
+const requestOptimizedRouteMock = vi.fn<
+  (request: {
+    startAddress: string;
+    endAddress: string;
+    destinations?: Array<{
+      address: string;
+      patientId?: string;
+      patientName?: string;
+      googlePlaceId?: string | null;
+    }>;
+  }) =>
+    Promise<{
+      start: { address: string; coords: { lat: number; lon: number } };
+      end: { address: string; coords: { lat: number; lon: number } };
+      orderedStops: Array<{
+        address: string;
+        coords: { lat: number; lon: number };
+        patientId?: string;
+        patientName?: string;
+        googlePlaceId: string | null;
+        distanceFromPreviousKm: number;
+        durationFromPreviousSeconds: number;
+        isEndingPoint: boolean;
+      }>;
+      routeLegs: never[];
+      totalDistanceMeters: number;
+      totalDistanceKm: number;
+      totalDurationSeconds: number;
+    }>
+>(async (request) => {
+  const orderedStops = (request.destinations ?? []).map((destination, index) => ({
+    address: destination.address,
+    coords: { lat: 43.0 + index, lon: -79.0 - index },
+    patientId: destination.patientId,
+    patientName: destination.patientName,
+    googlePlaceId: destination.googlePlaceId ?? null,
+    distanceFromPreviousKm: index + 1,
+    durationFromPreviousSeconds: 120,
+    isEndingPoint: false,
+  }));
+
+  return {
+    start: {
+      address: request.startAddress,
+      coords: { lat: 43.1, lon: -79.1 },
+    },
+    end: {
+      address: request.endAddress,
+      coords: { lat: 43.2, lon: -79.2 },
+    },
+    orderedStops,
+    routeLegs: [],
+    totalDistanceMeters: 1000,
+    totalDistanceKm: 1,
+    totalDurationSeconds: 120,
+  };
+});
+
+vi.mock("../../components/patients/patientService", () => ({
+  listPatients: (query: string) => listPatientsMock(query),
+  createPatient: (request: Parameters<typeof createPatientMock>[0]) =>
+    createPatientMock(request),
+  updatePatient: (
+    patientId: string,
+    request: Parameters<typeof updatePatientMock>[1],
+  ) => updatePatientMock(patientId, request),
+  deletePatient: (patientId: string) => deletePatientMock(patientId),
+}));
+
+vi.mock("../../components/routePlanner/routePlannerService", () => ({
+  requestOptimizedRoute: (request: Parameters<typeof requestOptimizedRouteMock>[0]) =>
+    requestOptimizedRouteMock(request),
+}));
+
+vi.mock("../../components/AddressAutocompleteInput", () => ({
+  default: ({
+    id,
+    label,
+    value,
+    onChange,
+    disabled,
+  }: {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    disabled?: boolean;
+  }) => (
+    <div>
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        value={value}
+        disabled={Boolean(disabled)}
+        onChange={(event) => onChange((event.target as HTMLInputElement).value)}
+      />
+    </div>
+  ),
+}));
+
+vi.mock("../../components/RouteMap", () => ({
+  default: () => null,
+}));
+
+import App from "../../App";
+
+describe("patients and route planner integration", () => {
+  beforeEach(() => {
+    patientStore = [];
+    patientCounter = 1;
+
+    listPatientsMock.mockClear();
+    createPatientMock.mockClear();
+    updatePatientMock.mockClear();
+    deletePatientMock.mockClear();
+    requestOptimizedRouteMock.mockClear();
+
+    vi.useRealTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    cleanup();
+  });
+
+  it("supports create -> search -> edit -> delete lifecycle on /patients", async () => {
+    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+    render(
+      <MemoryRouter initialEntries={["/patients"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText("First name"), {
+      target: { value: "Jane" },
+    });
+    fireEvent.change(screen.getByLabelText("Last name"), {
+      target: { value: "Doe" },
+    });
+    fireEvent.change(screen.getByLabelText("Address"), {
+      target: { value: "123 Main St" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Jane Doe/i })).toBeTruthy();
+    });
+
+    fireEvent.change(screen.getByLabelText("Search patients"), {
+      target: { value: "doe" },
+    });
+
+    await waitFor(() => {
+      expect(listPatientsMock).toHaveBeenLastCalledWith("doe");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Jane Doe/i }));
+    fireEvent.change(screen.getByLabelText("First name"), {
+      target: { value: "Janet" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Janet Doe/i })).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Janet Doe/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Delete patient/i }));
+
+    await waitFor(() => {
+      expect(deletePatientMock).toHaveBeenCalledTimes(1);
+      expect(screen.getByText("No patients match this search.")).toBeTruthy();
+    });
+
+    expect(confirmSpy).toHaveBeenCalled();
+    confirmSpy.mockRestore();
+  });
+
+  it("makes created patients available on /route-planner and preserves patient context in optimization", async () => {
+    render(
+      <MemoryRouter initialEntries={["/patients"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByLabelText("First name"), {
+      target: { value: "John" },
+    });
+    fireEvent.change(screen.getByLabelText("Last name"), {
+      target: { value: "Smith" },
+    });
+    fireEvent.change(screen.getByLabelText("Address"), {
+      target: { value: "456 Queen St" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /John Smith/i })).toBeTruthy();
+    });
+
+    fireEvent.click(screen.getByRole("link", { name: "Route Planner" }));
+    fireEvent.change(screen.getByLabelText("Ending point"), {
+      target: { value: "Airport" },
+    });
+    fireEvent.change(screen.getByLabelText("Destination patient search"), {
+      target: { value: "john" },
+    });
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /John Smith/i })).toBeTruthy();
+    }, { timeout: 1500 });
+
+    fireEvent.click(screen.getByRole("button", { name: /John Smith/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    await waitFor(() => {
+      expect(requestOptimizedRouteMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          endAddress: "Airport",
+          destinations: [
+            expect.objectContaining({
+              patientName: "John Smith",
+              address: "456 Queen St",
+            }),
+          ],
+        }),
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Patient: John Smith")).toBeTruthy();
+    });
+  });
+});

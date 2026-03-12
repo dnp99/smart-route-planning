@@ -155,4 +155,16 @@ describe("RoutePlanner patient selection integration", () => {
       canOptimize: true,
     });
   });
+
+  it("removes selected destination patient from planner state", () => {
+    render(<RoutePlanner />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
+    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Remove" }));
+
+    expect(screen.getByText("0 destination(s) detected")).toBeTruthy();
+    expect(screen.getByText("No destination patients selected yet.")).toBeTruthy();
+  });
 });
