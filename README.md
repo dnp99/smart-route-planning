@@ -6,7 +6,8 @@ React frontend + Next.js backend route planner.
 
 - User enters a **starting point**.
 - User enters an **ending point**.
-- User enters multiple **destination addresses** (one per line).
+- User selects one or more **destination patients**.
+- Users must authenticate before viewing patient or route-planning data.
 - Backend geocodes addresses and returns a route ordered by **nearest next stop first**, then
   ends at the provided ending point.
 - Backend enriches the ordered route with **Google driving distance, duration, and route geometry**
@@ -45,6 +46,10 @@ Runs on `http://localhost:3000`.
 Required local backend envs live in `backend/.env.local`, for example:
 
 ```bash
+JWT_SECRET=replace_with_a_long_random_secret
+JWT_EXPIRES_IN=1h
+DEFAULT_NURSE_EMAIL=nicole@careflow.local
+DEFAULT_NURSE_PASSWORD=careflow-dev-password
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ALLOWED_ORIGINS=http://localhost:5173
 OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
@@ -69,18 +74,40 @@ Frontend API base URL defaults to `http://localhost:3000`. For deployed environm
 
 ## API request example
 
+Login first:
+
+`POST http://localhost:3000/api/auth/login`
+
+```json
+{
+  "email": "nicole@careflow.local",
+  "password": "careflow-dev-password"
+}
+```
+
+Then call optimize-route with bearer auth:
+
 `POST http://localhost:3000/api/optimize-route`
 
 ```json
 {
   "startAddress": "1 Apple Park Way, Cupertino",
   "endAddress": "San Francisco International Airport",
-  "addresses": [
-    "1600 Amphitheatre Parkway, Mountain View",
-    "1 Infinite Loop, Cupertino",
-    "500 Terry A Francois Blvd, San Francisco"
+  "destinations": [
+    {
+      "patientId": "patient-1",
+      "patientName": "Jane Doe",
+      "address": "1600 Amphitheatre Parkway, Mountain View",
+      "googlePlaceId": null
+    }
   ]
 }
+```
+
+Required auth header:
+
+```http
+Authorization: Bearer your_jwt_access_token
 ```
 
 If `OPTIMIZE_ROUTE_API_KEY` is configured on the backend, include this header:
@@ -97,6 +124,7 @@ Current production note:
 - Geocoding uses OpenStreetMap Nominatim.
 - Driving route distance, duration, and geometry use Google Routes API.
 - Address suggestions use Google Places API.
+- All business backend endpoints require JWT bearer authentication.
 - Route ordering uses greedy nearest-neighbor logic (nearest next stop from current stop).
 - Stop ordering still uses straight-line nearest-neighbor in Phase 1, but displayed route metrics
   and map geometry are road-network based.

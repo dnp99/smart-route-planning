@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseOptimizeRouteResponse } from "../../../../../shared/contracts";
+import { requireAuth } from "../../../lib/auth/requireAuth";
 import { HttpError, buildCorsHeaders, toErrorResponse } from "../../../lib/http";
 import { optimizeRoute } from "./optimizeRouteService";
 import { enforceOptimizeRouteRateLimit, requireOptimizeRouteApiKey } from "./requestGuards";
@@ -10,7 +11,8 @@ export async function OPTIONS(request: Request) {
     status: 204,
     headers: buildCorsHeaders(request, {
       methods: "POST, OPTIONS",
-      allowedHeaders: "Content-Type, x-optimize-route-key",
+      allowedHeaders: "Content-Type, Authorization, x-optimize-route-key",
+      originPolicy: "strict",
     }),
   });
 }
@@ -18,10 +20,12 @@ export async function OPTIONS(request: Request) {
 export async function POST(request: Request) {
   const corsHeaders = buildCorsHeaders(request, {
     methods: "POST, OPTIONS",
-    allowedHeaders: "Content-Type, x-optimize-route-key",
+    allowedHeaders: "Content-Type, Authorization, x-optimize-route-key",
+    originPolicy: "strict",
   });
 
   try {
+    await requireAuth(request);
     requireOptimizeRouteApiKey(request);
     enforceOptimizeRouteRateLimit(request);
 

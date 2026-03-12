@@ -9,6 +9,26 @@ export const findNurseByExternalKey = async (externalKey: string) => {
   return nurse ?? null;
 };
 
+export const findNurseById = async (nurseId: string) => {
+  const [nurse] = await getDb().select().from(nurses).where(eq(nurses.id, nurseId)).limit(1);
+  return nurse ?? null;
+};
+
+export const findNurseByEmail = async (email: string) => {
+  const [nurse] = await getDb().select().from(nurses).where(eq(nurses.email, email)).limit(1);
+  return nurse ?? null;
+};
+
+export const updateNurseLastLoginAt = async (nurseId: string) => {
+  await getDb()
+    .update(nurses)
+    .set({
+      lastLoginAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(nurses.id, nurseId));
+};
+
 export const listPatientsByNurse = async (nurseId: string, query?: string) => {
   const normalizedQuery = query?.trim() ?? "";
 

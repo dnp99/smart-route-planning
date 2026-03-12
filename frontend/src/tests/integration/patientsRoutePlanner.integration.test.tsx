@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
+import { setAuthSession } from "../../components/auth/authSession";
 
 type PatientRecord = {
   id: string;
@@ -203,6 +204,13 @@ import App from "../../App";
 
 describe("patients and route planner integration", () => {
   beforeEach(() => {
+    window.localStorage.clear();
+    setAuthSession("test-token", {
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+    });
+
     patientStore = [];
     patientCounter = 1;
 
@@ -217,6 +225,7 @@ describe("patients and route planner integration", () => {
 
   afterEach(() => {
     vi.useRealTimers();
+    window.localStorage.clear();
     cleanup();
   });
 

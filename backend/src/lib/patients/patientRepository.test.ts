@@ -16,9 +16,12 @@ vi.mock("./patientValidation", () => ({
 import {
   createPatientForNurse,
   deletePatientForNurse,
+  findNurseByEmail,
   findNurseByExternalKey,
+  findNurseById,
   findPatientByIdForNurse,
   listPatientsByNurse,
+  updateNurseLastLoginAt,
   updatePatientForNurse,
 } from "./patientRepository";
 
@@ -47,6 +50,47 @@ describe("patientRepository", () => {
     getDbMock.mockReturnValue({ select: selectMock });
 
     await expect(findNurseByExternalKey("missing")).resolves.toBeNull();
+  });
+
+  it("finds nurse by id", async () => {
+    const limitMock = vi.fn().mockResolvedValue([{ id: "nurse-1" }]);
+    const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+    const selectMock = vi.fn().mockReturnValue({ from: fromMock });
+    getDbMock.mockReturnValue({ select: selectMock });
+
+    await expect(findNurseById("nurse-1")).resolves.toEqual({ id: "nurse-1" });
+  });
+
+  it("finds nurse by email", async () => {
+    const limitMock = vi.fn().mockResolvedValue([{ id: "nurse-1", email: "nurse@example.com" }]);
+    const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
+    const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+    const selectMock = vi.fn().mockReturnValue({ from: fromMock });
+    getDbMock.mockReturnValue({ select: selectMock });
+
+    await expect(findNurseByEmail("nurse@example.com")).resolves.toEqual({
+      id: "nurse-1",
+      email: "nurse@example.com",
+    });
+  });
+
+  it("updates nurse last login timestamp", async () => {
+    const whereMock = vi.fn().mockResolvedValue(undefined);
+    const setMock = vi.fn().mockReturnValue({ where: whereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: setMock });
+    getDbMock.mockReturnValue({ update: updateMock });
+
+    await updateNurseLastLoginAt("nurse-1");
+
+    expect(updateMock).toHaveBeenCalled();
+    expect(setMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lastLoginAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      }),
+    );
+    expect(whereMock).toHaveBeenCalled();
   });
 
   it("lists patients for nurse with default ordering", async () => {

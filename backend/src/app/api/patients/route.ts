@@ -1,17 +1,18 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "../../../lib/auth/requireAuth";
 import { buildCorsHeaders, toErrorResponse } from "../../../lib/http";
 import { toPatientDto } from "../../../lib/patients/patientDto";
 import {
   createPatientForNurse,
   listPatientsByNurse,
 } from "../../../lib/patients/patientRepository";
-import { resolveNurseContext } from "../../../lib/patients/nurseContext";
 import { validateCreatePatientPayload } from "../../../lib/patients/patientValidation";
 
 export async function OPTIONS(request: Request) {
   try {
     const corsHeaders = buildCorsHeaders(request, {
       methods: "GET, POST, OPTIONS",
+      allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
     });
 
@@ -30,14 +31,15 @@ export async function GET(request: Request) {
   try {
     corsHeaders = buildCorsHeaders(request, {
       methods: "GET, POST, OPTIONS",
+      allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
     });
 
-    const nurseContext = await resolveNurseContext();
+    const auth = await requireAuth(request);
     const requestUrl = new URL(request.url);
     const query = requestUrl.searchParams.get("query") ?? "";
 
-    const patients = await listPatientsByNurse(nurseContext.nurseId, query);
+    const patients = await listPatientsByNurse(auth.nurseId, query);
     return NextResponse.json(
       {
         patients: patients.map(toPatientDto),
@@ -55,10 +57,11 @@ export async function POST(request: Request) {
   try {
     corsHeaders = buildCorsHeaders(request, {
       methods: "GET, POST, OPTIONS",
+      allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
     });
 
-    const nurseContext = await resolveNurseContext();
+    const auth = await requireAuth(request);
 
     let body: unknown;
     try {
@@ -71,7 +74,7 @@ export async function POST(request: Request) {
     }
 
     const payload = validateCreatePatientPayload(body);
-    const created = await createPatientForNurse(nurseContext.nurseId, payload);
+    const created = await createPatientForNurse(auth.nurseId, payload);
 
     return NextResponse.json(toPatientDto(created), { status: 201, headers: corsHeaders });
   } catch (error) {

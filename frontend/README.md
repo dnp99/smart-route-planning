@@ -5,6 +5,7 @@ This folder contains the Vite + React frontend for CareFlow.
 ## Responsibilities
 
 - Collect starting point, ending point, and intermediate destinations.
+- Require login before allowing access to patient and route-planner pages.
 - Fetch Google Places-backed address suggestions from the backend autocomplete endpoint.
 - Submit route optimization requests to the backend.
 - Render the optimized route with Leaflet.
@@ -42,6 +43,9 @@ or:
 ## Key files
 
 - `src/components/RoutePlanner.tsx` - main UI and API request flow
+- `src/components/auth/LoginPage.tsx` - login screen
+- `src/components/auth/authSession.ts` - local session/token storage and auth change events
+- `src/components/auth/authFetch.ts` - authenticated backend fetch helper
 - `src/components/AddressAutocompleteInput.tsx` - address suggestion input
 - `src/components/RouteMap.tsx` - Leaflet route map
 - `src/components/apiBaseUrl.ts` - runtime backend URL resolution

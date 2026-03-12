@@ -1,10 +1,9 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { resolveApiBaseUrl } from './apiBaseUrl';
 import type { AddressSuggestion } from './types';
 import {
-  extractApiErrorMessage,
   parseAddressAutocompleteResponse,
 } from '../../../shared/contracts';
+import { requestAuthedJson } from './auth/authFetch';
 
 type AddressAutocompleteInputProps = {
   id: string;
@@ -76,17 +75,15 @@ function AddressAutocompleteInput({
       setError('');
 
       try {
-        const apiBaseUrl = resolveApiBaseUrl();
         const params = new URLSearchParams({ query });
-        const response = await fetch(`${apiBaseUrl}/api/address-autocomplete?${params}`, {
-          signal: controller.signal,
-        });
-
-        const payload = await response.json().catch(() => null);
-
-        if (!response.ok) {
-          throw new Error(extractApiErrorMessage(payload) ?? 'Unable to load address suggestions.');
-        }
+        const payload = await requestAuthedJson(
+          `/api/address-autocomplete?${params}`,
+          {
+            method: 'GET',
+            signal: controller.signal,
+          },
+          'Unable to load address suggestions.',
+        );
 
         if (isSubscribed) {
           const nextSuggestions = parseAddressAutocompleteResponse(payload, MAX_SUGGESTIONS);

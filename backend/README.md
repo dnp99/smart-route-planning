@@ -6,9 +6,10 @@ This folder contains the Next.js backend for CareFlow.
 
 - Expose `POST /api/optimize-route` for route optimization.
 - Expose `GET /api/address-autocomplete` for address suggestions.
+- Expose auth endpoints for login and current-user identity.
 - Geocode addresses through OpenStreetMap Nominatim.
 - Fetch address suggestions through Google Places API.
-- Enforce request validation, timeouts, CORS, and lightweight rate limiting.
+- Enforce JWT authentication on all business endpoints, plus validation, timeouts, CORS, and lightweight rate limiting.
 
 ## Local development
 
@@ -36,17 +37,27 @@ The backend runs on `http://localhost:3000`.
 - `DATABASE_URL`
   - Required for patient persistence.
   - Neon/Postgres connection string.
-- `DEFAULT_NURSE_POC`
-  - Required for patient endpoints.
-  - Must be `true` to enable patient CRUD in phase 1.
-- `DEFAULT_NURSE_ID`
-  - Required when `DEFAULT_NURSE_POC=true`.
-  - Must match `nurses.external_key` (for example `default-nurse`).
+- `JWT_SECRET`
+  - Required.
+  - Secret used for signing and verifying access tokens.
+- `JWT_EXPIRES_IN`
+  - Optional.
+  - JWT access-token TTL accepted by `jose` (for example `1h`, `30m`).
+  - Default: `1h`.
+- `DEFAULT_NURSE_EMAIL`
+  - Optional.
+  - Used by `src/db/seed-default-nurse.ts` bootstrap script.
+  - Default: `nicole@careflow.local`.
+- `DEFAULT_NURSE_PASSWORD`
+  - Optional.
+  - Used by `src/db/seed-default-nurse.ts` bootstrap script.
+  - Default: `careflow-dev-password`.
 - `GOOGLE_MAPS_API_KEY`
   - Required for Google driving route distance, duration, route geometry, and address suggestions.
 - `OPTIMIZE_ROUTE_API_KEY`
   - Optional.
   - If set, `POST /api/optimize-route` requires this value in the `x-optimize-route-key` header.
+  - For browser-based frontend usage, leave this unset unless you can securely inject/request it from a trusted backend proxy.
 - `OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS`
   - Optional.
   - Max optimize-route requests per client within the rate-limit window.
@@ -62,8 +73,11 @@ Example local file:
 
 ```bash
 DATABASE_URL=postgres://username:password@host:5432/database
-DEFAULT_NURSE_POC=true
 DEFAULT_NURSE_ID=default-nurse
+DEFAULT_NURSE_EMAIL=nicole@careflow.local
+DEFAULT_NURSE_PASSWORD=careflow-dev-password
+JWT_SECRET=replace_with_a_long_random_secret
+JWT_EXPIRES_IN=1h
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ALLOWED_ORIGINS=http://localhost:5173
 OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
@@ -74,33 +88,44 @@ NOMINATIM_CONTACT_EMAIL=you@example.com
 
 ## API endpoints
 
+- `POST /api/auth/login`
+  - Accepts `{ email, password }`
+  - Returns `{ token, user }` when credentials are valid
+- `GET /api/auth/me`
+  - Requires `Authorization: Bearer <token>`
+  - Returns current authenticated user
 - `POST /api/optimize-route`
+  - Requires `Authorization: Bearer <token>`
   - Accepts `startAddress`, `endAddress`, and `destinations[]`
   - Each destination must include `patientId`, `patientName`, `address`, and optional `googlePlaceId`
   - Returns geocoded stops in greedy nearest-neighbor order plus Google driving route legs, total distance, and total duration
   - Enforces per-client in-memory rate limiting
   - If `OPTIMIZE_ROUTE_API_KEY` is configured, requires `x-optimize-route-key` request header
 - `GET /api/address-autocomplete?query=...`
+  - Requires `Authorization: Bearer <token>`
   - Returns up to 5 suggestions
   - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
 - `GET /api/patients?query=...`
-  - Lists patients for the resolved default nurse
+  - Requires `Authorization: Bearer <token>`
+  - Lists patients for the authenticated nurse (`JWT sub`)
   - Optional `query` applies case-insensitive substring search on first/last name
 - `POST /api/patients`
-  - Creates a patient for the resolved default nurse
+  - Requires `Authorization: Bearer <token>`
+  - Creates a patient for the authenticated nurse (`JWT sub`)
   - Returns `201` with created patient JSON
 - `PATCH /api/patients/:id`
-  - Partially updates a patient owned by the resolved default nurse
+  - Requires `Authorization: Bearer <token>`
+  - Partially updates a patient owned by the authenticated nurse (`JWT sub`)
   - Returns updated patient JSON
 - `DELETE /api/patients/:id`
-  - Hard deletes a patient owned by the resolved default nurse
+  - Requires `Authorization: Bearer <token>`
+  - Hard deletes a patient owned by the authenticated nurse (`JWT sub`)
   - Returns `{ "deleted": true, "id": "..." }`
 
-Patient endpoint configuration behavior:
+Authentication behavior:
 
-- Missing `DATABASE_URL` returns `500` config error.
-- `DEFAULT_NURSE_POC !== true` returns `500` unsupported error.
-- `DEFAULT_NURSE_POC=true` without `DEFAULT_NURSE_ID` returns `500` config error.
+- Missing/invalid/malformed bearer token returns `401`.
+- Missing `JWT_SECRET` returns `500` configuration error.
 
 Patient update behavior note:
 

@@ -32,6 +32,13 @@ Use two environments:
 - `ALLOWED_ORIGINS`
   - Staging: `https://app-staging.yourdomain.com`
   - Production: `https://app.yourdomain.com`
+- `JWT_SECRET`
+  - Required long random secret used to sign and verify access tokens.
+- `JWT_EXPIRES_IN`
+  - Optional JWT TTL (for example `1h`, `30m`).
+  - Default: `1h`.
+- `GOOGLE_MAPS_API_KEY`
+  - Required for route legs and address autocomplete.
 - `NOMINATIM_CONTACT_EMAIL`
   - Real monitored email address required for responsible upstream usage.
 
@@ -98,8 +105,10 @@ Before first prod cut:
 
 1. Verify backend CORS allows only frontend domain.
 2. Confirm API health:
-   - `GET /api/address-autocomplete?query=Toronto`
-   - `POST /api/optimize-route`
+   - `POST /api/auth/login`
+   - `GET /api/auth/me` with `Authorization: Bearer <token>`
+   - `GET /api/address-autocomplete?query=Toronto` with bearer token
+   - `POST /api/optimize-route` with bearer token
 3. Validate frontend runtime API URL points to prod backend.
 4. Smoke test route optimization in browser.
 

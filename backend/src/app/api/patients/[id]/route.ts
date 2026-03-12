@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "../../../../lib/auth/requireAuth";
 import { HttpError, buildCorsHeaders, toErrorResponse } from "../../../../lib/http";
 import { toPatientDto } from "../../../../lib/patients/patientDto";
 import {
   deletePatientForNurse,
   updatePatientForNurse,
 } from "../../../../lib/patients/patientRepository";
-import { resolveNurseContext } from "../../../../lib/patients/nurseContext";
 import { validateUpdatePatientPayload } from "../../../../lib/patients/patientValidation";
 
 type ParamsContext = {
@@ -27,6 +27,7 @@ export async function OPTIONS(request: Request) {
   try {
     const corsHeaders = buildCorsHeaders(request, {
       methods: "PATCH, DELETE, OPTIONS",
+      allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
     });
 
@@ -45,11 +46,12 @@ export async function PATCH(request: Request, context: ParamsContext) {
   try {
     corsHeaders = buildCorsHeaders(request, {
       methods: "PATCH, DELETE, OPTIONS",
+      allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
     });
 
     const patientId = await resolvePatientId(context);
-    const nurseContext = await resolveNurseContext();
+    const auth = await requireAuth(request);
 
     let body: unknown;
     try {
@@ -62,7 +64,7 @@ export async function PATCH(request: Request, context: ParamsContext) {
     }
 
     const payload = validateUpdatePatientPayload(body);
-    const updatedPatient = await updatePatientForNurse(nurseContext.nurseId, patientId, payload);
+    const updatedPatient = await updatePatientForNurse(auth.nurseId, patientId, payload);
 
     if (!updatedPatient) {
       return NextResponse.json(
@@ -83,12 +85,13 @@ export async function DELETE(request: Request, context: ParamsContext) {
   try {
     corsHeaders = buildCorsHeaders(request, {
       methods: "PATCH, DELETE, OPTIONS",
+      allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
     });
 
     const patientId = await resolvePatientId(context);
-    const nurseContext = await resolveNurseContext();
-    const deletedPatient = await deletePatientForNurse(nurseContext.nurseId, patientId);
+    const auth = await requireAuth(request);
+    const deletedPatient = await deletePatientForNurse(auth.nurseId, patientId);
 
     if (!deletedPatient) {
       return NextResponse.json(

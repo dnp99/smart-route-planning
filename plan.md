@@ -6,10 +6,76 @@ Files:
 
 - `plans/change-log.md` - implementation history and completed change log
 - `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
+- `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
 ## Latest change record
+
+### Change
+Implemented end-to-end JWT authentication with login-gated frontend access and backend route protection across all business endpoints.
+
+### Files added/updated/deleted
+- Added:
+  - `plans/jwt-authentication-execution-plan.md`
+  - `shared/contracts/auth.ts`
+  - `backend/src/lib/auth/password.ts`
+  - `backend/src/lib/auth/jwt.ts`
+  - `backend/src/lib/auth/requireAuth.ts`
+  - `backend/src/app/api/auth/login/route.ts`
+  - `backend/src/app/api/auth/me/route.ts`
+  - `backend/src/lib/auth/password.test.ts`
+  - `backend/src/lib/auth/jwt.test.ts`
+  - `backend/src/lib/auth/requireAuth.test.ts`
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/src/app/api/auth/me/route.test.ts`
+  - `frontend/src/components/auth/authSession.ts`
+  - `frontend/src/components/auth/authFetch.ts`
+  - `frontend/src/components/auth/authService.ts`
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `backend/drizzle/0001_useful_skaar.sql`
+  - `backend/drizzle/meta/0001_snapshot.json`
+- Updated:
+  - `shared/contracts/index.ts`
+  - `backend/src/db/schema.ts`
+  - `backend/src/db/seed-default-nurse.ts`
+  - `backend/src/lib/http.ts`
+  - `backend/src/lib/patients/patientRepository.ts`
+  - `backend/src/app/api/optimize-route/route.ts`
+  - `backend/src/app/api/address-autocomplete/route.ts`
+  - `backend/src/app/api/patients/route.ts`
+  - `backend/src/app/api/patients/[id]/route.ts`
+  - backend test files for optimize-route/address-autocomplete/patients/http/repository coverage
+  - `frontend/src/App.jsx`
+  - `frontend/src/components/AddressAutocompleteInput.tsx`
+  - `frontend/src/components/patients/patientService.ts`
+  - `frontend/src/components/routePlanner/routePlannerService.ts`
+  - frontend route/service/integration test files to account for auth-gated navigation and bearer headers
+  - `README.md`
+  - `backend/README.md`
+  - `frontend/README.md`
+  - `backend/.env.local.example`
+  - `DEPLOYMENT.md`
+  - `plan.md`
+
+### Why
+- Users now must authenticate before seeing patient or route-planner data.
+- Backend business endpoints now enforce JWT bearer authentication uniformly.
+- Authenticated nurse identity now scopes patient operations instead of env-based default-nurse request context.
+- Added auth contracts and tests to keep frontend/backend behavior aligned and verifiable.
+
+### Verification
+- LSP diagnostics on modified implementation files: ✅ no errors.
+- Backend:
+  - `npm test` ✅ (19 files, 168 tests)
+  - `npm run test:coverage` ✅ (98%+ overall, thresholds pass)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm test` ✅ (12 files, 41 tests)
+  - `npm run test:coverage` ✅ (thresholds pass)
+  - `npm run lint` ✅
+  - `npm run build` ✅
 
 ### Change
 Completed backend-first nurse/patient work by fixing patient update semantics and extending optimize-route backend support to accept patient-linked `destinations[]` payloads (while preserving legacy `addresses[]` compatibility).

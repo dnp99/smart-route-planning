@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAuth } from "../../../lib/auth/requireAuth";
 import { buildCorsHeaders, toErrorResponse } from "../../../lib/http";
 import { getAddressAutocompleteResponse } from "./addressAutocompleteService";
 
@@ -6,6 +7,7 @@ export async function OPTIONS(request: Request) {
   try {
     const corsHeaders = buildCorsHeaders(request, {
       methods: "GET, OPTIONS",
+      allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
     });
 
@@ -24,8 +26,11 @@ export async function GET(request: Request) {
   try {
     corsHeaders = buildCorsHeaders(request, {
       methods: "GET, OPTIONS",
+      allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
     });
+
+    await requireAuth(request);
 
     const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY?.trim();
     if (!googleMapsApiKey) {
