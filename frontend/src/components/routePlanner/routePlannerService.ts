@@ -9,6 +9,7 @@ export const requestOptimizedRoute = async ({
   startAddress,
   endAddress,
   addresses,
+  destinations,
 }: OptimizeRouteRequest) => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/optimize-route`, {
@@ -20,6 +21,7 @@ export const requestOptimizedRoute = async ({
       startAddress,
       endAddress,
       addresses,
+      destinations,
     }),
   });
 

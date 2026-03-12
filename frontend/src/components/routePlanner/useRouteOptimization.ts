@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { requestOptimizedRoute } from "./routePlannerService";
 import type { OptimizeRouteResponse } from "../types";
+import type { OptimizeRouteDestination } from "../../../../shared/contracts";
 
 type OptimizeRouteInput = {
   startAddress: string;
   endAddress: string;
-  destinationAddresses: string[];
+  destinations: OptimizeRouteDestination[];
   canOptimize: boolean;
 };
 
@@ -33,7 +34,7 @@ export const useRouteOptimization = () => {
   const optimizeRoute = async ({
     startAddress,
     endAddress,
-    destinationAddresses,
+    destinations,
     canOptimize,
   }: OptimizeRouteInput) => {
     setError("");
@@ -50,7 +51,7 @@ export const useRouteOptimization = () => {
       const optimizedResult = await requestOptimizedRoute({
         startAddress,
         endAddress,
-        addresses: destinationAddresses,
+        destinations,
       });
 
       setResult(optimizedResult);

@@ -36,7 +36,20 @@ describe("requestOptimizedRoute", () => {
     const result = await requestOptimizedRoute({
       startAddress: "Start",
       endAddress: "End",
-      addresses: ["A", "B"],
+      destinations: [
+        {
+          address: "A",
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          googlePlaceId: null,
+        },
+        {
+          address: "B",
+          patientId: "patient-2",
+          patientName: "John Doe",
+          googlePlaceId: "place-2",
+        },
+      ],
     });
 
     expect(result).toEqual(payload);
@@ -48,7 +61,21 @@ describe("requestOptimizedRoute", () => {
         body: JSON.stringify({
           startAddress: "Start",
           endAddress: "End",
-          addresses: ["A", "B"],
+          addresses: undefined,
+          destinations: [
+            {
+              address: "A",
+              patientId: "patient-1",
+              patientName: "Jane Doe",
+              googlePlaceId: null,
+            },
+            {
+              address: "B",
+              patientId: "patient-2",
+              patientName: "John Doe",
+              googlePlaceId: "place-2",
+            },
+          ],
         }),
       },
     );
@@ -64,7 +91,7 @@ describe("requestOptimizedRoute", () => {
       requestOptimizedRoute({
         startAddress: "Start",
         endAddress: "End",
-        addresses: [],
+        destinations: [],
       }),
     ).rejects.toThrow("Detailed backend error");
   });
@@ -79,7 +106,7 @@ describe("requestOptimizedRoute", () => {
       requestOptimizedRoute({
         startAddress: "Start",
         endAddress: "End",
-        addresses: [],
+        destinations: [],
       }),
     ).rejects.toThrow("Unable to optimize route.");
   });
@@ -94,7 +121,7 @@ describe("requestOptimizedRoute", () => {
       requestOptimizedRoute({
         startAddress: "Start",
         endAddress: "End",
-        addresses: [],
+        destinations: [],
       }),
     ).rejects.toThrow("Unexpected API response format.");
   });
