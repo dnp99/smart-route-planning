@@ -106,6 +106,14 @@ const janePatient = {
   preferredVisitStartTime: "09:00:00",
   preferredVisitEndTime: "11:00:00",
   visitTimeType: "fixed" as const,
+  visitWindows: [
+    {
+      id: "window-1",
+      startTime: "09:00:00",
+      endTime: "11:00:00",
+      visitTimeType: "fixed" as const,
+    },
+  ],
   createdAt: "2026-03-12T12:00:00.000Z",
   updatedAt: "2026-03-12T12:00:00.000Z",
 };
@@ -120,6 +128,29 @@ const johnPatient = {
   preferredVisitStartTime: "10:00:00",
   preferredVisitEndTime: "12:00:00",
   visitTimeType: "flexible" as const,
+  visitWindows: [
+    {
+      id: "window-2",
+      startTime: "10:00:00",
+      endTime: "12:00:00",
+      visitTimeType: "flexible" as const,
+    },
+  ],
+  createdAt: "2026-03-12T12:00:00.000Z",
+  updatedAt: "2026-03-12T12:00:00.000Z",
+};
+
+const flexNoWindowPatient = {
+  id: "patient-3",
+  nurseId: "nurse-1",
+  firstName: "Flex",
+  lastName: "Patient",
+  address: "789 King St",
+  googlePlaceId: null,
+  preferredVisitStartTime: "00:00:00",
+  preferredVisitEndTime: "23:59:00",
+  visitTimeType: "flexible" as const,
+  visitWindows: [],
   createdAt: "2026-03-12T12:00:00.000Z",
   updatedAt: "2026-03-12T12:00:00.000Z",
 };
@@ -129,7 +160,7 @@ describe("RoutePlanner patient selection integration", () => {
     optimizeRouteMock.mockReset();
     usePatientSearchMock.mockReset();
     usePatientSearchMock.mockImplementation(({ enabled }: { enabled: boolean }) => ({
-      patients: enabled ? [janePatient, johnPatient] : [],
+      patients: enabled ? [janePatient, johnPatient, flexNoWindowPatient] : [],
       isLoading: false,
       error: "",
     }));
@@ -139,59 +170,32 @@ describe("RoutePlanner patient selection integration", () => {
     cleanup();
   });
 
-  it("allows selecting the same patient multiple times for separate visits", () => {
+  it("adds destination patients and prevents duplicate selection", () => {
     render(<RoutePlanner />);
 
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
-    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
 
-    expect(screen.getByText("2 destination(s) detected")).toBeTruthy();
-    expect(screen.getAllByRole("button", { name: /Jane Doe/i }).length).toBeGreaterThan(0);
+    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+    expect(screen.queryAllByRole("button", { name: /Jane Doe/i })).toHaveLength(0);
   });
 
-  it("supports multi-window visits for one patient in optimize payload", () => {
+  it("blocks route optimization when selected patient windows overlap", () => {
     render(<RoutePlanner />);
 
     fireEvent.change(screen.getByLabelText("Ending point"), {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Duplicate visit" }));
-
-    fireEvent.change(screen.getAllByDisplayValue("09:00")[1], {
-      target: { value: "19:30" },
-    });
-    fireEvent.change(screen.getAllByDisplayValue("11:00")[1], {
-      target: { value: "20:00" },
-    });
+    fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
 
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 
-    expect(optimizeRouteMock).toHaveBeenCalledWith({
-      startAddress: "3361 Ingram Road, Mississauga, ON",
-      endAddress: "Airport",
-      destinations: [
-        {
-          patientId: "patient-1",
-          patientName: "Jane Doe",
-          address: "123 Main St",
-          googlePlaceId: "place-1",
-          windowStart: "09:00",
-          windowEnd: "11:00",
-          windowType: "fixed",
-        },
-        {
-          patientId: "patient-1",
-          patientName: "Jane Doe",
-          address: "123 Main St",
-          googlePlaceId: "place-1",
-          windowStart: "19:30",
-          windowEnd: "20:00",
-          windowType: "fixed",
-        },
-      ],
-      canOptimize: true,
-    });
+    expect(optimizeRouteMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        "Selected patient windows overlap. Please adjust patient timings before planning.",
+      ),
+    ).toBeTruthy();
   });
 
   it("promotes selected destination patient to end patient and removes from destinations", () => {
@@ -284,5 +288,47 @@ describe("RoutePlanner patient selection integration", () => {
 
     expect(screen.getByText("0 destination(s) detected")).toBeTruthy();
     expect(screen.getByText("No destination patients selected yet.")).toBeTruthy();
+  });
+
+  it("requires planning window input for flexible patients without preferred windows", () => {
+    render(<RoutePlanner />);
+
+    fireEvent.change(screen.getByLabelText("Ending point"), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        "Set start and end time for flexible patients without preferred windows before optimizing.",
+      ),
+    ).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Flex Patient start"), {
+      target: { value: "13:00" },
+    });
+    fireEvent.change(screen.getByLabelText("Flex Patient end"), {
+      target: { value: "14:00" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith({
+      startAddress: "3361 Ingram Road, Mississauga, ON",
+      endAddress: "Airport",
+      destinations: [
+        {
+          patientId: "patient-3",
+          patientName: "Flex Patient",
+          address: "789 King St",
+          googlePlaceId: null,
+          windowStart: "13:00",
+          windowEnd: "14:00",
+          windowType: "flexible",
+        },
+      ],
+      canOptimize: true,
+    });
   });
 });

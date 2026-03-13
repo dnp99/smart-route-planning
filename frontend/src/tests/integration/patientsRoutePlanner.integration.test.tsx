@@ -14,6 +14,12 @@ type PatientRecord = {
   lastName: string;
   address: string;
   googlePlaceId: string | null;
+  visitWindows: Array<{
+    id: string;
+    startTime: string;
+    endTime: string;
+    visitTimeType: "fixed" | "flexible";
+  }>;
   preferredVisitStartTime: string;
   preferredVisitEndTime: string;
   visitTimeType: "fixed" | "flexible";
@@ -44,12 +50,21 @@ const createPatientMock = vi.fn<
     lastName: string;
     address: string;
     googlePlaceId?: string | null;
-    preferredVisitStartTime: string;
-    preferredVisitEndTime: string;
-    visitTimeType: "fixed" | "flexible";
+    visitWindows: Array<{
+      startTime: string;
+      endTime: string;
+      visitTimeType: "fixed" | "flexible";
+    }>;
   }) => Promise<PatientRecord>
 >(async (request) => {
   const createdAt = new Date().toISOString();
+  const visitWindows = request.visitWindows.map((window, index) => ({
+    id: `window-${patientCounter}-${index + 1}`,
+    startTime: `${window.startTime}:00`,
+    endTime: `${window.endTime}:00`,
+    visitTimeType: window.visitTimeType,
+  }));
+  const primaryWindow = visitWindows[0];
   const createdPatient: PatientRecord = {
     id: `patient-${patientCounter}`,
     nurseId: "nurse-1",
@@ -57,9 +72,10 @@ const createPatientMock = vi.fn<
     lastName: request.lastName,
     address: request.address,
     googlePlaceId: request.googlePlaceId ?? null,
-    preferredVisitStartTime: `${request.preferredVisitStartTime}:00`,
-    preferredVisitEndTime: `${request.preferredVisitEndTime}:00`,
-    visitTimeType: request.visitTimeType,
+    visitWindows,
+    preferredVisitStartTime: primaryWindow.startTime,
+    preferredVisitEndTime: primaryWindow.endTime,
+    visitTimeType: primaryWindow.visitTimeType,
     createdAt,
     updatedAt: createdAt,
   };
@@ -70,7 +86,20 @@ const createPatientMock = vi.fn<
 });
 
 const updatePatientMock = vi.fn<
-  (patientId: string, request: Partial<PatientRecord>) => Promise<PatientRecord>
+  (
+    patientId: string,
+    request: {
+      firstName?: string;
+      lastName?: string;
+      address?: string;
+      googlePlaceId?: string | null;
+      visitWindows?: Array<{
+        startTime: string;
+        endTime: string;
+        visitTimeType: "fixed" | "flexible";
+      }>;
+    },
+  ) => Promise<PatientRecord>
 >(async (patientId, request) => {
   const existingPatient = patientStore.find((patient) => patient.id === patientId);
   if (!existingPatient) {
@@ -78,13 +107,25 @@ const updatePatientMock = vi.fn<
   }
 
   const updatedAt = new Date().toISOString();
+  const nextVisitWindows = request.visitWindows
+    ? request.visitWindows.map((window, index) => ({
+        id:
+          existingPatient.visitWindows[index]?.id ??
+          `${existingPatient.id}-window-${index + 1}`,
+        startTime: `${window.startTime}:00`,
+        endTime: `${window.endTime}:00`,
+        visitTimeType: window.visitTimeType,
+      }))
+    : existingPatient.visitWindows;
+  const primaryWindow = nextVisitWindows[0];
+
   const updatedPatient: PatientRecord = {
     ...existingPatient,
     ...request,
-    preferredVisitStartTime:
-      request.preferredVisitStartTime ?? existingPatient.preferredVisitStartTime,
-    preferredVisitEndTime:
-      request.preferredVisitEndTime ?? existingPatient.preferredVisitEndTime,
+    visitWindows: nextVisitWindows,
+    preferredVisitStartTime: primaryWindow.startTime,
+    preferredVisitEndTime: primaryWindow.endTime,
+    visitTimeType: primaryWindow.visitTimeType,
     updatedAt,
   };
 

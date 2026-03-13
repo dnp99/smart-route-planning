@@ -13,6 +13,14 @@ const expectHttpError = (fn: () => unknown, status: number, message: string) => 
   }
 };
 
+const minutesToTime = (minutes: number) => {
+  const hours = Math.floor(minutes / 60)
+    .toString()
+    .padStart(2, "0");
+  const minutePart = (minutes % 60).toString().padStart(2, "0");
+  return `${hours}:${minutePart}`;
+};
+
 const buildValidPayload = () => ({
   planningDate: "2026-03-13",
   timezone: "America/Toronto",
@@ -186,6 +194,20 @@ describe("optimize-route v2 request validation", () => {
     expectHttpError(() => parseAndValidateBody(payload), 400, "visitId values must be unique.");
   });
 
+  it("throws when visit windows overlap", () => {
+    const payload = buildValidPayload();
+    payload.visits[0].windowStart = "10:00";
+    payload.visits[0].windowEnd = "11:30";
+    payload.visits[1].windowStart = "11:00";
+    payload.visits[1].windowEnd = "12:00";
+
+    expectHttpError(
+      () => parseAndValidateBody(payload),
+      400,
+      "Visit windows must not overlap. Found overlap between visit-1 and visit-2.",
+    );
+  });
+
   it("throws for invalid visit window format", () => {
     const payload = buildValidPayload();
     payload.visits[0].windowStart = "8:30";
@@ -266,16 +288,19 @@ describe("optimize-route v2 request validation", () => {
 
   it("throws when unique locations exceed 25", () => {
     const payload = buildValidPayload();
-    payload.visits = Array.from({ length: 24 }).map((_, index) => ({
-      visitId: `visit-${index}`,
-      patientId: `patient-${index}`,
-      patientName: `Patient ${index}`,
-      address: `Unique Address ${index}`,
-      windowStart: "08:00",
-      windowEnd: "09:00",
-      windowType: "fixed" as const,
-      serviceDurationMinutes: 15,
-    }));
+    payload.visits = Array.from({ length: 24 }).map((_, index) => {
+      const startMinutes = index * 30;
+      return {
+        visitId: `visit-${index}`,
+        patientId: `patient-${index}`,
+        patientName: `Patient ${index}`,
+        address: `Unique Address ${index}`,
+        windowStart: minutesToTime(startMinutes),
+        windowEnd: minutesToTime(startMinutes + 30),
+        windowType: "fixed" as const,
+        serviceDurationMinutes: 15,
+      };
+    });
     payload.start.address = "Unique Start";
     payload.end.address = "Unique End";
 

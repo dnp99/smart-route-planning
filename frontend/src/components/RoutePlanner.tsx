@@ -14,7 +14,7 @@ import type { AddressSuggestion } from "./types";
 type EndMode = "manual" | "patient";
 
 type SelectedPatientDestination = {
-  destinationId: string;
+  visitKey: string;
   patientId: string;
   patientName: string;
   address: string;
@@ -22,24 +22,101 @@ type SelectedPatientDestination = {
   windowStart: string;
   windowEnd: string;
   windowType: "fixed" | "flexible";
+  requiresPlanningWindow: boolean;
+};
+
+type SelectedEndPatient = {
+  patientId: string;
+  patientName: string;
+  address: string;
+  googlePlaceId: string | null;
+  visitDestinations: SelectedPatientDestination[];
 };
 
 const toWindowTime = (value: string) => value.slice(0, 5);
-const createDestinationId = (patientId: string) =>
-  `${patientId}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
+const HH_MM_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
-const toSelectedPatientDestination = (
+const timeToMinutes = (value: string) => {
+  const [hoursString, minutesString] = value.split(":");
+  return Number(hoursString) * 60 + Number(minutesString);
+};
+
+const hasCompleteWindow = (destination: SelectedPatientDestination) =>
+  HH_MM_PATTERN.test(destination.windowStart) && HH_MM_PATTERN.test(destination.windowEnd);
+
+const hasOverlappingWindows = (destinations: SelectedPatientDestination[]) => {
+  const sorted = [...destinations].sort((left, right) => {
+    const startDelta = timeToMinutes(left.windowStart) - timeToMinutes(right.windowStart);
+    if (startDelta !== 0) {
+      return startDelta;
+    }
+
+    const endDelta = timeToMinutes(left.windowEnd) - timeToMinutes(right.windowEnd);
+    if (endDelta !== 0) {
+      return endDelta;
+    }
+
+    return left.visitKey.localeCompare(right.visitKey);
+  });
+
+  for (let index = 1; index < sorted.length; index += 1) {
+    if (timeToMinutes(sorted[index].windowStart) < timeToMinutes(sorted[index - 1].windowEnd)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const toSelectedPatientDestinations = (
   patient: Patient,
-): SelectedPatientDestination => ({
-  destinationId: createDestinationId(patient.id),
-  patientId: patient.id,
-  patientName: `${patient.firstName} ${patient.lastName}`.trim(),
-  address: patient.address,
-  googlePlaceId: patient.googlePlaceId,
-  windowStart: toWindowTime(patient.preferredVisitStartTime),
-  windowEnd: toWindowTime(patient.preferredVisitEndTime),
-  windowType: patient.visitTimeType,
-});
+): SelectedPatientDestination[] => {
+  const patientName = `${patient.firstName} ${patient.lastName}`.trim();
+  const patientVisitWindows = Array.isArray(patient.visitWindows) ? patient.visitWindows : [];
+  if (patientVisitWindows.length > 0) {
+    return patientVisitWindows.map((window) => ({
+      visitKey: `${patient.id}:${window.id}`,
+      patientId: patient.id,
+      patientName,
+      address: patient.address,
+      googlePlaceId: patient.googlePlaceId,
+      windowStart: toWindowTime(window.startTime),
+      windowEnd: toWindowTime(window.endTime),
+      windowType: window.visitTimeType,
+      requiresPlanningWindow: false,
+    }));
+  }
+
+  if (patient.visitTimeType === "flexible") {
+    return [
+      {
+        visitKey: `${patient.id}:planning-window`,
+        patientId: patient.id,
+        patientName,
+        address: patient.address,
+        googlePlaceId: patient.googlePlaceId,
+        windowStart: "",
+        windowEnd: "",
+        windowType: "flexible",
+        requiresPlanningWindow: true,
+      },
+    ];
+  }
+
+  return [
+    {
+      visitKey: `${patient.id}:legacy`,
+      patientId: patient.id,
+      patientName,
+      address: patient.address,
+      googlePlaceId: patient.googlePlaceId,
+      windowStart: toWindowTime(patient.preferredVisitStartTime),
+      windowEnd: toWindowTime(patient.preferredVisitEndTime),
+      windowType: patient.visitTimeType,
+      requiresPlanningWindow: false,
+    },
+  ];
+};
 
 const panelEmptyTextClassName =
   "m-0 text-sm text-slate-500 dark:text-slate-400";
@@ -66,11 +143,12 @@ function RoutePlanner() {
 
   const [destinationSearchQuery, setDestinationSearchQuery] = useState("");
   const [endPatientSearchQuery, setEndPatientSearchQuery] = useState("");
+  const [localValidationError, setLocalValidationError] = useState("");
   const [selectedDestinations, setSelectedDestinations] = useState<
     SelectedPatientDestination[]
   >([]);
   const [selectedEndPatient, setSelectedEndPatient] = useState<
-    SelectedPatientDestination | null
+    SelectedEndPatient | null
   >(null);
 
   const {
@@ -100,11 +178,20 @@ function RoutePlanner() {
     optimizeRoute,
   } = useRouteOptimization();
 
+  const selectedDestinationIdSet = useMemo(
+    () => new Set(selectedDestinations.map((destination) => destination.patientId)),
+    [selectedDestinations],
+  );
+
   const destinationSearchResults = useMemo(() => {
     return destinationSearchPatients.filter((patient) => {
+      if (selectedDestinationIdSet.has(patient.id)) {
+        return false;
+      }
+
       return selectedEndPatient?.patientId !== patient.id;
     });
-  }, [destinationSearchPatients, selectedEndPatient]);
+  }, [destinationSearchPatients, selectedDestinationIdSet, selectedEndPatient]);
 
   const endPatientSearchResults = useMemo(() => {
     return endPatientSearchPatients;
@@ -163,14 +250,8 @@ function RoutePlanner() {
       return selectedDestinations;
     }
 
-    return [...selectedDestinations, selectedEndPatient];
+    return [...selectedDestinations, ...selectedEndPatient.visitDestinations];
   }, [endMode, selectedDestinations, selectedEndPatient]);
-
-  const optimizeRequestDestinations = useMemo(
-    () =>
-      requestDestinations.map(({ destinationId, ...destination }) => destination),
-    [requestDestinations],
-  );
 
   const handleStartAddressChange = (value: string) => {
     setStartAddress(value);
@@ -192,70 +273,125 @@ function RoutePlanner() {
     setManualEndGooglePlaceId(suggestion.placeId);
   };
 
+  const updateDestinationPlanningWindow = (
+    visitKey: string,
+    field: "windowStart" | "windowEnd",
+    value: string,
+  ) => {
+    setSelectedDestinations((current) =>
+      current.map((destination) =>
+        destination.visitKey === visitKey
+          ? {
+              ...destination,
+              [field]: value,
+            }
+          : destination,
+      ),
+    );
+  };
+
+  const updateEndPatientPlanningWindow = (
+    visitKey: string,
+    field: "windowStart" | "windowEnd",
+    value: string,
+  ) => {
+    setSelectedEndPatient((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        visitDestinations: current.visitDestinations.map((destination) =>
+          destination.visitKey === visitKey
+            ? {
+                ...destination,
+                [field]: value,
+              }
+            : destination,
+        ),
+      };
+    });
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setLocalValidationError("");
+
+    if (requestDestinations.some((destination) => !hasCompleteWindow(destination))) {
+      setLocalValidationError(
+        "Set start and end time for flexible patients without preferred windows before optimizing.",
+      );
+      return;
+    }
+
+    if (
+      requestDestinations.some(
+        (destination) => timeToMinutes(destination.windowEnd) <= timeToMinutes(destination.windowStart),
+      )
+    ) {
+      setLocalValidationError(
+        "All selected visit windows must end after they start.",
+      );
+      return;
+    }
+
+    if (hasOverlappingWindows(requestDestinations)) {
+      setLocalValidationError("Selected patient windows overlap. Please adjust patient timings before planning.");
+      return;
+    }
+
+    const optimizeDestinations = requestDestinations.map(
+      ({ visitKey: _visitKey, requiresPlanningWindow: _requiresPlanningWindow, ...destination }) =>
+        destination,
+    );
 
     void optimizeRoute({
       startAddress,
       ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
       endAddress: resolvedEndAddress,
       ...(resolvedEndGooglePlaceId ? { endGooglePlaceId: resolvedEndGooglePlaceId } : {}),
-      destinations: optimizeRequestDestinations,
+      destinations: optimizeDestinations,
       canOptimize,
     });
   };
 
   const addDestinationPatient = (patient: Patient) => {
-    const destination = toSelectedPatientDestination(patient);
-
-    if (selectedEndPatient?.patientId === destination.patientId) {
+    const destinations = toSelectedPatientDestinations(patient);
+    if (destinations.length === 0) {
       return;
     }
 
-    setSelectedDestinations((current) => [...current, destination]);
-  };
+    if (selectedEndPatient?.patientId === patient.id) {
+      return;
+    }
 
-  const updateDestinationVisitWindow = (
-    destinationId: string,
-    patch: Partial<
-      Pick<SelectedPatientDestination, "windowStart" | "windowEnd" | "windowType">
-    >,
-  ) => {
-    setSelectedDestinations((current) =>
-      current.map((entry) =>
-        entry.destinationId === destinationId ? { ...entry, ...patch } : entry,
-      ),
-    );
-  };
-
-  const duplicateDestinationVisit = (destinationId: string) => {
     setSelectedDestinations((current) => {
-      const source = current.find((entry) => entry.destinationId === destinationId);
-      if (!source) {
+      if (current.some((entry) => entry.patientId === patient.id)) {
         return current;
       }
 
-      return [
-        ...current,
-        {
-          ...source,
-          destinationId: createDestinationId(source.patientId),
-        },
-      ];
+      return [...current, ...destinations];
     });
   };
 
-  const removeDestinationPatient = (destinationId: string) => {
+  const removeDestinationPatient = (patientId: string) => {
     setSelectedDestinations((current) =>
-      current.filter((entry) => entry.destinationId !== destinationId),
+      current.filter((entry) => entry.patientId !== patientId),
     );
   };
 
   const selectEndPatient = (patient: Patient) => {
-    const destination = toSelectedPatientDestination(patient);
-    setSelectedEndPatient(destination);
+    const visitDestinations = toSelectedPatientDestinations(patient);
+    setSelectedEndPatient({
+      patientId: patient.id,
+      patientName: `${patient.firstName} ${patient.lastName}`.trim(),
+      address: patient.address,
+      googlePlaceId: patient.googlePlaceId,
+      visitDestinations,
+    });
     setSelectedDestinations((current) =>
-      current.filter((entry) => entry.patientId !== destination.patientId),
+      current.filter((entry) => entry.patientId !== patient.id),
     );
     setEndTouched(true);
   };
@@ -392,6 +528,55 @@ function RoutePlanner() {
                   <p className="m-0 text-sm text-emerald-700 dark:text-emerald-300">
                     {selectedEndPatient.address}
                   </p>
+                  <p className="m-0 text-xs text-emerald-700 dark:text-emerald-300">
+                    {selectedEndPatient.visitDestinations.length} visit window(s) included
+                  </p>
+                  {selectedEndPatient.visitDestinations.some(
+                    (destination) => destination.requiresPlanningWindow,
+                  ) && (
+                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                      {selectedEndPatient.visitDestinations
+                        .filter((destination) => destination.requiresPlanningWindow)
+                        .map((destination) => (
+                          <div
+                            key={destination.visitKey}
+                            className="grid gap-1 rounded-lg border border-emerald-300/70 p-2 dark:border-emerald-800"
+                          >
+                            <p className="m-0 text-xs font-semibold text-emerald-800 dark:text-emerald-200">
+                              Set planning window
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="time"
+                                aria-label={`End patient ${destination.patientName} start`}
+                                value={destination.windowStart}
+                                onChange={(event) =>
+                                  updateEndPatientPlanningWindow(
+                                    destination.visitKey,
+                                    "windowStart",
+                                    event.target.value,
+                                  )
+                                }
+                                className="w-full rounded-lg border border-emerald-300 px-2 py-1 text-xs text-emerald-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-100"
+                              />
+                              <input
+                                type="time"
+                                aria-label={`End patient ${destination.patientName} end`}
+                                value={destination.windowEnd}
+                                onChange={(event) =>
+                                  updateEndPatientPlanningWindow(
+                                    destination.visitKey,
+                                    "windowEnd",
+                                    event.target.value,
+                                  )
+                                }
+                                className="w-full rounded-lg border border-emerald-300 px-2 py-1 text-xs text-emerald-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-100"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                   <button
                     type="button"
                     onClick={clearEndPatient}
@@ -520,7 +705,7 @@ function RoutePlanner() {
               <ol className="m-0 space-y-2">
                 {selectedDestinations.map((destination, index) => (
                   <li
-                    key={destination.destinationId}
+                    key={destination.visitKey}
                     className={responsiveStyles.destinationItem}
                   >
                     <div className={responsiveStyles.destinationItemBody}>
@@ -534,69 +719,55 @@ function RoutePlanner() {
                         <span className="block text-slate-600 dark:text-slate-300">
                           {destination.address}
                         </span>
-                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
-                          <label className="inline-flex items-center gap-1">
-                            Start
-                            <input
-                              type="time"
-                              value={destination.windowStart}
-                              onChange={(event) =>
-                                updateDestinationVisitWindow(destination.destinationId, {
-                                  windowStart: event.target.value,
-                                })
-                              }
-                              className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
-                            />
-                          </label>
-                          <label className="inline-flex items-center gap-1">
-                            End
-                            <input
-                              type="time"
-                              value={destination.windowEnd}
-                              onChange={(event) =>
-                                updateDestinationVisitWindow(destination.destinationId, {
-                                  windowEnd: event.target.value,
-                                })
-                              }
-                              className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
-                            />
-                          </label>
-                          <label className="inline-flex items-center gap-1">
-                            Type
-                            <select
-                              value={destination.windowType}
-                              onChange={(event) =>
-                                updateDestinationVisitWindow(destination.destinationId, {
-                                  windowType: event.target.value as
-                                    | "fixed"
-                                    | "flexible",
-                                })
-                              }
-                              className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
-                            >
-                              <option value="fixed">fixed</option>
-                              <option value="flexible">flexible</option>
-                            </select>
-                          </label>
-                        </div>
+                        {destination.requiresPlanningWindow ? (
+                          <div className="mt-2">
+                            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                              Flexible with no preferred window. Pick a planning time:
+                            </p>
+                            <div className="mt-1 flex gap-2">
+                              <input
+                                type="time"
+                                aria-label={`${destination.patientName} start`}
+                                value={destination.windowStart}
+                                onChange={(event) =>
+                                  updateDestinationPlanningWindow(
+                                    destination.visitKey,
+                                    "windowStart",
+                                    event.target.value,
+                                  )
+                                }
+                                className="w-full rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                              />
+                              <input
+                                type="time"
+                                aria-label={`${destination.patientName} end`}
+                                value={destination.windowEnd}
+                                onChange={(event) =>
+                                  updateDestinationPlanningWindow(
+                                    destination.visitKey,
+                                    "windowEnd",
+                                    event.target.value,
+                                  )
+                                }
+                                className="w-full rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                              />
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="mt-2 block text-xs text-slate-500 dark:text-slate-400">
+                            {destination.windowStart} - {destination.windowEnd} •{" "}
+                            {destination.windowType}
+                          </span>
+                        )}
                       </span>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2 sm:self-start">
-                      <button
-                        type="button"
-                        onClick={() => duplicateDestinationVisit(destination.destinationId)}
-                        className="rounded-lg border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/30"
-                      >
-                        Duplicate visit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => removeDestinationPatient(destination.destinationId)}
-                        className={responsiveStyles.destinationRemove}
-                      >
-                        Remove
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeDestinationPatient(destination.patientId)}
+                      className={responsiveStyles.destinationRemove}
+                    >
+                      Remove
+                    </button>
                   </li>
                 ))}
               </ol>
@@ -625,6 +796,12 @@ function RoutePlanner() {
             </button>
           </div>
         </form>
+
+        {localValidationError && (
+          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
+            {localValidationError}
+          </p>
+        )}
 
         {error && (
           <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">

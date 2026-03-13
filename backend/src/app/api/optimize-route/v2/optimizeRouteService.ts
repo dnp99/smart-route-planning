@@ -11,7 +11,6 @@ import type {
 } from "./types";
 import type { ValidatedOptimizeRouteV2Request } from "./validation";
 
-const AVERAGE_SPEED_KM_PER_HOUR = 35;
 const ALGORITHM_VERSION = "v2.1.0-greedy-window-first";
 
 type GeocodeTarget = {
@@ -33,44 +32,6 @@ type PlannedStop = {
   locationKey: string;
   tasks: VisitWithCoords[];
   isEndingPoint?: boolean;
-};
-
-type CandidateScore = {
-  fixedViolation: number;
-  fixedLateSeconds: number;
-  windowPriority: number;
-  windowEndSeconds: number;
-  flexibleLateSeconds: number;
-  waitSeconds: number;
-  travelSeconds: number;
-  travelDistanceMeters: number;
-  visitId: string;
-};
-
-const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
-
-const haversineDistanceKm = (from: LatLng, to: LatLng) => {
-  const earthRadiusKm = 6371;
-  const dLat = toRadians(to.lat - from.lat);
-  const dLon = toRadians(to.lon - from.lon);
-  const fromLat = toRadians(from.lat);
-  const toLat = toRadians(to.lat);
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(fromLat) * Math.cos(toLat);
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return earthRadiusKm * c;
-};
-
-const estimateTravelSeconds = (from: LatLng, to: LatLng) => {
-  const distanceKm = haversineDistanceKm(from, to);
-  if (distanceKm === 0) {
-    return 0;
-  }
-
-  return Math.round((distanceKm / AVERAGE_SPEED_KM_PER_HOUR) * 3600);
 };
 
 const parseTimeToSeconds = (value: string) => {
@@ -100,103 +61,6 @@ const getLocalSecondsOfDay = (date: Date, timezone: string) => {
   const second = Number(parts.find((part) => part.type === "second")?.value ?? "0");
 
   return hour * 3600 + minute * 60 + second;
-};
-
-const compareScores = (left: CandidateScore, right: CandidateScore) => {
-  const leftValues: Array<number | string> = [
-    left.fixedViolation,
-    left.fixedLateSeconds,
-    left.windowPriority,
-    left.windowEndSeconds,
-    left.flexibleLateSeconds,
-    left.waitSeconds,
-    left.travelSeconds,
-    left.travelDistanceMeters,
-    left.visitId,
-  ];
-  const rightValues: Array<number | string> = [
-    right.fixedViolation,
-    right.fixedLateSeconds,
-    right.windowPriority,
-    right.windowEndSeconds,
-    right.flexibleLateSeconds,
-    right.waitSeconds,
-    right.travelSeconds,
-    right.travelDistanceMeters,
-    right.visitId,
-  ];
-
-  for (let index = 0; index < leftValues.length; index += 1) {
-    const leftValue = leftValues[index];
-    const rightValue = rightValues[index];
-
-    if (typeof leftValue === "string" && typeof rightValue === "string") {
-      if (leftValue < rightValue) {
-        return -1;
-      }
-      if (leftValue > rightValue) {
-        return 1;
-      }
-      continue;
-    }
-
-    const leftNumber = leftValue as number;
-    const rightNumber = rightValue as number;
-    if (leftNumber < rightNumber) {
-      return -1;
-    }
-    if (leftNumber > rightNumber) {
-      return 1;
-    }
-  }
-
-  return 0;
-};
-
-const buildCandidateScore = (
-  visit: VisitWithCoords,
-  currentCoords: LatLng,
-  currentLocalSeconds: number,
-): CandidateScore => {
-  const travelSeconds = estimateTravelSeconds(currentCoords, visit.coords);
-  const travelDistanceMeters = Math.round(haversineDistanceKm(currentCoords, visit.coords) * 1000);
-  const arrivalSeconds = currentLocalSeconds + travelSeconds;
-  const waitSeconds = Math.max(0, visit.windowStartSeconds - arrivalSeconds);
-  const serviceStartSeconds = arrivalSeconds + waitSeconds;
-  const lateSeconds = Math.max(0, serviceStartSeconds - visit.windowEndSeconds);
-  const isFixed = visit.windowType === "fixed";
-
-  return {
-    fixedViolation: isFixed && lateSeconds > 0 ? 1 : 0,
-    fixedLateSeconds: isFixed ? lateSeconds : 0,
-    windowPriority: isFixed ? 0 : 1,
-    windowEndSeconds: visit.windowEndSeconds,
-    flexibleLateSeconds: isFixed ? 0 : lateSeconds,
-    waitSeconds,
-    travelSeconds,
-    travelDistanceMeters,
-    visitId: visit.visitId,
-  };
-};
-
-const chooseNextVisit = (
-  remainingVisits: VisitWithCoords[],
-  currentCoords: LatLng,
-  currentLocalSeconds: number,
-) => {
-  let bestIndex = 0;
-  let bestScore = buildCandidateScore(remainingVisits[0], currentCoords, currentLocalSeconds);
-
-  for (let index = 1; index < remainingVisits.length; index += 1) {
-    const candidate = remainingVisits[index];
-    const score = buildCandidateScore(candidate, currentCoords, currentLocalSeconds);
-    if (compareScores(score, bestScore) < 0) {
-      bestIndex = index;
-      bestScore = score;
-    }
-  }
-
-  return { bestIndex, bestScore };
 };
 
 const groupVisitsIntoStops = (orderedVisits: VisitWithCoords[], end: GeocodeTarget & { coords: LatLng }) => {
@@ -300,38 +164,22 @@ const geocodeLocations = async (
 
 const orderVisitsWindowFirst = (
   visits: VisitWithCoords[],
-  startCoords: LatLng,
-  departureLocalSeconds: number,
 ) => {
-  const remaining = [...visits];
-  const ordered: VisitWithCoords[] = [];
-  const unscheduledTasks: UnscheduledTaskV2[] = [];
-  let currentCoords = startCoords;
-  let currentLocalSeconds = departureLocalSeconds;
-
-  while (remaining.length > 0) {
-    const { bestIndex, bestScore } = chooseNextVisit(remaining, currentCoords, currentLocalSeconds);
-    const [selected] = remaining.splice(bestIndex, 1);
-
-    if (selected.windowType === "fixed" && bestScore.fixedViolation > 0) {
-      unscheduledTasks.push({
-        visitId: selected.visitId,
-        patientId: selected.patientId,
-        reason: "fixed_window_unreachable",
-      });
-      continue;
+  const ordered = [...visits].sort((left, right) => {
+    if (left.windowStartSeconds !== right.windowStartSeconds) {
+      return left.windowStartSeconds - right.windowStartSeconds;
     }
 
-    const arrivalSeconds = currentLocalSeconds + bestScore.travelSeconds;
-    const serviceStartSeconds = Math.max(arrivalSeconds, selected.windowStartSeconds);
-    currentLocalSeconds = serviceStartSeconds + selected.serviceDurationMinutes * 60;
-    currentCoords = selected.coords;
-    ordered.push(selected);
-  }
+    if (left.windowEndSeconds !== right.windowEndSeconds) {
+      return left.windowEndSeconds - right.windowEndSeconds;
+    }
+
+    return left.visitId.localeCompare(right.visitId);
+  });
 
   return {
     orderedVisits: ordered,
-    unscheduledTasks,
+    unscheduledTasks: [] as UnscheduledTaskV2[],
   };
 };
 
@@ -397,11 +245,7 @@ export const optimizeRouteV2 = async (
   const departureTimestampMs = departureDate.getTime();
   const departureLocalSeconds = getLocalSecondsOfDay(departureDate, request.timezone);
 
-  const { orderedVisits, unscheduledTasks } = orderVisitsWindowFirst(
-    visitsWithCoords,
-    startCoords,
-    departureLocalSeconds,
-  );
+  const { orderedVisits, unscheduledTasks } = orderVisitsWindowFirst(visitsWithCoords);
   const plannedStops = groupVisitsIntoStops(orderedVisits, {
     address: request.end.address,
     googlePlaceId: request.end.googlePlaceId,

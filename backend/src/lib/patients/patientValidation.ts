@@ -1,5 +1,10 @@
 import { HttpError } from "../http";
-import type { CreatePatientRequest, UpdatePatientRequest, VisitTimeType } from "../../../../shared/contracts";
+import type {
+  CreatePatientRequest,
+  PatientVisitWindowInput,
+  UpdatePatientRequest,
+  VisitTimeType,
+} from "../../../../shared/contracts";
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -36,9 +41,9 @@ const requireTime = (value: unknown, fieldName: string) => {
   return parsed;
 };
 
-const parseVisitTimeType = (value: unknown): VisitTimeType => {
+const parseVisitTimeType = (value: unknown, fieldName = "visitTimeType"): VisitTimeType => {
   if (value !== "fixed" && value !== "flexible") {
-    throw new HttpError(400, "visitTimeType must be one of: fixed, flexible.");
+    throw new HttpError(400, `${fieldName} must be one of: fixed, flexible.`);
   }
 
   return value;
@@ -49,13 +54,71 @@ const timeToMinutes = (value: string) => {
   return Number(hoursString) * 60 + Number(minutesString);
 };
 
-export const validateTimeWindow = (startTime: string, endTime: string) => {
+export const validateTimeWindow = (
+  startTime: string,
+  endTime: string,
+  startFieldName = "preferredVisitStartTime",
+  endFieldName = "preferredVisitEndTime",
+) => {
   if (timeToMinutes(endTime) <= timeToMinutes(startTime)) {
     throw new HttpError(
       400,
-      "preferredVisitEndTime must be later than preferredVisitStartTime (cross-midnight windows are not supported).",
+      `${endFieldName} must be later than ${startFieldName} (cross-midnight windows are not supported).`,
     );
   }
+};
+
+const parseVisitWindow = (value: unknown, index: number): PatientVisitWindowInput => {
+  if (!isObject(value)) {
+    throw new HttpError(400, `visitWindows[${index}] must be a JSON object.`);
+  }
+
+  const startTime = requireTime(value.startTime, `visitWindows[${index}].startTime`);
+  const endTime = requireTime(value.endTime, `visitWindows[${index}].endTime`);
+  validateTimeWindow(
+    startTime,
+    endTime,
+    `visitWindows[${index}].startTime`,
+    `visitWindows[${index}].endTime`,
+  );
+
+  return {
+    startTime,
+    endTime,
+    visitTimeType: parseVisitTimeType(value.visitTimeType, `visitWindows[${index}].visitTimeType`),
+  };
+};
+
+const assertNoOverlappingWindows = (windows: PatientVisitWindowInput[]) => {
+  const ordered = [...windows].sort((left, right) => {
+    const startDelta = timeToMinutes(left.startTime) - timeToMinutes(right.startTime);
+    if (startDelta !== 0) {
+      return startDelta;
+    }
+
+    const endDelta = timeToMinutes(left.endTime) - timeToMinutes(right.endTime);
+    if (endDelta !== 0) {
+      return endDelta;
+    }
+
+    return left.visitTimeType.localeCompare(right.visitTimeType);
+  });
+
+  for (let index = 1; index < ordered.length; index += 1) {
+    if (timeToMinutes(ordered[index].startTime) < timeToMinutes(ordered[index - 1].endTime)) {
+      throw new HttpError(400, "visitWindows must not contain overlapping time windows.");
+    }
+  }
+};
+
+const parseVisitWindows = (value: unknown, fieldName: string): PatientVisitWindowInput[] => {
+  if (!Array.isArray(value)) {
+    throw new HttpError(400, `${fieldName} must be an array.`);
+  }
+
+  const parsed = value.map((entry, index) => parseVisitWindow(entry, index));
+  assertNoOverlappingWindows(parsed);
+  return parsed;
 };
 
 export const validateCreatePatientPayload = (payload: unknown): CreatePatientRequest => {
@@ -68,12 +131,9 @@ export const validateCreatePatientPayload = (payload: unknown): CreatePatientReq
     lastName: requireNonEmptyString(payload.lastName, "lastName"),
     address: requireNonEmptyString(payload.address, "address"),
     googlePlaceId: parseOptionalString(payload.googlePlaceId, "googlePlaceId"),
-    preferredVisitStartTime: requireTime(payload.preferredVisitStartTime, "preferredVisitStartTime"),
-    preferredVisitEndTime: requireTime(payload.preferredVisitEndTime, "preferredVisitEndTime"),
-    visitTimeType: parseVisitTimeType(payload.visitTimeType),
+    visitWindows: parseVisitWindows(payload.visitWindows, "visitWindows"),
   };
 
-  validateTimeWindow(parsed.preferredVisitStartTime, parsed.preferredVisitEndTime);
   return parsed;
 };
 
@@ -100,19 +160,8 @@ export const validateUpdatePatientPayload = (payload: unknown): UpdatePatientReq
     parsed.googlePlaceId = parseOptionalString(payload.googlePlaceId, "googlePlaceId");
   }
 
-  if (payload.preferredVisitStartTime !== undefined) {
-    parsed.preferredVisitStartTime = requireTime(
-      payload.preferredVisitStartTime,
-      "preferredVisitStartTime",
-    );
-  }
-
-  if (payload.preferredVisitEndTime !== undefined) {
-    parsed.preferredVisitEndTime = requireTime(payload.preferredVisitEndTime, "preferredVisitEndTime");
-  }
-
-  if (payload.visitTimeType !== undefined) {
-    parsed.visitTimeType = parseVisitTimeType(payload.visitTimeType);
+  if (payload.visitWindows !== undefined) {
+    parsed.visitWindows = parseVisitWindows(payload.visitWindows, "visitWindows");
   }
 
   return parsed;

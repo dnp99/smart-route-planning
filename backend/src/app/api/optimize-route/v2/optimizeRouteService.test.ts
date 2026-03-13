@@ -42,11 +42,13 @@ describe("optimizeRouteV2 service", () => {
     mockedBuildDrivingRoute.mockReset();
   });
 
-  it("prioritizes fixed-window visits before flexible visits", async () => {
+  it("orders visits by configured window start time", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
-      { address: "Far Address", coords: { lat: 43.7, lon: -79.7 } },
-      { address: "Near Address", coords: { lat: 43.6005, lon: -79.6005 } },
+      { address: "Address A", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Address B", coords: { lat: 43.7005, lon: -79.7005 } },
+      { address: "Address C", coords: { lat: 43.701, lon: -79.701 } },
+      { address: "Address D", coords: { lat: 43.7015, lon: -79.7015 } },
       { address: "End", coords: { lat: 43.8, lon: -79.8 } },
     ]);
 
@@ -67,22 +69,42 @@ describe("optimizeRouteV2 service", () => {
         },
         visits: [
           {
-            visitId: "flex-1",
-            patientId: "patient-flex",
-            patientName: "Flexible Patient",
-            address: "Near Address",
+            visitId: "visit-c",
+            patientId: "patient-c",
+            patientName: "Patient C",
+            address: "Address C",
+            windowStart: "16:00",
+            windowEnd: "17:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-a",
+            patientId: "patient-a",
+            patientName: "Patient A",
+            address: "Address A",
             windowStart: "10:00",
             windowEnd: "11:00",
-            windowType: "flexible",
+            windowType: "fixed",
             serviceDurationMinutes: 15,
           },
           {
-            visitId: "fixed-1",
-            patientId: "patient-fixed",
-            patientName: "Fixed Patient",
-            address: "Far Address",
-            windowStart: "08:00",
-            windowEnd: "08:30",
+            visitId: "visit-d",
+            patientId: "patient-d",
+            patientName: "Patient D",
+            address: "Address D",
+            windowStart: "13:00",
+            windowEnd: "15:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "visit-b",
+            patientId: "patient-b",
+            patientName: "Patient B",
+            address: "Address B",
+            windowStart: "11:00",
+            windowEnd: "12:00",
             windowType: "fixed",
             serviceDurationMinutes: 15,
           },
@@ -94,8 +116,10 @@ describe("optimizeRouteV2 service", () => {
     const call = mockedBuildDrivingRoute.mock.calls[0];
     const passedOrderedStops = call?.[1] ?? [];
     expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
-      "Far Address",
-      "Near Address",
+      "Address A",
+      "Address B",
+      "Address D",
+      "Address C",
       "End",
     ]);
   });
@@ -162,7 +186,7 @@ describe("optimizeRouteV2 service", () => {
     expect(result.unscheduledTasks).toEqual([]);
   });
 
-  it("unschedules unreachable fixed-window visits and keeps remaining route schedulable", async () => {
+  it("keeps fixed-window visits scheduled even when the selected departure makes them late", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Far Fixed Address", coords: { lat: 43.8, lon: -79.8 } },
@@ -192,7 +216,7 @@ describe("optimizeRouteV2 service", () => {
             patientName: "Fixed Patient",
             address: "Far Fixed Address",
             windowStart: "07:35",
-            windowEnd: "07:40",
+            windowEnd: "07:36",
             windowType: "fixed",
             serviceDurationMinutes: 5,
           },
@@ -211,14 +235,9 @@ describe("optimizeRouteV2 service", () => {
       "google-key",
     );
 
-    expect(result.unscheduledTasks).toEqual([
-      {
-        visitId: "fixed-impossible",
-        patientId: "patient-fixed",
-        reason: "fixed_window_unreachable",
-      },
-    ]);
+    expect(result.unscheduledTasks).toEqual([]);
     expect(result.metrics.fixedWindowViolations).toBe(1);
-    expect(result.orderedStops[0].tasks.map((task) => task.visitId)).toEqual(["flex-ok"]);
+    expect(result.orderedStops[0].tasks.map((task) => task.visitId)).toEqual(["fixed-impossible"]);
+    expect(result.orderedStops[1].tasks.map((task) => task.visitId)).toEqual(["flex-ok"]);
   });
 });

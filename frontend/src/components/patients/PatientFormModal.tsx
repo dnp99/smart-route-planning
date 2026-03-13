@@ -3,7 +3,12 @@ import type { AddressSuggestion } from "../types";
 import AddressAutocompleteInput from "../AddressAutocompleteInput";
 import { responsiveStyles } from "../responsiveStyles";
 import type { Patient } from "../../../../shared/contracts";
-import type { FormFieldErrors, FormMode, PatientFormValues } from "./patientForm";
+import type {
+  FormFieldErrors,
+  FormMode,
+  PatientFormValues,
+  PatientFormVisitWindow,
+} from "./patientForm";
 import { getPatientDisplayName } from "./patientForm";
 
 type PatientFormModalProps = {
@@ -16,6 +21,13 @@ type PatientFormModalProps = {
   onClose: () => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void> | void;
   onFieldChange: <K extends keyof PatientFormValues>(field: K, value: PatientFormValues[K]) => void;
+  onVisitWindowChange: <K extends keyof PatientFormVisitWindow>(
+    windowId: string,
+    field: K,
+    value: PatientFormVisitWindow[K],
+  ) => void;
+  onAddVisitWindow: () => void;
+  onRemoveVisitWindow: (windowId: string) => void;
   onAddressChange: (value: string) => void;
   onAddressPick: (suggestion: AddressSuggestion) => void;
 };
@@ -30,6 +42,9 @@ export const PatientFormModal = ({
   onClose,
   onSubmit,
   onFieldChange,
+  onVisitWindowChange,
+  onAddVisitWindow,
+  onRemoveVisitWindow,
   onAddressChange,
   onAddressPick,
 }: PatientFormModalProps) => {
@@ -128,65 +143,113 @@ export const PatientFormModal = ({
           />
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-1">
-              <label
-                htmlFor="patient-visit-start"
-                className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-              >
-                Preferred visit start
-              </label>
-              <input
-                id="patient-visit-start"
-                type="time"
-                value={formValues.preferredVisitStartTime}
-                onChange={(event) => onFieldChange("preferredVisitStartTime", event.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              />
-              {formErrors.preferredVisitStartTime && (
+            <div className="sm:col-span-2 grid gap-3 rounded-2xl border border-slate-200 p-3 dark:border-slate-800">
+              <div className="flex items-center justify-between gap-2">
+                <p className="m-0 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  Visit windows
+                </p>
+                <button
+                  type="button"
+                  onClick={onAddVisitWindow}
+                  className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Add window
+                </button>
+              </div>
+
+              {formValues.visitWindows.map((window, index) => (
+                <div
+                  key={window.id}
+                  className="grid gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800 sm:grid-cols-[1fr_1fr_1fr_auto]"
+                >
+                  <div className="grid gap-1">
+                    <label
+                      htmlFor={`patient-visit-start-${window.id}`}
+                      className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                    >
+                      {index === 0 ? "Preferred visit start" : `Start ${index + 1}`}
+                    </label>
+                    <input
+                      id={`patient-visit-start-${window.id}`}
+                      type="time"
+                      value={window.startTime}
+                      onChange={(event) =>
+                        onVisitWindowChange(window.id, "startTime", event.target.value)
+                      }
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    />
+                    {formErrors.visitWindowRows?.[index]?.startTime && (
+                      <p className="m-0 text-xs text-red-600 dark:text-red-400">
+                        {formErrors.visitWindowRows[index].startTime}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-1">
+                    <label
+                      htmlFor={`patient-visit-end-${window.id}`}
+                      className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                    >
+                      {index === 0 ? "Preferred visit end" : `End ${index + 1}`}
+                    </label>
+                    <input
+                      id={`patient-visit-end-${window.id}`}
+                      type="time"
+                      value={window.endTime}
+                      onChange={(event) => onVisitWindowChange(window.id, "endTime", event.target.value)}
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    />
+                    {formErrors.visitWindowRows?.[index]?.endTime && (
+                      <p className="m-0 text-xs text-red-600 dark:text-red-400">
+                        {formErrors.visitWindowRows[index].endTime}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="grid gap-1">
+                    <label
+                      htmlFor={`patient-visit-type-${window.id}`}
+                      className="text-xs font-semibold text-slate-700 dark:text-slate-300"
+                    >
+                      Type
+                    </label>
+                    <select
+                      id={`patient-visit-type-${window.id}`}
+                      value={window.visitTimeType}
+                      onChange={(event) =>
+                        onVisitWindowChange(window.id, "visitTimeType", event.target.value)
+                      }
+                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                    >
+                      <option value="fixed">Fixed</option>
+                      <option value="flexible">Flexible</option>
+                    </select>
+                  </div>
+
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => onRemoveVisitWindow(window.id)}
+                      className="w-full rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {formValues.visitWindows.length === 0 && (
+                <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                  No preferred window set. This patient will be treated as flexible, and timing can be picked during route planning.
+                </p>
+              )}
+
+              {formErrors.visitWindows && (
                 <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                  {formErrors.preferredVisitStartTime}
+                  {formErrors.visitWindows}
                 </p>
               )}
             </div>
-
-            <div className="grid gap-1">
-              <label
-                htmlFor="patient-visit-end"
-                className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-              >
-                Preferred visit end
-              </label>
-              <input
-                id="patient-visit-end"
-                type="time"
-                value={formValues.preferredVisitEndTime}
-                onChange={(event) => onFieldChange("preferredVisitEndTime", event.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-              />
-              {formErrors.preferredVisitEndTime && (
-                <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                  {formErrors.preferredVisitEndTime}
-                </p>
-              )}
-            </div>
-          </div>
-
-          <div className="grid gap-1">
-            <label
-              htmlFor="patient-visit-time-type"
-              className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-            >
-              Visit time type
-            </label>
-            <select
-              id="patient-visit-time-type"
-              value={formValues.visitTimeType}
-              onChange={(event) => onFieldChange("visitTimeType", event.target.value)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            >
-              <option value="fixed">Fixed</option>
-              <option value="flexible">Flexible</option>
-            </select>
           </div>
 
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
