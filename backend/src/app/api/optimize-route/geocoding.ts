@@ -15,6 +15,10 @@ type PlacesLocationPayload = {
   };
 };
 
+type PlacesTextSearchPayload = {
+  places?: PlacesLocationPayload[];
+};
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const normalizeAddressKey = (address: string) => address.trim().toLowerCase();
@@ -126,14 +130,77 @@ const geocodeGooglePlaceId = async (placeId: string, apiKey: string): Promise<La
   return parseCoords(payload.location.latitude, payload.location.longitude);
 };
 
+const geocodeGoogleTextSearch = async (address: string, apiKey: string): Promise<LatLng> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, GEOCODE_TIMEOUT_MS);
+
+  let response: Response;
+
+  try {
+    response = await fetch("https://places.googleapis.com/v1/places:searchText", {
+      method: "POST",
+      headers: {
+        Accept: "application/json",
+        "Content-Type": "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "places.location",
+      },
+      body: JSON.stringify({
+        textQuery: address,
+        regionCode: "CA",
+        includedRegionCodes: ["CA"],
+      }),
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch {
+    throw new HttpError(503, "Place lookup service is currently unavailable.");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new HttpError(500, "Google Places API key is invalid or not authorized.");
+    }
+
+    if (response.status === 429) {
+      throw new HttpError(503, "Place lookup service is rate-limited. Please try again shortly.");
+    }
+
+    throw new HttpError(503, "Place lookup service returned an unexpected error.");
+  }
+
+  const payload = (await response.json()) as PlacesTextSearchPayload;
+  const location = payload.places?.[0]?.location;
+
+  if (!location) {
+    throw new HttpError(400, `Could not geocode address: ${address}`);
+  }
+
+  return parseCoords(location.latitude, location.longitude);
+};
+
 const geocodeTarget = async (target: GeocodeTarget, googleMapsApiKey: string): Promise<LatLng> => {
-  if (target.googlePlaceId) {
+  const hasGoogleMapsApiKey = googleMapsApiKey.trim().length > 0;
+
+  if (hasGoogleMapsApiKey && target.googlePlaceId) {
     try {
       return await geocodeGooglePlaceId(target.googlePlaceId, googleMapsApiKey);
     } catch {}
   }
 
-  return geocodeAddress(target.address);
+  try {
+    return await geocodeAddress(target.address);
+  } catch (error) {
+    if (!hasGoogleMapsApiKey) {
+      throw error;
+    }
+  }
+
+  return geocodeGoogleTextSearch(target.address, googleMapsApiKey);
 };
 
 export const geocodeTargetsSequentially = async (

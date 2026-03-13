@@ -90,6 +90,52 @@ describe("geocoding helpers", () => {
     expect(result).toEqual([{ address: "Address A", coords: { lat: 43.7, lon: -79.4 } }]);
   });
 
+  it("falls back to Google text search when plain text geocoding returns no results", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          places: [
+            {
+              location: {
+                latitude: 43.5991,
+                longitude: -79.6482,
+              },
+            },
+          ],
+        }),
+      } as Response);
+
+    const result = await geocodeTargetsSequentially([{ address: "6625 snow goose lane" }], "google-key");
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenNthCalledWith(
+      2,
+      "https://places.googleapis.com/v1/places:searchText",
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": "google-key",
+          "X-Goog-FieldMask": "places.location",
+        },
+        body: JSON.stringify({
+          textQuery: "6625 snow goose lane",
+          regionCode: "CA",
+          includedRegionCodes: ["CA"],
+        }),
+        cache: "no-store",
+        signal: expect.any(AbortSignal),
+      },
+    );
+    expect(result).toEqual([{ address: "6625 snow goose lane", coords: { lat: 43.5991, lon: -79.6482 } }]);
+  });
+
   it("maps network failures to unavailable geocoding error", async () => {
     fetchMock.mockRejectedValue(new Error("network down"));
 
