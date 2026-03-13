@@ -35,24 +35,51 @@ vi.mock("../../components/AddressAutocompleteInput", () => ({
     label,
     value,
     onChange,
+    onSuggestionPick,
     disabled,
   }: {
     id: string;
     label: string;
     value: string;
     onChange: (value: string) => void;
+    onSuggestionPick?: (suggestion: { displayName: string; placeId: string }) => void;
     disabled?: boolean;
-  }) => (
-    <div>
-      <label htmlFor={id}>{label}</label>
-      <input
-        id={id}
-        value={value}
-        disabled={Boolean(disabled)}
-        onChange={(event) => onChange((event.target as HTMLInputElement).value)}
-      />
-    </div>
-  ),
+  }) => {
+    const suggestion =
+      id === "startAddress"
+        ? {
+            displayName: "3361 Ingram Road, Mississauga, ON",
+            placeId: "start-place",
+          }
+        : {
+            displayName: "6625 Snow Goose Lane, Mississauga, ON",
+            placeId: "end-place",
+          };
+
+    return (
+      <div>
+        <label htmlFor={id}>{label}</label>
+        <input
+          id={id}
+          value={value}
+          disabled={Boolean(disabled)}
+          onChange={(event) => onChange((event.target as HTMLInputElement).value)}
+        />
+        {onSuggestionPick && (
+          <button
+            type="button"
+            disabled={Boolean(disabled)}
+            onClick={() => {
+              onChange(suggestion.displayName);
+              onSuggestionPick(suggestion);
+            }}
+          >
+            Pick {label}
+          </button>
+        )}
+      </div>
+    );
+  },
 }));
 
 vi.mock("../../components/ThemeToggle", () => ({
@@ -174,6 +201,23 @@ describe("RoutePlanner patient selection integration", () => {
           googlePlaceId: "place-1",
         },
       ],
+      canOptimize: true,
+    });
+  });
+
+  it("submits manual start and end place ids picked from autocomplete", () => {
+    render(<RoutePlanner />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Pick Starting point" }));
+    fireEvent.click(screen.getByRole("button", { name: "Pick Ending point" }));
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith({
+      startAddress: "3361 Ingram Road, Mississauga, ON",
+      startGooglePlaceId: "start-place",
+      endAddress: "6625 Snow Goose Lane, Mississauga, ON",
+      endGooglePlaceId: "end-place",
+      destinations: [],
       canOptimize: true,
     });
   });

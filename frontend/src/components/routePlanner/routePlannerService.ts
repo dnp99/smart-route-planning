@@ -6,7 +6,9 @@ import { requestAuthedJson } from "../auth/authFetch";
 
 export const requestOptimizedRoute = async ({
   startAddress,
+  startGooglePlaceId,
   endAddress,
+  endGooglePlaceId,
   destinations,
 }: OptimizeRouteRequest) => {
   const payload = await requestAuthedJson(
@@ -18,7 +20,9 @@ export const requestOptimizedRoute = async ({
       },
       body: JSON.stringify({
         startAddress,
+        startGooglePlaceId,
         endAddress,
+        endGooglePlaceId,
         destinations,
       }),
     },

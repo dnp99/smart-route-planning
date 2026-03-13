@@ -9,6 +9,7 @@ import { usePatientSearch } from "./routePlanner/usePatientSearch";
 import { useRouteOptimization } from "./routePlanner/useRouteOptimization";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlanner/routePlannerUtils";
 import { useTheme } from "./routePlanner/useTheme";
+import type { AddressSuggestion } from "./types";
 
 type EndMode = "manual" | "patient";
 
@@ -37,6 +38,8 @@ function RoutePlanner() {
     "3361 Ingram Road, Mississauga, ON",
   );
   const [manualEndAddress, setManualEndAddress] = useState("");
+  const [startGooglePlaceId, setStartGooglePlaceId] = useState<string | null>(null);
+  const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<string | null>(null);
   const [endMode, setEndMode] = useState<EndMode>("manual");
 
   const [startTouched, setStartTouched] = useState(false);
@@ -99,6 +102,8 @@ function RoutePlanner() {
 
   const resolvedEndAddress =
     endMode === "manual" ? manualEndAddress : selectedEndPatient?.address ?? "";
+  const resolvedEndGooglePlaceId =
+    endMode === "manual" ? manualEndGooglePlaceId : undefined;
 
   const canOptimize =
     startAddress.trim().length > 0 && resolvedEndAddress.trim().length > 0;
@@ -151,12 +156,34 @@ function RoutePlanner() {
     return [...selectedDestinations, selectedEndPatient];
   }, [endMode, selectedDestinations, selectedEndPatient]);
 
+  const handleStartAddressChange = (value: string) => {
+    setStartAddress(value);
+    setStartGooglePlaceId(null);
+  };
+
+  const handleStartAddressPick = (suggestion: AddressSuggestion) => {
+    setStartAddress(suggestion.displayName);
+    setStartGooglePlaceId(suggestion.placeId);
+  };
+
+  const handleManualEndAddressChange = (value: string) => {
+    setManualEndAddress(value);
+    setManualEndGooglePlaceId(null);
+  };
+
+  const handleManualEndAddressPick = (suggestion: AddressSuggestion) => {
+    setManualEndAddress(suggestion.displayName);
+    setManualEndGooglePlaceId(suggestion.placeId);
+  };
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     void optimizeRoute({
       startAddress,
+      ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
       endAddress: resolvedEndAddress,
+      ...(resolvedEndGooglePlaceId ? { endGooglePlaceId: resolvedEndGooglePlaceId } : {}),
       destinations: requestDestinations,
       canOptimize,
     });
@@ -231,7 +258,8 @@ function RoutePlanner() {
               label="Starting point"
               placeholder="e.g. 1 Apple Park Way, Cupertino"
               value={startAddress}
-              onChange={setStartAddress}
+              onChange={handleStartAddressChange}
+              onSuggestionPick={handleStartAddressPick}
               onBlur={() => setStartTouched(true)}
               helperText="Type at least 3 characters to see suggestions."
               errorText={startFieldError}
@@ -243,7 +271,8 @@ function RoutePlanner() {
               label="Ending point"
               placeholder="e.g. Pearson International Airport"
               value={manualEndAddress}
-              onChange={setManualEndAddress}
+              onChange={handleManualEndAddressChange}
+              onSuggestionPick={handleManualEndAddressPick}
               onBlur={() => {
                 if (endMode === "manual") {
                   setEndTouched(true);

@@ -128,6 +128,40 @@ describe("optimizeRoute service", () => {
     });
   });
 
+  it("uses manual start and end place ids for geocoding when provided", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start Address", coords: { lat: 43.1, lon: -79.1 } },
+      { address: "End Address", coords: { lat: 43.3, lon: -79.3 } },
+    ]);
+    mockedComputeNearestNeighborRoute.mockReturnValue([]);
+    mockedBuildDrivingRoute.mockResolvedValue({
+      orderedStops: [],
+      routeLegs: [],
+      totalDistanceMeters: 0,
+      totalDistanceKm: 0,
+      totalDurationSeconds: 0,
+    });
+
+    await optimizeRoute(
+      {
+        startAddress: "Start Address",
+        startGooglePlaceId: "start-place",
+        endAddress: "End Address",
+        endGooglePlaceId: "end-place",
+        destinations: [],
+      },
+      "google-key",
+    );
+
+    expect(mockedGeocodeTargetsSequentially).toHaveBeenCalledWith(
+      [
+        { address: "Start Address", googlePlaceId: "start-place" },
+        { address: "End Address", googlePlaceId: "end-place" },
+      ],
+      "google-key",
+    );
+  });
+
   it("throws HttpError when geocoding lookup is incomplete", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start Address", coords: { lat: 43.1, lon: -79.1 } },

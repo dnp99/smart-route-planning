@@ -363,6 +363,44 @@ describe("optimize-route route handler", () => {
     );
   });
 
+  it("forwards normalized manual start and end place ids", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+
+    mockedOptimizeRoute.mockResolvedValue({
+      start: { address: "Start Address", coords: { lat: 0, lon: 0 } },
+      end: { address: "End Address", coords: { lat: 1, lon: 1 } },
+      orderedStops: [],
+      routeLegs: [],
+      totalDistanceMeters: 0,
+      totalDistanceKm: 0,
+      totalDurationSeconds: 0,
+    });
+
+    const response = await POST(
+      buildPostRequest(
+        JSON.stringify({
+          startAddress: "Start Address",
+          startGooglePlaceId: " start-place ",
+          endAddress: "End Address",
+          endGooglePlaceId: " end-place ",
+          destinations: [],
+        }),
+      ),
+    );
+
+    expect(response.status).toBe(200);
+    expect(mockedOptimizeRoute).toHaveBeenCalledWith(
+      {
+        startAddress: "Start Address",
+        startGooglePlaceId: "start-place",
+        endAddress: "End Address",
+        endGooglePlaceId: "end-place",
+        destinations: [],
+      },
+      "test-key",
+    );
+  });
+
   it("maps invalid optimize service response shape to 500", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     mockedOptimizeRoute.mockResolvedValue({ invalid: true } as never);

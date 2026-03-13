@@ -51,6 +51,24 @@ describe("parseAndValidateBody", () => {
     });
   });
 
+  it("normalizes manual start and end place ids", () => {
+    const payload = parseAndValidateBody({
+      startAddress: "Start Address",
+      startGooglePlaceId: "  start-place  ",
+      endAddress: "End Address",
+      endGooglePlaceId: "  end-place  ",
+      destinations: [],
+    });
+
+    expect(payload).toEqual({
+      startAddress: "Start Address",
+      startGooglePlaceId: "start-place",
+      endAddress: "End Address",
+      endGooglePlaceId: "end-place",
+      destinations: [],
+    });
+  });
+
   it("keeps same-address destinations when patient ids differ", () => {
     const payload = parseAndValidateBody({
       startAddress: "Start Address",
@@ -273,6 +291,34 @@ describe("parseAndValidateBody", () => {
         }),
       400,
       "destinations[0].googlePlaceId must be a string when provided.",
+    );
+  });
+
+  it("throws when startGooglePlaceId has invalid type", () => {
+    expectHttpError(
+      () =>
+        parseAndValidateBody({
+          startAddress: "Start",
+          startGooglePlaceId: 123,
+          endAddress: "End",
+          destinations: [],
+        }),
+      400,
+      "startGooglePlaceId must be a string when provided.",
+    );
+  });
+
+  it("throws when endGooglePlaceId has invalid type", () => {
+    expectHttpError(
+      () =>
+        parseAndValidateBody({
+          startAddress: "Start",
+          endAddress: "End",
+          endGooglePlaceId: 123,
+          destinations: [],
+        }),
+      400,
+      "endGooglePlaceId must be a string when provided.",
     );
   });
 });
