@@ -139,13 +139,59 @@ describe("RoutePlanner patient selection integration", () => {
     cleanup();
   });
 
-  it("adds destination patients and prevents duplicate selection", () => {
+  it("allows selecting the same patient multiple times for separate visits", () => {
     render(<RoutePlanner />);
 
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
 
-    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
-    expect(screen.queryAllByRole("button", { name: /Jane Doe/i })).toHaveLength(0);
+    expect(screen.getByText("2 destination(s) detected")).toBeTruthy();
+    expect(screen.getAllByRole("button", { name: /Jane Doe/i }).length).toBeGreaterThan(0);
+  });
+
+  it("supports multi-window visits for one patient in optimize payload", () => {
+    render(<RoutePlanner />);
+
+    fireEvent.change(screen.getByLabelText("Ending point"), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Duplicate visit" }));
+
+    fireEvent.change(screen.getAllByDisplayValue("09:00")[1], {
+      target: { value: "19:30" },
+    });
+    fireEvent.change(screen.getAllByDisplayValue("11:00")[1], {
+      target: { value: "20:00" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith({
+      startAddress: "3361 Ingram Road, Mississauga, ON",
+      endAddress: "Airport",
+      destinations: [
+        {
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "123 Main St",
+          googlePlaceId: "place-1",
+          windowStart: "09:00",
+          windowEnd: "11:00",
+          windowType: "fixed",
+        },
+        {
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "123 Main St",
+          googlePlaceId: "place-1",
+          windowStart: "19:30",
+          windowEnd: "20:00",
+          windowType: "fixed",
+        },
+      ],
+      canOptimize: true,
+    });
   });
 
   it("promotes selected destination patient to end patient and removes from destinations", () => {

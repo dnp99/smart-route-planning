@@ -14,6 +14,7 @@ import type { AddressSuggestion } from "./types";
 type EndMode = "manual" | "patient";
 
 type SelectedPatientDestination = {
+  destinationId: string;
   patientId: string;
   patientName: string;
   address: string;
@@ -24,10 +25,13 @@ type SelectedPatientDestination = {
 };
 
 const toWindowTime = (value: string) => value.slice(0, 5);
+const createDestinationId = (patientId: string) =>
+  `${patientId}-${Date.now()}-${Math.floor(Math.random() * 1_000_000)}`;
 
 const toSelectedPatientDestination = (
   patient: Patient,
 ): SelectedPatientDestination => ({
+  destinationId: createDestinationId(patient.id),
   patientId: patient.id,
   patientName: `${patient.firstName} ${patient.lastName}`.trim(),
   address: patient.address,
@@ -96,20 +100,11 @@ function RoutePlanner() {
     optimizeRoute,
   } = useRouteOptimization();
 
-  const selectedDestinationIdSet = useMemo(
-    () => new Set(selectedDestinations.map((destination) => destination.patientId)),
-    [selectedDestinations],
-  );
-
   const destinationSearchResults = useMemo(() => {
     return destinationSearchPatients.filter((patient) => {
-      if (selectedDestinationIdSet.has(patient.id)) {
-        return false;
-      }
-
       return selectedEndPatient?.patientId !== patient.id;
     });
-  }, [destinationSearchPatients, selectedDestinationIdSet, selectedEndPatient]);
+  }, [destinationSearchPatients, selectedEndPatient]);
 
   const endPatientSearchResults = useMemo(() => {
     return endPatientSearchPatients;
@@ -171,6 +166,12 @@ function RoutePlanner() {
     return [...selectedDestinations, selectedEndPatient];
   }, [endMode, selectedDestinations, selectedEndPatient]);
 
+  const optimizeRequestDestinations = useMemo(
+    () =>
+      requestDestinations.map(({ destinationId, ...destination }) => destination),
+    [requestDestinations],
+  );
+
   const handleStartAddressChange = (value: string) => {
     setStartAddress(value);
     setStartGooglePlaceId(null);
@@ -199,7 +200,7 @@ function RoutePlanner() {
       ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
       endAddress: resolvedEndAddress,
       ...(resolvedEndGooglePlaceId ? { endGooglePlaceId: resolvedEndGooglePlaceId } : {}),
-      destinations: requestDestinations,
+      destinations: optimizeRequestDestinations,
       canOptimize,
     });
   };
@@ -211,18 +212,42 @@ function RoutePlanner() {
       return;
     }
 
+    setSelectedDestinations((current) => [...current, destination]);
+  };
+
+  const updateDestinationVisitWindow = (
+    destinationId: string,
+    patch: Partial<
+      Pick<SelectedPatientDestination, "windowStart" | "windowEnd" | "windowType">
+    >,
+  ) => {
+    setSelectedDestinations((current) =>
+      current.map((entry) =>
+        entry.destinationId === destinationId ? { ...entry, ...patch } : entry,
+      ),
+    );
+  };
+
+  const duplicateDestinationVisit = (destinationId: string) => {
     setSelectedDestinations((current) => {
-      if (current.some((entry) => entry.patientId === destination.patientId)) {
+      const source = current.find((entry) => entry.destinationId === destinationId);
+      if (!source) {
         return current;
       }
 
-      return [...current, destination];
+      return [
+        ...current,
+        {
+          ...source,
+          destinationId: createDestinationId(source.patientId),
+        },
+      ];
     });
   };
 
-  const removeDestinationPatient = (patientId: string) => {
+  const removeDestinationPatient = (destinationId: string) => {
     setSelectedDestinations((current) =>
-      current.filter((entry) => entry.patientId !== patientId),
+      current.filter((entry) => entry.destinationId !== destinationId),
     );
   };
 
@@ -495,7 +520,7 @@ function RoutePlanner() {
               <ol className="m-0 space-y-2">
                 {selectedDestinations.map((destination, index) => (
                   <li
-                    key={destination.patientId}
+                    key={destination.destinationId}
                     className={responsiveStyles.destinationItem}
                   >
                     <div className={responsiveStyles.destinationItemBody}>
@@ -509,19 +534,69 @@ function RoutePlanner() {
                         <span className="block text-slate-600 dark:text-slate-300">
                           {destination.address}
                         </span>
-                        <span className="block text-xs text-slate-500 dark:text-slate-400">
-                          {destination.windowStart} - {destination.windowEnd} •{" "}
-                          {destination.windowType}
-                        </span>
+                        <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                          <label className="inline-flex items-center gap-1">
+                            Start
+                            <input
+                              type="time"
+                              value={destination.windowStart}
+                              onChange={(event) =>
+                                updateDestinationVisitWindow(destination.destinationId, {
+                                  windowStart: event.target.value,
+                                })
+                              }
+                              className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                            />
+                          </label>
+                          <label className="inline-flex items-center gap-1">
+                            End
+                            <input
+                              type="time"
+                              value={destination.windowEnd}
+                              onChange={(event) =>
+                                updateDestinationVisitWindow(destination.destinationId, {
+                                  windowEnd: event.target.value,
+                                })
+                              }
+                              className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                            />
+                          </label>
+                          <label className="inline-flex items-center gap-1">
+                            Type
+                            <select
+                              value={destination.windowType}
+                              onChange={(event) =>
+                                updateDestinationVisitWindow(destination.destinationId, {
+                                  windowType: event.target.value as
+                                    | "fixed"
+                                    | "flexible",
+                                })
+                              }
+                              className="rounded-md border border-slate-300 bg-white px-1.5 py-1 text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
+                            >
+                              <option value="fixed">fixed</option>
+                              <option value="flexible">flexible</option>
+                            </select>
+                          </label>
+                        </div>
                       </span>
                     </div>
-                    <button
-                      type="button"
-                      onClick={() => removeDestinationPatient(destination.patientId)}
-                      className={responsiveStyles.destinationRemove}
-                    >
-                      Remove
-                    </button>
+                    <div className="flex flex-wrap items-center gap-2 sm:self-start">
+                      <button
+                        type="button"
+                        onClick={() => duplicateDestinationVisit(destination.destinationId)}
+                        className="rounded-lg border border-blue-200 px-2 py-1 text-xs font-medium text-blue-700 transition hover:bg-blue-50 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/30"
+                      >
+                        Duplicate visit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => removeDestinationPatient(destination.destinationId)}
+                        className={responsiveStyles.destinationRemove}
+                      >
+                        Remove
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ol>
