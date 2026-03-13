@@ -1,5 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const { requireAuthMock } = vi.hoisted(() => ({
+  requireAuthMock: vi.fn(),
+}));
+
+vi.mock("../../../lib/auth/requireAuth", () => ({
+  requireAuth: requireAuthMock,
+}));
+
 const loadRouteModule = async () => {
   vi.resetModules();
   return import("./route");
@@ -24,6 +32,8 @@ describe("address-autocomplete route", () => {
 
   beforeEach(() => {
     fetchMock.mockReset();
+    requireAuthMock.mockReset();
+    requireAuthMock.mockResolvedValue({ nurseId: "nurse-1", email: "nurse@example.com" });
     vi.stubGlobal("fetch", fetchMock);
     process.env.ALLOWED_ORIGINS = "http://localhost:5173";
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
@@ -52,6 +62,28 @@ describe("address-autocomplete route", () => {
 
     expect(response.status).toBe(204);
     expect(response.headers.get("Access-Control-Allow-Origin")).toBe("http://localhost:5173");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toBe(
+      "Content-Type, Authorization",
+    );
+  });
+
+  it("returns 401 when authorization is missing or invalid", async () => {
+    const { GET } = await loadRouteModule();
+    const { HttpError: RouteHttpError } = await import("../../../lib/http");
+    requireAuthMock.mockRejectedValue(
+      new RouteHttpError(401, "Missing or invalid authorization token."),
+    );
+
+    const response = await GET(
+      buildGetRequest("toronto", {
+        origin: "http://localhost:5173",
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: "Missing or invalid authorization token.",
+    });
   });
 
   it("rejects OPTIONS preflight for disallowed origin", async () => {
@@ -364,7 +396,7 @@ describe("address-autocomplete route", () => {
       json: async () => {
         throw new Error("unexpected parse failure");
       },
-    } as Response);
+    } as unknown as Response);
 
     const response = await GET(
       buildGetRequest("json error", {

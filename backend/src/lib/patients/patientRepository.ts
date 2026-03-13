@@ -4,9 +4,43 @@ import { nurses, patients } from "../../db/schema";
 import type { CreatePatientRequest, UpdatePatientRequest } from "../../../../shared/contracts";
 import { validateTimeWindow } from "./patientValidation";
 
-export const findNurseByExternalKey = async (externalKey: string) => {
-  const [nurse] = await getDb().select().from(nurses).where(eq(nurses.externalKey, externalKey)).limit(1);
+export const findNurseById = async (nurseId: string) => {
+  const [nurse] = await getDb().select().from(nurses).where(eq(nurses.id, nurseId)).limit(1);
   return nurse ?? null;
+};
+
+export const findNurseByEmail = async (email: string) => {
+  const [nurse] = await getDb().select().from(nurses).where(eq(nurses.email, email)).limit(1);
+  return nurse ?? null;
+};
+
+export const createNurseAccount = async (payload: {
+  displayName: string;
+  email: string;
+  passwordHash: string;
+}) => {
+  const [nurse] = await getDb()
+    .insert(nurses)
+    .values({
+      externalKey: crypto.randomUUID(),
+      displayName: payload.displayName,
+      email: payload.email,
+      passwordHash: payload.passwordHash,
+      isActive: true,
+    })
+    .returning();
+
+  return nurse;
+};
+
+export const updateNurseLastLoginAt = async (nurseId: string) => {
+  await getDb()
+    .update(nurses)
+    .set({
+      lastLoginAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(nurses.id, nurseId));
 };
 
 export const listPatientsByNurse = async (nurseId: string, query?: string) => {

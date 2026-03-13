@@ -14,11 +14,14 @@ vi.mock("./patientValidation", () => ({
 }));
 
 import {
+  createNurseAccount,
   createPatientForNurse,
   deletePatientForNurse,
-  findNurseByExternalKey,
+  findNurseByEmail,
+  findNurseById,
   findPatientByIdForNurse,
   listPatientsByNurse,
+  updateNurseLastLoginAt,
   updatePatientForNurse,
 } from "./patientRepository";
 
@@ -28,25 +31,70 @@ describe("patientRepository", () => {
     validateTimeWindowMock.mockReset();
   });
 
-  it("finds nurse by external key", async () => {
+  it("finds nurse by id", async () => {
     const limitMock = vi.fn().mockResolvedValue([{ id: "nurse-1" }]);
     const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
     const fromMock = vi.fn().mockReturnValue({ where: whereMock });
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
     getDbMock.mockReturnValue({ select: selectMock });
 
-    await expect(findNurseByExternalKey("default-nurse")).resolves.toEqual({ id: "nurse-1" });
-    expect(limitMock).toHaveBeenCalledWith(1);
+    await expect(findNurseById("nurse-1")).resolves.toEqual({ id: "nurse-1" });
   });
 
-  it("returns null when nurse lookup is empty", async () => {
-    const limitMock = vi.fn().mockResolvedValue([]);
+  it("finds nurse by email", async () => {
+    const limitMock = vi.fn().mockResolvedValue([{ id: "nurse-1", email: "nurse@example.com" }]);
     const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
     const fromMock = vi.fn().mockReturnValue({ where: whereMock });
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
     getDbMock.mockReturnValue({ select: selectMock });
 
-    await expect(findNurseByExternalKey("missing")).resolves.toBeNull();
+    await expect(findNurseByEmail("nurse@example.com")).resolves.toEqual({
+      id: "nurse-1",
+      email: "nurse@example.com",
+    });
+  });
+
+  it("creates nurse account", async () => {
+    const returningMock = vi.fn().mockResolvedValue([{ id: "nurse-2", email: "nurse@example.com" }]);
+    const valuesMock = vi.fn().mockReturnValue({ returning: returningMock });
+    const insertMock = vi.fn().mockReturnValue({ values: valuesMock });
+    getDbMock.mockReturnValue({ insert: insertMock });
+
+    await expect(
+      createNurseAccount({
+        displayName: "Nurse Two",
+        email: "nurse@example.com",
+        passwordHash: "hashed-password",
+      }),
+    ).resolves.toEqual({ id: "nurse-2", email: "nurse@example.com" });
+
+    expect(valuesMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        externalKey: expect.any(String),
+        displayName: "Nurse Two",
+        email: "nurse@example.com",
+        passwordHash: "hashed-password",
+        isActive: true,
+      }),
+    );
+  });
+
+  it("updates nurse last login timestamp", async () => {
+    const whereMock = vi.fn().mockResolvedValue(undefined);
+    const setMock = vi.fn().mockReturnValue({ where: whereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: setMock });
+    getDbMock.mockReturnValue({ update: updateMock });
+
+    await updateNurseLastLoginAt("nurse-1");
+
+    expect(updateMock).toHaveBeenCalled();
+    expect(setMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lastLoginAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      }),
+    );
+    expect(whereMock).toHaveBeenCalled();
   });
 
   it("lists patients for nurse with default ordering", async () => {

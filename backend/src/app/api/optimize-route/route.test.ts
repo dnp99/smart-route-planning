@@ -3,8 +3,16 @@ import { HttpError } from "../../../lib/http";
 import type { OptimizeRouteResult } from "./types";
 import { __resetOptimizeRouteRateLimitForTests } from "./requestGuards";
 
+const { requireAuthMock } = vi.hoisted(() => ({
+  requireAuthMock: vi.fn(),
+}));
+
 vi.mock("./optimizeRouteService", () => ({
   optimizeRoute: vi.fn(),
+}));
+
+vi.mock("../../../lib/auth/requireAuth", () => ({
+  requireAuth: requireAuthMock,
 }));
 
 import { optimizeRoute } from "./optimizeRouteService";
@@ -52,11 +60,15 @@ describe("optimize-route route handler", () => {
   const originalOptimizeRouteApiKey = process.env.OPTIMIZE_ROUTE_API_KEY;
   const originalRateLimitWindow = process.env.OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS;
   const originalRateLimitMax = process.env.OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS;
+  const originalAllowedOrigins = process.env.ALLOWED_ORIGINS;
 
   beforeEach(() => {
     mockedOptimizeRoute.mockReset();
+    requireAuthMock.mockReset();
+    requireAuthMock.mockResolvedValue({ nurseId: "nurse-1", email: "nurse@example.com" });
     __resetOptimizeRouteRateLimitForTests();
     requestCounter = 0;
+    process.env.ALLOWED_ORIGINS = "http://localhost:5173";
   });
 
   afterEach(() => {
@@ -85,6 +97,12 @@ describe("optimize-route route handler", () => {
     } else {
       process.env.OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS = originalRateLimitMax;
     }
+
+    if (originalAllowedOrigins === undefined) {
+      delete process.env.ALLOWED_ORIGINS;
+    } else {
+      process.env.ALLOWED_ORIGINS = originalAllowedOrigins;
+    }
   });
 
   it("returns 500 when GOOGLE_MAPS_API_KEY is missing", async () => {
@@ -105,8 +123,19 @@ describe("optimize-route route handler", () => {
     expect(response.status).toBe(204);
     expect(response.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
     expect(response.headers.get("Access-Control-Allow-Headers")).toBe(
-      "Content-Type, x-optimize-route-key",
+      "Content-Type, Authorization, x-optimize-route-key",
     );
+  });
+
+  it("returns 401 when authorization is missing or invalid", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    requireAuthMock.mockRejectedValue(new HttpError(401, "Missing or invalid authorization token."));
+
+    const response = await POST(buildPostRequest(JSON.stringify(validRequestBody)));
+    const payload = await response.json();
+
+    expect(response.status).toBe(401);
+    expect(payload).toEqual({ error: "Missing or invalid authorization token." });
   });
 
   it("returns 401 when OPTIMIZE_ROUTE_API_KEY is configured but request header is missing", async () => {

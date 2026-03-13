@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { requestOptimizedRoute } from "../../components/routePlanner/routePlannerService";
+import { setAuthSession } from "../../components/auth/authSession";
 
 vi.mock("../../components/apiBaseUrl", () => ({
   resolveApiBaseUrl: () => "http://api.example.com",
@@ -11,10 +12,17 @@ describe("requestOptimizedRoute", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
+    window.localStorage.clear();
+    setAuthSession("test-token", {
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+    });
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    window.localStorage.clear();
   });
 
   it("returns optimize-route payload when response is valid", async () => {
@@ -57,7 +65,7 @@ describe("requestOptimizedRoute", () => {
       "http://api.example.com/api/optimize-route",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: expect.any(Headers),
         body: JSON.stringify({
           startAddress: "Start",
           endAddress: "End",
@@ -78,6 +86,11 @@ describe("requestOptimizedRoute", () => {
         }),
       },
     );
+
+    const [, init] = fetchMock.mock.calls[0];
+    const headers = new Headers(init.headers);
+    expect(headers.get("Content-Type")).toBe("application/json");
+    expect(headers.get("Authorization")).toBe("Bearer test-token");
   });
 
   it("throws API-provided error message on non-ok response", async () => {

@@ -2,21 +2,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpError } from "../../../lib/http";
 
 const {
-  resolveNurseContextMock,
+  requireAuthMock,
   listPatientsByNurseMock,
   createPatientForNurseMock,
   validateCreatePatientPayloadMock,
   toPatientDtoMock,
 } = vi.hoisted(() => ({
-  resolveNurseContextMock: vi.fn(),
+  requireAuthMock: vi.fn(),
   listPatientsByNurseMock: vi.fn(),
   createPatientForNurseMock: vi.fn(),
   validateCreatePatientPayloadMock: vi.fn(),
   toPatientDtoMock: vi.fn(),
 }));
 
-vi.mock("../../../lib/patients/nurseContext", () => ({
-  resolveNurseContext: resolveNurseContextMock,
+vi.mock("../../../lib/auth/requireAuth", () => ({
+  requireAuth: requireAuthMock,
 }));
 
 vi.mock("../../../lib/patients/patientRepository", () => ({
@@ -39,7 +39,8 @@ describe("/api/patients route", () => {
 
   beforeEach(() => {
     process.env.ALLOWED_ORIGINS = "http://localhost:5173";
-    resolveNurseContextMock.mockReset();
+    requireAuthMock.mockReset();
+    requireAuthMock.mockResolvedValue({ nurseId: "nurse-1", email: "nurse@example.com" });
     listPatientsByNurseMock.mockReset();
     createPatientForNurseMock.mockReset();
     validateCreatePatientPayloadMock.mockReset();
@@ -64,6 +65,25 @@ describe("/api/patients route", () => {
 
     expect(response.status).toBe(204);
     expect(response.headers.get("Access-Control-Allow-Methods")).toBe("GET, POST, OPTIONS");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toBe(
+      "Content-Type, Authorization",
+    );
+  });
+
+  it("returns 401 when authorization is missing or invalid", async () => {
+    requireAuthMock.mockRejectedValue(new HttpError(401, "Missing or invalid authorization token."));
+
+    const response = await GET(
+      new Request("http://localhost:3000/api/patients", {
+        method: "GET",
+        headers: { origin: "http://localhost:5173" },
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: "Missing or invalid authorization token.",
+    });
   });
 
   it("returns OPTIONS error response when origin is disallowed", async () => {
@@ -79,7 +99,6 @@ describe("/api/patients route", () => {
   });
 
   it("lists patients with optional search query", async () => {
-    resolveNurseContextMock.mockResolvedValue({ nurseId: "nurse-1" });
     listPatientsByNurseMock.mockResolvedValue([{ id: "patient-1" }]);
     toPatientDtoMock.mockReturnValue({ id: "patient-1", firstName: "Jane" });
 
@@ -98,7 +117,7 @@ describe("/api/patients route", () => {
   });
 
   it("maps GET errors via toErrorResponse", async () => {
-    resolveNurseContextMock.mockRejectedValue(new HttpError(500, "boom"));
+    requireAuthMock.mockRejectedValue(new HttpError(500, "boom"));
 
     const response = await GET(
       new Request("http://localhost:3000/api/patients", {
@@ -112,7 +131,6 @@ describe("/api/patients route", () => {
   });
 
   it("lists patients when query parameter is omitted", async () => {
-    resolveNurseContextMock.mockResolvedValue({ nurseId: "nurse-1" });
     listPatientsByNurseMock.mockResolvedValue([]);
 
     const response = await GET(
@@ -141,7 +159,6 @@ describe("/api/patients route", () => {
   });
 
   it("creates patient and returns 201", async () => {
-    resolveNurseContextMock.mockResolvedValue({ nurseId: "nurse-1" });
     validateCreatePatientPayloadMock.mockReturnValue({ firstName: "Jane" });
     createPatientForNurseMock.mockResolvedValue({ id: "patient-1" });
     toPatientDtoMock.mockReturnValue({ id: "patient-1", firstName: "Jane" });
@@ -160,7 +177,6 @@ describe("/api/patients route", () => {
   });
 
   it("maps unknown POST errors to fallback message", async () => {
-    resolveNurseContextMock.mockResolvedValue({ nurseId: "nurse-1" });
     validateCreatePatientPayloadMock.mockImplementation(() => {
       throw new Error("unexpected");
     });

@@ -1,10 +1,14 @@
 import { sql } from "drizzle-orm";
-import { check, index, pgTable, text, time, timestamp, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, index, pgTable, text, time, timestamp, uuid } from "drizzle-orm/pg-core";
 
 export const nurses = pgTable("nurses", {
   id: uuid("id").defaultRandom().primaryKey(),
   externalKey: text("external_key").notNull().unique(),
   displayName: text("display_name").notNull(),
+  email: text("email").unique(),
+  passwordHash: text("password_hash"),
+  isActive: boolean("is_active").notNull().default(true),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });

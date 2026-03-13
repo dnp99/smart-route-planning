@@ -26,6 +26,17 @@ describe("http helpers", () => {
     });
   });
 
+  it("throws when strict policy is used without ALLOWED_ORIGINS", () => {
+    delete process.env.ALLOWED_ORIGINS;
+
+    expect(() =>
+      buildCorsHeaders(new Request("http://localhost:3000/api/test"), {
+        methods: "GET, OPTIONS",
+        originPolicy: "strict",
+      }),
+    ).toThrowError("Server is missing ALLOWED_ORIGINS configuration.");
+  });
+
   it("returns request origin when it is allowed", () => {
     process.env.ALLOWED_ORIGINS = "https://allowed.example.com, https://other.example.com";
 

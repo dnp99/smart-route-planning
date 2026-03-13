@@ -28,8 +28,3 @@ CREATE TABLE "patients" (
 ALTER TABLE "patients" ADD CONSTRAINT "patients_nurse_id_nurses_id_fk" FOREIGN KEY ("nurse_id") REFERENCES "public"."nurses"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "patients_nurse_id_idx" ON "patients" USING btree ("nurse_id");--> statement-breakpoint
 CREATE INDEX "patients_nurse_name_idx" ON "patients" USING btree ("nurse_id","last_name","first_name");
---> statement-breakpoint
-INSERT INTO "nurses" ("external_key", "display_name")
-VALUES ('default-nurse', 'Nicole Su')
-ON CONFLICT ("external_key") DO UPDATE
-SET "display_name" = EXCLUDED."display_name";

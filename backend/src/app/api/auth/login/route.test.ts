@@ -1,0 +1,245 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { __resetLoginRateLimitForTests } from "../requestGuards";
+
+const {
+  findNurseByEmailMock,
+  updateNurseLastLoginAtMock,
+  verifyPasswordMock,
+  signAccessTokenMock,
+} = vi.hoisted(() => ({
+  findNurseByEmailMock: vi.fn(),
+  updateNurseLastLoginAtMock: vi.fn(),
+  verifyPasswordMock: vi.fn(),
+  signAccessTokenMock: vi.fn(),
+}));
+
+vi.mock("../../../../lib/patients/patientRepository", () => ({
+  findNurseByEmail: findNurseByEmailMock,
+  updateNurseLastLoginAt: updateNurseLastLoginAtMock,
+}));
+
+vi.mock("../../../../lib/auth/password", () => ({
+  verifyPassword: verifyPasswordMock,
+}));
+
+vi.mock("../../../../lib/auth/jwt", () => ({
+  signAccessToken: signAccessTokenMock,
+}));
+
+import { OPTIONS, POST } from "./route";
+
+describe("/api/auth/login route", () => {
+  const originalAllowedOrigins = process.env.ALLOWED_ORIGINS;
+  const originalRateLimitWindow = process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS;
+  const originalRateLimitMax = process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS;
+
+  beforeEach(() => {
+    process.env.ALLOWED_ORIGINS = "http://localhost:5173";
+    process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS = "60000";
+    process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS = "5";
+    __resetLoginRateLimitForTests();
+    findNurseByEmailMock.mockReset();
+    updateNurseLastLoginAtMock.mockReset();
+    verifyPasswordMock.mockReset();
+    signAccessTokenMock.mockReset();
+  });
+
+  afterEach(() => {
+    if (originalAllowedOrigins === undefined) {
+      delete process.env.ALLOWED_ORIGINS;
+    } else {
+      process.env.ALLOWED_ORIGINS = originalAllowedOrigins;
+    }
+
+    if (originalRateLimitWindow === undefined) {
+      delete process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS;
+    } else {
+      process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS = originalRateLimitWindow;
+    }
+
+    if (originalRateLimitMax === undefined) {
+      delete process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS;
+    } else {
+      process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS = originalRateLimitMax;
+    }
+  });
+
+  it("handles OPTIONS preflight", async () => {
+    const response = await OPTIONS(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "OPTIONS",
+        headers: { origin: "http://localhost:5173" },
+      }),
+    );
+
+    expect(response.status).toBe(204);
+    expect(response.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toBe(
+      "Content-Type, Authorization",
+    );
+  });
+
+  it("returns 400 for invalid json body", async () => {
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: "{bad-json",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({ error: "Request body must be valid JSON." });
+  });
+
+  it("returns 400 for malformed payload", async () => {
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ email: "nurse@example.com" }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Login payload must include email and password.",
+    });
+  });
+
+  it("returns 401 when nurse account is missing", async () => {
+    findNurseByEmailMock.mockResolvedValue(null);
+
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ email: "nurse@example.com", password: "secret" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid email or password." });
+  });
+
+  it("returns 401 when account is inactive", async () => {
+    findNurseByEmailMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse",
+      passwordHash: "hash",
+      isActive: false,
+    });
+
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ email: "nurse@example.com", password: "secret" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid email or password." });
+  });
+
+  it("returns 401 when legacy nurse row has not been bootstrapped for auth", async () => {
+    findNurseByEmailMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Legacy Nurse",
+      passwordHash: null,
+      isActive: true,
+    });
+
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ email: "nurse@example.com", password: "secret" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid email or password." });
+    expect(verifyPasswordMock).not.toHaveBeenCalled();
+  });
+
+  it("returns 401 when password does not match", async () => {
+    findNurseByEmailMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse",
+      passwordHash: "hash",
+      isActive: true,
+    });
+    verifyPasswordMock.mockResolvedValue(false);
+
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ email: "nurse@example.com", password: "secret" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid email or password." });
+  });
+
+  it("returns token and auth user on successful login", async () => {
+    findNurseByEmailMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      passwordHash: "hash",
+      isActive: true,
+    });
+    verifyPasswordMock.mockResolvedValue(true);
+    signAccessTokenMock.mockResolvedValue("jwt-token");
+
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ email: "nurse@example.com", password: "secret" }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      token: "jwt-token",
+      user: {
+        id: "nurse-1",
+        email: "nurse@example.com",
+        displayName: "Nurse One",
+      },
+    });
+    expect(updateNurseLastLoginAtMock).toHaveBeenCalledWith("nurse-1");
+  });
+
+  it("returns 429 when login rate limit is exceeded", async () => {
+    process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS = "1";
+    findNurseByEmailMock.mockResolvedValue(null);
+
+    const buildRequest = () =>
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: {
+          origin: "http://localhost:5173",
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.10",
+        },
+        body: JSON.stringify({ email: "nurse@example.com", password: "secret" }),
+      });
+
+    const first = await POST(buildRequest());
+    const second = await POST(buildRequest());
+
+    expect(first.status).toBe(401);
+    expect(second.status).toBe(429);
+    await expect(second.json()).resolves.toEqual({
+      error: "Too many login attempts. Please try again shortly.",
+    });
+  });
+});

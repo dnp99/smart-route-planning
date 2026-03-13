@@ -2,21 +2,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpError } from "../../../../lib/http";
 
 const {
-  resolveNurseContextMock,
+  requireAuthMock,
   validateUpdatePatientPayloadMock,
   updatePatientForNurseMock,
   deletePatientForNurseMock,
   toPatientDtoMock,
 } = vi.hoisted(() => ({
-  resolveNurseContextMock: vi.fn(),
+  requireAuthMock: vi.fn(),
   validateUpdatePatientPayloadMock: vi.fn(),
   updatePatientForNurseMock: vi.fn(),
   deletePatientForNurseMock: vi.fn(),
   toPatientDtoMock: vi.fn(),
 }));
 
-vi.mock("../../../../lib/patients/nurseContext", () => ({
-  resolveNurseContext: resolveNurseContextMock,
+vi.mock("../../../../lib/auth/requireAuth", () => ({
+  requireAuth: requireAuthMock,
 }));
 
 vi.mock("../../../../lib/patients/patientValidation", () => ({
@@ -39,7 +39,8 @@ describe("/api/patients/[id] route", () => {
 
   beforeEach(() => {
     process.env.ALLOWED_ORIGINS = "http://localhost:5173";
-    resolveNurseContextMock.mockReset();
+    requireAuthMock.mockReset();
+    requireAuthMock.mockResolvedValue({ nurseId: "nurse-1", email: "nurse@example.com" });
     validateUpdatePatientPayloadMock.mockReset();
     updatePatientForNurseMock.mockReset();
     deletePatientForNurseMock.mockReset();
@@ -64,6 +65,27 @@ describe("/api/patients/[id] route", () => {
 
     expect(response.status).toBe(204);
     expect(response.headers.get("Access-Control-Allow-Methods")).toBe("PATCH, DELETE, OPTIONS");
+    expect(response.headers.get("Access-Control-Allow-Headers")).toBe(
+      "Content-Type, Authorization",
+    );
+  });
+
+  it("returns 401 when authorization is missing or invalid", async () => {
+    requireAuthMock.mockRejectedValue(new HttpError(401, "Missing or invalid authorization token."));
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/patients/p1", {
+        method: "PATCH",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ firstName: "Jane" }),
+      }),
+      { params: { id: "p1" } },
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({
+      error: "Missing or invalid authorization token.",
+    });
   });
 
   it("returns OPTIONS error response for disallowed origin", async () => {
@@ -107,7 +129,6 @@ describe("/api/patients/[id] route", () => {
   });
 
   it("returns 404 when PATCH target is missing", async () => {
-    resolveNurseContextMock.mockResolvedValue({ nurseId: "nurse-1" });
     validateUpdatePatientPayloadMock.mockReturnValue({ firstName: "Jane" });
     updatePatientForNurseMock.mockResolvedValue(null);
 
@@ -125,7 +146,6 @@ describe("/api/patients/[id] route", () => {
   });
 
   it("updates patient and returns dto", async () => {
-    resolveNurseContextMock.mockResolvedValue({ nurseId: "nurse-1" });
     validateUpdatePatientPayloadMock.mockReturnValue({ firstName: "Jane" });
     updatePatientForNurseMock.mockResolvedValue({ id: "p1" });
     toPatientDtoMock.mockReturnValue({ id: "p1", firstName: "Jane" });
@@ -144,7 +164,7 @@ describe("/api/patients/[id] route", () => {
   });
 
   it("maps PATCH errors through toErrorResponse", async () => {
-    resolveNurseContextMock.mockRejectedValue(new HttpError(500, "config"));
+    requireAuthMock.mockRejectedValue(new HttpError(500, "config"));
 
     const response = await PATCH(
       new Request("http://localhost:3000/api/patients/p1", {
@@ -160,7 +180,6 @@ describe("/api/patients/[id] route", () => {
   });
 
   it("returns 404 when DELETE target is missing", async () => {
-    resolveNurseContextMock.mockResolvedValue({ nurseId: "nurse-1" });
     deletePatientForNurseMock.mockResolvedValue(null);
 
     const response = await DELETE(
@@ -176,7 +195,6 @@ describe("/api/patients/[id] route", () => {
   });
 
   it("deletes patient and returns success payload", async () => {
-    resolveNurseContextMock.mockResolvedValue({ nurseId: "nurse-1" });
     deletePatientForNurseMock.mockResolvedValue({ id: "p1" });
 
     const response = await DELETE(
@@ -192,7 +210,7 @@ describe("/api/patients/[id] route", () => {
   });
 
   it("maps unknown DELETE errors to fallback message", async () => {
-    resolveNurseContextMock.mockImplementation(() => {
+    requireAuthMock.mockImplementation(() => {
       throw new Error("unexpected");
     });
 

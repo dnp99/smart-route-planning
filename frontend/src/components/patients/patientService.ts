@@ -1,5 +1,4 @@
 import {
-  extractApiErrorMessage,
   isPatient,
   parseListPatientsResponse,
   type CreatePatientRequest,
@@ -7,18 +6,10 @@ import {
   type Patient,
   type UpdatePatientRequest,
 } from "../../../../shared/contracts";
-import { resolveApiBaseUrl } from "../apiBaseUrl";
+import { requestAuthedJson } from "../auth/authFetch";
 
 const requestJson = async (path: string, init: RequestInit, fallbackMessage: string) => {
-  const apiBaseUrl = resolveApiBaseUrl();
-  const response = await fetch(`${apiBaseUrl}${path}`, init);
-  const payload = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    throw new Error(extractApiErrorMessage(payload) ?? fallbackMessage);
-  }
-
-  return payload;
+  return requestAuthedJson(path, init, fallbackMessage);
 };
 
 export const listPatients = async (query: string): Promise<Patient[]> => {

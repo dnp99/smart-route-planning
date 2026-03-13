@@ -8,19 +8,23 @@
     "start": "next start",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
+    "db:bootstrap-legacy-nurse": "node ./scripts/bootstrap-legacy-nurse.mjs",
     "check:es-compat": "node ../scripts/check-es-compat.mjs src",
     "lint": "eslint && npm run check:es-compat",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "drizzle-orm": "^0.44.6",
+    "jose": "^6.2.1",
     "next": "16.1.6",
     "postgres": "^3.4.7",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

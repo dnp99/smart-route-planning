@@ -2,3 +2,4 @@ export * from "./common";
 export * from "./optimizeRoute";
 export * from "./addressAutocomplete";
 export * from "./patients";
+export * from "./auth";

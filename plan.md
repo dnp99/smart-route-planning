@@ -6,10 +6,77 @@ Files:
 
 - `plans/change-log.md` - implementation history and completed change log
 - `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
+- `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
+- `plans/jwt-authentication-remediation-plan.md` - safe upgrade and legacy-data preservation plan for the JWT rollout
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
 ## Latest change record
+
+### Change
+Implemented end-to-end JWT authentication with login-gated frontend access and backend route protection across all business endpoints.
+
+### Files added/updated/deleted
+- Added:
+  - `plans/jwt-authentication-execution-plan.md`
+  - `shared/contracts/auth.ts`
+  - `backend/src/lib/auth/password.ts`
+  - `backend/src/lib/auth/jwt.ts`
+  - `backend/src/lib/auth/requireAuth.ts`
+  - `backend/src/app/api/auth/login/route.ts`
+  - `backend/src/app/api/auth/me/route.ts`
+  - `backend/src/lib/auth/password.test.ts`
+  - `backend/src/lib/auth/jwt.test.ts`
+  - `backend/src/lib/auth/requireAuth.test.ts`
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/src/app/api/auth/me/route.test.ts`
+  - `frontend/src/components/auth/authSession.ts`
+  - `frontend/src/components/auth/authFetch.ts`
+  - `frontend/src/components/auth/authService.ts`
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `backend/drizzle/0001_useful_skaar.sql`
+  - `backend/drizzle/meta/0001_snapshot.json`
+- Updated:
+  - `shared/contracts/index.ts`
+  - `backend/src/db/schema.ts`
+  - `backend/src/db/seed-default-nurse.ts`
+  - `backend/src/lib/http.ts`
+  - `backend/src/lib/patients/patientRepository.ts`
+  - `backend/src/app/api/optimize-route/route.ts`
+  - `backend/src/app/api/address-autocomplete/route.ts`
+  - `backend/src/app/api/patients/route.ts`
+  - `backend/src/app/api/patients/[id]/route.ts`
+  - backend test files for optimize-route/address-autocomplete/patients/http/repository coverage
+  - `frontend/src/App.jsx`
+  - `frontend/src/components/AddressAutocompleteInput.tsx`
+  - `frontend/src/components/patients/patientService.ts`
+  - `frontend/src/components/routePlanner/routePlannerService.ts`
+  - frontend route/service/integration test files to account for auth-gated navigation and bearer headers
+  - `README.md`
+  - `backend/README.md`
+  - `frontend/README.md`
+  - `backend/.env.local.example`
+  - `DEPLOYMENT.md`
+  - `plan.md`
+
+### Why
+- Users now must authenticate before seeing patient or route-planner data.
+- Backend business endpoints now enforce JWT bearer authentication uniformly.
+- Authenticated nurse identity now scopes patient operations instead of env-based default-nurse request context.
+- Added auth contracts and tests to keep frontend/backend behavior aligned and verifiable.
+
+### Verification
+- LSP diagnostics on modified implementation files: ✅ no errors.
+- Backend:
+  - `npm test` ✅ (19 files, 168 tests)
+  - `npm run test:coverage` ✅ (98%+ overall, thresholds pass)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm test` ✅ (12 files, 41 tests)
+  - `npm run test:coverage` ✅ (thresholds pass)
+  - `npm run lint` ✅
+  - `npm run build` ✅
 
 ### Change
 Completed backend-first nurse/patient work by fixing patient update semantics and extending optimize-route backend support to accept patient-linked `destinations[]` payloads (while preserving legacy `addresses[]` compatibility).
@@ -48,6 +115,25 @@ Completed backend-first nurse/patient work by fixing patient update semantics an
   - `npm run build` ✅
 
 For full implementation history, see `plans/change-log.md`.
+
+## Latest change addendum
+
+### Change
+Added a dedicated remediation plan for the current JWT-auth branch issues covering unsafe migration sequencing, legacy nurse identity preservation, and duplicate-signup race handling.
+
+### Files added/updated/deleted
+- Added:
+  - `plans/jwt-authentication-remediation-plan.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- The current auth branch needs a concrete follow-up plan before implementation because the first rollout path can break on legacy `nurses` rows, orphan existing patient visibility behind a new nurse id, and surface duplicate-signup races as `500` errors.
+- The remediation document captures the recommended phased upgrade path, bootstrap strategy, rollout order, and acceptance criteria in one place under `plans/`.
+
+### Verification
+- Documentation-only change.
+- Runtime verification not run.
 
 ## Latest change addendum
 
@@ -359,3 +445,206 @@ Updated the default seeded nurse display name from `Default Nurse` to `Nicole Su
 ### Verification
 - Code change only
 - Tests not rerun
+
+## Latest change addendum
+
+### Change
+Restricted the auth bootstrap migration so only `default-nurse` receives the seeded development password instead of backfilling passwords for every existing nurse.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/drizzle/0001_useful_skaar.sql`
+  - `plan.md`
+
+### Why
+- The previous migration assigned the same known password to any nurse missing credentials, which is too broad even for bootstrap behavior.
+- The branch now limits credential seeding to the intended default nurse account.
+
+### Verification
+- Migration SQL only
+- Tests not rerun
+
+## Latest change addendum
+
+### Change
+Implemented frontend startup session validation and backend login rate limiting for the JWT authentication flow.
+
+### Files added/updated/deleted
+- Added:
+  - `backend/src/app/api/auth/requestGuards.ts`
+  - `backend/src/app/api/auth/requestGuards.test.ts`
+- Updated:
+  - `backend/src/app/api/auth/login/route.ts`
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/README.md`
+  - `backend/.env.local.example`
+  - `frontend/src/App.jsx`
+  - `frontend/src/tests/appRoutes.test.tsx`
+  - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+  - `plan.md`
+
+### Why
+- The app previously trusted any locally stored token on startup without confirming that it still mapped to a valid authenticated nurse session.
+- The login endpoint needed basic brute-force protection to match the rate-limit posture already used on the other public-facing backend endpoints.
+
+### Verification
+- Backend:
+  - `npm test` ✅ (20 files, 171 tests)
+- Frontend:
+  - `npm test` ✅ (12 files, 42 tests)
+
+## Latest change addendum
+
+### Change
+Removed the remaining default-nurse bootstrap path so auth and patient access now assume real nurse accounts already exist in the database.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/drizzle/0000_swift_shiver_man.sql`
+  - `backend/drizzle/0001_useful_skaar.sql`
+  - `backend/src/lib/patients/patientRepository.ts`
+  - `backend/src/lib/patients/patientRepository.test.ts`
+  - `backend/.env.local.example`
+  - `backend/README.md`
+  - `README.md`
+  - `plan.md`
+- Deleted:
+  - `backend/src/db/seed-default-nurse.ts`
+  - `backend/src/lib/patients/nurseContext.ts`
+  - `backend/src/lib/patients/nurseContext.test.ts`
+
+### Why
+- Production should not depend on or create a special fallback nurse account.
+- JWT-authenticated nurse identity is now the only supported path for patient access, and nurse records are expected to be provisioned explicitly.
+
+### Verification
+- Backend:
+  - `npm test` ✅ (19 files, 164 tests)
+- Frontend:
+  - `npm test` ✅ (12 files, 42 tests)
+
+## Latest change addendum
+
+### Change
+Added end-to-end nurse sign-up functionality so users can create an account and immediately enter the authenticated app flow.
+
+### Files added/updated/deleted
+- Added:
+  - `backend/src/app/api/auth/signup/route.ts`
+  - `backend/src/app/api/auth/signup/route.test.ts`
+  - `frontend/src/tests/auth/authService.test.ts`
+  - `frontend/src/tests/auth/LoginPage.test.tsx`
+- Updated:
+  - `shared/contracts/auth.ts`
+  - `backend/src/lib/patients/patientRepository.ts`
+  - `backend/src/lib/patients/patientRepository.test.ts`
+  - `frontend/src/components/auth/authService.ts`
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `frontend/src/tests/appRoutes.test.tsx`
+  - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+  - `README.md`
+  - `backend/README.md`
+  - `plan.md`
+
+### Why
+- Authentication now needs an explicit account-creation flow because the application no longer bootstraps a default nurse account automatically.
+- New signups should be able to receive a JWT immediately and continue into the protected patient and route-planner experience without a separate admin step.
+
+### Verification
+- Backend:
+  - `npm test` ✅ (20 files, 170 tests)
+- Frontend:
+  - `npm test` ✅ (14 files, 45 tests)
+
+## Latest change addendum
+
+### Change
+Polished the frontend auth experience by adding sign-up password confirmation and clearer login/sign-up helper copy.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `frontend/src/tests/auth/LoginPage.test.tsx`
+  - `plan.md`
+
+### Why
+- New signups should get immediate feedback before submitting mismatched credentials.
+- The auth form copy should better distinguish between signing in and creating a new CareFlow account.
+
+### Verification
+- Frontend:
+  - `npm test` ✅ (14 files, 46 tests)
+
+## Latest change addendum
+
+### Change
+Added a one-time legacy nurse bootstrap command that upgrades the original nurse row in place, preserving patient ownership while preparing upgraded environments for JWT login.
+
+### Files added/updated/deleted
+- Added:
+  - `backend/scripts/bootstrap-legacy-nurse.mjs`
+  - `backend/src/db/bootstrapLegacyNurse.test.ts`
+- Updated:
+  - `backend/package.json`
+  - `backend/.env.local.example`
+  - `backend/README.md`
+  - `DEPLOYMENT.md`
+  - `plan.md`
+
+### Why
+- Upgraded environments need an operator-safe way to attach auth credentials to the existing legacy nurse row instead of creating a replacement nurse account with a new `id`.
+- The bootstrap command preserves the original nurse id so existing patient rows remain visible after login and gives production rollout docs a concrete step before auth goes live.
+
+### Verification
+- Backend:
+  - `npm test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
+Reworked the auth schema rollout into a transitional migration by keeping `nurses.email` and `nurses.password_hash` nullable for legacy rows, then hardened auth runtime checks so un-bootstrapped nurse rows are rejected safely.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/db/schema.ts`
+  - `backend/drizzle/0001_useful_skaar.sql`
+  - `backend/drizzle/meta/0001_snapshot.json`
+  - `backend/src/app/api/auth/login/route.ts`
+  - `backend/src/app/api/auth/signup/route.ts`
+  - `backend/src/app/api/auth/me/route.ts`
+  - `backend/src/lib/auth/requireAuth.ts`
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/src/app/api/auth/me/route.test.ts`
+  - `backend/src/lib/auth/requireAuth.test.ts`
+  - `backend/README.md`
+  - `plan.md`
+
+### Why
+- The previous auth migration could fail on any upgraded database that already contained legacy `nurses` rows because it added nullable columns and then immediately enforced `NOT NULL`.
+- Keeping the auth columns nullable during the transitional phase lets the schema upgrade succeed first, while runtime guards make sure incomplete legacy rows cannot authenticate until the planned bootstrap/backfill step is added.
+
+### Verification
+- Backend:
+  - `npm test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
+Removed the synchronous auth-resolution state update from the app startup effect so the frontend lint rule for `set-state-in-effect` passes cleanly.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/App.jsx`
+  - `plan.md`
+
+### Why
+- The session bootstrap effect should not call `setState` synchronously when no token is present.
+- The auth-change listener and async `/api/auth/me` validation already cover the necessary resolution paths.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅

@@ -13,6 +13,7 @@ Upcoming or not-yet-implemented work should be stored as separate planning docum
 Current planning documents:
 
 - `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
+- `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
 
 ---
 
