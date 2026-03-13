@@ -307,43 +307,101 @@ describe("requestOptimizedRoute", () => {
     ]);
   });
 
-  it("persists planning windows grouped by patient", async () => {
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => ({}),
-    } as Response);
+  it("persists planning windows by merging overrides into existing patient windows", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          patients: [
+            {
+              id: "patient-1",
+              nurseId: "nurse-1",
+              firstName: "Jane",
+              lastName: "Doe",
+              address: "123 Main St",
+              googlePlaceId: null,
+              preferredVisitStartTime: "09:00",
+              preferredVisitEndTime: "10:00",
+              visitTimeType: "fixed",
+              visitWindows: [
+                {
+                  id: "window-1a",
+                  startTime: "09:00",
+                  endTime: "10:00",
+                  visitTimeType: "fixed",
+                },
+                {
+                  id: "window-1b",
+                  startTime: "15:00",
+                  endTime: "16:00",
+                  visitTimeType: "flexible",
+                },
+              ],
+              createdAt: "2026-03-12T12:00:00.000Z",
+              updatedAt: "2026-03-12T12:00:00.000Z",
+            },
+            {
+              id: "patient-2",
+              nurseId: "nurse-1",
+              firstName: "John",
+              lastName: "Doe",
+              address: "456 Queen St",
+              googlePlaceId: null,
+              preferredVisitStartTime: "09:00",
+              preferredVisitEndTime: "10:00",
+              visitTimeType: "fixed",
+              visitWindows: [],
+              createdAt: "2026-03-12T12:00:00.000Z",
+              updatedAt: "2026-03-12T12:00:00.000Z",
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        json: async () => ({}),
+      } as Response);
 
     await persistPlanningWindows([
       {
         patientId: "patient-1",
+        sourceWindowId: "window-1a",
         startTime: "13:00",
         endTime: "14:00",
         visitTimeType: "flexible",
       },
       {
         patientId: "patient-1",
+        sourceWindowId: null,
         startTime: "16:00",
         endTime: "17:00",
         visitTimeType: "fixed",
       },
       {
         patientId: "patient-2",
+        sourceWindowId: null,
         startTime: "09:00",
         endTime: "10:00",
         visitTimeType: "fixed",
       },
     ]);
 
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
 
     const calls = fetchMock.mock.calls.map(([url, init]) => ({
       url,
       method: init.method,
-      body: JSON.parse(String(init.body)),
+      body: init.body ? JSON.parse(String(init.body)) : null,
       headers: new Headers(init.headers),
     }));
 
     expect(calls).toEqual([
+      {
+        url: "http://api.example.com/api/patients",
+        method: "GET",
+        body: null,
+        headers: expect.any(Headers),
+      },
       {
         url: "http://api.example.com/api/patients/patient-1",
         method: "PATCH",
@@ -352,6 +410,11 @@ describe("requestOptimizedRoute", () => {
             {
               startTime: "13:00",
               endTime: "14:00",
+              visitTimeType: "flexible",
+            },
+            {
+              startTime: "15:00",
+              endTime: "16:00",
               visitTimeType: "flexible",
             },
             {
@@ -380,9 +443,33 @@ describe("requestOptimizedRoute", () => {
     ]);
 
     calls.forEach((call) => {
-      expect(call.headers.get("Content-Type")).toBe("application/json");
       expect(call.headers.get("Authorization")).toBe("Bearer test-token");
     });
+
+    expect(calls[0].headers.get("Content-Type")).toBeNull();
+    expect(calls[1].headers.get("Content-Type")).toBe("application/json");
+    expect(calls[2].headers.get("Content-Type")).toBe("application/json");
+  });
+
+  it("throws when patient to persist cannot be found in patient list", async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        patients: [],
+      }),
+    } as Response);
+
+    await expect(
+      persistPlanningWindows([
+        {
+          patientId: "missing-patient",
+          sourceWindowId: null,
+          startTime: "09:00",
+          endTime: "10:00",
+          visitTimeType: "fixed",
+        },
+      ]),
+    ).rejects.toThrow("Unable to save planning windows.");
   });
 
   it("returns early when there are no planning windows to persist", async () => {
