@@ -43,7 +43,6 @@ function App() {
 
   useEffect(() => {
     if (!authToken) {
-      setIsAuthResolved(true);
       return;
     }
 

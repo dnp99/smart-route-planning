@@ -554,3 +554,21 @@ Polished the frontend auth experience by adding sign-up password confirmation an
 ### Verification
 - Frontend:
   - `npm test` ✅ (14 files, 46 tests)
+
+## Latest change addendum
+
+### Change
+Removed the synchronous auth-resolution state update from the app startup effect so the frontend lint rule for `set-state-in-effect` passes cleanly.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/App.jsx`
+  - `plan.md`
+
+### Why
+- The session bootstrap effect should not call `setState` synchronously when no token is present.
+- The auth-change listener and async `/api/auth/me` validation already cover the necessary resolution paths.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
