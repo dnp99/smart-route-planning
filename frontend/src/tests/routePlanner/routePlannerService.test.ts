@@ -202,6 +202,19 @@ describe("requestOptimizedRoute", () => {
     ).rejects.toThrow("Unable to optimize route.");
   });
 
+  it("throws when provided departureTime is invalid", async () => {
+    await expect(
+      requestOptimizedRoute({
+        startAddress: "Start",
+        endAddress: "End",
+        departureTime: "not-a-date",
+        destinations: [],
+      }),
+    ).rejects.toThrow("Invalid departure time.");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
   it("throws when payload shape is unexpected on ok response", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
@@ -260,6 +273,36 @@ describe("requestOptimizedRoute", () => {
         windowStart: "08:30",
         windowEnd: "09:00",
         windowType: "fixed",
+      },
+    ]);
+  });
+
+  it("keeps unscheduled task untouched when visitId is not found in request map", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...buildValidResponse(),
+        unscheduledTasks: [
+          {
+            visitId: "unknown-visit",
+            patientId: "patient-x",
+            reason: "invalid_window",
+          },
+        ],
+      }),
+    } as Response);
+
+    const result = await requestOptimizedRoute({
+      startAddress: "Start",
+      endAddress: "End",
+      destinations: [],
+    });
+
+    expect(result.unscheduledTasks).toEqual([
+      {
+        visitId: "unknown-visit",
+        patientId: "patient-x",
+        reason: "invalid_window",
       },
     ]);
   });
@@ -340,5 +383,10 @@ describe("requestOptimizedRoute", () => {
       expect(call.headers.get("Content-Type")).toBe("application/json");
       expect(call.headers.get("Authorization")).toBe("Bearer test-token");
     });
+  });
+
+  it("returns early when there are no planning windows to persist", async () => {
+    await persistPlanningWindows([]);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -256,4 +256,15 @@ describe("optimize-route v2 route handler", () => {
       "test-key",
     );
   });
+
+  it("returns 500 when optimize service returns an invalid response shape", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    mockedOptimizeRouteV2.mockResolvedValue({ invalid: true } as never);
+
+    const response = await POST(buildPostRequest(JSON.stringify(validRequestBody)));
+    const payload = await response.json();
+
+    expect(response.status).toBe(500);
+    expect(payload).toEqual({ error: "Failed to shape optimize-route v2 response." });
+  });
 });

@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { SignJWT } from "jose";
 import { signAccessToken, verifyAccessToken } from "./jwt";
 
 describe("auth jwt helpers", () => {
@@ -52,6 +53,22 @@ describe("auth jwt helpers", () => {
     process.env.JWT_SECRET = "test-jwt-secret";
 
     await expect(verifyAccessToken("not-a-jwt-token")).rejects.toMatchObject({
+      status: 401,
+      message: "Missing or invalid authorization token.",
+    });
+  });
+
+  it("rejects tokens missing required payload fields", async () => {
+    process.env.JWT_SECRET = "test-jwt-secret";
+
+    const tokenWithoutEmail = await new SignJWT({})
+      .setProtectedHeader({ alg: "HS256" })
+      .setSubject("nurse-1")
+      .setIssuedAt()
+      .setExpirationTime("10m")
+      .sign(new TextEncoder().encode("test-jwt-secret"));
+
+    await expect(verifyAccessToken(tokenWithoutEmail)).rejects.toMatchObject({
       status: 401,
       message: "Missing or invalid authorization token.",
     });
