@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { requestOptimizedRoute } from "../../components/routePlanner/routePlannerService";
+import {
+  persistPlanningWindows,
+  requestOptimizedRoute,
+} from "../../components/routePlanner/routePlannerService";
 import { setAuthSession } from "../../components/auth/authSession";
 
 vi.mock("../../components/apiBaseUrl", () => ({
@@ -259,5 +262,83 @@ describe("requestOptimizedRoute", () => {
         windowType: "fixed",
       },
     ]);
+  });
+
+  it("persists planning windows grouped by patient", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    } as Response);
+
+    await persistPlanningWindows([
+      {
+        patientId: "patient-1",
+        startTime: "13:00",
+        endTime: "14:00",
+        visitTimeType: "flexible",
+      },
+      {
+        patientId: "patient-1",
+        startTime: "16:00",
+        endTime: "17:00",
+        visitTimeType: "fixed",
+      },
+      {
+        patientId: "patient-2",
+        startTime: "09:00",
+        endTime: "10:00",
+        visitTimeType: "fixed",
+      },
+    ]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    const calls = fetchMock.mock.calls.map(([url, init]) => ({
+      url,
+      method: init.method,
+      body: JSON.parse(String(init.body)),
+      headers: new Headers(init.headers),
+    }));
+
+    expect(calls).toEqual([
+      {
+        url: "http://api.example.com/api/patients/patient-1",
+        method: "PATCH",
+        body: {
+          visitWindows: [
+            {
+              startTime: "13:00",
+              endTime: "14:00",
+              visitTimeType: "flexible",
+            },
+            {
+              startTime: "16:00",
+              endTime: "17:00",
+              visitTimeType: "fixed",
+            },
+          ],
+        },
+        headers: expect.any(Headers),
+      },
+      {
+        url: "http://api.example.com/api/patients/patient-2",
+        method: "PATCH",
+        body: {
+          visitWindows: [
+            {
+              startTime: "09:00",
+              endTime: "10:00",
+              visitTimeType: "fixed",
+            },
+          ],
+        },
+        headers: expect.any(Headers),
+      },
+    ]);
+
+    calls.forEach((call) => {
+      expect(call.headers.get("Content-Type")).toBe("application/json");
+      expect(call.headers.get("Authorization")).toBe("Bearer test-token");
+    });
   });
 });

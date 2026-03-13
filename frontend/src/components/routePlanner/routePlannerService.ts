@@ -1,6 +1,7 @@
 import {
   parseOptimizeRouteV2Response,
   type OptimizeRouteV2WindowType,
+  type PatientVisitWindowInput,
 } from "../../../../shared/contracts";
 import { requestAuthedJson } from "../auth/authFetch";
 import type { OptimizeRouteResponse } from "../types";
@@ -93,6 +94,13 @@ export type OptimizeRouteDestinationInput = {
   priority?: number;
 };
 
+export type PersistPlanningWindowInput = {
+  patientId: string;
+  startTime: string;
+  endTime: string;
+  visitTimeType: OptimizeRouteV2WindowType;
+};
+
 type OptimizeRouteRequestInput = {
   startAddress: string;
   startGooglePlaceId?: string | null;
@@ -102,6 +110,43 @@ type OptimizeRouteRequestInput = {
   planningDate?: string;
   timezone?: string;
   departureTime?: string;
+};
+
+export const persistPlanningWindows = async (
+  windows: PersistPlanningWindowInput[],
+): Promise<void> => {
+  if (windows.length === 0) {
+    return;
+  }
+
+  const windowsByPatientId = new Map<string, PatientVisitWindowInput[]>();
+  windows.forEach((window) => {
+    const nextWindow = {
+      startTime: normalizeWindowTime(window.startTime),
+      endTime: normalizeWindowTime(window.endTime),
+      visitTimeType: window.visitTimeType,
+    } as const;
+
+    const current = windowsByPatientId.get(window.patientId) ?? [];
+    current.push(nextWindow);
+    windowsByPatientId.set(window.patientId, current);
+  });
+
+  await Promise.all(
+    [...windowsByPatientId.entries()].map(async ([patientId, visitWindows]) => {
+      await requestAuthedJson(
+        `/api/patients/${encodeURIComponent(patientId)}`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ visitWindows }),
+        },
+        "Unable to save planning windows.",
+      );
+    }),
+  );
 };
 
 export const requestOptimizedRoute = async ({

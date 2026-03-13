@@ -7,6 +7,7 @@ import ThemeToggle from "./ThemeToggle";
 import type { Patient } from "../../../shared/contracts";
 import { usePatientSearch } from "./routePlanner/usePatientSearch";
 import { useRouteOptimization } from "./routePlanner/useRouteOptimization";
+import { persistPlanningWindows } from "./routePlanner/routePlannerService";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlanner/routePlannerUtils";
 import { useTheme } from "./routePlanner/useTheme";
 import type { AddressSuggestion } from "./types";
@@ -23,6 +24,8 @@ type SelectedPatientDestination = {
   windowEnd: string;
   windowType: "fixed" | "flexible";
   requiresPlanningWindow: boolean;
+  isIncluded: boolean;
+  persistPlanningWindow: boolean;
 };
 
 type SelectedEndPatient = {
@@ -84,6 +87,8 @@ const toSelectedPatientDestinations = (
       windowEnd: toWindowTime(window.endTime),
       windowType: window.visitTimeType,
       requiresPlanningWindow: false,
+      isIncluded: true,
+      persistPlanningWindow: false,
     }));
   }
 
@@ -99,6 +104,8 @@ const toSelectedPatientDestinations = (
         windowEnd: "",
         windowType: "flexible",
         requiresPlanningWindow: true,
+        isIncluded: true,
+        persistPlanningWindow: false,
       },
     ];
   }
@@ -114,6 +121,8 @@ const toSelectedPatientDestinations = (
       windowEnd: toWindowTime(patient.preferredVisitEndTime),
       windowType: patient.visitTimeType,
       requiresPlanningWindow: false,
+      isIncluded: true,
+      persistPlanningWindow: false,
     },
   ];
 };
@@ -246,11 +255,18 @@ function RoutePlanner() {
   );
 
   const requestDestinations = useMemo(() => {
+    const includedDestinationVisits = selectedDestinations.filter(
+      (destination) => destination.isIncluded,
+    );
+
     if (endMode !== "patient" || !selectedEndPatient) {
-      return selectedDestinations;
+      return includedDestinationVisits;
     }
 
-    return [...selectedDestinations, ...selectedEndPatient.visitDestinations];
+    return [
+      ...includedDestinationVisits,
+      ...selectedEndPatient.visitDestinations.filter((destination) => destination.isIncluded),
+    ];
   }, [endMode, selectedDestinations, selectedEndPatient]);
 
   const handleStartAddressChange = (value: string) => {
@@ -290,6 +306,35 @@ function RoutePlanner() {
     );
   };
 
+  const setDestinationVisitIncluded = (visitKey: string, isIncluded: boolean) => {
+    setSelectedDestinations((current) =>
+      current.map((destination) =>
+        destination.visitKey === visitKey
+          ? {
+              ...destination,
+              isIncluded,
+            }
+          : destination,
+      ),
+    );
+  };
+
+  const setDestinationPersistPlanningWindow = (
+    visitKey: string,
+    persistPlanningWindow: boolean,
+  ) => {
+    setSelectedDestinations((current) =>
+      current.map((destination) =>
+        destination.visitKey === visitKey
+          ? {
+              ...destination,
+              persistPlanningWindow,
+            }
+          : destination,
+      ),
+    );
+  };
+
   const updateEndPatientPlanningWindow = (
     visitKey: string,
     field: "windowStart" | "windowEnd",
@@ -314,7 +359,50 @@ function RoutePlanner() {
     });
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const setEndPatientVisitIncluded = (visitKey: string, isIncluded: boolean) => {
+    setSelectedEndPatient((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        visitDestinations: current.visitDestinations.map((destination) =>
+          destination.visitKey === visitKey
+            ? {
+                ...destination,
+                isIncluded,
+              }
+            : destination,
+        ),
+      };
+    });
+  };
+
+  const setEndPatientPersistPlanningWindow = (
+    visitKey: string,
+    persistPlanningWindow: boolean,
+  ) => {
+    setSelectedEndPatient((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        visitDestinations: current.visitDestinations.map((destination) =>
+          destination.visitKey === visitKey
+            ? {
+                ...destination,
+                persistPlanningWindow,
+              }
+            : destination,
+        ),
+      };
+    });
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLocalValidationError("");
 
@@ -342,11 +430,37 @@ function RoutePlanner() {
     }
 
     const optimizeDestinations = requestDestinations.map(
-      ({ visitKey: _visitKey, requiresPlanningWindow: _requiresPlanningWindow, ...destination }) =>
+      ({
+        visitKey: _visitKey,
+        requiresPlanningWindow: _requiresPlanningWindow,
+        isIncluded: _isIncluded,
+        persistPlanningWindow: _persistPlanningWindow,
+        ...destination
+      }) =>
         destination,
     );
 
-    void optimizeRoute({
+    const planningWindowsToPersist = requestDestinations
+      .filter((destination) => destination.requiresPlanningWindow && destination.persistPlanningWindow)
+      .map((destination) => ({
+        patientId: destination.patientId,
+        startTime: destination.windowStart,
+        endTime: destination.windowEnd,
+        visitTimeType: destination.windowType,
+      }));
+
+    if (planningWindowsToPersist.length > 0) {
+      try {
+        await persistPlanningWindows(planningWindowsToPersist);
+      } catch (error) {
+        setLocalValidationError(
+          error instanceof Error ? error.message : "Unable to save planning windows.",
+        );
+        return;
+      }
+    }
+
+    await optimizeRoute({
       startAddress,
       ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
       endAddress: resolvedEndAddress,
@@ -375,9 +489,9 @@ function RoutePlanner() {
     });
   };
 
-  const removeDestinationPatient = (patientId: string) => {
+  const removeDestinationVisit = (visitKey: string) => {
     setSelectedDestinations((current) =>
-      current.filter((entry) => entry.patientId !== patientId),
+      current.filter((entry) => entry.visitKey !== visitKey),
     );
   };
 
@@ -401,7 +515,9 @@ function RoutePlanner() {
     setEndTouched(true);
   };
 
-  const destinationCount = selectedDestinations.length;
+  const destinationCount = selectedDestinations.filter(
+    (destination) => destination.isIncluded,
+  ).length;
 
   return (
     <main className={responsiveStyles.page}>
@@ -529,20 +645,32 @@ function RoutePlanner() {
                     {selectedEndPatient.address}
                   </p>
                   <p className="m-0 text-xs text-emerald-700 dark:text-emerald-300">
-                    {selectedEndPatient.visitDestinations.length} visit window(s) included
+                    {
+                      selectedEndPatient.visitDestinations.filter((destination) => destination.isIncluded)
+                        .length
+                    }{" "}
+                    visit window(s) selected
                   </p>
-                  {selectedEndPatient.visitDestinations.some(
-                    (destination) => destination.requiresPlanningWindow,
-                  ) && (
-                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                      {selectedEndPatient.visitDestinations
-                        .filter((destination) => destination.requiresPlanningWindow)
-                        .map((destination) => (
-                          <div
-                            key={destination.visitKey}
-                            className="grid gap-1 rounded-lg border border-emerald-300/70 p-2 dark:border-emerald-800"
-                          >
-                            <p className="m-0 text-xs font-semibold text-emerald-800 dark:text-emerald-200">
+                  <div className="mt-2 grid gap-2">
+                    {selectedEndPatient.visitDestinations.map((destination, index) => (
+                      <div
+                        key={destination.visitKey}
+                        className="grid gap-2 rounded-lg border border-emerald-300/70 p-2 dark:border-emerald-800"
+                      >
+                        <label className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-900 dark:text-emerald-200">
+                          <input
+                            type="checkbox"
+                            checked={destination.isIncluded}
+                            onChange={(event) =>
+                              setEndPatientVisitIncluded(destination.visitKey, event.target.checked)
+                            }
+                          />
+                          Include visit window {index + 1}
+                        </label>
+
+                        {destination.requiresPlanningWindow ? (
+                          <div className="grid gap-2">
+                            <p className="m-0 text-xs text-emerald-800 dark:text-emerald-300">
                               Set planning window
                             </p>
                             <div className="grid grid-cols-2 gap-2">
@@ -573,10 +701,28 @@ function RoutePlanner() {
                                 className="w-full rounded-lg border border-emerald-300 px-2 py-1 text-xs text-emerald-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-100"
                               />
                             </div>
+                            <label className="inline-flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                              <input
+                                type="checkbox"
+                                checked={destination.persistPlanningWindow}
+                                onChange={(event) =>
+                                  setEndPatientPersistPlanningWindow(
+                                    destination.visitKey,
+                                    event.target.checked,
+                                  )
+                                }
+                              />
+                              Save this window to patient record
+                            </label>
                           </div>
-                        ))}
-                    </div>
-                  )}
+                        ) : (
+                          <p className="m-0 text-xs text-emerald-800 dark:text-emerald-300">
+                            {destination.windowStart} - {destination.windowEnd} • {destination.windowType}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                   <button
                     type="button"
                     onClick={clearEndPatient}
@@ -706,7 +852,9 @@ function RoutePlanner() {
                 {selectedDestinations.map((destination, index) => (
                   <li
                     key={destination.visitKey}
-                    className={responsiveStyles.destinationItem}
+                    className={`${responsiveStyles.destinationItem} ${
+                      destination.isIncluded ? "" : "opacity-60"
+                    }`}
                   >
                     <div className={responsiveStyles.destinationItemBody}>
                       <span className="min-w-8 text-sm font-semibold text-slate-500 dark:text-slate-400">
@@ -719,6 +867,19 @@ function RoutePlanner() {
                         <span className="block text-slate-600 dark:text-slate-300">
                           {destination.address}
                         </span>
+                        <label className="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={destination.isIncluded}
+                            onChange={(event) =>
+                              setDestinationVisitIncluded(
+                                destination.visitKey,
+                                event.target.checked,
+                              )
+                            }
+                          />
+                          Include this visit in route
+                        </label>
                         {destination.requiresPlanningWindow ? (
                           <div className="mt-2">
                             <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
@@ -752,6 +913,19 @@ function RoutePlanner() {
                                 className="w-full rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                               />
                             </div>
+                            <label className="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                              <input
+                                type="checkbox"
+                                checked={destination.persistPlanningWindow}
+                                onChange={(event) =>
+                                  setDestinationPersistPlanningWindow(
+                                    destination.visitKey,
+                                    event.target.checked,
+                                  )
+                                }
+                              />
+                              Save this window to patient record
+                            </label>
                           </div>
                         ) : (
                           <span className="mt-2 block text-xs text-slate-500 dark:text-slate-400">
@@ -763,7 +937,7 @@ function RoutePlanner() {
                     </div>
                     <button
                       type="button"
-                      onClick={() => removeDestinationPatient(destination.patientId)}
+                      onClick={() => removeDestinationVisit(destination.visitKey)}
                       className={responsiveStyles.destinationRemove}
                     >
                       Remove

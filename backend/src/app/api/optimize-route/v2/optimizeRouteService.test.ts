@@ -124,6 +124,64 @@ describe("optimizeRouteV2 service", () => {
     ]);
   });
 
+  it("breaks same-window ties by nearest distance from the current location", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Far Address", coords: { lat: 43.75, lon: -79.75 } },
+      { address: "Near Address", coords: { lat: 43.6005, lon: -79.6005 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-far",
+            patientId: "patient-far",
+            patientName: "Far Patient",
+            address: "Far Address",
+            windowStart: "10:00",
+            windowEnd: "10:20",
+            windowType: "fixed",
+            serviceDurationMinutes: 15,
+          },
+          {
+            visitId: "visit-near",
+            patientId: "patient-near",
+            patientName: "Near Patient",
+            address: "Near Address",
+            windowStart: "10:00",
+            windowEnd: "10:30",
+            windowType: "fixed",
+            serviceDurationMinutes: 15,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const passedOrderedStops = call?.[1] ?? [];
+    expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
+      "Near Address",
+      "Far Address",
+      "End",
+    ]);
+  });
+
   it("groups consecutive same-location visits into one stop and returns metrics", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },

@@ -34,6 +34,23 @@ type PlannedStop = {
   isEndingPoint?: boolean;
 };
 
+const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
+
+const haversineDistanceKm = (from: LatLng, to: LatLng) => {
+  const earthRadiusKm = 6371;
+  const dLat = toRadians(to.lat - from.lat);
+  const dLon = toRadians(to.lon - from.lon);
+  const fromLat = toRadians(from.lat);
+  const toLat = toRadians(to.lat);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.sin(dLon / 2) * Math.sin(dLon / 2) * Math.cos(fromLat) * Math.cos(toLat);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return earthRadiusKm * c;
+};
+
 const parseTimeToSeconds = (value: string) => {
   const [hourString, minuteString] = value.split(":");
   return Number(hourString) * 3600 + Number(minuteString) * 60;
@@ -164,18 +181,51 @@ const geocodeLocations = async (
 
 const orderVisitsWindowFirst = (
   visits: VisitWithCoords[],
+  startCoords: LatLng,
 ) => {
-  const ordered = [...visits].sort((left, right) => {
-    if (left.windowStartSeconds !== right.windowStartSeconds) {
-      return left.windowStartSeconds - right.windowStartSeconds;
+  const remaining = [...visits];
+  const ordered: VisitWithCoords[] = [];
+  let currentCoords = startCoords;
+
+  while (remaining.length > 0) {
+    let bestIndex = 0;
+
+    for (let index = 1; index < remaining.length; index += 1) {
+      const candidate = remaining[index];
+      const best = remaining[bestIndex];
+
+      if (candidate.windowStartSeconds !== best.windowStartSeconds) {
+        if (candidate.windowStartSeconds < best.windowStartSeconds) {
+          bestIndex = index;
+        }
+        continue;
+      }
+
+      const candidateDistance = haversineDistanceKm(currentCoords, candidate.coords);
+      const bestDistance = haversineDistanceKm(currentCoords, best.coords);
+      if (candidateDistance !== bestDistance) {
+        if (candidateDistance < bestDistance) {
+          bestIndex = index;
+        }
+        continue;
+      }
+
+      if (candidate.windowEndSeconds !== best.windowEndSeconds) {
+        if (candidate.windowEndSeconds < best.windowEndSeconds) {
+          bestIndex = index;
+        }
+        continue;
+      }
+
+      if (candidate.visitId.localeCompare(best.visitId) < 0) {
+        bestIndex = index;
+      }
     }
 
-    if (left.windowEndSeconds !== right.windowEndSeconds) {
-      return left.windowEndSeconds - right.windowEndSeconds;
-    }
-
-    return left.visitId.localeCompare(right.visitId);
-  });
+    const [nextVisit] = remaining.splice(bestIndex, 1);
+    ordered.push(nextVisit);
+    currentCoords = nextVisit.coords;
+  }
 
   return {
     orderedVisits: ordered,
@@ -245,7 +295,7 @@ export const optimizeRouteV2 = async (
   const departureTimestampMs = departureDate.getTime();
   const departureLocalSeconds = getLocalSecondsOfDay(departureDate, request.timezone);
 
-  const { orderedVisits, unscheduledTasks } = orderVisitsWindowFirst(visitsWithCoords);
+  const { orderedVisits, unscheduledTasks } = orderVisitsWindowFirst(visitsWithCoords, startCoords);
   const plannedStops = groupVisitsIntoStops(orderedVisits, {
     address: request.end.address,
     googlePlaceId: request.end.googlePlaceId,

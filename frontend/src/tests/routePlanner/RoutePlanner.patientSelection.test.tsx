@@ -1,7 +1,8 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const optimizeRouteMock = vi.fn();
+const persistPlanningWindowsMock = vi.fn();
 const usePatientSearchMock = vi.fn<
   (args: { enabled: boolean }) => {
     patients: unknown[];
@@ -27,6 +28,10 @@ vi.mock("../../components/routePlanner/useRouteOptimization", () => ({
 
 vi.mock("../../components/routePlanner/usePatientSearch", () => ({
   usePatientSearch: (args: { enabled: boolean }) => usePatientSearchMock(args),
+}));
+
+vi.mock("../../components/routePlanner/routePlannerService", () => ({
+  persistPlanningWindows: (...args: unknown[]) => persistPlanningWindowsMock(...args),
 }));
 
 vi.mock("../../components/AddressAutocompleteInput", () => ({
@@ -155,12 +160,42 @@ const flexNoWindowPatient = {
   updatedAt: "2026-03-12T12:00:00.000Z",
 };
 
+const multiWindowPatient = {
+  id: "patient-4",
+  nurseId: "nurse-1",
+  firstName: "Mina",
+  lastName: "Lee",
+  address: "900 Lakeshore Rd",
+  googlePlaceId: "place-4",
+  preferredVisitStartTime: "09:00:00",
+  preferredVisitEndTime: "10:00:00",
+  visitTimeType: "fixed" as const,
+  visitWindows: [
+    {
+      id: "window-4a",
+      startTime: "09:00:00",
+      endTime: "10:00:00",
+      visitTimeType: "fixed" as const,
+    },
+    {
+      id: "window-4b",
+      startTime: "13:00:00",
+      endTime: "14:00:00",
+      visitTimeType: "fixed" as const,
+    },
+  ],
+  createdAt: "2026-03-12T12:00:00.000Z",
+  updatedAt: "2026-03-12T12:00:00.000Z",
+};
+
 describe("RoutePlanner patient selection integration", () => {
   beforeEach(() => {
     optimizeRouteMock.mockReset();
+    persistPlanningWindowsMock.mockReset();
+    persistPlanningWindowsMock.mockResolvedValue(undefined);
     usePatientSearchMock.mockReset();
     usePatientSearchMock.mockImplementation(({ enabled }: { enabled: boolean }) => ({
-      patients: enabled ? [janePatient, johnPatient, flexNoWindowPatient] : [],
+      patients: enabled ? [janePatient, johnPatient, flexNoWindowPatient, multiWindowPatient] : [],
       isLoading: false,
       error: "",
     }));
@@ -329,6 +364,89 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+    });
+  });
+
+  it("allows excluding individual patient windows from a multi-window patient", () => {
+    render(<RoutePlanner />);
+
+    fireEvent.change(screen.getByLabelText("Ending point"), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Mina Lee/i })[0]);
+
+    const includeCheckboxes = screen.getAllByRole("checkbox", {
+      name: "Include this visit in route",
+    });
+    expect(includeCheckboxes).toHaveLength(2);
+    fireEvent.click(includeCheckboxes[1]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith({
+      startAddress: "3361 Ingram Road, Mississauga, ON",
+      endAddress: "Airport",
+      destinations: [
+        {
+          patientId: "patient-4",
+          patientName: "Mina Lee",
+          address: "900 Lakeshore Rd",
+          googlePlaceId: "place-4",
+          windowStart: "09:00",
+          windowEnd: "10:00",
+          windowType: "fixed",
+        },
+      ],
+      canOptimize: true,
+    });
+  });
+
+  it("can persist planner-entered windows for flexible no-window patients", async () => {
+    render(<RoutePlanner />);
+
+    fireEvent.change(screen.getByLabelText("Ending point"), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);
+
+    fireEvent.change(screen.getByLabelText("Flex Patient start"), {
+      target: { value: "13:00" },
+    });
+    fireEvent.change(screen.getByLabelText("Flex Patient end"), {
+      target: { value: "14:00" },
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Save this window to patient record" }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    await waitFor(() => {
+      expect(persistPlanningWindowsMock).toHaveBeenCalledWith([
+        {
+          patientId: "patient-3",
+          startTime: "13:00",
+          endTime: "14:00",
+          visitTimeType: "flexible",
+        },
+      ]);
+    });
+
+    await waitFor(() => {
+      expect(optimizeRouteMock).toHaveBeenCalledWith({
+        startAddress: "3361 Ingram Road, Mississauga, ON",
+        endAddress: "Airport",
+        destinations: [
+          {
+            patientId: "patient-3",
+            patientName: "Flex Patient",
+            address: "789 King St",
+            googlePlaceId: null,
+            windowStart: "13:00",
+            windowEnd: "14:00",
+            windowType: "flexible",
+          },
+        ],
+        canOptimize: true,
+      });
     });
   });
 });
