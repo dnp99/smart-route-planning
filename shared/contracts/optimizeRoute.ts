@@ -37,7 +37,9 @@ export type OptimizeRouteDestination = {
 
 export type OptimizeRouteRequest = {
   startAddress: string;
+  startGooglePlaceId?: string | null;
   endAddress: string;
+  endGooglePlaceId?: string | null;
   destinations: OptimizeRouteDestination[];
 };
 
@@ -150,6 +152,22 @@ export const isOptimizeRouteRequest = (payload: unknown): payload is OptimizeRou
   }
 
   if (typeof payload.startAddress !== "string" || typeof payload.endAddress !== "string") {
+    return false;
+  }
+
+  if (
+    payload.startGooglePlaceId !== undefined &&
+    payload.startGooglePlaceId !== null &&
+    typeof payload.startGooglePlaceId !== "string"
+  ) {
+    return false;
+  }
+
+  if (
+    payload.endGooglePlaceId !== undefined &&
+    payload.endGooglePlaceId !== null &&
+    typeof payload.endGooglePlaceId !== "string"
+  ) {
     return false;
   }
 

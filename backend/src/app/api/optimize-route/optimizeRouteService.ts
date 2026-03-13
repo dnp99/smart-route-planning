@@ -8,7 +8,7 @@ export const optimizeRoute = async (
   request: ValidatedOptimizeRouteRequest,
   googleMapsApiKey: string,
 ): Promise<OptimizeRouteResult> => {
-  const { startAddress, endAddress, destinations } = request;
+  const { startAddress, startGooglePlaceId, endAddress, endGooglePlaceId, destinations } = request;
   const startKey = normalizeAddressKey(startAddress);
   const endKey = normalizeAddressKey(endAddress);
   const endDestination =
@@ -20,6 +20,7 @@ export const optimizeRoute = async (
     const normalized = normalizeAddressKey(destination.address);
     return normalized !== startKey && normalized !== endKey;
   });
+  const resolvedEndGooglePlaceId = endDestination?.googlePlaceId ?? endGooglePlaceId;
 
   const uniqueGeocodeTargets: Array<{ address: string; googlePlaceId?: string | null }> = [];
   const geocodeTargetsByAddressKey = new Map<
@@ -27,14 +28,17 @@ export const optimizeRoute = async (
     { address: string; googlePlaceId?: string | null }
   >();
   const geocodeTargets: Array<{ address: string; googlePlaceId?: string | null }> = [
-    { address: startAddress },
+    {
+      address: startAddress,
+      googlePlaceId: startGooglePlaceId,
+    },
     ...destinationStops.map((destination) => ({
       address: destination.address,
       googlePlaceId: destination.googlePlaceId,
     })),
     {
       address: endAddress,
-      googlePlaceId: endDestination?.googlePlaceId,
+      googlePlaceId: resolvedEndGooglePlaceId,
     },
   ];
 
@@ -90,7 +94,7 @@ export const optimizeRoute = async (
     coords: getCoordsOrThrow(endAddress),
     patientId: endDestination?.patientId,
     patientName: endDestination?.patientName,
-    googlePlaceId: endDestination?.googlePlaceId,
+    googlePlaceId: resolvedEndGooglePlaceId,
   };
 
   const orderedStops = computeNearestNeighborRoute(geocodedStart, geocodedStops, geocodedEnd);

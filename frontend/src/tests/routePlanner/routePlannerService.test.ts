@@ -93,6 +93,44 @@ describe("requestOptimizedRoute", () => {
     expect(headers.get("Authorization")).toBe("Bearer test-token");
   });
 
+  it("includes manual start and end place ids when provided", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        start: { address: "Start", coords: { lat: 43.1, lon: -79.1 } },
+        end: { address: "End", coords: { lat: 43.2, lon: -79.2 } },
+        orderedStops: [],
+        routeLegs: [],
+        totalDistanceMeters: 1000,
+        totalDistanceKm: 1,
+        totalDurationSeconds: 120,
+      }),
+    } as Response);
+
+    await requestOptimizedRoute({
+      startAddress: "Start",
+      startGooglePlaceId: "start-place",
+      endAddress: "End",
+      endGooglePlaceId: "end-place",
+      destinations: [],
+    });
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "http://api.example.com/api/optimize-route",
+      {
+        method: "POST",
+        headers: expect.any(Headers),
+        body: JSON.stringify({
+          startAddress: "Start",
+          startGooglePlaceId: "start-place",
+          endAddress: "End",
+          endGooglePlaceId: "end-place",
+          destinations: [],
+        }),
+      },
+    );
+  });
+
   it("throws API-provided error message on non-ok response", async () => {
     fetchMock.mockResolvedValue({
       ok: false,

@@ -97,7 +97,9 @@ const normalizeDestinations = (destinations: OptimizeRouteDestination[]) => {
 
 export type ValidatedOptimizeRouteRequest = {
   startAddress: string;
+  startGooglePlaceId?: string | null;
   endAddress: string;
+  endGooglePlaceId?: string | null;
   destinations: OptimizeRouteDestination[];
 };
 
@@ -118,6 +120,8 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteReque
 
   const startAddress = payload.startAddress.trim();
   const endAddress = payload.endAddress.trim();
+  const startGooglePlaceId = parseOptionalStringOrNull(payload.startGooglePlaceId, "startGooglePlaceId");
+  const endGooglePlaceId = parseOptionalStringOrNull(payload.endGooglePlaceId, "endGooglePlaceId");
 
   if (!Array.isArray(payload.destinations)) {
     throw new HttpError(400, "destinations must be an array.");
@@ -154,7 +158,9 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteReque
 
   return {
     startAddress,
+    ...(startGooglePlaceId !== undefined ? { startGooglePlaceId } : {}),
     endAddress,
+    ...(endGooglePlaceId !== undefined ? { endGooglePlaceId } : {}),
     destinations,
   };
 };

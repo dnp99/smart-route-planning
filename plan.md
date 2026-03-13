@@ -17,6 +17,43 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Wired manual route-planner start and end autocomplete selections to carry Google place ids through the optimize-route request so manual addresses can use place-aware geocoding instead of plain text alone.
+
+### Files added/updated/deleted
+- Updated:
+  - `shared/contracts/optimizeRoute.ts`
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/components/routePlanner/useRouteOptimization.ts`
+  - `frontend/src/components/routePlanner/routePlannerService.ts`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+  - `frontend/src/tests/routePlanner/useRouteOptimization.test.ts`
+  - `backend/src/app/api/optimize-route/validation.ts`
+  - `backend/src/app/api/optimize-route/validation.test.ts`
+  - `backend/src/app/api/optimize-route/optimizeRouteService.ts`
+  - `backend/src/app/api/optimize-route/optimizeRouteService.test.ts`
+  - `backend/src/app/api/optimize-route/route.test.ts`
+  - `plan.md`
+
+### Why
+- The route planner already exposed address autocomplete for manual start and end inputs, but it discarded the selected suggestion `placeId` and only sent plain address strings to the backend.
+- Forwarding manual place ids lets optimize-route geocode those endpoints with Google Places when available, which avoids failures like the Snow Goose Lane case.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/optimize-route/validation.test.ts src/app/api/optimize-route/optimizeRouteService.test.ts src/app/api/optimize-route/route.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/routePlannerService.test.ts src/tests/routePlanner/useRouteOptimization.test.ts src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
 Added a Google Places text-search fallback for route geocoding so manual or legacy addresses without a stored place id can still resolve when Nominatim returns no match.
 
 ### Files added/updated/deleted

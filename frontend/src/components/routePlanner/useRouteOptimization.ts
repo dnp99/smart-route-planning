@@ -5,7 +5,9 @@ import type { OptimizeRouteDestination } from "../../../../shared/contracts";
 
 type OptimizeRouteInput = {
   startAddress: string;
+  startGooglePlaceId?: string | null;
   endAddress: string;
+  endGooglePlaceId?: string | null;
   destinations: OptimizeRouteDestination[];
   canOptimize: boolean;
 };
@@ -33,7 +35,9 @@ export const useRouteOptimization = () => {
 
   const optimizeRoute = async ({
     startAddress,
+    startGooglePlaceId,
     endAddress,
+    endGooglePlaceId,
     destinations,
     canOptimize,
   }: OptimizeRouteInput) => {
@@ -50,7 +54,9 @@ export const useRouteOptimization = () => {
     try {
       const optimizedResult = await requestOptimizedRoute({
         startAddress,
+        ...(startGooglePlaceId !== undefined ? { startGooglePlaceId } : {}),
         endAddress,
+        ...(endGooglePlaceId !== undefined ? { endGooglePlaceId } : {}),
         destinations,
       });
 
