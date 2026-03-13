@@ -10,6 +10,7 @@ import { enforceLoginRateLimit } from "../requestGuards";
 import {
   createNurseAccount,
   findNurseByEmail,
+  NurseEmailConflictError,
   updateNurseLastLoginAt,
 } from "../../../../lib/patients/patientRepository";
 
@@ -129,6 +130,13 @@ export const POST = async (request: Request) => {
       { status: 201, headers: corsHeaders },
     );
   } catch (error) {
+    if (error instanceof NurseEmailConflictError) {
+      return NextResponse.json(
+        { error: error.message },
+        { status: 409, headers: corsHeaders },
+      );
+    }
+
     return toErrorResponse(error, "Failed to sign up.", corsHeaders);
   }
 };
