@@ -17,6 +17,50 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Expanded the login/signup content to use the full auth card width so the segmented control, headings, fields, and button spread across the same shell width as the header.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `plan.md`
+
+### Why
+- The previous alignment pass widened the auth card shell, but the inner content was still capped to a narrow centered column and did not visually match the wider container.
+- Letting the inner content fill the card keeps the unauthenticated page balanced and makes the login/signup switcher align with the wider shell.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/auth/LoginPage.test.tsx src/tests/appRoutes.test.tsx` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
+Aligned the unauthenticated shell by making the login/signup card span the same outer width as the header while keeping the form controls constrained to a readable inner column.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `plan.md`
+
+### Why
+- The header already spans the full app shell width, but the auth card was capped to a much narrower outer width, which made the unauthenticated layout feel visually misaligned.
+- Matching the outer card width to the header keeps the page shell consistent without making the login form itself uncomfortably wide.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/auth/LoginPage.test.tsx src/tests/appRoutes.test.tsx` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
 Changed the post-auth frontend landing route so successful login and signup redirect nurses to `/patients` instead of `/route-planner`.
 
 ### Files added/updated/deleted
