@@ -3,6 +3,7 @@ import type {
   Patient,
   VisitTimeType,
 } from "../../../../shared/contracts";
+import { formatPatientNameFromParts } from "./patientName";
 
 export type PatientFormVisitWindow = {
   id: string;
@@ -106,7 +107,7 @@ export const formatTimeWindow = (patient: Patient) =>
   );
 
 export const getPatientDisplayName = (patient: Patient) =>
-  `${patient.firstName} ${patient.lastName}`.trim();
+  formatPatientNameFromParts(patient.firstName, patient.lastName);
 
 export const toCreateRequest = (values: PatientFormValues): CreatePatientRequest => ({
   firstName: values.firstName.trim(),

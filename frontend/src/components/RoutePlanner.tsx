@@ -11,6 +11,7 @@ import { persistPlanningWindows } from "./routePlanner/routePlannerService";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlanner/routePlannerUtils";
 import { useTheme } from "./routePlanner/useTheme";
 import type { AddressSuggestion } from "./types";
+import { formatNameWords, formatPatientNameFromParts } from "./patients/patientName";
 
 type EndMode = "manual" | "patient";
 
@@ -74,7 +75,7 @@ const hasOverlappingWindows = (destinations: SelectedPatientDestination[]) => {
 const toSelectedPatientDestinations = (
   patient: Patient,
 ): SelectedPatientDestination[] => {
-  const patientName = `${patient.firstName} ${patient.lastName}`.trim();
+  const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
   const patientVisitWindows = Array.isArray(patient.visitWindows) ? patient.visitWindows : [];
   if (patientVisitWindows.length > 0) {
     return patientVisitWindows.map((window) => ({
@@ -499,7 +500,7 @@ function RoutePlanner() {
     const visitDestinations = toSelectedPatientDestinations(patient);
     setSelectedEndPatient({
       patientId: patient.id,
-      patientName: `${patient.firstName} ${patient.lastName}`.trim(),
+      patientName: formatPatientNameFromParts(patient.firstName, patient.lastName),
       address: patient.address,
       googlePlaceId: patient.googlePlaceId,
       visitDestinations,
@@ -751,8 +752,8 @@ function RoutePlanner() {
 
               {endPatientSearchResults.length > 0 && (
                 <ul className={responsiveStyles.selectableList}>
-                  {endPatientSearchResults.map((patient) => {
-                    const patientName = `${patient.firstName} ${patient.lastName}`.trim();
+                {endPatientSearchResults.map((patient) => {
+                    const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
 
                     return (
                       <li key={patient.id}>
@@ -810,7 +811,7 @@ function RoutePlanner() {
             {destinationSearchResults.length > 0 && (
               <ul className={responsiveStyles.selectableList}>
                 {destinationSearchResults.map((patient) => {
-                  const patientName = `${patient.firstName} ${patient.lastName}`.trim();
+                  const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
 
                   return (
                     <li key={patient.id}>
@@ -1078,7 +1079,7 @@ function RoutePlanner() {
                             key={task.visitId}
                             className="block text-xs font-medium text-blue-600 dark:text-blue-300"
                           >
-                            Patient: {task.patientName} • {task.windowStart} -{" "}
+                            Patient: {formatNameWords(task.patientName)} • {task.windowStart} -{" "}
                             {task.windowEnd} • {task.windowType}
                           </small>
                         ))}
@@ -1114,7 +1115,7 @@ function RoutePlanner() {
                       className="text-sm text-amber-900 dark:text-amber-200"
                     >
                       <p className="m-0 font-medium">
-                        {task.patientName ?? task.patientId}
+                        {task.patientName ? formatNameWords(task.patientName) : task.patientId}
                       </p>
                       {task.address && (
                         <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
