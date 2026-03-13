@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react";
-import { requestOptimizedRoute } from "./routePlannerService";
+import {
+  requestOptimizedRoute,
+  type OptimizeRouteDestinationInput,
+} from "./routePlannerService";
 import type { OptimizeRouteResponse } from "../types";
-import type { OptimizeRouteDestination } from "../../../../shared/contracts";
 
 type OptimizeRouteInput = {
   startAddress: string;
   startGooglePlaceId?: string | null;
   endAddress: string;
   endGooglePlaceId?: string | null;
-  destinations: OptimizeRouteDestination[];
+  destinations: OptimizeRouteDestinationInput[];
   canOptimize: boolean;
+  planningDate?: string;
+  timezone?: string;
+  departureTime?: string;
 };
 
 export const useRouteOptimization = () => {
@@ -40,6 +45,9 @@ export const useRouteOptimization = () => {
     endGooglePlaceId,
     destinations,
     canOptimize,
+    planningDate,
+    timezone,
+    departureTime,
   }: OptimizeRouteInput) => {
     setError("");
     setResult(null);
@@ -58,6 +66,9 @@ export const useRouteOptimization = () => {
         endAddress,
         ...(endGooglePlaceId !== undefined ? { endGooglePlaceId } : {}),
         destinations,
+        ...(planningDate !== undefined ? { planningDate } : {}),
+        ...(timezone !== undefined ? { timezone } : {}),
+        ...(departureTime !== undefined ? { departureTime } : {}),
       });
 
       setResult(optimizedResult);

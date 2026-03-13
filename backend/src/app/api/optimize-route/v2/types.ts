@@ -1,0 +1,11 @@
+export type {
+  OptimizeRouteV2LatLng as LatLng,
+  OptimizeRouteV2Request as OptimizeRouteRequestV2,
+  OptimizeRouteV2Response as OptimizeRouteResultV2,
+  OptimizeRouteV2RouteLeg as RouteLegV2,
+  OptimizeRouteV2OrderedStop as OrderedStopV2,
+  OptimizeRouteV2TaskResult as TaskResultV2,
+  OptimizeRouteV2UnscheduledTask as UnscheduledTaskV2,
+  OptimizeRouteV2Visit as VisitV2,
+  OptimizeRouteV2WindowType as WindowTypeV2,
+} from "../../../../../../shared/contracts";

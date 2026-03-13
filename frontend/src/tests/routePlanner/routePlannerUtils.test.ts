@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import type { OptimizeRouteResponse } from "../../components/types";
 import { buildGoogleMapsTripUrl, formatDuration } from "../../components/routePlanner/routePlannerUtils";
 
 describe("routePlannerUtils", () => {
@@ -10,7 +9,7 @@ describe("routePlannerUtils", () => {
   });
 
   it("builds Google Maps trip URL with origin, destination, and waypoints", () => {
-    const result: OptimizeRouteResponse = {
+    const result = {
       start: { address: "Start Address", coords: { lat: 43.1, lon: -79.1 } },
       end: { address: "End Address", coords: { lat: 43.3, lon: -79.3 } },
       orderedStops: [
@@ -28,10 +27,6 @@ describe("routePlannerUtils", () => {
           isEndingPoint: true,
         },
       ],
-      routeLegs: [],
-      totalDistanceMeters: 11000,
-      totalDistanceKm: 11,
-      totalDurationSeconds: 1100,
     };
 
     const url = new URL(buildGoogleMapsTripUrl(result));

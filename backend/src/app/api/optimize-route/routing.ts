@@ -91,11 +91,24 @@ const parseGoogleDistanceMeters = (distanceMeters: unknown) => {
   return Math.round(value);
 };
 
+const hasSameCoordinates = (from: LatLng, to: LatLng) =>
+  from.lat === to.lat && from.lon === to.lon;
+
 const fetchDrivingRouteLeg = async (
   from: GeocodedStop,
   to: GeocodedStop,
   apiKey: string,
 ): Promise<RouteLeg> => {
+  if (hasSameCoordinates(from.coords, to.coords)) {
+    return {
+      fromAddress: from.address,
+      toAddress: to.address,
+      distanceMeters: 0,
+      durationSeconds: 0,
+      encodedPolyline: "",
+    };
+  }
+
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
     controller.abort();

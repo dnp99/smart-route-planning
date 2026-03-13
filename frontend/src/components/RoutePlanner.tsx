@@ -18,7 +18,12 @@ type SelectedPatientDestination = {
   patientName: string;
   address: string;
   googlePlaceId: string | null;
+  windowStart: string;
+  windowEnd: string;
+  windowType: "fixed" | "flexible";
 };
+
+const toWindowTime = (value: string) => value.slice(0, 5);
 
 const toSelectedPatientDestination = (
   patient: Patient,
@@ -27,10 +32,20 @@ const toSelectedPatientDestination = (
   patientName: `${patient.firstName} ${patient.lastName}`.trim(),
   address: patient.address,
   googlePlaceId: patient.googlePlaceId,
+  windowStart: toWindowTime(patient.preferredVisitStartTime),
+  windowEnd: toWindowTime(patient.preferredVisitEndTime),
+  windowType: patient.visitTimeType,
 });
 
 const panelEmptyTextClassName =
   "m-0 text-sm text-slate-500 dark:text-slate-400";
+
+const unscheduledReasonLabels = {
+  fixed_window_unreachable: "Cannot be reached before the fixed window ends.",
+  invalid_window: "The visit window is invalid.",
+  duration_exceeds_window: "Service duration is longer than the window.",
+  insufficient_day_capacity: "Not enough day capacity for this visit.",
+} as const;
 
 function RoutePlanner() {
   const { theme, toggleTheme } = useTheme();
@@ -239,8 +254,8 @@ function RoutePlanner() {
           </div>
           <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
             Enter your starting point, ending point, and destination
-            addresses. The app returns a nearest-next-stop route with the
-            ending point as the final stop.
+            addresses. The planner prioritizes time-window feasibility first,
+            then distance, with the ending point as the final stop.
           </p>
         </div>
 
@@ -494,6 +509,10 @@ function RoutePlanner() {
                         <span className="block text-slate-600 dark:text-slate-300">
                           {destination.address}
                         </span>
+                        <span className="block text-xs text-slate-500 dark:text-slate-400">
+                          {destination.windowStart} - {destination.windowEnd} •{" "}
+                          {destination.windowType}
+                        </span>
                       </span>
                     </div>
                     <button
@@ -578,7 +597,7 @@ function RoutePlanner() {
               <div className={responsiveStyles.resultStatCard}>
                 <p className={responsiveStyles.resultStatLabel}>Distance</p>
                 <p className={responsiveStyles.resultStatValue}>
-                  {result.totalDistanceKm} km
+                  {result.metrics.totalDistanceKm} km
                 </p>
                 <p className={responsiveStyles.resultStatMeta}>
                   Total planned driving distance
@@ -589,7 +608,7 @@ function RoutePlanner() {
                   Estimated Time
                 </p>
                 <p className={responsiveStyles.resultStatValue}>
-                  {formatDuration(result.totalDurationSeconds)}
+                  {formatDuration(result.metrics.totalDurationSeconds)}
                 </p>
                 <p className={responsiveStyles.resultStatMeta}>
                   Excludes live traffic adjustments
@@ -620,26 +639,75 @@ function RoutePlanner() {
 
             {hasIntermediateStops && (
               <ol className="mb-0 mt-2 list-decimal space-y-2 pl-5">
-                {result.orderedStops.map((stop, index) => (
+                {result.orderedStops.map((stop) => (
                   <li
-                    key={`${stop.address}-${index}`}
+                    key={stop.stopId}
                     className="text-sm text-slate-800 dark:text-slate-200"
                   >
-                      <span>{stop.address}</span>
-                      {stop.patientName && (
-                        <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
-                          Patient: {stop.patientName}
-                        </small>
-                      )}
-                      <small className="block text-xs text-slate-500 dark:text-slate-400">
-                        {stop.distanceFromPreviousKm} km •{" "}
-                        {formatDuration(stop.durationFromPreviousSeconds)} from
+                    <span>{stop.address}</span>
+                    {stop.tasks.length > 0 ? (
+                      <>
+                        {stop.tasks.map((task) => (
+                          <small
+                            key={task.visitId}
+                            className="block text-xs font-medium text-blue-600 dark:text-blue-300"
+                          >
+                            Patient: {task.patientName} • {task.windowStart} -{" "}
+                            {task.windowEnd} • {task.windowType}
+                          </small>
+                        ))}
+                      </>
+                    ) : (
+                      <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
+                        No scheduled visit tasks at this stop.
+                      </small>
+                    )}
+                    <small className="block text-xs text-slate-500 dark:text-slate-400">
+                      {stop.distanceFromPreviousKm} km •{" "}
+                      {formatDuration(stop.durationFromPreviousSeconds)} from
                       previous stop
                       {stop.isEndingPoint ? " • ending point" : ""}
                     </small>
                   </li>
                 ))}
               </ol>
+            )}
+
+            {result.unscheduledTasks.length > 0 && (
+              <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900/60 dark:bg-amber-950/20">
+                <h3 className="m-0 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                  Unscheduled Visits ({result.unscheduledTasks.length})
+                </h3>
+                <p className="mb-2 mt-1 text-xs text-amber-800 dark:text-amber-300">
+                  These visits could not be placed in the optimized route.
+                </p>
+                <ul className="m-0 space-y-2 pl-5">
+                  {result.unscheduledTasks.map((task) => (
+                    <li
+                      key={task.visitId}
+                      className="text-sm text-amber-900 dark:text-amber-200"
+                    >
+                      <p className="m-0 font-medium">
+                        {task.patientName ?? task.patientId}
+                      </p>
+                      {task.address && (
+                        <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
+                          {task.address}
+                        </p>
+                      )}
+                      {task.windowStart && task.windowEnd && (
+                        <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
+                          {task.windowStart} - {task.windowEnd}
+                          {task.windowType ? ` • ${task.windowType}` : ""}
+                        </p>
+                      )}
+                      <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
+                        Reason: {unscheduledReasonLabels[task.reason]}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             )}
           </section>
         )}

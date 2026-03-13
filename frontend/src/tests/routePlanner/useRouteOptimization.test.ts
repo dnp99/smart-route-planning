@@ -9,6 +9,26 @@ import { requestOptimizedRoute } from "../../components/routePlanner/routePlanne
 import { useRouteOptimization } from "../../components/routePlanner/useRouteOptimization";
 
 const mockedRequestOptimizedRoute = vi.mocked(requestOptimizedRoute);
+const buildResponse = () => ({
+  start: {
+    address: "Start",
+    coords: { lat: 43.1, lon: -79.1 },
+    departureTime: "2026-03-13T07:30:00-04:00",
+  },
+  end: { address: "End", coords: { lat: 43.2, lon: -79.2 } },
+  orderedStops: [],
+  routeLegs: [],
+  unscheduledTasks: [],
+  metrics: {
+    fixedWindowViolations: 0,
+    totalLateSeconds: 0,
+    totalWaitSeconds: 0,
+    totalDistanceMeters: 1000,
+    totalDistanceKm: 1,
+    totalDurationSeconds: 120,
+  },
+  algorithmVersion: "v2.1.0-greedy-window-first",
+});
 
 describe("useRouteOptimization", () => {
   beforeEach(() => {
@@ -39,15 +59,7 @@ describe("useRouteOptimization", () => {
 
   it("stores result and toggles success state on successful optimization", async () => {
     vi.useFakeTimers();
-    const payload = {
-      start: { address: "Start", coords: { lat: 43.1, lon: -79.1 } },
-      end: { address: "End", coords: { lat: 43.2, lon: -79.2 } },
-      orderedStops: [],
-      routeLegs: [],
-      totalDistanceMeters: 1000,
-      totalDistanceKm: 1,
-      totalDurationSeconds: 120,
-    };
+    const payload = buildResponse();
     mockedRequestOptimizedRoute.mockResolvedValue(payload);
 
     const { result } = renderHook(() => useRouteOptimization());
@@ -62,6 +74,9 @@ describe("useRouteOptimization", () => {
             patientId: "patient-1",
             patientName: "Jane Doe",
             googlePlaceId: null,
+            windowStart: "09:00",
+            windowEnd: "09:30",
+            windowType: "fixed",
           },
         ],
         canOptimize: true,
@@ -81,6 +96,9 @@ describe("useRouteOptimization", () => {
           patientId: "patient-1",
           patientName: "Jane Doe",
           googlePlaceId: null,
+          windowStart: "09:00",
+          windowEnd: "09:30",
+          windowType: "fixed",
         },
       ],
     });
@@ -93,15 +111,7 @@ describe("useRouteOptimization", () => {
   });
 
   it("forwards manual start and end place ids when provided", async () => {
-    mockedRequestOptimizedRoute.mockResolvedValue({
-      start: { address: "Start", coords: { lat: 43.1, lon: -79.1 } },
-      end: { address: "End", coords: { lat: 43.2, lon: -79.2 } },
-      orderedStops: [],
-      routeLegs: [],
-      totalDistanceMeters: 1000,
-      totalDistanceKm: 1,
-      totalDurationSeconds: 120,
-    });
+    mockedRequestOptimizedRoute.mockResolvedValue(buildResponse());
 
     const { result } = renderHook(() => useRouteOptimization());
 

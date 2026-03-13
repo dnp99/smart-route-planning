@@ -1,4 +1,15 @@
-import type { OptimizeRouteResponse } from "../types";
+type GoogleMapsRouteInput = {
+  start: {
+    address: string;
+  };
+  end: {
+    address: string;
+  };
+  orderedStops: Array<{
+    address: string;
+    isEndingPoint?: boolean;
+  }>;
+};
 
 export const formatDuration = (durationSeconds: number) => {
   const totalMinutes = Math.round(durationSeconds / 60);
@@ -16,7 +27,7 @@ export const formatDuration = (durationSeconds: number) => {
   return `${hours} hr ${minutes} min`;
 };
 
-export const buildGoogleMapsTripUrl = (result: OptimizeRouteResponse) => {
+export const buildGoogleMapsTripUrl = (result: GoogleMapsRouteInput) => {
   const baseUrl = new URL("https://www.google.com/maps/dir/");
   baseUrl.searchParams.set("api", "1");
   baseUrl.searchParams.set("travelmode", "driving");
