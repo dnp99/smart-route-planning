@@ -12,7 +12,7 @@ import {
 import PatientsPage from "./components/patients/PatientsPage";
 
 const linkBaseClassName =
-  "rounded-xl px-3 py-2 text-sm font-semibold transition";
+  "rounded-xl px-3 py-2 text-center text-sm font-semibold transition";
 
 const resolveNavLinkClassName = ({ isActive }) =>
   [
@@ -103,8 +103,8 @@ function App() {
           </div>
 
           {isAuthenticated ? (
-            <div className="flex flex-wrap items-center gap-2">
-              <nav className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
+              <nav className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
                 <NavLink to="/patients" className={resolveNavLinkClassName}>
                   Patients
                 </NavLink>
@@ -114,7 +114,7 @@ function App() {
               </nav>
 
               {authUser && (
-                <span className="rounded-xl bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                <span className="w-full rounded-xl bg-slate-100 px-3 py-2 text-center text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-200 sm:w-auto">
                   {authUser.displayName}
                 </span>
               )}
@@ -122,7 +122,7 @@ function App() {
               <button
                 type="button"
                 onClick={clearAuthSession}
-                className="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto"
               >
                 Logout
               </button>

@@ -558,8 +558,8 @@ function RoutePlanner() {
     <main className={responsiveStyles.page}>
       <section className={responsiveStyles.section}>
         <div className={responsiveStyles.sectionHeader}>
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="m-0 text-2xl font-bold text-slate-900 dark:text-slate-100">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
+            <h1 className="m-0 text-xl font-bold leading-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
               Smart Route Planner
             </h1>
           </div>
@@ -671,7 +671,7 @@ function RoutePlanner() {
               )}
 
               {selectedEndPatient ? (
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 dark:border-emerald-900/60 dark:bg-emerald-950/25 sm:px-4">
                   <p className="m-0 text-sm font-semibold text-emerald-800 dark:text-emerald-200">
                     End patient: {selectedEndPatient.patientName}
                   </p>
@@ -698,7 +698,7 @@ function RoutePlanner() {
                               : "border-emerald-300/70 dark:border-emerald-800"
                           }`}
                         >
-                          <label className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-900 dark:text-emerald-200">
+                          <label className="inline-flex items-start gap-2 text-xs font-semibold leading-snug text-emerald-900 dark:text-emerald-200">
                             <input
                               type="checkbox"
                               checked={destination.isIncluded}
@@ -721,7 +721,7 @@ function RoutePlanner() {
                                 ? "Set planning window"
                                 : "Adjust planning window (plan-only unless saved)"}
                             </p>
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                               <input
                                 type="time"
                                 aria-label={`End patient ${destination.patientName} start`}
@@ -749,7 +749,7 @@ function RoutePlanner() {
                                 className="w-full rounded-lg border border-emerald-300 px-2 py-1 text-xs text-emerald-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-100"
                               />
                             </div>
-                            <label className="inline-flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                            <label className="inline-flex items-start gap-2 text-xs leading-snug text-emerald-800 dark:text-emerald-300">
                               <input
                                 type="checkbox"
                                 checked={destination.persistPlanningWindow}
@@ -770,7 +770,7 @@ function RoutePlanner() {
                   <button
                     type="button"
                     onClick={clearEndPatient}
-                    className="mt-2 rounded-lg border border-emerald-300 px-2 py-1 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-900/40"
+                    className="mt-2 w-full rounded-lg border border-emerald-300 px-2 py-1.5 text-xs font-medium text-emerald-800 transition hover:bg-emerald-100 dark:border-emerald-800 dark:text-emerald-200 dark:hover:bg-emerald-900/40 sm:w-auto sm:py-1"
                   >
                     Clear end patient
                   </button>
@@ -899,10 +899,10 @@ function RoutePlanner() {
                   return (
                     <li
                       key={destination.visitKey}
-                      className={`${responsiveStyles.destinationItem} ${
+                      className={`${responsiveStyles.destinationItem} rounded-xl border px-2 py-2 ${
                         hasOverlapConflict
-                          ? "rounded-xl border border-red-200 bg-red-50/70 px-2 py-2 dark:border-red-900/70 dark:bg-red-950/30"
-                          : ""
+                          ? "border-red-200 bg-red-50/70 dark:border-red-900/70 dark:bg-red-950/30"
+                          : "border-transparent dark:border-transparent"
                       } ${destination.isIncluded ? "" : "opacity-60"}`}
                     >
                       <div className={responsiveStyles.destinationItemBody}>
@@ -916,7 +916,7 @@ function RoutePlanner() {
                           <span className="block text-slate-600 dark:text-slate-300">
                             {destination.address}
                           </span>
-                          <label className="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                          <label className="mt-2 inline-flex items-start gap-2 text-xs leading-snug text-slate-600 dark:text-slate-300">
                             <input
                               type="checkbox"
                               checked={destination.isIncluded}
@@ -940,7 +940,7 @@ function RoutePlanner() {
                                 ? "Flexible with no preferred window. Pick a planning time:"
                                 : "Adjust planning window (plan-only unless saved):"}
                             </p>
-                            <div className="mt-1 flex gap-2">
+                            <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
                               <input
                                 type="time"
                                 aria-label={`${destination.patientName} start`}
@@ -968,7 +968,7 @@ function RoutePlanner() {
                                 className="w-full rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                               />
                             </div>
-                            <label className="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                            <label className="mt-2 inline-flex items-start gap-2 text-xs leading-snug text-slate-600 dark:text-slate-300">
                               <input
                                 type="checkbox"
                                 checked={destination.persistPlanningWindow}
@@ -1120,7 +1120,7 @@ function RoutePlanner() {
             </div>
 
             {hasIntermediateStops && (
-              <ol className="mb-0 mt-2 list-decimal space-y-2 pl-5">
+              <ol className="mb-0 mt-2 list-decimal space-y-2 pl-4 sm:pl-5">
                 {result.orderedStops.map((stop) => (
                   <li
                     key={stop.stopId}
@@ -1163,7 +1163,7 @@ function RoutePlanner() {
                 <p className="mb-2 mt-1 text-xs text-amber-800 dark:text-amber-300">
                   These visits could not be placed in the optimized route.
                 </p>
-                <ul className="m-0 space-y-2 pl-5">
+                <ul className="m-0 space-y-2 pl-4 sm:pl-5">
                   {result.unscheduledTasks.map((task) => (
                     <li
                       key={task.visitId}
