@@ -1504,3 +1504,125 @@ An Oracle review was performed and its recommendations were incorporated, includ
 ### Verification
 - Verified `plans/change-log.md` exists and contains the prior change log content.
 - Verified `plans/plan.md` no longer exists.
+
+---
+
+## 49) Multi-Visit Windows + Flexible Planning-Time Windows
+
+### Commit
+- `620ad20` - `feat(route-planner): support multi-visit windows and flexible planning-time windows`
+
+### Files updated
+- `backend/drizzle/0003_unusual_midnight.sql`
+- `backend/drizzle/meta/0003_snapshot.json`
+- `backend/drizzle/meta/_journal.json`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/validation.test.ts`
+- `backend/src/app/api/optimize-route/v2/validation.ts`
+- `backend/src/db/schema.ts`
+- `backend/src/lib/patients/patientDto.test.ts`
+- `backend/src/lib/patients/patientDto.ts`
+- `backend/src/lib/patients/patientRepository.test.ts`
+- `backend/src/lib/patients/patientRepository.ts`
+- `backend/src/lib/patients/patientValidation.test.ts`
+- `backend/src/lib/patients/patientValidation.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/components/patients/PatientFormModal.tsx`
+- `frontend/src/components/patients/PatientsPage.tsx`
+- `frontend/src/components/patients/patientForm.ts`
+- `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `shared/contracts/patients.ts`
+
+### What changed
+- Added support for multiple persisted visit windows per patient.
+- Allowed flexible patients to have no persisted preferred windows.
+- Updated patient validation/repository/DTO flow for empty `visitWindows` (flexible case).
+- Added planner-time window input for flexible patients without preferred windows.
+- Added overlap/time validation to prevent invalid planning input.
+- Added migration to create/populate `patient_visit_windows`.
+
+### Verification
+- Backend: `npm run test`, `npm run lint`, `npm run build` ✅
+- Frontend: `npm run test`, `npm run lint`, `npm run build` ✅
+
+---
+
+## 50) Close V2 Window-First Planning Gaps
+
+### Commit
+- `6c8098e` - `feat(route-planner): close remaining v2 window-first planning gaps`
+
+### Files updated
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/components/patients/PatientsTable.tsx`
+- `frontend/src/components/routePlanner/routePlannerService.ts`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+
+### What changed
+- Updated v2 ordering to prioritize window start, then distance tie-break from current location.
+- Added per-window include/exclude controls in planner (instead of patient-only inclusion).
+- Added optional persistence for planner-entered windows back to patient records.
+- Updated Patients table type pill to reflect window-level state (`fixed` / `flexible` / `mixed`).
+
+### Verification
+- Backend targeted/full tests + lint + build ✅
+- Frontend targeted/full tests + lint + build ✅
+- Local migration execution: `npm run db:migrate` ✅
+
+---
+
+## 51) System Theme Default + Patient Name Capitalization
+
+### Commit
+- `937dfbf` - `feat(frontend): use system theme default and capitalize patient names`
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/components/patients/patientForm.ts`
+- `frontend/src/components/patients/patientName.ts`
+- `frontend/src/components/routePlanner/useTheme.ts`
+- `frontend/src/tests/patients/PatientsPage.test.tsx`
+- `frontend/src/tests/routePlanner/useTheme.test.ts`
+
+### What changed
+- Removed forced default dark mode; default theme now follows `prefers-color-scheme`.
+- Added system-theme listener behavior when no explicit user preference exists.
+- Added migration guard so old auto-saved theme values are ignored unless marked as manual.
+- Standardized UI patient-name rendering to capitalize first/last names.
+
+### Verification
+- Frontend: targeted tests + `npm run lint` + `npm run build` ✅
+
+---
+
+## 52) Coverage Increase Pass (Frontend + Backend)
+
+### Commit
+- `ec83780` - `test: increase backend and frontend coverage`
+
+### Files updated
+- `backend/src/app/api/auth/requestGuards.test.ts`
+- `backend/src/app/api/optimize-route/geocoding.test.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `backend/src/app/api/optimize-route/v2/route.test.ts`
+- `backend/src/app/api/optimize-route/v2/validation.test.ts`
+- `backend/src/lib/auth/jwt.test.ts`
+- `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+- `frontend/src/tests/routePlanner/usePatientSearch.test.ts`
+
+### What changed
+- Added focused branch-coverage tests across auth guards, JWT validation, geocoding fallbacks, and v2 route/validation/ordering paths.
+- Added frontend tests for route planner service edge branches and patient-search hook behavior.
+
+### Coverage result
+- Frontend branch coverage improved from `79.2%` to `83.2%` (passes frontend threshold).
+- Backend branch coverage improved from `81.45%` to `84.99%` (improved but still below backend `90%` threshold).
+
+### Verification
+- Frontend: `npm run test:coverage` ✅
+- Backend: `npm run test:coverage` ✅ (coverage improved), threshold still failing on branches by policy.
