@@ -2,6 +2,19 @@
 
 Date noted: 2026-03-13
 
+## Status
+
+- Status: Closed
+- Closed on: 2026-03-13
+- Production state: Phase F deployed and verified
+- Release note: `plans/jwt-authentication-remediation-release-note.md`
+
+## Closeout Summary
+
+- Phases A through F are complete, including the transitional migration path, legacy bootstrap tooling, signup conflict hardening, and final auth-constraint finalization.
+- Existing patients remain attached to the preserved legacy nurse `id`, and duplicate signup now returns `409 Conflict` deterministically.
+- The rollout and deployment runbooks now document the verified migration, bootstrap, smoke-test, and finalization order for durable environments.
+
 ## Objective
 
 Safely remediate the current JWT-auth rollout so legacy nurse/patient data can

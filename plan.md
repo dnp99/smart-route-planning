@@ -8,6 +8,7 @@ Files:
 - `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
 - `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
 - `plans/jwt-authentication-remediation-plan.md` - safe upgrade and legacy-data preservation plan for the JWT rollout
+- `plans/jwt-authentication-remediation-release-note.md` - short release note for the completed JWT remediation rollout
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
@@ -522,6 +523,28 @@ Removed the remaining default-nurse bootstrap path so auth and patient access no
   - `npm test` ✅ (19 files, 164 tests)
 - Frontend:
   - `npm test` ✅ (12 files, 42 tests)
+
+## Latest change addendum
+
+### Change
+Published a short release note for the JWT remediation rollout and marked the remediation plan closed after Phase F was deployed and verified.
+
+### Files added/updated/deleted
+- Added:
+  - `plans/jwt-authentication-remediation-release-note.md`
+- Updated:
+  - `plans/jwt-authentication-remediation-plan.md`
+  - `plan.md`
+
+### Why
+- The remediation work is fully deployed, so the planning docs should now reflect a closed status and provide a concise release summary for future reference.
+- Recording the closeout keeps the repository plan log aligned with the production rollout state.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
+- Rollout status:
+  - Phase F deployed and verified in production ✅ (operator-confirmed)
 
 ## Latest change addendum
 
