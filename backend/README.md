@@ -29,17 +29,6 @@ The backend runs on `http://localhost:3000`.
 
 `npm run db:migrate` applies committed Drizzle migrations.
 
-If you are upgrading an existing database that still contains the legacy POC nurse row, run the one-time bootstrap command before attempting login:
-
-```bash
-LEGACY_NURSE_EXTERNAL_KEY=default-nurse \
-LEGACY_NURSE_EMAIL=nurse@example.com \
-LEGACY_NURSE_PASSWORD=replace_with_a_strong_password \
-npm run db:bootstrap-legacy-nurse
-```
-
-Set `LEGACY_NURSE_DISPLAY_NAME` as well if you want to rename the legacy nurse during bootstrap.
-
 ## Environment variables
 
 - `ALLOWED_ORIGINS`
@@ -79,16 +68,6 @@ Set `LEGACY_NURSE_DISPLAY_NAME` as well if you want to rename the legacy nurse d
   - Default: `60000`.
 - `NOMINATIM_CONTACT_EMAIL`
   - Recommended for production or shared environments to identify requests to the upstream geocoding provider.
-- `LEGACY_NURSE_EXTERNAL_KEY`
-  - Optional one-time selector for `npm run db:bootstrap-legacy-nurse`.
-  - Default: `default-nurse`.
-- `LEGACY_NURSE_EMAIL`
-  - Optional one-time bootstrap email used by `npm run db:bootstrap-legacy-nurse`.
-- `LEGACY_NURSE_PASSWORD`
-  - Optional one-time bootstrap password used by `npm run db:bootstrap-legacy-nurse`.
-  - Must be at least 8 characters.
-- `LEGACY_NURSE_DISPLAY_NAME`
-  - Optional one-time display-name override applied during legacy nurse bootstrap.
 
 Example local file:
 
@@ -104,10 +83,6 @@ OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
 OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS=30
 OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS=60000
 NOMINATIM_CONTACT_EMAIL=you@example.com
-LEGACY_NURSE_EXTERNAL_KEY=default-nurse
-LEGACY_NURSE_EMAIL=nurse@example.com
-LEGACY_NURSE_PASSWORD=replace_with_a_strong_password
-LEGACY_NURSE_DISPLAY_NAME=Default Nurse
 ```
 
 ## API endpoints
@@ -157,9 +132,7 @@ Authentication behavior:
 - Missing/invalid/malformed bearer token returns `401`.
 - Missing `JWT_SECRET` returns `500` configuration error.
 - Authentication assumes nurse accounts already exist in the database; no default bootstrap nurse is created automatically.
-- `npm run db:bootstrap-legacy-nurse` upgrades the legacy nurse row in place using `external_key`, preserving the original nurse `id` so existing patient ownership remains intact.
-- Before applying the final auth-constraint migration, confirm `select id, external_key, email, password_hash from nurses where email is null or password_hash is null;` returns zero rows in every durable environment.
-- Before applying the final auth-constraint migration in a durable environment, verify no `nurses` rows remain with null `email` or `password_hash`.
+- The finalized auth schema requires every nurse account to have non-null `email` and `password_hash` values.
 
 Patient update behavior note:
 

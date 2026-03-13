@@ -527,6 +527,33 @@ Removed the remaining default-nurse bootstrap path so auth and patient access no
 ## Latest change addendum
 
 ### Change
+Retired the one-time legacy nurse bootstrap tooling and removed stale rollout documentation after the JWT remediation rollout was fully completed.
+
+### Files added/updated/deleted
+- Deleted:
+  - `backend/scripts/bootstrap-legacy-nurse.mjs`
+  - `backend/src/db/bootstrapLegacyNurse.test.ts`
+- Updated:
+  - `backend/package.json`
+  - `backend/.env.local.example`
+  - `backend/README.md`
+  - `DEPLOYMENT.md`
+  - `plan.md`
+
+### Why
+- Phase F is deployed and verified, so the one-time bootstrap path is no longer part of the supported runtime or operator workflow.
+- Removing the retired command, env vars, and rollout-specific instructions keeps the backend docs aligned with the finalized auth model.
+
+### Verification
+- Backend:
+  - `npm test` ✅
+  - `npm run lint` ✅
+- Documentation:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
 Published a short release note for the JWT remediation rollout and marked the remediation plan closed after Phase F was deployed and verified.
 
 ### Files added/updated/deleted
