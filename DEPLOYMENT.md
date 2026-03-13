@@ -42,6 +42,11 @@ Use two environments:
 - `NOMINATIM_CONTACT_EMAIL`
   - Real monitored email address required for responsible upstream usage.
 
+### Frontend SPA routing
+
+- Keep `frontend/vercel.json` deployed with the frontend project so Vercel rewrites deep links to `index.html`.
+- This prevents direct loads or refreshes on routes such as `/patients` and `/route-planner` from returning `404`.
+
 ### Frontend runtime API URL
 
 Frontend resolves API base URL from:

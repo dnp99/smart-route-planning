@@ -14,6 +14,145 @@ This root file exists to preserve the repository convention that `plan.md` is up
 
 ## Latest change record
 
+## Latest change addendum
+
+### Change
+Hardened Google Routes leg parsing to accept stringified `distanceMeters` values so route optimization no longer fails when the distance field arrives in string form.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/app/api/optimize-route/routing.ts`
+  - `backend/src/app/api/optimize-route/routing.test.ts`
+  - `plan.md`
+
+### Why
+- The route parser previously required `distanceMeters` to be a JSON number and threw `Google Routes returned an invalid distance.` for any other shape.
+- Accepting numeric strings makes the parser more tolerant of real-world API payloads while keeping invalid non-numeric distance values rejected.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/optimize-route/routing.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
+Updated route optimization geocoding to prefer stored Google place ids for patient destinations and fall back to text geocoding only when a place-details lookup cannot be resolved.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/app/api/optimize-route/geocoding.ts`
+  - `backend/src/app/api/optimize-route/geocoding.test.ts`
+  - `backend/src/app/api/optimize-route/optimizeRouteService.ts`
+  - `backend/src/app/api/optimize-route/optimizeRouteService.test.ts`
+  - `plan.md`
+
+### Why
+- The route optimizer was ignoring `googlePlaceId` even though patient destinations already carry it from address autocomplete, so incomplete street-only addresses could fail text geocoding.
+- Using place ids first makes saved patient locations more reliable while preserving the existing Nominatim fallback for addresses that do not have a stored place id.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/optimize-route/geocoding.test.ts src/app/api/optimize-route/optimizeRouteService.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
+Expanded the login/signup content to use the full auth card width so the segmented control, headings, fields, and button spread across the same shell width as the header.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `plan.md`
+
+### Why
+- The previous alignment pass widened the auth card shell, but the inner content was still capped to a narrow centered column and did not visually match the wider container.
+- Letting the inner content fill the card keeps the unauthenticated page balanced and makes the login/signup switcher align with the wider shell.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/auth/LoginPage.test.tsx src/tests/appRoutes.test.tsx` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
+Aligned the unauthenticated shell by making the login/signup card span the same outer width as the header while keeping the form controls constrained to a readable inner column.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `plan.md`
+
+### Why
+- The header already spans the full app shell width, but the auth card was capped to a much narrower outer width, which made the unauthenticated layout feel visually misaligned.
+- Matching the outer card width to the header keeps the page shell consistent without making the login form itself uncomfortably wide.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/auth/LoginPage.test.tsx src/tests/appRoutes.test.tsx` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
+Changed the post-auth frontend landing route so successful login and signup redirect nurses to `/patients` instead of `/route-planner`.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/App.jsx`
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `frontend/src/tests/auth/LoginPage.test.tsx`
+  - `plan.md`
+
+### Why
+- The patients workspace is the primary landing page after authentication, so the default protected route and explicit login redirect should both open `/patients`.
+- Keeping the default route and login-page navigation aligned avoids inconsistent post-auth behavior across direct login, signup, and root-path navigation.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/auth/LoginPage.test.tsx src/tests/appRoutes.test.tsx` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
+Added a frontend Vercel SPA rewrite so browser refreshes on protected routes like `/patients` and `/route-planner` resolve back to the React app instead of returning a hosted `404`.
+
+### Files added/updated/deleted
+- Added:
+  - `frontend/vercel.json`
+- Updated:
+  - `frontend/README.md`
+  - `DEPLOYMENT.md`
+  - `plan.md`
+
+### Why
+- The frontend uses `BrowserRouter`, so deep links work inside the client app but need a hosting rewrite for direct page loads and refreshes on Vercel.
+- Without the rewrite, Vercel tries to resolve `/patients` as a static file path and returns `404 Not Found` before React can boot.
+
+### Verification
+- Frontend:
+  - `npm run build` ✅
+- Configuration:
+  - `python3 -m json.tool frontend/vercel.json` ✅
+  - `git diff --check` ✅
+
 ### Change
 Implemented end-to-end JWT authentication with login-gated frontend access and backend route protection across all business endpoints.
 

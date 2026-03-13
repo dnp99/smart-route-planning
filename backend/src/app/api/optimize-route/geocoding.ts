@@ -3,9 +3,35 @@ import type { GeocodedStop, LatLng } from "./types";
 
 const GEOCODE_TIMEOUT_MS = 8000;
 
+type GeocodeTarget = {
+  address: string;
+  googlePlaceId?: string | null;
+};
+
+type PlacesLocationPayload = {
+  location?: {
+    latitude?: unknown;
+    longitude?: unknown;
+  };
+};
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const normalizeAddressKey = (address: string) => address.trim().toLowerCase();
+
+const parseCoords = (latitude: unknown, longitude: unknown): LatLng => {
+  const lat = Number(latitude);
+  const lon = Number(longitude);
+
+  if (lat !== lat || lon !== lon) {
+    throw new HttpError(503, "Geocoding service returned invalid coordinates.");
+  }
+
+  return {
+    lat,
+    lon,
+  };
+};
 
 const geocodeAddress = async (address: string): Promise<LatLng> => {
   const query = new URLSearchParams({
@@ -52,31 +78,82 @@ const geocodeAddress = async (address: string): Promise<LatLng> => {
   }
 
   const first = results[0];
-  const lat = Number(first.lat);
-  const lon = Number(first.lon);
-
-  if (lat !== lat || lon !== lon) {
-    throw new HttpError(503, "Geocoding service returned invalid coordinates.");
-  }
-
-  return {
-    lat,
-    lon,
-  };
+  return parseCoords(first.lat, first.lon);
 };
 
-export const geocodeAddressesSequentially = async (addresses: string[]) => {
+const geocodeGooglePlaceId = async (placeId: string, apiKey: string): Promise<LatLng> => {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => {
+    controller.abort();
+  }, GEOCODE_TIMEOUT_MS);
+
+  let response: Response;
+
+  try {
+    response = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
+      headers: {
+        Accept: "application/json",
+        "X-Goog-Api-Key": apiKey,
+        "X-Goog-FieldMask": "location",
+      },
+      cache: "no-store",
+      signal: controller.signal,
+    });
+  } catch {
+    throw new HttpError(503, "Place lookup service is currently unavailable.");
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      throw new HttpError(500, "Google Places API key is invalid or not authorized.");
+    }
+
+    if (response.status === 429) {
+      throw new HttpError(503, "Place lookup service is rate-limited. Please try again shortly.");
+    }
+
+    throw new HttpError(503, "Place lookup service returned an unexpected error.");
+  }
+
+  const payload = (await response.json()) as PlacesLocationPayload;
+
+  if (!payload.location) {
+    throw new HttpError(400, `Google Places lookup returned no location for place id: ${placeId}`);
+  }
+
+  return parseCoords(payload.location.latitude, payload.location.longitude);
+};
+
+const geocodeTarget = async (target: GeocodeTarget, googleMapsApiKey: string): Promise<LatLng> => {
+  if (target.googlePlaceId) {
+    try {
+      return await geocodeGooglePlaceId(target.googlePlaceId, googleMapsApiKey);
+    } catch {}
+  }
+
+  return geocodeAddress(target.address);
+};
+
+export const geocodeTargetsSequentially = async (
+  targets: GeocodeTarget[],
+  googleMapsApiKey: string,
+) => {
   const geocodedStops: GeocodedStop[] = [];
 
-  for (let index = 0; index < addresses.length; index += 1) {
-    const address = addresses[index];
-    const coords = await geocodeAddress(address);
-    geocodedStops.push({ address, coords });
+  for (let index = 0; index < targets.length; index += 1) {
+    const target = targets[index];
+    const coords = await geocodeTarget(target, googleMapsApiKey);
+    geocodedStops.push({ address: target.address, coords });
 
-    if (index < addresses.length - 1) {
+    if (index < targets.length - 1) {
       await delay(1100);
     }
   }
 
   return geocodedStops;
 };
+
+export const geocodeAddressesSequentially = async (addresses: string[]) =>
+  geocodeTargetsSequentially(addresses.map((address) => ({ address })), "");

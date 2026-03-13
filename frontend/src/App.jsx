@@ -74,7 +74,7 @@ function App() {
   }, [authToken]);
 
   const isAuthenticated = Boolean(authToken);
-  const defaultProtectedPath = "/route-planner";
+  const defaultProtectedPath = "/patients";
 
   const renderProtectedRoute = (element) =>
     isAuthenticated ? element : <Navigate to="/login" replace />;

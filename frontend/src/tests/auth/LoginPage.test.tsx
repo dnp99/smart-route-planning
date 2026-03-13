@@ -43,7 +43,7 @@ describe("LoginPage", () => {
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/route-planner" element={<div>Route Planner</div>} />
+          <Route path="/patients" element={<div>Patients</div>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -67,7 +67,7 @@ describe("LoginPage", () => {
       expect(signUpMock).toHaveBeenCalledWith("Nurse One", "nurse@example.com", "secret123");
     });
 
-    expect(await screen.findByText("Route Planner")).toBeTruthy();
+    expect(await screen.findByText("Patients")).toBeTruthy();
     expect(window.localStorage.getItem("careflow.auth.token")).toBe("jwt-token");
   });
 
@@ -76,7 +76,7 @@ describe("LoginPage", () => {
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/route-planner" element={<div>Route Planner</div>} />
+          <Route path="/patients" element={<div>Patients</div>} />
         </Routes>
       </MemoryRouter>,
     );

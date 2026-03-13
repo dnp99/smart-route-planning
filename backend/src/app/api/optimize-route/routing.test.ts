@@ -170,6 +170,21 @@ describe("routing helpers", () => {
     });
   });
 
+  it("accepts string distance values returned by Google Routes", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        routes: [{ distanceMeters: "2500", duration: "300s", polyline: { encodedPolyline: "abc" } }],
+      }),
+    } as Response);
+
+    const result = await buildDrivingRoute(START_STOP, [MID_STOP], "api-key");
+
+    expect(result.totalDistanceMeters).toBe(2500);
+    expect(result.totalDistanceKm).toBe(2.5);
+    expect(result.routeLegs[0].distanceMeters).toBe(2500);
+  });
+
   it("maps invalid route distance values", async () => {
     fetchMock.mockResolvedValue({
       ok: true,

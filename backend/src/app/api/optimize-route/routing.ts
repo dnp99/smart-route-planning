@@ -77,6 +77,20 @@ const parseGoogleDurationSeconds = (duration: unknown) => {
   return Math.round(seconds);
 };
 
+
+const parseGoogleDistanceMeters = (distanceMeters: unknown) => {
+  const value =
+    typeof distanceMeters === "string" && distanceMeters.trim().length > 0
+      ? Number(distanceMeters)
+      : distanceMeters;
+
+  if (typeof value !== "number" || value !== value || !isFinite(value)) {
+    throw new HttpError(503, "Google Routes returned an invalid distance.");
+  }
+
+  return Math.round(value);
+};
+
 const fetchDrivingRouteLeg = async (
   from: GeocodedStop,
   to: GeocodedStop,
@@ -153,13 +167,7 @@ const fetchDrivingRouteLeg = async (
     throw new HttpError(503, "No driving route was found for one of the trip legs.");
   }
 
-  if (
-    typeof firstRoute.distanceMeters !== "number" ||
-    firstRoute.distanceMeters !== firstRoute.distanceMeters ||
-    !isFinite(firstRoute.distanceMeters)
-  ) {
-    throw new HttpError(503, "Google Routes returned an invalid distance.");
-  }
+  const distanceMeters = parseGoogleDistanceMeters(firstRoute.distanceMeters);
 
   const encodedPolyline = firstRoute.polyline?.encodedPolyline;
   if (typeof encodedPolyline !== "string" || !encodedPolyline) {
@@ -169,7 +177,7 @@ const fetchDrivingRouteLeg = async (
   return {
     fromAddress: from.address,
     toAddress: to.address,
-    distanceMeters: Math.round(firstRoute.distanceMeters),
+    distanceMeters,
     durationSeconds: parseGoogleDurationSeconds(firstRoute.duration),
     encodedPolyline,
   };
