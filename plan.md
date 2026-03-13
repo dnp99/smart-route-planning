@@ -17,6 +17,29 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Hardened Google Routes leg parsing to accept stringified `distanceMeters` values so route optimization no longer fails when the distance field arrives in string form.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/app/api/optimize-route/routing.ts`
+  - `backend/src/app/api/optimize-route/routing.test.ts`
+  - `plan.md`
+
+### Why
+- The route parser previously required `distanceMeters` to be a JSON number and threw `Google Routes returned an invalid distance.` for any other shape.
+- Accepting numeric strings makes the parser more tolerant of real-world API payloads while keeping invalid non-numeric distance values rejected.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/optimize-route/routing.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
 Updated route optimization geocoding to prefer stored Google place ids for patient destinations and fall back to text geocoding only when a place-details lookup cannot be resolved.
 
 ### Files added/updated/deleted
