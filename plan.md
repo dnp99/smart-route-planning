@@ -14,6 +14,53 @@ This root file exists to preserve the repository convention that `plan.md` is up
 
 ## Latest change record
 
+## Latest change addendum
+
+### Change
+Changed the post-auth frontend landing route so successful login and signup redirect nurses to `/patients` instead of `/route-planner`.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/App.jsx`
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `frontend/src/tests/auth/LoginPage.test.tsx`
+  - `plan.md`
+
+### Why
+- The patients workspace is the primary landing page after authentication, so the default protected route and explicit login redirect should both open `/patients`.
+- Keeping the default route and login-page navigation aligned avoids inconsistent post-auth behavior across direct login, signup, and root-path navigation.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/auth/LoginPage.test.tsx src/tests/appRoutes.test.tsx` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
+Added a frontend Vercel SPA rewrite so browser refreshes on protected routes like `/patients` and `/route-planner` resolve back to the React app instead of returning a hosted `404`.
+
+### Files added/updated/deleted
+- Added:
+  - `frontend/vercel.json`
+- Updated:
+  - `frontend/README.md`
+  - `DEPLOYMENT.md`
+  - `plan.md`
+
+### Why
+- The frontend uses `BrowserRouter`, so deep links work inside the client app but need a hosting rewrite for direct page loads and refreshes on Vercel.
+- Without the rewrite, Vercel tries to resolve `/patients` as a static file path and returns `404 Not Found` before React can boot.
+
+### Verification
+- Frontend:
+  - `npm run build` ✅
+- Configuration:
+  - `python3 -m json.tool frontend/vercel.json` ✅
+  - `git diff --check` ✅
+
 ### Change
 Implemented end-to-end JWT authentication with login-gated frontend access and backend route protection across all business endpoints.
 

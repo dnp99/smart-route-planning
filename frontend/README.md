@@ -19,6 +19,8 @@ npm run dev
 
 The app runs on `http://localhost:5173`.
 
+For Vercel hosting, `frontend/vercel.json` rewrites deep links such as `/patients` and `/route-planner` back to `index.html` so browser refreshes keep loading the React app instead of returning a platform `404`.
+
 ## Runtime API configuration
 
 The frontend reads its API base URL from `VITE_API_BASE_URL` first, then falls back to

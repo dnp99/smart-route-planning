@@ -60,7 +60,7 @@ const LoginPage = () => {
           ? await signUp(trimmedDisplayName, trimmedEmail, password)
           : await login(trimmedEmail, password);
       setAuthSession(result.token, result.user);
-      navigate("/route-planner", { replace: true });
+      navigate("/patients", { replace: true });
     } catch (loginError) {
       setError(
         loginError instanceof Error
