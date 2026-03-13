@@ -6,7 +6,7 @@ This folder contains the Next.js backend for CareFlow.
 
 - Expose `POST /api/optimize-route` for route optimization.
 - Expose `GET /api/address-autocomplete` for address suggestions.
-- Expose auth endpoints for login and current-user identity.
+- Expose auth endpoints for signup, login, and current-user identity.
 - Geocode addresses through OpenStreetMap Nominatim.
 - Fetch address suggestions through Google Places API.
 - Enforce JWT authentication on all business endpoints, plus validation, timeouts, CORS, and lightweight rate limiting.
@@ -27,7 +27,7 @@ The backend runs on `http://localhost:3000`.
 
 `npm run db:generate` creates Drizzle-managed SQL migrations and metadata in `backend/drizzle`.
 
-`npm run db:migrate` applies committed Drizzle migrations and seeds the default phase-1 nurse row (`external_key=default-nurse`) idempotently via the baseline migration.
+`npm run db:migrate` applies committed Drizzle migrations.
 
 ## Environment variables
 
@@ -44,14 +44,14 @@ The backend runs on `http://localhost:3000`.
   - Optional.
   - JWT access-token TTL accepted by `jose` (for example `1h`, `30m`).
   - Default: `1h`.
-- `DEFAULT_NURSE_EMAIL`
+- `AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS`
   - Optional.
-  - Used by `src/db/seed-default-nurse.ts` bootstrap script.
-  - Default: `nicole@careflow.local`.
-- `DEFAULT_NURSE_PASSWORD`
+  - Max login attempts per client within the auth rate-limit window.
+  - Default: `5`.
+- `AUTH_LOGIN_RATE_LIMIT_WINDOW_MS`
   - Optional.
-  - Used by `src/db/seed-default-nurse.ts` bootstrap script.
-  - Default: `careflow-dev-password`.
+  - Login rate-limit window in milliseconds.
+  - Default: `60000`.
 - `GOOGLE_MAPS_API_KEY`
   - Required for Google driving route distance, duration, route geometry, and address suggestions.
 - `OPTIMIZE_ROUTE_API_KEY`
@@ -73,11 +73,10 @@ Example local file:
 
 ```bash
 DATABASE_URL=postgres://username:password@host:5432/database
-DEFAULT_NURSE_ID=default-nurse
-DEFAULT_NURSE_EMAIL=nicole@careflow.local
-DEFAULT_NURSE_PASSWORD=careflow-dev-password
 JWT_SECRET=replace_with_a_long_random_secret
 JWT_EXPIRES_IN=1h
+AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS=5
+AUTH_LOGIN_RATE_LIMIT_WINDOW_MS=60000
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ALLOWED_ORIGINS=http://localhost:5173
 OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
@@ -91,6 +90,12 @@ NOMINATIM_CONTACT_EMAIL=you@example.com
 - `POST /api/auth/login`
   - Accepts `{ email, password }`
   - Returns `{ token, user }` when credentials are valid
+  - Enforces per-client in-memory login rate limiting
+- `POST /api/auth/signup`
+  - Accepts `{ displayName, email, password }`
+  - Creates a nurse account and returns `{ token, user }`
+  - Rejects duplicate emails with `409`
+  - Enforces per-client in-memory signup/login rate limiting
 - `GET /api/auth/me`
   - Requires `Authorization: Bearer <token>`
   - Returns current authenticated user
@@ -126,6 +131,7 @@ Authentication behavior:
 
 - Missing/invalid/malformed bearer token returns `401`.
 - Missing `JWT_SECRET` returns `500` configuration error.
+- Authentication assumes nurse accounts already exist in the database; no default bootstrap nurse is created automatically.
 
 Patient update behavior note:
 

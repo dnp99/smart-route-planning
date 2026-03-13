@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "./authService";
+import { login, signUp } from "./authService";
 import { setAuthSession } from "./authSession";
+
+type AuthMode = "login" | "signup";
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [mode, setMode] = useState<AuthMode>("login");
+  const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -15,19 +19,39 @@ const LoginPage = () => {
     setError("");
 
     const trimmedEmail = email.trim().toLowerCase();
+    const trimmedDisplayName = displayName.trim();
+
+    if (mode === "signup" && !trimmedDisplayName) {
+      setError("Display name, email, and password are required.");
+      return;
+    }
+
     if (!trimmedEmail || !password) {
-      setError("Email and password are required.");
+      setError(
+        mode === "signup"
+          ? "Display name, email, and password are required."
+          : "Email and password are required.",
+      );
       return;
     }
 
     setIsSubmitting(true);
 
     try {
-      const result = await login(trimmedEmail, password);
+      const result =
+        mode === "signup"
+          ? await signUp(trimmedDisplayName, trimmedEmail, password)
+          : await login(trimmedEmail, password);
       setAuthSession(result.token, result.user);
       navigate("/route-planner", { replace: true });
     } catch (loginError) {
-      setError(loginError instanceof Error ? loginError.message : "Unable to login.");
+      setError(
+        loginError instanceof Error
+          ? loginError.message
+          : mode === "signup"
+            ? "Unable to sign up."
+            : "Unable to login.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -35,12 +59,65 @@ const LoginPage = () => {
 
   return (
     <main className="mx-auto mt-8 w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
-      <h1 className="m-0 text-2xl font-bold text-slate-900 dark:text-slate-100">Login</h1>
+      <div className="mb-5 grid gap-3">
+        <div className="inline-flex rounded-2xl bg-slate-100 p-1 dark:bg-slate-800">
+          <button
+            type="button"
+            onClick={() => {
+              setMode("login");
+              setError("");
+            }}
+            className={[
+              "flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition",
+              mode === "login"
+                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
+                : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
+            ].join(" ")}
+          >
+            Login
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setMode("signup");
+              setError("");
+            }}
+            className={[
+              "flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition",
+              mode === "signup"
+                ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
+                : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
+            ].join(" ")}
+          >
+            Sign up
+          </button>
+        </div>
+
+        <h1 className="m-0 text-2xl font-bold text-slate-900 dark:text-slate-100">
+          {mode === "signup" ? "Create account" : "Login"}
+        </h1>
+      </div>
       <p className="mb-5 mt-2 text-sm text-slate-600 dark:text-slate-300">
-        Sign in to access patient and route-planning data.
+        {mode === "signup"
+          ? "Create your account to access patient and route-planning data."
+          : "Sign in to access patient and route-planning data."}
       </p>
 
       <form className="grid gap-4" onSubmit={handleSubmit}>
+        {mode === "signup" && (
+          <label className="grid gap-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <span>Display name</span>
+            <input
+              type="text"
+              value={displayName}
+              onChange={(event) => setDisplayName(event.target.value)}
+              autoComplete="name"
+              className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              required
+            />
+          </label>
+        )}
+
         <label className="grid gap-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
           <span>Email</span>
           <input
@@ -76,7 +153,13 @@ const LoginPage = () => {
           disabled={isSubmitting}
           className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
         >
-          {isSubmitting ? "Signing in..." : "Sign in"}
+          {isSubmitting
+            ? mode === "signup"
+              ? "Creating account..."
+              : "Signing in..."
+            : mode === "signup"
+              ? "Create account"
+              : "Sign in"}
         </button>
       </form>
     </main>

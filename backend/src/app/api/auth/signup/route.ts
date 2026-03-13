@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import {
-  isLoginRequest,
+  isSignupRequest,
   type AuthUser,
 } from "../../../../../../shared/contracts";
-import { verifyPassword } from "../../../../lib/auth/password";
 import { signAccessToken } from "../../../../lib/auth/jwt";
-import { buildCorsHeaders, toErrorResponse } from "../../../../lib/http";
+import { hashPassword } from "../../../../lib/auth/password";
+import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
 import { enforceLoginRateLimit } from "../requestGuards";
 import {
+  createNurseAccount,
   findNurseByEmail,
   updateNurseLastLoginAt,
 } from "../../../../lib/patients/patientRepository";
@@ -22,7 +23,35 @@ const toAuthUser = (value: {
   displayName: value.displayName,
 });
 
-export async function OPTIONS(request: Request) {
+const validateSignupPayload = (body: unknown) => {
+  if (!isSignupRequest(body)) {
+    throw new HttpError(400, "Signup payload must include displayName, email, and password.");
+  }
+
+  const displayName = body.displayName.trim();
+  const email = body.email.trim().toLowerCase();
+  const password = body.password;
+
+  if (!displayName || !email || !password) {
+    throw new HttpError(400, "Signup payload must include displayName, email, and password.");
+  }
+
+  if (displayName.length > 120) {
+    throw new HttpError(400, "Display name must be 120 characters or fewer.");
+  }
+
+  if (password.length < 8) {
+    throw new HttpError(400, "Password must be at least 8 characters.");
+  }
+
+  return {
+    displayName,
+    email,
+    password,
+  };
+};
+
+export const OPTIONS = async (request: Request) => {
   try {
     const corsHeaders = buildCorsHeaders(request, {
       methods: "POST, OPTIONS",
@@ -37,9 +66,9 @@ export async function OPTIONS(request: Request) {
   } catch (error) {
     return toErrorResponse(error, "Failed to process preflight request.");
   }
-}
+};
 
-export async function POST(request: Request) {
+export const POST = async (request: Request) => {
   let corsHeaders: Record<string, string> | undefined;
 
   try {
@@ -61,38 +90,21 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!isLoginRequest(body)) {
+    const payload = validateSignupPayload(body);
+    const existingNurse = await findNurseByEmail(payload.email);
+    if (existingNurse) {
       return NextResponse.json(
-        { error: "Login payload must include email and password." },
-        { status: 400, headers: corsHeaders },
+        { error: "An account with this email already exists." },
+        { status: 409, headers: corsHeaders },
       );
     }
 
-    const email = body.email.trim().toLowerCase();
-    const password = body.password;
-
-    if (!email || !password) {
-      return NextResponse.json(
-        { error: "Login payload must include email and password." },
-        { status: 400, headers: corsHeaders },
-      );
-    }
-
-    const nurse = await findNurseByEmail(email);
-    if (!nurse || !nurse.isActive) {
-      return NextResponse.json(
-        { error: "Invalid email or password." },
-        { status: 401, headers: corsHeaders },
-      );
-    }
-
-    const passwordMatches = await verifyPassword(password, nurse.passwordHash);
-    if (!passwordMatches) {
-      return NextResponse.json(
-        { error: "Invalid email or password." },
-        { status: 401, headers: corsHeaders },
-      );
-    }
+    const passwordHash = await hashPassword(payload.password);
+    const nurse = await createNurseAccount({
+      displayName: payload.displayName,
+      email: payload.email,
+      passwordHash,
+    });
 
     await updateNurseLastLoginAt(nurse.id);
 
@@ -106,9 +118,9 @@ export async function POST(request: Request) {
         token,
         user: toAuthUser(nurse),
       },
-      { headers: corsHeaders },
+      { status: 201, headers: corsHeaders },
     );
   } catch (error) {
-    return toErrorResponse(error, "Failed to login.", corsHeaders);
+    return toErrorResponse(error, "Failed to sign up.", corsHeaders);
   }
-}
+};

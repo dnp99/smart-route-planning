@@ -3,6 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { setAuthSession } from "../../components/auth/authSession";
 
+const { fetchMeMock } = vi.hoisted(() => ({
+  fetchMeMock: vi.fn(),
+}));
+
 type PatientRecord = {
   id: string;
   nurseId: string;
@@ -170,6 +174,12 @@ vi.mock("../../components/routePlanner/routePlannerService", () => ({
     requestOptimizedRouteMock(request),
 }));
 
+vi.mock("../../components/auth/authService", () => ({
+  fetchMe: fetchMeMock,
+  login: vi.fn(),
+  signUp: vi.fn(),
+}));
+
 vi.mock("../../components/AddressAutocompleteInput", () => ({
   default: ({
     id,
@@ -204,6 +214,14 @@ import App from "../../App";
 
 describe("patients and route planner integration", () => {
   beforeEach(() => {
+    fetchMeMock.mockReset();
+    fetchMeMock.mockResolvedValue({
+      user: {
+        id: "nurse-1",
+        email: "nurse@example.com",
+        displayName: "Nurse One",
+      },
+    });
     window.localStorage.clear();
     setAuthSession("test-token", {
       id: "nurse-1",
@@ -237,6 +255,8 @@ describe("patients and route planner integration", () => {
         <App />
       </MemoryRouter>,
     );
+
+    expect(await screen.findByRole("heading", { name: "Patients" })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
     fireEvent.change(screen.getByLabelText("First name"), {
@@ -290,6 +310,8 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
+    expect(await screen.findByRole("heading", { name: "Patients" })).toBeTruthy();
+
     fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "John" },
@@ -307,6 +329,7 @@ describe("patients and route planner integration", () => {
     });
 
     fireEvent.click(screen.getByRole("link", { name: "Route Planner" }));
+    expect(await screen.findByRole("heading", { name: "Smart Route Planner" })).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Ending point"), {
       target: { value: "Airport" },
     });

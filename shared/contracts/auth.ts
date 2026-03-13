@@ -12,10 +12,18 @@ export type LoginRequest = {
   password: string;
 };
 
+export type SignupRequest = {
+  displayName: string;
+  email: string;
+  password: string;
+};
+
 export type LoginResponse = {
   token: string;
   user: AuthUser;
 };
+
+export type SignupResponse = LoginResponse;
 
 export type MeResponse = {
   user: AuthUser;
@@ -39,6 +47,18 @@ export const isLoginRequest = (value: unknown): value is LoginRequest => {
   }
 
   return typeof value.email === "string" && typeof value.password === "string";
+};
+
+export const isSignupRequest = (value: unknown): value is SignupRequest => {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.displayName === "string" &&
+    typeof value.email === "string" &&
+    typeof value.password === "string"
+  );
 };
 
 export const parseLoginResponse = (value: unknown): LoginResponse | null => {

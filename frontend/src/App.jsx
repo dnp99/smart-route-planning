@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import RoutePlanner from "./components/RoutePlanner";
 import LoginPage from "./components/auth/LoginPage";
+import { fetchMe } from "./components/auth/authService";
 import {
   clearAuthSession,
   getAuthChangedEventName,
@@ -24,11 +25,14 @@ const resolveNavLinkClassName = ({ isActive }) =>
 function App() {
   const [authToken, setAuthToken] = useState(() => getAuthToken());
   const [authUser, setAuthUser] = useState(() => getAuthUser());
+  const [isAuthResolved, setIsAuthResolved] = useState(() => !getAuthToken());
 
   useEffect(() => {
     const handleAuthChange = () => {
-      setAuthToken(getAuthToken());
+      const nextToken = getAuthToken();
+      setAuthToken(nextToken);
       setAuthUser(getAuthUser());
+      setIsAuthResolved(!nextToken);
     };
 
     window.addEventListener(getAuthChangedEventName(), handleAuthChange);
@@ -37,11 +41,54 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!authToken) {
+      setIsAuthResolved(true);
+      return;
+    }
+
+    let isSubscribed = true;
+
+    void fetchMe(authToken)
+      .then((result) => {
+        if (!isSubscribed) {
+          return;
+        }
+
+        setAuthUser(result.user);
+        setIsAuthResolved(true);
+      })
+      .catch(() => {
+        if (!isSubscribed) {
+          return;
+        }
+
+        clearAuthSession();
+        setAuthToken(null);
+        setAuthUser(null);
+        setIsAuthResolved(true);
+      });
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [authToken]);
+
   const isAuthenticated = Boolean(authToken);
   const defaultProtectedPath = "/route-planner";
 
   const renderProtectedRoute = (element) =>
     isAuthenticated ? element : <Navigate to="/login" replace />;
+
+  if (!isAuthResolved) {
+    return (
+      <div className="mx-auto w-full max-w-4xl p-3 sm:p-4 md:p-6">
+        <main className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
+          Validating session...
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-4xl p-3 sm:p-4 md:p-6">

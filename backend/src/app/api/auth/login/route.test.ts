@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { __resetLoginRateLimitForTests } from "../requestGuards";
 
 const {
   findNurseByEmailMock,
@@ -29,9 +30,14 @@ import { OPTIONS, POST } from "./route";
 
 describe("/api/auth/login route", () => {
   const originalAllowedOrigins = process.env.ALLOWED_ORIGINS;
+  const originalRateLimitWindow = process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS;
+  const originalRateLimitMax = process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS;
 
   beforeEach(() => {
     process.env.ALLOWED_ORIGINS = "http://localhost:5173";
+    process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS = "60000";
+    process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS = "5";
+    __resetLoginRateLimitForTests();
     findNurseByEmailMock.mockReset();
     updateNurseLastLoginAtMock.mockReset();
     verifyPasswordMock.mockReset();
@@ -43,6 +49,18 @@ describe("/api/auth/login route", () => {
       delete process.env.ALLOWED_ORIGINS;
     } else {
       process.env.ALLOWED_ORIGINS = originalAllowedOrigins;
+    }
+
+    if (originalRateLimitWindow === undefined) {
+      delete process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS;
+    } else {
+      process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS = originalRateLimitWindow;
+    }
+
+    if (originalRateLimitMax === undefined) {
+      delete process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS;
+    } else {
+      process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS = originalRateLimitMax;
     }
   });
 
@@ -176,5 +194,30 @@ describe("/api/auth/login route", () => {
       },
     });
     expect(updateNurseLastLoginAtMock).toHaveBeenCalledWith("nurse-1");
+  });
+
+  it("returns 429 when login rate limit is exceeded", async () => {
+    process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS = "1";
+    findNurseByEmailMock.mockResolvedValue(null);
+
+    const buildRequest = () =>
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: {
+          origin: "http://localhost:5173",
+          "content-type": "application/json",
+          "x-forwarded-for": "203.0.113.10",
+        },
+        body: JSON.stringify({ email: "nurse@example.com", password: "secret" }),
+      });
+
+    const first = await POST(buildRequest());
+    const second = await POST(buildRequest());
+
+    expect(first.status).toBe(401);
+    expect(second.status).toBe(429);
+    await expect(second.json()).resolves.toEqual({
+      error: "Too many login attempts. Please try again shortly.",
+    });
   });
 });

@@ -48,8 +48,6 @@ Required local backend envs live in `backend/.env.local`, for example:
 ```bash
 JWT_SECRET=replace_with_a_long_random_secret
 JWT_EXPIRES_IN=1h
-DEFAULT_NURSE_EMAIL=nicole@careflow.local
-DEFAULT_NURSE_PASSWORD=careflow-dev-password
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ALLOWED_ORIGINS=http://localhost:5173
 OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
@@ -74,14 +72,26 @@ Frontend API base URL defaults to `http://localhost:3000`. For deployed environm
 
 ## API request example
 
-Login first:
+Create an account or login first:
+
+`POST http://localhost:3000/api/auth/signup`
+
+```json
+{
+  "displayName": "Nurse One",
+  "email": "nurse@example.com",
+  "password": "your-password"
+}
+```
+
+Or login:
 
 `POST http://localhost:3000/api/auth/login`
 
 ```json
 {
-  "email": "nicole@careflow.local",
-  "password": "careflow-dev-password"
+  "email": "nurse@example.com",
+  "password": "your-password"
 }
 ```
 
@@ -125,6 +135,7 @@ Current production note:
 - Driving route distance, duration, and geometry use Google Routes API.
 - Address suggestions use Google Places API.
 - All business backend endpoints require JWT bearer authentication.
+- Nurse accounts must exist in the database before login; no default nurse account is created automatically.
 - Route ordering uses greedy nearest-neighbor logic (nearest next stop from current stop).
 - Stop ordering still uses straight-line nearest-neighbor in Phase 1, but displayed route metrics
   and map geometry are road-network based.
