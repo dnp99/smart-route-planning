@@ -535,3 +535,22 @@ Added end-to-end nurse sign-up functionality so users can create an account and 
   - `npm test` ✅ (20 files, 170 tests)
 - Frontend:
   - `npm test` ✅ (14 files, 45 tests)
+
+## Latest change addendum
+
+### Change
+Polished the frontend auth experience by adding sign-up password confirmation and clearer login/sign-up helper copy.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/auth/LoginPage.tsx`
+  - `frontend/src/tests/auth/LoginPage.test.tsx`
+  - `plan.md`
+
+### Why
+- New signups should get immediate feedback before submitting mismatched credentials.
+- The auth form copy should better distinguish between signing in and creating a new CareFlow account.
+
+### Verification
+- Frontend:
+  - `npm test` ✅ (14 files, 46 tests)
