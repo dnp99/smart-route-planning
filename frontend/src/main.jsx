@@ -5,6 +5,10 @@ import "leaflet/dist/leaflet.css";
 import "./index.css";
 import App from "./App.jsx";
 
+document.documentElement.classList.remove("dark");
+localStorage.removeItem("theme");
+localStorage.removeItem("themePreferenceSource");
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <BrowserRouter>

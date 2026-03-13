@@ -1,4 +1,5 @@
 import {
+  parseListPatientsResponse,
   parseOptimizeRouteV2Response,
   type OptimizeRouteV2WindowType,
   type PatientVisitWindowInput,
@@ -96,6 +97,7 @@ export type OptimizeRouteDestinationInput = {
 
 export type PersistPlanningWindowInput = {
   patientId: string;
+  sourceWindowId?: string | null;
   startTime: string;
   endTime: string;
   visitTimeType: OptimizeRouteV2WindowType;
@@ -119,9 +121,16 @@ export const persistPlanningWindows = async (
     return;
   }
 
-  const windowsByPatientId = new Map<string, PatientVisitWindowInput[]>();
+  const windowsByPatientId = new Map<
+    string,
+    Array<PatientVisitWindowInput & { sourceWindowId: string | null }>
+  >();
   windows.forEach((window) => {
     const nextWindow = {
+      sourceWindowId:
+        typeof window.sourceWindowId === "string" && window.sourceWindowId.trim().length > 0
+          ? window.sourceWindowId.trim()
+          : null,
       startTime: normalizeWindowTime(window.startTime),
       endTime: normalizeWindowTime(window.endTime),
       visitTimeType: window.visitTimeType,
@@ -132,8 +141,70 @@ export const persistPlanningWindows = async (
     windowsByPatientId.set(window.patientId, current);
   });
 
+  const patientsPayload = await requestAuthedJson(
+    "/api/patients",
+    {
+      method: "GET",
+    },
+    "Unable to save planning windows.",
+  );
+  const patients = parseListPatientsResponse(patientsPayload).patients;
+  const patientsById = new Map(patients.map((patient) => [patient.id, patient]));
+
+  const compareVisitWindows = (
+    left: PatientVisitWindowInput,
+    right: PatientVisitWindowInput,
+  ) => {
+    const startDelta = left.startTime.localeCompare(right.startTime);
+    if (startDelta !== 0) {
+      return startDelta;
+    }
+
+    const endDelta = left.endTime.localeCompare(right.endTime);
+    if (endDelta !== 0) {
+      return endDelta;
+    }
+
+    return left.visitTimeType.localeCompare(right.visitTimeType);
+  };
+
   await Promise.all(
-    [...windowsByPatientId.entries()].map(async ([patientId, visitWindows]) => {
+    [...windowsByPatientId.entries()].map(async ([patientId, overrides]) => {
+      const patient = patientsById.get(patientId);
+      if (!patient) {
+        throw new Error("Unable to save planning windows.");
+      }
+
+      const nextVisitWindows: PatientVisitWindowInput[] = patient.visitWindows.map((window) => ({
+        startTime: normalizeWindowTime(window.startTime),
+        endTime: normalizeWindowTime(window.endTime),
+        visitTimeType: window.visitTimeType,
+      }));
+
+      const indexByWindowId = new Map(
+        patient.visitWindows.map((window, index) => [window.id, index]),
+      );
+
+      overrides.forEach((override) => {
+        const nextWindow: PatientVisitWindowInput = {
+          startTime: override.startTime,
+          endTime: override.endTime,
+          visitTimeType: override.visitTimeType,
+        };
+
+        if (override.sourceWindowId && indexByWindowId.has(override.sourceWindowId)) {
+          const existingIndex = indexByWindowId.get(override.sourceWindowId);
+          if (existingIndex !== undefined) {
+            nextVisitWindows[existingIndex] = nextWindow;
+          }
+          return;
+        }
+
+        nextVisitWindows.push(nextWindow);
+      });
+
+      nextVisitWindows.sort(compareVisitWindows);
+
       await requestAuthedJson(
         `/api/patients/${encodeURIComponent(patientId)}`,
         {
@@ -141,7 +212,7 @@ export const persistPlanningWindows = async (
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ visitWindows }),
+          body: JSON.stringify({ visitWindows: nextVisitWindows }),
         },
         "Unable to save planning windows.",
       );

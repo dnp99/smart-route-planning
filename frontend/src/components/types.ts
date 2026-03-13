@@ -8,8 +8,6 @@ import type {
   OptimizeRouteV2WindowType as SharedWindowType,
 } from "../../../shared/contracts";
 
-export type Theme = "light" | "dark";
-
 export type LatLng = SharedLatLng;
 export type GeocodedStop = SharedOptimizeRouteResponse["start"];
 export type OrderedStop = SharedOrderedStop;

@@ -87,16 +87,8 @@ vi.mock("../../components/AddressAutocompleteInput", () => ({
   },
 }));
 
-vi.mock("../../components/ThemeToggle", () => ({
-  default: () => null,
-}));
-
 vi.mock("../../components/RouteMap", () => ({
   default: () => null,
-}));
-
-vi.mock("../../components/routePlanner/useTheme", () => ({
-  useTheme: () => ({ theme: "light", toggleTheme: vi.fn() }),
 }));
 
 import RoutePlanner from "../../components/RoutePlanner";
@@ -223,12 +215,19 @@ describe("RoutePlanner patient selection integration", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
     fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
 
-    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+    expect(
+      screen.getAllByText("Overlaps with another selected visit window."),
+    ).toHaveLength(2);
+
+    expect(screen.getByRole("button", { name: "Optimize Route" })).toHaveProperty(
+      "disabled",
+      true,
+    );
 
     expect(optimizeRouteMock).not.toHaveBeenCalled();
     expect(
       screen.getByText(
-        "Selected patient windows overlap. Please adjust patient timings before planning.",
+        "Resolve overlapping patient windows to enable route optimization.",
       ),
     ).toBeTruthy();
   });
@@ -265,6 +264,42 @@ describe("RoutePlanner patient selection integration", () => {
           windowStart: "10:00",
           windowEnd: "12:00",
           windowType: "flexible",
+        },
+      ],
+      canOptimize: true,
+    });
+  });
+
+  it("uses planner-edited windows as plan-only overrides unless save is checked", () => {
+    render(<RoutePlanner />);
+
+    fireEvent.change(screen.getByLabelText("Ending point"), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+
+    fireEvent.change(screen.getByLabelText("Jane Doe start"), {
+      target: { value: "10:30" },
+    });
+    fireEvent.change(screen.getByLabelText("Jane Doe end"), {
+      target: { value: "11:30" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(persistPlanningWindowsMock).not.toHaveBeenCalled();
+    expect(optimizeRouteMock).toHaveBeenCalledWith({
+      startAddress: "3361 Ingram Road, Mississauga, ON",
+      endAddress: "Airport",
+      destinations: [
+        {
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "123 Main St",
+          googlePlaceId: "place-1",
+          windowStart: "10:30",
+          windowEnd: "11:30",
+          windowType: "fixed",
         },
       ],
       canOptimize: true,
@@ -423,6 +458,7 @@ describe("RoutePlanner patient selection integration", () => {
       expect(persistPlanningWindowsMock).toHaveBeenCalledWith([
         {
           patientId: "patient-3",
+          sourceWindowId: null,
           startTime: "13:00",
           endTime: "14:00",
           visitTimeType: "flexible",
