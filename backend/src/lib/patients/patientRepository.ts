@@ -4,6 +4,21 @@ import { nurses, patients } from "../../db/schema";
 import type { CreatePatientRequest, UpdatePatientRequest } from "../../../../shared/contracts";
 import { validateTimeWindow } from "./patientValidation";
 
+export class NurseEmailConflictError extends Error {
+  constructor(message = "An account with this email already exists.") {
+    super(message);
+    this.name = "NurseEmailConflictError";
+  }
+}
+
+const isUniqueViolationError = (error: unknown) => {
+  if (typeof error !== "object" || error === null || !("code" in error)) {
+    return false;
+  }
+
+  return error.code === "23505";
+};
+
 export const findNurseById = async (nurseId: string) => {
   const [nurse] = await getDb().select().from(nurses).where(eq(nurses.id, nurseId)).limit(1);
   return nurse ?? null;
@@ -19,18 +34,26 @@ export const createNurseAccount = async (payload: {
   email: string;
   passwordHash: string;
 }) => {
-  const [nurse] = await getDb()
-    .insert(nurses)
-    .values({
-      externalKey: crypto.randomUUID(),
-      displayName: payload.displayName,
-      email: payload.email,
-      passwordHash: payload.passwordHash,
-      isActive: true,
-    })
-    .returning();
+  try {
+    const [nurse] = await getDb()
+      .insert(nurses)
+      .values({
+        externalKey: crypto.randomUUID(),
+        displayName: payload.displayName,
+        email: payload.email,
+        passwordHash: payload.passwordHash,
+        isActive: true,
+      })
+      .returning();
 
-  return nurse;
+    return nurse;
+  } catch (error) {
+    if (isUniqueViolationError(error)) {
+      throw new NurseEmailConflictError();
+    }
+
+    throw error;
+  }
 };
 
 export const updateNurseLastLoginAt = async (nurseId: string) => {

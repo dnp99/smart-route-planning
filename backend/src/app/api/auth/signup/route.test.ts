@@ -7,17 +7,20 @@ const {
   updateNurseLastLoginAtMock,
   hashPasswordMock,
   signAccessTokenMock,
+  NurseEmailConflictErrorMock,
 } = vi.hoisted(() => ({
   findNurseByEmailMock: vi.fn(),
   createNurseAccountMock: vi.fn(),
   updateNurseLastLoginAtMock: vi.fn(),
   hashPasswordMock: vi.fn(),
   signAccessTokenMock: vi.fn(),
+  NurseEmailConflictErrorMock: class NurseEmailConflictError extends Error {},
 }));
 
 vi.mock("../../../../lib/patients/patientRepository", () => ({
   findNurseByEmail: findNurseByEmailMock,
   createNurseAccount: createNurseAccountMock,
+  NurseEmailConflictError: NurseEmailConflictErrorMock,
   updateNurseLastLoginAt: updateNurseLastLoginAtMock,
 }));
 
@@ -137,6 +140,33 @@ describe("/api/auth/signup route", () => {
     await expect(response.json()).resolves.toEqual({
       error: "An account with this email already exists.",
     });
+  });
+
+  it("returns 409 when account creation loses a signup race on the unique email constraint", async () => {
+    findNurseByEmailMock.mockResolvedValue(null);
+    hashPasswordMock.mockResolvedValue("hashed-password");
+    createNurseAccountMock.mockRejectedValue(
+      new NurseEmailConflictErrorMock("An account with this email already exists."),
+    );
+
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/signup", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({
+          displayName: "Nurse One",
+          email: "nurse@example.com",
+          password: "secret123",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(409);
+    await expect(response.json()).resolves.toEqual({
+      error: "An account with this email already exists.",
+    });
+    expect(updateNurseLastLoginAtMock).not.toHaveBeenCalled();
+    expect(signAccessTokenMock).not.toHaveBeenCalled();
   });
 
   it("creates account and returns token on successful signup", async () => {

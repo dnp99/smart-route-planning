@@ -21,6 +21,7 @@ import {
   findNurseById,
   findPatientByIdForNurse,
   listPatientsByNurse,
+  NurseEmailConflictError,
   updateNurseLastLoginAt,
   updatePatientForNurse,
 } from "./patientRepository";
@@ -77,6 +78,21 @@ describe("patientRepository", () => {
         isActive: true,
       }),
     );
+  });
+
+  it("maps unique email constraint failures to NurseEmailConflictError", async () => {
+    const returningMock = vi.fn().mockRejectedValue({ code: "23505" });
+    const valuesMock = vi.fn().mockReturnValue({ returning: returningMock });
+    const insertMock = vi.fn().mockReturnValue({ values: valuesMock });
+    getDbMock.mockReturnValue({ insert: insertMock });
+
+    await expect(
+      createNurseAccount({
+        displayName: "Nurse Two",
+        email: "nurse@example.com",
+        passwordHash: "hashed-password",
+      }),
+    ).rejects.toBeInstanceOf(NurseEmailConflictError);
   });
 
   it("updates nurse last login timestamp", async () => {
