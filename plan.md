@@ -17,6 +17,29 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Added a Google Places text-search fallback for route geocoding so manual or legacy addresses without a stored place id can still resolve when Nominatim returns no match.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/app/api/optimize-route/geocoding.ts`
+  - `backend/src/app/api/optimize-route/geocoding.test.ts`
+  - `plan.md`
+
+### Why
+- Some saved patient addresses were entered manually or predated place-id capture, so they still relied on Nominatim-only text geocoding.
+- Falling back to Google Places text search makes route optimization more resilient for incomplete-but-real addresses like `6625 snow goose lane`.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/optimize-route/geocoding.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
 Hardened Google Routes leg parsing to accept stringified `distanceMeters` values so route optimization no longer fails when the distance field arrives in string form.
 
 ### Files added/updated/deleted
