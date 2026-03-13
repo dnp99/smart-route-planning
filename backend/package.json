@@ -8,7 +8,6 @@
     "start": "next start",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
-    "db:bootstrap-legacy-nurse": "node ./scripts/bootstrap-legacy-nurse.mjs",
     "check:es-compat": "node ../scripts/check-es-compat.mjs src",
     "lint": "eslint && npm run check:es-compat",
     "test": "vitest run",
