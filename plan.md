@@ -17,6 +17,31 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Updated route optimization geocoding to prefer stored Google place ids for patient destinations and fall back to text geocoding only when a place-details lookup cannot be resolved.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/app/api/optimize-route/geocoding.ts`
+  - `backend/src/app/api/optimize-route/geocoding.test.ts`
+  - `backend/src/app/api/optimize-route/optimizeRouteService.ts`
+  - `backend/src/app/api/optimize-route/optimizeRouteService.test.ts`
+  - `plan.md`
+
+### Why
+- The route optimizer was ignoring `googlePlaceId` even though patient destinations already carry it from address autocomplete, so incomplete street-only addresses could fail text geocoding.
+- Using place ids first makes saved patient locations more reliable while preserving the existing Nominatim fallback for addresses that do not have a stored place id.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/optimize-route/geocoding.test.ts src/app/api/optimize-route/optimizeRouteService.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Repo:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
 Expanded the login/signup content to use the full auth card width so the segmented control, headings, fields, and button spread across the same shell width as the header.
 
 ### Files added/updated/deleted

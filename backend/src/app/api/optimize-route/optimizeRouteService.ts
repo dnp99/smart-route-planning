@@ -1,5 +1,5 @@
 import { HttpError } from "../../../lib/http";
-import { geocodeAddressesSequentially, normalizeAddressKey } from "./geocoding";
+import { geocodeTargetsSequentially, normalizeAddressKey } from "./geocoding";
 import { buildDrivingRoute, computeNearestNeighborRoute } from "./routing";
 import type { GeocodedStop, OptimizeRouteResult, LatLng } from "./types";
 import type { ValidatedOptimizeRouteRequest } from "./validation";
@@ -21,20 +21,42 @@ export const optimizeRoute = async (
     return normalized !== startKey && normalized !== endKey;
   });
 
-  const uniqueAddressesToGeocode: string[] = [];
-  const seenAddressKeys = new Set<string>();
-
-  [startAddress, ...destinationStops.map((destination) => destination.address), endAddress].forEach(
-    (address) => {
-      const key = normalizeAddressKey(address);
-      if (!seenAddressKeys.has(key)) {
-        seenAddressKeys.add(key);
-        uniqueAddressesToGeocode.push(address);
-      }
+  const uniqueGeocodeTargets: Array<{ address: string; googlePlaceId?: string | null }> = [];
+  const geocodeTargetsByAddressKey = new Map<
+    string,
+    { address: string; googlePlaceId?: string | null }
+  >();
+  const geocodeTargets: Array<{ address: string; googlePlaceId?: string | null }> = [
+    { address: startAddress },
+    ...destinationStops.map((destination) => ({
+      address: destination.address,
+      googlePlaceId: destination.googlePlaceId,
+    })),
+    {
+      address: endAddress,
+      googlePlaceId: endDestination?.googlePlaceId,
     },
-  );
+  ];
 
-  const geocodedLookups = await geocodeAddressesSequentially(uniqueAddressesToGeocode);
+  geocodeTargets.forEach((target) => {
+    const key = normalizeAddressKey(target.address);
+    const existing = geocodeTargetsByAddressKey.get(key);
+
+    if (!existing) {
+      const nextTarget = target.googlePlaceId
+        ? { address: target.address, googlePlaceId: target.googlePlaceId }
+        : { address: target.address };
+      geocodeTargetsByAddressKey.set(key, nextTarget);
+      uniqueGeocodeTargets.push(nextTarget);
+      return;
+    }
+
+    if (!existing.googlePlaceId && target.googlePlaceId) {
+      existing.googlePlaceId = target.googlePlaceId;
+    }
+  });
+
+  const geocodedLookups = await geocodeTargetsSequentially(uniqueGeocodeTargets, googleMapsApiKey);
   const geocodedByAddressKey = new Map<string, LatLng>();
 
   geocodedLookups.forEach((stop) => {

@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { geocodeAddressesSequentially, normalizeAddressKey } from "./geocoding";
+import {
+  geocodeAddressesSequentially,
+  geocodeTargetsSequentially,
+  normalizeAddressKey,
+} from "./geocoding";
 
 describe("geocoding helpers", () => {
   const fetchMock = vi.fn();
@@ -39,6 +43,51 @@ describe("geocoding helpers", () => {
       { address: "Address A", coords: { lat: 43.7, lon: -79.4 } },
       { address: "Address B", coords: { lat: 43.71, lon: -79.41 } },
     ]);
+  });
+
+  it("uses Google place details when googlePlaceId is provided", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        location: {
+          latitude: 43.7001,
+          longitude: -79.4001,
+        },
+      }),
+    } as Response);
+
+    const result = await geocodeTargetsSequentially(
+      [{ address: "Address A", googlePlaceId: "place-123" }],
+      "google-key",
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith("https://places.googleapis.com/v1/places/place-123", {
+      headers: {
+        Accept: "application/json",
+        "X-Goog-Api-Key": "google-key",
+        "X-Goog-FieldMask": "location",
+      },
+      cache: "no-store",
+      signal: expect.any(AbortSignal),
+    });
+    expect(result).toEqual([{ address: "Address A", coords: { lat: 43.7001, lon: -79.4001 } }]);
+  });
+
+  it("falls back to text geocoding when place lookup fails", async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, status: 403 } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ lat: "43.7000", lon: "-79.4000" }],
+      } as Response);
+
+    const result = await geocodeTargetsSequentially(
+      [{ address: "Address A", googlePlaceId: "place-123" }],
+      "google-key",
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result).toEqual([{ address: "Address A", coords: { lat: 43.7, lon: -79.4 } }]);
   });
 
   it("maps network failures to unavailable geocoding error", async () => {

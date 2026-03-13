@@ -3,7 +3,7 @@ import { HttpError } from "../../../lib/http";
 import type { GeocodedStop, OrderedStop } from "./types";
 
 vi.mock("./geocoding", () => ({
-  geocodeAddressesSequentially: vi.fn(),
+  geocodeTargetsSequentially: vi.fn(),
   normalizeAddressKey: (address: string) => address.trim().toLowerCase(),
 }));
 
@@ -12,17 +12,17 @@ vi.mock("./routing", () => ({
   buildDrivingRoute: vi.fn(),
 }));
 
-import { geocodeAddressesSequentially } from "./geocoding";
+import { geocodeTargetsSequentially } from "./geocoding";
 import { optimizeRoute } from "./optimizeRouteService";
 import { buildDrivingRoute, computeNearestNeighborRoute } from "./routing";
 
-const mockedGeocodeAddressesSequentially = vi.mocked(geocodeAddressesSequentially);
+const mockedGeocodeTargetsSequentially = vi.mocked(geocodeTargetsSequentially);
 const mockedComputeNearestNeighborRoute = vi.mocked(computeNearestNeighborRoute);
 const mockedBuildDrivingRoute = vi.mocked(buildDrivingRoute);
 
 describe("optimizeRoute service", () => {
   beforeEach(() => {
-    mockedGeocodeAddressesSequentially.mockReset();
+    mockedGeocodeTargetsSequentially.mockReset();
     mockedComputeNearestNeighborRoute.mockReset();
     mockedBuildDrivingRoute.mockReset();
   });
@@ -42,6 +42,7 @@ describe("optimizeRoute service", () => {
           address: "END ADDRESS",
           patientId: "patient-end",
           patientName: "End Patient",
+          googlePlaceId: "place-end",
         },
       ],
     };
@@ -71,7 +72,7 @@ describe("optimizeRoute service", () => {
       },
     ];
 
-    mockedGeocodeAddressesSequentially.mockResolvedValue(geocodedLookups);
+    mockedGeocodeTargetsSequentially.mockResolvedValue(geocodedLookups);
     mockedComputeNearestNeighborRoute.mockReturnValue(orderedStops);
     mockedBuildDrivingRoute.mockResolvedValue({
       orderedStops,
@@ -91,11 +92,14 @@ describe("optimizeRoute service", () => {
 
     const result = await optimizeRoute(request, "google-key");
 
-    expect(mockedGeocodeAddressesSequentially).toHaveBeenCalledWith([
-      "Start Address",
-      "Stop A",
-      "End Address",
-    ]);
+    expect(mockedGeocodeTargetsSequentially).toHaveBeenCalledWith(
+      [
+        { address: "Start Address" },
+        { address: "Stop A", googlePlaceId: "place-1" },
+        { address: "End Address", googlePlaceId: "place-end" },
+      ],
+      "google-key",
+    );
     expect(mockedComputeNearestNeighborRoute).toHaveBeenCalled();
     expect(mockedBuildDrivingRoute).toHaveBeenCalled();
 
@@ -106,7 +110,7 @@ describe("optimizeRoute service", () => {
         coords: { lat: 43.3, lon: -79.3 },
         patientId: "patient-end",
         patientName: "End Patient",
-        googlePlaceId: undefined,
+        googlePlaceId: "place-end",
       },
       orderedStops,
       routeLegs: [
@@ -125,7 +129,7 @@ describe("optimizeRoute service", () => {
   });
 
   it("throws HttpError when geocoding lookup is incomplete", async () => {
-    mockedGeocodeAddressesSequentially.mockResolvedValue([
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start Address", coords: { lat: 43.1, lon: -79.1 } },
     ]);
 
