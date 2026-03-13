@@ -70,6 +70,9 @@ export const toTimeInput = (value: string) => value.slice(0, 5);
 const getPatientVisitWindows = (patient: Patient) =>
   Array.isArray(patient.visitWindows) ? patient.visitWindows : [];
 
+const formatWindowRange = (startTime: string, endTime: string) =>
+  `${toTimeInput(startTime)}\u00A0-\u00A0${toTimeInput(endTime)}`;
+
 export const toFormValues = (patient: Patient): PatientFormValues => ({
   firstName: patient.firstName,
   lastName: patient.lastName,
@@ -98,11 +101,11 @@ export const toFormValues = (patient: Patient): PatientFormValues => ({
 export const formatTimeWindow = (patient: Patient) =>
   (getPatientVisitWindows(patient).length > 0
     ? getPatientVisitWindows(patient).map(
-        (window) => `${toTimeInput(window.startTime)} - ${toTimeInput(window.endTime)}`,
+        (window) => formatWindowRange(window.startTime, window.endTime),
       )
     : patient.visitTimeType === "flexible"
       ? ["Not set"]
-      : [`${toTimeInput(patient.preferredVisitStartTime)} - ${toTimeInput(patient.preferredVisitEndTime)}`]).join(
+      : [formatWindowRange(patient.preferredVisitStartTime, patient.preferredVisitEndTime)]).join(
     ", ",
   );
 
