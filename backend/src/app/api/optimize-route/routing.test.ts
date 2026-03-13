@@ -14,6 +14,13 @@ const MID_STOP: OrderedStop = {
   durationFromPreviousSeconds: 0,
 };
 
+const SAME_COORDS_STOP: OrderedStop = {
+  address: "Same",
+  coords: { lat: 43.6, lon: -79.6 },
+  distanceFromPreviousKm: 0,
+  durationFromPreviousSeconds: 0,
+};
+
 describe("routing helpers", () => {
   const fetchMock = vi.fn();
 
@@ -111,6 +118,67 @@ describe("routing helpers", () => {
       encodedPolyline: "abc",
     });
     expect(result.orderedStops[0].distanceFromPreviousKm).toBe(2.5);
+  });
+
+  it("short-circuits same-coordinate legs without calling Google Routes", async () => {
+    const result = await buildDrivingRoute(START_STOP, [SAME_COORDS_STOP], "api-key");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(result.totalDistanceMeters).toBe(0);
+    expect(result.totalDistanceKm).toBe(0);
+    expect(result.totalDurationSeconds).toBe(0);
+    expect(result.routeLegs).toEqual([
+      {
+        fromAddress: "Start",
+        toAddress: "Same",
+        distanceMeters: 0,
+        durationSeconds: 0,
+        encodedPolyline: "",
+      },
+    ]);
+    expect(result.orderedStops[0].distanceFromPreviousKm).toBe(0);
+    expect(result.orderedStops[0].durationFromPreviousSeconds).toBe(0);
+  });
+
+  it("calls Google only for non-zero legs when route includes duplicate coordinates", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        routes: [
+          {
+            distanceMeters: 2500,
+            duration: "300s",
+            polyline: { encodedPolyline: "abc" },
+          },
+        ],
+      }),
+    } as Response);
+
+    const result = await buildDrivingRoute(START_STOP, [SAME_COORDS_STOP, MID_STOP], "api-key");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result.routeLegs).toHaveLength(2);
+    expect(result.routeLegs[0]).toEqual({
+      fromAddress: "Start",
+      toAddress: "Same",
+      distanceMeters: 0,
+      durationSeconds: 0,
+      encodedPolyline: "",
+    });
+    expect(result.routeLegs[1]).toMatchObject({
+      fromAddress: "Same",
+      toAddress: "Mid",
+      distanceMeters: 2500,
+      durationSeconds: 300,
+      encodedPolyline: "abc",
+    });
+    expect(result.totalDistanceMeters).toBe(2500);
+    expect(result.totalDistanceKm).toBe(2.5);
+    expect(result.totalDurationSeconds).toBe(300);
+    expect(result.orderedStops[0].distanceFromPreviousKm).toBe(0);
+    expect(result.orderedStops[0].durationFromPreviousSeconds).toBe(0);
+    expect(result.orderedStops[1].distanceFromPreviousKm).toBe(2.5);
+    expect(result.orderedStops[1].durationFromPreviousSeconds).toBe(300);
   });
 
   it("returns empty aggregates when orderedStops is empty", async () => {

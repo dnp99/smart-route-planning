@@ -14,6 +14,12 @@ type PatientRecord = {
   lastName: string;
   address: string;
   googlePlaceId: string | null;
+  visitWindows: Array<{
+    id: string;
+    startTime: string;
+    endTime: string;
+    visitTimeType: "fixed" | "flexible";
+  }>;
   preferredVisitStartTime: string;
   preferredVisitEndTime: string;
   visitTimeType: "fixed" | "flexible";
@@ -44,12 +50,21 @@ const createPatientMock = vi.fn<
     lastName: string;
     address: string;
     googlePlaceId?: string | null;
-    preferredVisitStartTime: string;
-    preferredVisitEndTime: string;
-    visitTimeType: "fixed" | "flexible";
+    visitWindows: Array<{
+      startTime: string;
+      endTime: string;
+      visitTimeType: "fixed" | "flexible";
+    }>;
   }) => Promise<PatientRecord>
 >(async (request) => {
   const createdAt = new Date().toISOString();
+  const visitWindows = request.visitWindows.map((window, index) => ({
+    id: `window-${patientCounter}-${index + 1}`,
+    startTime: `${window.startTime}:00`,
+    endTime: `${window.endTime}:00`,
+    visitTimeType: window.visitTimeType,
+  }));
+  const primaryWindow = visitWindows[0];
   const createdPatient: PatientRecord = {
     id: `patient-${patientCounter}`,
     nurseId: "nurse-1",
@@ -57,9 +72,10 @@ const createPatientMock = vi.fn<
     lastName: request.lastName,
     address: request.address,
     googlePlaceId: request.googlePlaceId ?? null,
-    preferredVisitStartTime: `${request.preferredVisitStartTime}:00`,
-    preferredVisitEndTime: `${request.preferredVisitEndTime}:00`,
-    visitTimeType: request.visitTimeType,
+    visitWindows,
+    preferredVisitStartTime: primaryWindow.startTime,
+    preferredVisitEndTime: primaryWindow.endTime,
+    visitTimeType: primaryWindow.visitTimeType,
     createdAt,
     updatedAt: createdAt,
   };
@@ -70,7 +86,20 @@ const createPatientMock = vi.fn<
 });
 
 const updatePatientMock = vi.fn<
-  (patientId: string, request: Partial<PatientRecord>) => Promise<PatientRecord>
+  (
+    patientId: string,
+    request: {
+      firstName?: string;
+      lastName?: string;
+      address?: string;
+      googlePlaceId?: string | null;
+      visitWindows?: Array<{
+        startTime: string;
+        endTime: string;
+        visitTimeType: "fixed" | "flexible";
+      }>;
+    },
+  ) => Promise<PatientRecord>
 >(async (patientId, request) => {
   const existingPatient = patientStore.find((patient) => patient.id === patientId);
   if (!existingPatient) {
@@ -78,13 +107,25 @@ const updatePatientMock = vi.fn<
   }
 
   const updatedAt = new Date().toISOString();
+  const nextVisitWindows = request.visitWindows
+    ? request.visitWindows.map((window, index) => ({
+        id:
+          existingPatient.visitWindows[index]?.id ??
+          `${existingPatient.id}-window-${index + 1}`,
+        startTime: `${window.startTime}:00`,
+        endTime: `${window.endTime}:00`,
+        visitTimeType: window.visitTimeType,
+      }))
+    : existingPatient.visitWindows;
+  const primaryWindow = nextVisitWindows[0];
+
   const updatedPatient: PatientRecord = {
     ...existingPatient,
     ...request,
-    preferredVisitStartTime:
-      request.preferredVisitStartTime ?? existingPatient.preferredVisitStartTime,
-    preferredVisitEndTime:
-      request.preferredVisitEndTime ?? existingPatient.preferredVisitEndTime,
+    visitWindows: nextVisitWindows,
+    preferredVisitStartTime: primaryWindow.startTime,
+    preferredVisitEndTime: primaryWindow.endTime,
+    visitTimeType: primaryWindow.visitTimeType,
     updatedAt,
   };
 
@@ -100,8 +141,8 @@ const deletePatientMock = vi.fn(async (patientId: string) => {
   return { deleted: true as const, id: patientId };
 });
 
-const requestOptimizedRouteMock = vi.fn<
-  (request: {
+const requestOptimizedRouteMock = vi.fn(
+  async (request: {
     startAddress: string;
     endAddress: string;
     destinations: Array<{
@@ -109,54 +150,82 @@ const requestOptimizedRouteMock = vi.fn<
       patientId: string;
       patientName: string;
       googlePlaceId?: string | null;
+      windowStart: string;
+      windowEnd: string;
+      windowType: "fixed" | "flexible";
     }>;
-  }) =>
-    Promise<{
-      start: { address: string; coords: { lat: number; lon: number } };
-      end: { address: string; coords: { lat: number; lon: number } };
-      orderedStops: Array<{
-        address: string;
-        coords: { lat: number; lon: number };
-        patientId?: string;
-        patientName?: string;
-        googlePlaceId: string | null;
-        distanceFromPreviousKm: number;
-        durationFromPreviousSeconds: number;
-        isEndingPoint: boolean;
-      }>;
-      routeLegs: never[];
-      totalDistanceMeters: number;
-      totalDistanceKm: number;
-      totalDurationSeconds: number;
-    }>
->(async (request) => {
-  const orderedStops = request.destinations.map((destination, index) => ({
-    address: destination.address,
-    coords: { lat: 43.0 + index, lon: -79.0 - index },
-    patientId: destination.patientId,
-    patientName: destination.patientName,
-    googlePlaceId: destination.googlePlaceId ?? null,
-    distanceFromPreviousKm: index + 1,
-    durationFromPreviousSeconds: 120,
-    isEndingPoint: false,
-  }));
+  }) => {
+    const visitStops = request.destinations.map((destination, index) => ({
+      stopId: `stop-${index + 1}`,
+      address: destination.address,
+      coords: { lat: 43.0 + index, lon: -79.0 - index },
+      arrivalTime: `2026-03-13T0${8 + index}:00:00.000Z`,
+      departureTime: `2026-03-13T0${8 + index}:20:00.000Z`,
+      tasks: [
+        {
+          visitId: `visit-${index + 1}-${destination.patientId}`,
+          patientId: destination.patientId,
+          patientName: destination.patientName,
+          address: destination.address,
+          ...(destination.googlePlaceId !== undefined
+            ? { googlePlaceId: destination.googlePlaceId }
+            : {}),
+          windowStart: destination.windowStart,
+          windowEnd: destination.windowEnd,
+          windowType: destination.windowType,
+          serviceDurationMinutes: 20,
+          arrivalTime: `2026-03-13T0${8 + index}:00:00.000Z`,
+          serviceStartTime: `2026-03-13T0${8 + index}:00:00.000Z`,
+          serviceEndTime: `2026-03-13T0${8 + index}:20:00.000Z`,
+          waitSeconds: 0,
+          lateBySeconds: 0,
+          onTime: true,
+        },
+      ],
+      distanceFromPreviousKm: index + 1,
+      durationFromPreviousSeconds: 120,
+    }));
 
-  return {
-    start: {
-      address: request.startAddress,
-      coords: { lat: 43.1, lon: -79.1 },
-    },
-    end: {
-      address: request.endAddress,
-      coords: { lat: 43.2, lon: -79.2 },
-    },
-    orderedStops,
-    routeLegs: [],
-    totalDistanceMeters: 1000,
-    totalDistanceKm: 1,
-    totalDurationSeconds: 120,
-  };
-});
+    const orderedStops = [
+      ...visitStops,
+      {
+        stopId: `stop-${visitStops.length + 1}`,
+        address: request.endAddress,
+        coords: { lat: 43.2, lon: -79.2 },
+        arrivalTime: "2026-03-13T12:00:00.000Z",
+        departureTime: "2026-03-13T12:00:00.000Z",
+        tasks: [],
+        distanceFromPreviousKm: 1,
+        durationFromPreviousSeconds: 120,
+        isEndingPoint: true,
+      },
+    ];
+
+    return {
+      start: {
+        address: request.startAddress,
+        coords: { lat: 43.1, lon: -79.1 },
+        departureTime: "2026-03-13T07:30:00.000Z",
+      },
+      end: {
+        address: request.endAddress,
+        coords: { lat: 43.2, lon: -79.2 },
+      },
+      orderedStops,
+      routeLegs: [],
+      unscheduledTasks: [],
+      metrics: {
+        fixedWindowViolations: 0,
+        totalLateSeconds: 0,
+        totalWaitSeconds: 0,
+        totalDistanceMeters: 1000,
+        totalDistanceKm: 1,
+        totalDurationSeconds: 120,
+      },
+      algorithmVersion: "v2.1.0-greedy-window-first",
+    };
+  },
+);
 
 vi.mock("../../components/patients/patientService", () => ({
   listPatients: (query: string) => listPatientsMock(query),
@@ -359,7 +428,7 @@ describe("patients and route planner integration", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText("Patient: John Smith")).toBeTruthy();
+      expect(screen.getByText(/Patient: John Smith/i)).toBeTruthy();
     });
   });
 });

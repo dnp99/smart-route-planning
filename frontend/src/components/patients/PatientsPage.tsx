@@ -7,9 +7,11 @@ import { PatientFormModal } from "./PatientFormModal";
 import { PatientsTable } from "./PatientsTable";
 import {
   EMPTY_FORM,
+  createEmptyVisitWindow,
   type FormFieldErrors,
   type FormMode,
   type PatientFormValues,
+  type PatientFormVisitWindow,
   toCreateRequest,
   toFormValues,
   validateForm,
@@ -93,6 +95,48 @@ const PatientsPage = () => {
   ) => {
     setFormValues((current) => ({ ...current, [field]: value }));
     setFormErrors((current) => ({ ...current, [field]: undefined }));
+  };
+
+  const handleVisitWindowChange = <K extends keyof PatientFormVisitWindow>(
+    windowId: string,
+    field: K,
+    value: PatientFormVisitWindow[K],
+  ) => {
+    setFormValues((current) => ({
+      ...current,
+      visitWindows: current.visitWindows.map((window) =>
+        window.id === windowId ? { ...window, [field]: value } : window,
+      ),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      visitWindows: undefined,
+      visitWindowRows: undefined,
+    }));
+  };
+
+  const handleAddVisitWindow = () => {
+    setFormValues((current) => ({
+      ...current,
+      visitWindows: [...current.visitWindows, createEmptyVisitWindow()],
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      visitWindows: undefined,
+      visitWindowRows: undefined,
+    }));
+  };
+
+  const handleRemoveVisitWindow = (windowId: string) => {
+    setFormValues((current) => ({
+      ...current,
+      visitWindows: current.visitWindows.filter((window) => window.id !== windowId),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      visitWindows: undefined,
+      visitWindowRows: undefined,
+    }));
   };
 
   const handleAddressChange = (value: string) => {
@@ -237,6 +281,9 @@ const PatientsPage = () => {
           onClose={closeModal}
           onSubmit={handleSubmit}
           onFieldChange={handleFieldChange}
+          onVisitWindowChange={handleVisitWindowChange}
+          onAddVisitWindow={handleAddVisitWindow}
+          onRemoveVisitWindow={handleRemoveVisitWindow}
           onAddressChange={handleAddressChange}
           onAddressPick={handleAddressPick}
         />

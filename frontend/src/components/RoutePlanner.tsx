@@ -7,30 +7,136 @@ import ThemeToggle from "./ThemeToggle";
 import type { Patient } from "../../../shared/contracts";
 import { usePatientSearch } from "./routePlanner/usePatientSearch";
 import { useRouteOptimization } from "./routePlanner/useRouteOptimization";
+import { persistPlanningWindows } from "./routePlanner/routePlannerService";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlanner/routePlannerUtils";
 import { useTheme } from "./routePlanner/useTheme";
 import type { AddressSuggestion } from "./types";
+import { formatNameWords, formatPatientNameFromParts } from "./patients/patientName";
 
 type EndMode = "manual" | "patient";
 
 type SelectedPatientDestination = {
+  visitKey: string;
   patientId: string;
   patientName: string;
   address: string;
   googlePlaceId: string | null;
+  windowStart: string;
+  windowEnd: string;
+  windowType: "fixed" | "flexible";
+  requiresPlanningWindow: boolean;
+  isIncluded: boolean;
+  persistPlanningWindow: boolean;
 };
 
-const toSelectedPatientDestination = (
+type SelectedEndPatient = {
+  patientId: string;
+  patientName: string;
+  address: string;
+  googlePlaceId: string | null;
+  visitDestinations: SelectedPatientDestination[];
+};
+
+const toWindowTime = (value: string) => value.slice(0, 5);
+const HH_MM_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
+const timeToMinutes = (value: string) => {
+  const [hoursString, minutesString] = value.split(":");
+  return Number(hoursString) * 60 + Number(minutesString);
+};
+
+const hasCompleteWindow = (destination: SelectedPatientDestination) =>
+  HH_MM_PATTERN.test(destination.windowStart) && HH_MM_PATTERN.test(destination.windowEnd);
+
+const hasOverlappingWindows = (destinations: SelectedPatientDestination[]) => {
+  const sorted = [...destinations].sort((left, right) => {
+    const startDelta = timeToMinutes(left.windowStart) - timeToMinutes(right.windowStart);
+    if (startDelta !== 0) {
+      return startDelta;
+    }
+
+    const endDelta = timeToMinutes(left.windowEnd) - timeToMinutes(right.windowEnd);
+    if (endDelta !== 0) {
+      return endDelta;
+    }
+
+    return left.visitKey.localeCompare(right.visitKey);
+  });
+
+  for (let index = 1; index < sorted.length; index += 1) {
+    if (timeToMinutes(sorted[index].windowStart) < timeToMinutes(sorted[index - 1].windowEnd)) {
+      return true;
+    }
+  }
+
+  return false;
+};
+
+const toSelectedPatientDestinations = (
   patient: Patient,
-): SelectedPatientDestination => ({
-  patientId: patient.id,
-  patientName: `${patient.firstName} ${patient.lastName}`.trim(),
-  address: patient.address,
-  googlePlaceId: patient.googlePlaceId,
-});
+): SelectedPatientDestination[] => {
+  const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
+  const patientVisitWindows = Array.isArray(patient.visitWindows) ? patient.visitWindows : [];
+  if (patientVisitWindows.length > 0) {
+    return patientVisitWindows.map((window) => ({
+      visitKey: `${patient.id}:${window.id}`,
+      patientId: patient.id,
+      patientName,
+      address: patient.address,
+      googlePlaceId: patient.googlePlaceId,
+      windowStart: toWindowTime(window.startTime),
+      windowEnd: toWindowTime(window.endTime),
+      windowType: window.visitTimeType,
+      requiresPlanningWindow: false,
+      isIncluded: true,
+      persistPlanningWindow: false,
+    }));
+  }
+
+  if (patient.visitTimeType === "flexible") {
+    return [
+      {
+        visitKey: `${patient.id}:planning-window`,
+        patientId: patient.id,
+        patientName,
+        address: patient.address,
+        googlePlaceId: patient.googlePlaceId,
+        windowStart: "",
+        windowEnd: "",
+        windowType: "flexible",
+        requiresPlanningWindow: true,
+        isIncluded: true,
+        persistPlanningWindow: false,
+      },
+    ];
+  }
+
+  return [
+    {
+      visitKey: `${patient.id}:legacy`,
+      patientId: patient.id,
+      patientName,
+      address: patient.address,
+      googlePlaceId: patient.googlePlaceId,
+      windowStart: toWindowTime(patient.preferredVisitStartTime),
+      windowEnd: toWindowTime(patient.preferredVisitEndTime),
+      windowType: patient.visitTimeType,
+      requiresPlanningWindow: false,
+      isIncluded: true,
+      persistPlanningWindow: false,
+    },
+  ];
+};
 
 const panelEmptyTextClassName =
   "m-0 text-sm text-slate-500 dark:text-slate-400";
+
+const unscheduledReasonLabels = {
+  fixed_window_unreachable: "Cannot be reached before the fixed window ends.",
+  invalid_window: "The visit window is invalid.",
+  duration_exceeds_window: "Service duration is longer than the window.",
+  insufficient_day_capacity: "Not enough day capacity for this visit.",
+} as const;
 
 function RoutePlanner() {
   const { theme, toggleTheme } = useTheme();
@@ -47,11 +153,12 @@ function RoutePlanner() {
 
   const [destinationSearchQuery, setDestinationSearchQuery] = useState("");
   const [endPatientSearchQuery, setEndPatientSearchQuery] = useState("");
+  const [localValidationError, setLocalValidationError] = useState("");
   const [selectedDestinations, setSelectedDestinations] = useState<
     SelectedPatientDestination[]
   >([]);
   const [selectedEndPatient, setSelectedEndPatient] = useState<
-    SelectedPatientDestination | null
+    SelectedEndPatient | null
   >(null);
 
   const {
@@ -149,11 +256,18 @@ function RoutePlanner() {
   );
 
   const requestDestinations = useMemo(() => {
+    const includedDestinationVisits = selectedDestinations.filter(
+      (destination) => destination.isIncluded,
+    );
+
     if (endMode !== "patient" || !selectedEndPatient) {
-      return selectedDestinations;
+      return includedDestinationVisits;
     }
 
-    return [...selectedDestinations, selectedEndPatient];
+    return [
+      ...includedDestinationVisits,
+      ...selectedEndPatient.visitDestinations.filter((destination) => destination.isIncluded),
+    ];
   }, [endMode, selectedDestinations, selectedEndPatient]);
 
   const handleStartAddressChange = (value: string) => {
@@ -176,46 +290,223 @@ function RoutePlanner() {
     setManualEndGooglePlaceId(suggestion.placeId);
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const updateDestinationPlanningWindow = (
+    visitKey: string,
+    field: "windowStart" | "windowEnd",
+    value: string,
+  ) => {
+    setSelectedDestinations((current) =>
+      current.map((destination) =>
+        destination.visitKey === visitKey
+          ? {
+              ...destination,
+              [field]: value,
+            }
+          : destination,
+      ),
+    );
+  };
 
-    void optimizeRoute({
+  const setDestinationVisitIncluded = (visitKey: string, isIncluded: boolean) => {
+    setSelectedDestinations((current) =>
+      current.map((destination) =>
+        destination.visitKey === visitKey
+          ? {
+              ...destination,
+              isIncluded,
+            }
+          : destination,
+      ),
+    );
+  };
+
+  const setDestinationPersistPlanningWindow = (
+    visitKey: string,
+    persistPlanningWindow: boolean,
+  ) => {
+    setSelectedDestinations((current) =>
+      current.map((destination) =>
+        destination.visitKey === visitKey
+          ? {
+              ...destination,
+              persistPlanningWindow,
+            }
+          : destination,
+      ),
+    );
+  };
+
+  const updateEndPatientPlanningWindow = (
+    visitKey: string,
+    field: "windowStart" | "windowEnd",
+    value: string,
+  ) => {
+    setSelectedEndPatient((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        visitDestinations: current.visitDestinations.map((destination) =>
+          destination.visitKey === visitKey
+            ? {
+                ...destination,
+                [field]: value,
+              }
+            : destination,
+        ),
+      };
+    });
+  };
+
+  const setEndPatientVisitIncluded = (visitKey: string, isIncluded: boolean) => {
+    setSelectedEndPatient((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        visitDestinations: current.visitDestinations.map((destination) =>
+          destination.visitKey === visitKey
+            ? {
+                ...destination,
+                isIncluded,
+              }
+            : destination,
+        ),
+      };
+    });
+  };
+
+  const setEndPatientPersistPlanningWindow = (
+    visitKey: string,
+    persistPlanningWindow: boolean,
+  ) => {
+    setSelectedEndPatient((current) => {
+      if (!current) {
+        return current;
+      }
+
+      return {
+        ...current,
+        visitDestinations: current.visitDestinations.map((destination) =>
+          destination.visitKey === visitKey
+            ? {
+                ...destination,
+                persistPlanningWindow,
+              }
+            : destination,
+        ),
+      };
+    });
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setLocalValidationError("");
+
+    if (requestDestinations.some((destination) => !hasCompleteWindow(destination))) {
+      setLocalValidationError(
+        "Set start and end time for flexible patients without preferred windows before optimizing.",
+      );
+      return;
+    }
+
+    if (
+      requestDestinations.some(
+        (destination) => timeToMinutes(destination.windowEnd) <= timeToMinutes(destination.windowStart),
+      )
+    ) {
+      setLocalValidationError(
+        "All selected visit windows must end after they start.",
+      );
+      return;
+    }
+
+    if (hasOverlappingWindows(requestDestinations)) {
+      setLocalValidationError("Selected patient windows overlap. Please adjust patient timings before planning.");
+      return;
+    }
+
+    const optimizeDestinations = requestDestinations.map(
+      ({
+        visitKey: _visitKey,
+        requiresPlanningWindow: _requiresPlanningWindow,
+        isIncluded: _isIncluded,
+        persistPlanningWindow: _persistPlanningWindow,
+        ...destination
+      }) =>
+        destination,
+    );
+
+    const planningWindowsToPersist = requestDestinations
+      .filter((destination) => destination.requiresPlanningWindow && destination.persistPlanningWindow)
+      .map((destination) => ({
+        patientId: destination.patientId,
+        startTime: destination.windowStart,
+        endTime: destination.windowEnd,
+        visitTimeType: destination.windowType,
+      }));
+
+    if (planningWindowsToPersist.length > 0) {
+      try {
+        await persistPlanningWindows(planningWindowsToPersist);
+      } catch (error) {
+        setLocalValidationError(
+          error instanceof Error ? error.message : "Unable to save planning windows.",
+        );
+        return;
+      }
+    }
+
+    await optimizeRoute({
       startAddress,
       ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
       endAddress: resolvedEndAddress,
       ...(resolvedEndGooglePlaceId ? { endGooglePlaceId: resolvedEndGooglePlaceId } : {}),
-      destinations: requestDestinations,
+      destinations: optimizeDestinations,
       canOptimize,
     });
   };
 
   const addDestinationPatient = (patient: Patient) => {
-    const destination = toSelectedPatientDestination(patient);
+    const destinations = toSelectedPatientDestinations(patient);
+    if (destinations.length === 0) {
+      return;
+    }
 
-    if (selectedEndPatient?.patientId === destination.patientId) {
+    if (selectedEndPatient?.patientId === patient.id) {
       return;
     }
 
     setSelectedDestinations((current) => {
-      if (current.some((entry) => entry.patientId === destination.patientId)) {
+      if (current.some((entry) => entry.patientId === patient.id)) {
         return current;
       }
 
-      return [...current, destination];
+      return [...current, ...destinations];
     });
   };
 
-  const removeDestinationPatient = (patientId: string) => {
+  const removeDestinationVisit = (visitKey: string) => {
     setSelectedDestinations((current) =>
-      current.filter((entry) => entry.patientId !== patientId),
+      current.filter((entry) => entry.visitKey !== visitKey),
     );
   };
 
   const selectEndPatient = (patient: Patient) => {
-    const destination = toSelectedPatientDestination(patient);
-    setSelectedEndPatient(destination);
+    const visitDestinations = toSelectedPatientDestinations(patient);
+    setSelectedEndPatient({
+      patientId: patient.id,
+      patientName: formatPatientNameFromParts(patient.firstName, patient.lastName),
+      address: patient.address,
+      googlePlaceId: patient.googlePlaceId,
+      visitDestinations,
+    });
     setSelectedDestinations((current) =>
-      current.filter((entry) => entry.patientId !== destination.patientId),
+      current.filter((entry) => entry.patientId !== patient.id),
     );
     setEndTouched(true);
   };
@@ -225,7 +516,9 @@ function RoutePlanner() {
     setEndTouched(true);
   };
 
-  const destinationCount = selectedDestinations.length;
+  const destinationCount = selectedDestinations.filter(
+    (destination) => destination.isIncluded,
+  ).length;
 
   return (
     <main className={responsiveStyles.page}>
@@ -239,8 +532,8 @@ function RoutePlanner() {
           </div>
           <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
             Enter your starting point, ending point, and destination
-            addresses. The app returns a nearest-next-stop route with the
-            ending point as the final stop.
+            addresses. The planner prioritizes time-window feasibility first,
+            then distance, with the ending point as the final stop.
           </p>
         </div>
 
@@ -352,6 +645,85 @@ function RoutePlanner() {
                   <p className="m-0 text-sm text-emerald-700 dark:text-emerald-300">
                     {selectedEndPatient.address}
                   </p>
+                  <p className="m-0 text-xs text-emerald-700 dark:text-emerald-300">
+                    {
+                      selectedEndPatient.visitDestinations.filter((destination) => destination.isIncluded)
+                        .length
+                    }{" "}
+                    visit window(s) selected
+                  </p>
+                  <div className="mt-2 grid gap-2">
+                    {selectedEndPatient.visitDestinations.map((destination, index) => (
+                      <div
+                        key={destination.visitKey}
+                        className="grid gap-2 rounded-lg border border-emerald-300/70 p-2 dark:border-emerald-800"
+                      >
+                        <label className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-900 dark:text-emerald-200">
+                          <input
+                            type="checkbox"
+                            checked={destination.isIncluded}
+                            onChange={(event) =>
+                              setEndPatientVisitIncluded(destination.visitKey, event.target.checked)
+                            }
+                          />
+                          Include visit window {index + 1}
+                        </label>
+
+                        {destination.requiresPlanningWindow ? (
+                          <div className="grid gap-2">
+                            <p className="m-0 text-xs text-emerald-800 dark:text-emerald-300">
+                              Set planning window
+                            </p>
+                            <div className="grid grid-cols-2 gap-2">
+                              <input
+                                type="time"
+                                aria-label={`End patient ${destination.patientName} start`}
+                                value={destination.windowStart}
+                                onChange={(event) =>
+                                  updateEndPatientPlanningWindow(
+                                    destination.visitKey,
+                                    "windowStart",
+                                    event.target.value,
+                                  )
+                                }
+                                className="w-full rounded-lg border border-emerald-300 px-2 py-1 text-xs text-emerald-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-100"
+                              />
+                              <input
+                                type="time"
+                                aria-label={`End patient ${destination.patientName} end`}
+                                value={destination.windowEnd}
+                                onChange={(event) =>
+                                  updateEndPatientPlanningWindow(
+                                    destination.visitKey,
+                                    "windowEnd",
+                                    event.target.value,
+                                  )
+                                }
+                                className="w-full rounded-lg border border-emerald-300 px-2 py-1 text-xs text-emerald-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-100"
+                              />
+                            </div>
+                            <label className="inline-flex items-center gap-2 text-xs text-emerald-800 dark:text-emerald-300">
+                              <input
+                                type="checkbox"
+                                checked={destination.persistPlanningWindow}
+                                onChange={(event) =>
+                                  setEndPatientPersistPlanningWindow(
+                                    destination.visitKey,
+                                    event.target.checked,
+                                  )
+                                }
+                              />
+                              Save this window to patient record
+                            </label>
+                          </div>
+                        ) : (
+                          <p className="m-0 text-xs text-emerald-800 dark:text-emerald-300">
+                            {destination.windowStart} - {destination.windowEnd} • {destination.windowType}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                   <button
                     type="button"
                     onClick={clearEndPatient}
@@ -380,8 +752,8 @@ function RoutePlanner() {
 
               {endPatientSearchResults.length > 0 && (
                 <ul className={responsiveStyles.selectableList}>
-                  {endPatientSearchResults.map((patient) => {
-                    const patientName = `${patient.firstName} ${patient.lastName}`.trim();
+                {endPatientSearchResults.map((patient) => {
+                    const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
 
                     return (
                       <li key={patient.id}>
@@ -439,7 +811,7 @@ function RoutePlanner() {
             {destinationSearchResults.length > 0 && (
               <ul className={responsiveStyles.selectableList}>
                 {destinationSearchResults.map((patient) => {
-                  const patientName = `${patient.firstName} ${patient.lastName}`.trim();
+                  const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
 
                   return (
                     <li key={patient.id}>
@@ -480,8 +852,10 @@ function RoutePlanner() {
               <ol className="m-0 space-y-2">
                 {selectedDestinations.map((destination, index) => (
                   <li
-                    key={destination.patientId}
-                    className={responsiveStyles.destinationItem}
+                    key={destination.visitKey}
+                    className={`${responsiveStyles.destinationItem} ${
+                      destination.isIncluded ? "" : "opacity-60"
+                    }`}
                   >
                     <div className={responsiveStyles.destinationItemBody}>
                       <span className="min-w-8 text-sm font-semibold text-slate-500 dark:text-slate-400">
@@ -494,11 +868,77 @@ function RoutePlanner() {
                         <span className="block text-slate-600 dark:text-slate-300">
                           {destination.address}
                         </span>
+                        <label className="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                          <input
+                            type="checkbox"
+                            checked={destination.isIncluded}
+                            onChange={(event) =>
+                              setDestinationVisitIncluded(
+                                destination.visitKey,
+                                event.target.checked,
+                              )
+                            }
+                          />
+                          Include this visit in route
+                        </label>
+                        {destination.requiresPlanningWindow ? (
+                          <div className="mt-2">
+                            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                              Flexible with no preferred window. Pick a planning time:
+                            </p>
+                            <div className="mt-1 flex gap-2">
+                              <input
+                                type="time"
+                                aria-label={`${destination.patientName} start`}
+                                value={destination.windowStart}
+                                onChange={(event) =>
+                                  updateDestinationPlanningWindow(
+                                    destination.visitKey,
+                                    "windowStart",
+                                    event.target.value,
+                                  )
+                                }
+                                className="w-full rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                              />
+                              <input
+                                type="time"
+                                aria-label={`${destination.patientName} end`}
+                                value={destination.windowEnd}
+                                onChange={(event) =>
+                                  updateDestinationPlanningWindow(
+                                    destination.visitKey,
+                                    "windowEnd",
+                                    event.target.value,
+                                  )
+                                }
+                                className="w-full rounded-lg border border-slate-300 px-2 py-1 text-xs text-slate-900 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                              />
+                            </div>
+                            <label className="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                              <input
+                                type="checkbox"
+                                checked={destination.persistPlanningWindow}
+                                onChange={(event) =>
+                                  setDestinationPersistPlanningWindow(
+                                    destination.visitKey,
+                                    event.target.checked,
+                                  )
+                                }
+                              />
+                              Save this window to patient record
+                            </label>
+                          </div>
+                        ) : (
+                          <span className="mt-2 block text-xs text-slate-500 dark:text-slate-400">
+                            {destination.windowStart} - {destination.windowEnd} •{" "}
+                            {destination.windowType}
+                          </span>
+                        )}
                       </span>
                     </div>
                     <button
                       type="button"
-                      onClick={() => removeDestinationPatient(destination.patientId)}
+                      onClick={() => removeDestinationVisit(destination.visitKey)}
                       className={responsiveStyles.destinationRemove}
                     >
                       Remove
@@ -531,6 +971,12 @@ function RoutePlanner() {
             </button>
           </div>
         </form>
+
+        {localValidationError && (
+          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
+            {localValidationError}
+          </p>
+        )}
 
         {error && (
           <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
@@ -578,7 +1024,7 @@ function RoutePlanner() {
               <div className={responsiveStyles.resultStatCard}>
                 <p className={responsiveStyles.resultStatLabel}>Distance</p>
                 <p className={responsiveStyles.resultStatValue}>
-                  {result.totalDistanceKm} km
+                  {result.metrics.totalDistanceKm} km
                 </p>
                 <p className={responsiveStyles.resultStatMeta}>
                   Total planned driving distance
@@ -589,7 +1035,7 @@ function RoutePlanner() {
                   Estimated Time
                 </p>
                 <p className={responsiveStyles.resultStatValue}>
-                  {formatDuration(result.totalDurationSeconds)}
+                  {formatDuration(result.metrics.totalDurationSeconds)}
                 </p>
                 <p className={responsiveStyles.resultStatMeta}>
                   Excludes live traffic adjustments
@@ -620,26 +1066,75 @@ function RoutePlanner() {
 
             {hasIntermediateStops && (
               <ol className="mb-0 mt-2 list-decimal space-y-2 pl-5">
-                {result.orderedStops.map((stop, index) => (
+                {result.orderedStops.map((stop) => (
                   <li
-                    key={`${stop.address}-${index}`}
+                    key={stop.stopId}
                     className="text-sm text-slate-800 dark:text-slate-200"
                   >
-                      <span>{stop.address}</span>
-                      {stop.patientName && (
-                        <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
-                          Patient: {stop.patientName}
-                        </small>
-                      )}
-                      <small className="block text-xs text-slate-500 dark:text-slate-400">
-                        {stop.distanceFromPreviousKm} km •{" "}
-                        {formatDuration(stop.durationFromPreviousSeconds)} from
+                    <span>{stop.address}</span>
+                    {stop.tasks.length > 0 ? (
+                      <>
+                        {stop.tasks.map((task) => (
+                          <small
+                            key={task.visitId}
+                            className="block text-xs font-medium text-blue-600 dark:text-blue-300"
+                          >
+                            Patient: {formatNameWords(task.patientName)} • {task.windowStart} -{" "}
+                            {task.windowEnd} • {task.windowType}
+                          </small>
+                        ))}
+                      </>
+                    ) : (
+                      <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
+                        No scheduled visit tasks at this stop.
+                      </small>
+                    )}
+                    <small className="block text-xs text-slate-500 dark:text-slate-400">
+                      {stop.distanceFromPreviousKm} km •{" "}
+                      {formatDuration(stop.durationFromPreviousSeconds)} from
                       previous stop
                       {stop.isEndingPoint ? " • ending point" : ""}
                     </small>
                   </li>
                 ))}
               </ol>
+            )}
+
+            {result.unscheduledTasks.length > 0 && (
+              <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900/60 dark:bg-amber-950/20">
+                <h3 className="m-0 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                  Unscheduled Visits ({result.unscheduledTasks.length})
+                </h3>
+                <p className="mb-2 mt-1 text-xs text-amber-800 dark:text-amber-300">
+                  These visits could not be placed in the optimized route.
+                </p>
+                <ul className="m-0 space-y-2 pl-5">
+                  {result.unscheduledTasks.map((task) => (
+                    <li
+                      key={task.visitId}
+                      className="text-sm text-amber-900 dark:text-amber-200"
+                    >
+                      <p className="m-0 font-medium">
+                        {task.patientName ? formatNameWords(task.patientName) : task.patientId}
+                      </p>
+                      {task.address && (
+                        <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
+                          {task.address}
+                        </p>
+                      )}
+                      {task.windowStart && task.windowEnd && (
+                        <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
+                          {task.windowStart} - {task.windowEnd}
+                          {task.windowType ? ` • ${task.windowType}` : ""}
+                        </p>
+                      )}
+                      <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
+                        Reason: {unscheduledReasonLabels[task.reason]}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </section>
             )}
           </section>
         )}

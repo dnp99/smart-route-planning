@@ -1,10 +1,37 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { requestOptimizedRoute } from "../../components/routePlanner/routePlannerService";
+import {
+  persistPlanningWindows,
+  requestOptimizedRoute,
+} from "../../components/routePlanner/routePlannerService";
 import { setAuthSession } from "../../components/auth/authSession";
 
 vi.mock("../../components/apiBaseUrl", () => ({
   resolveApiBaseUrl: () => "http://api.example.com",
 }));
+
+const buildValidResponse = () => ({
+  start: {
+    address: "Start",
+    coords: { lat: 43.1, lon: -79.1 },
+    departureTime: "2026-03-13T07:30:00-04:00",
+  },
+  end: {
+    address: "End",
+    coords: { lat: 43.2, lon: -79.2 },
+  },
+  orderedStops: [],
+  routeLegs: [],
+  unscheduledTasks: [],
+  metrics: {
+    fixedWindowViolations: 0,
+    totalLateSeconds: 0,
+    totalWaitSeconds: 0,
+    totalDistanceMeters: 1000,
+    totalDistanceKm: 1,
+    totalDurationSeconds: 120,
+  },
+  algorithmVersion: "v2.1.0-greedy-window-first",
+});
 
 describe("requestOptimizedRoute", () => {
   const fetchMock = vi.fn();
@@ -25,16 +52,8 @@ describe("requestOptimizedRoute", () => {
     window.localStorage.clear();
   });
 
-  it("returns optimize-route payload when response is valid", async () => {
-    const payload = {
-      start: { address: "Start", coords: { lat: 43.1, lon: -79.1 } },
-      end: { address: "End", coords: { lat: 43.2, lon: -79.2 } },
-      orderedStops: [],
-      routeLegs: [],
-      totalDistanceMeters: 1000,
-      totalDistanceKm: 1,
-      totalDurationSeconds: 120,
-    };
+  it("returns optimize-route v2 payload when response is valid", async () => {
+    const payload = buildValidResponse();
 
     fetchMock.mockResolvedValue({
       ok: true,
@@ -44,50 +63,73 @@ describe("requestOptimizedRoute", () => {
     const result = await requestOptimizedRoute({
       startAddress: "Start",
       endAddress: "End",
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      departureTime: "2026-03-13T07:30:00-04:00",
       destinations: [
         {
           address: "A",
           patientId: "patient-1",
           patientName: "Jane Doe",
           googlePlaceId: null,
+          windowStart: "09:00",
+          windowEnd: "09:30",
+          windowType: "fixed",
         },
         {
           address: "B",
           patientId: "patient-2",
           patientName: "John Doe",
           googlePlaceId: "place-2",
+          windowStart: "10:00",
+          windowEnd: "11:00",
+          windowType: "flexible",
         },
       ],
     });
 
     expect(result).toEqual(payload);
-    expect(fetchMock).toHaveBeenCalledWith(
-      "http://api.example.com/api/optimize-route",
-      {
-        method: "POST",
-        headers: expect.any(Headers),
-        body: JSON.stringify({
-          startAddress: "Start",
-          endAddress: "End",
-          destinations: [
-            {
-              address: "A",
-              patientId: "patient-1",
-              patientName: "Jane Doe",
-              googlePlaceId: null,
-            },
-            {
-              address: "B",
-              patientId: "patient-2",
-              patientName: "John Doe",
-              googlePlaceId: "place-2",
-            },
-          ],
-        }),
-      },
-    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://api.example.com/api/optimize-route/v2");
+    expect(init.method).toBe("POST");
 
-    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse(String(init.body))).toEqual({
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      start: {
+        address: "Start",
+        departureTime: "2026-03-13T07:30:00-04:00",
+      },
+      end: {
+        address: "End",
+      },
+      visits: [
+        {
+          visitId: "visit-1-patient-1",
+          address: "A",
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          googlePlaceId: null,
+          windowStart: "09:00",
+          windowEnd: "09:30",
+          windowType: "fixed",
+          serviceDurationMinutes: 20,
+        },
+        {
+          visitId: "visit-2-patient-2",
+          address: "B",
+          patientId: "patient-2",
+          patientName: "John Doe",
+          googlePlaceId: "place-2",
+          windowStart: "10:00",
+          windowEnd: "11:00",
+          windowType: "flexible",
+          serviceDurationMinutes: 20,
+        },
+      ],
+    });
+
     const headers = new Headers(init.headers);
     expect(headers.get("Content-Type")).toBe("application/json");
     expect(headers.get("Authorization")).toBe("Bearer test-token");
@@ -96,15 +138,7 @@ describe("requestOptimizedRoute", () => {
   it("includes manual start and end place ids when provided", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
-      json: async () => ({
-        start: { address: "Start", coords: { lat: 43.1, lon: -79.1 } },
-        end: { address: "End", coords: { lat: 43.2, lon: -79.2 } },
-        orderedStops: [],
-        routeLegs: [],
-        totalDistanceMeters: 1000,
-        totalDistanceKm: 1,
-        totalDurationSeconds: 120,
-      }),
+      json: async () => buildValidResponse(),
     } as Response);
 
     await requestOptimizedRoute({
@@ -112,23 +146,30 @@ describe("requestOptimizedRoute", () => {
       startGooglePlaceId: "start-place",
       endAddress: "End",
       endGooglePlaceId: "end-place",
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      departureTime: "2026-03-13T07:30:00-04:00",
       destinations: [],
     });
 
-    expect(fetchMock).toHaveBeenCalledWith(
-      "http://api.example.com/api/optimize-route",
-      {
-        method: "POST",
-        headers: expect.any(Headers),
-        body: JSON.stringify({
-          startAddress: "Start",
-          startGooglePlaceId: "start-place",
-          endAddress: "End",
-          endGooglePlaceId: "end-place",
-          destinations: [],
-        }),
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://api.example.com/api/optimize-route/v2");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(String(init.body))).toEqual({
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      start: {
+        address: "Start",
+        googlePlaceId: "start-place",
+        departureTime: "2026-03-13T07:30:00-04:00",
       },
-    );
+      end: {
+        address: "End",
+        googlePlaceId: "end-place",
+      },
+      visits: [],
+    });
   });
 
   it("throws API-provided error message on non-ok response", async () => {
@@ -174,5 +215,130 @@ describe("requestOptimizedRoute", () => {
         destinations: [],
       }),
     ).rejects.toThrow("Unexpected API response format.");
+  });
+
+  it("enriches unscheduled tasks with visit details from request destinations", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...buildValidResponse(),
+        unscheduledTasks: [
+          {
+            visitId: "visit-1-patient-1",
+            patientId: "patient-1",
+            reason: "fixed_window_unreachable",
+          },
+        ],
+      }),
+    } as Response);
+
+    const result = await requestOptimizedRoute({
+      startAddress: "Start",
+      endAddress: "End",
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      departureTime: "2026-03-13T07:30:00-04:00",
+      destinations: [
+        {
+          address: "A",
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          windowStart: "08:30",
+          windowEnd: "09:00",
+          windowType: "fixed",
+        },
+      ],
+    });
+
+    expect(result.unscheduledTasks).toEqual([
+      {
+        visitId: "visit-1-patient-1",
+        patientId: "patient-1",
+        reason: "fixed_window_unreachable",
+        patientName: "Jane Doe",
+        address: "A",
+        windowStart: "08:30",
+        windowEnd: "09:00",
+        windowType: "fixed",
+      },
+    ]);
+  });
+
+  it("persists planning windows grouped by patient", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({}),
+    } as Response);
+
+    await persistPlanningWindows([
+      {
+        patientId: "patient-1",
+        startTime: "13:00",
+        endTime: "14:00",
+        visitTimeType: "flexible",
+      },
+      {
+        patientId: "patient-1",
+        startTime: "16:00",
+        endTime: "17:00",
+        visitTimeType: "fixed",
+      },
+      {
+        patientId: "patient-2",
+        startTime: "09:00",
+        endTime: "10:00",
+        visitTimeType: "fixed",
+      },
+    ]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+
+    const calls = fetchMock.mock.calls.map(([url, init]) => ({
+      url,
+      method: init.method,
+      body: JSON.parse(String(init.body)),
+      headers: new Headers(init.headers),
+    }));
+
+    expect(calls).toEqual([
+      {
+        url: "http://api.example.com/api/patients/patient-1",
+        method: "PATCH",
+        body: {
+          visitWindows: [
+            {
+              startTime: "13:00",
+              endTime: "14:00",
+              visitTimeType: "flexible",
+            },
+            {
+              startTime: "16:00",
+              endTime: "17:00",
+              visitTimeType: "fixed",
+            },
+          ],
+        },
+        headers: expect.any(Headers),
+      },
+      {
+        url: "http://api.example.com/api/patients/patient-2",
+        method: "PATCH",
+        body: {
+          visitWindows: [
+            {
+              startTime: "09:00",
+              endTime: "10:00",
+              visitTimeType: "fixed",
+            },
+          ],
+        },
+        headers: expect.any(Headers),
+      },
+    ]);
+
+    calls.forEach((call) => {
+      expect(call.headers.get("Content-Type")).toBe("application/json");
+      expect(call.headers.get("Authorization")).toBe("Bearer test-token");
+    });
   });
 });

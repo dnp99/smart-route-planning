@@ -191,6 +191,22 @@ describe("PatientsPage", () => {
     });
   });
 
+  it("renders patient names with capitalized first letters", async () => {
+    mockedListPatients.mockResolvedValue([
+      {
+        ...seedPatient,
+        firstName: "jane",
+        lastName: "doe",
+      },
+    ]);
+
+    render(<PatientsPage />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Jane Doe").length).toBeGreaterThan(0);
+    });
+  });
+
   it("shows validation errors for missing names and invalid time window", async () => {
     mockedListPatients.mockResolvedValue([]);
 

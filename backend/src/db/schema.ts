@@ -41,6 +41,29 @@ export const patients = pgTable(
   ],
 );
 
+export const patientVisitWindows = pgTable(
+  "patient_visit_windows",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    patientId: uuid("patient_id")
+      .notNull()
+      .references(() => patients.id, { onDelete: "cascade" }),
+    startTime: time("start_time").notNull(),
+    endTime: time("end_time").notNull(),
+    visitTimeType: text("visit_time_type").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("patient_visit_windows_patient_id_idx").on(table.patientId),
+    index("patient_visit_windows_patient_time_idx").on(table.patientId, table.startTime, table.endTime),
+    check("patient_visit_windows_visit_time_type_chk", sql`${table.visitTimeType} in ('fixed', 'flexible')`),
+    check("patient_visit_windows_window_order_chk", sql`${table.endTime} > ${table.startTime}`),
+  ],
+);
+
 export type Nurse = typeof nurses.$inferSelect;
 export type Patient = typeof patients.$inferSelect;
 export type NewPatient = typeof patients.$inferInsert;
+export type PatientVisitWindow = typeof patientVisitWindows.$inferSelect;
+export type NewPatientVisitWindow = typeof patientVisitWindows.$inferInsert;

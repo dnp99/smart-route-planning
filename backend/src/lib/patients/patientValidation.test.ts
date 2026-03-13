@@ -13,9 +13,13 @@ describe("patientValidation", () => {
       lastName: " Doe ",
       address: " 123 Main St ",
       googlePlaceId: "   ",
-      preferredVisitStartTime: "14:00",
-      preferredVisitEndTime: "16:00",
-      visitTimeType: "fixed",
+      visitWindows: [
+        {
+          startTime: "14:00",
+          endTime: "16:00",
+          visitTimeType: "fixed",
+        },
+      ],
     });
 
     expect(payload).toEqual({
@@ -23,9 +27,13 @@ describe("patientValidation", () => {
       lastName: "Doe",
       address: "123 Main St",
       googlePlaceId: null,
-      preferredVisitStartTime: "14:00",
-      preferredVisitEndTime: "16:00",
-      visitTimeType: "fixed",
+      visitWindows: [
+        {
+          startTime: "14:00",
+          endTime: "16:00",
+          visitTimeType: "fixed",
+        },
+      ],
     });
   });
 
@@ -34,17 +42,32 @@ describe("patientValidation", () => {
     expect(() => validateCreatePatientPayload("bad")).toThrow("Request body must be a JSON object.");
   });
 
+  it("allows empty visitWindows for flexible scheduling", () => {
+    const payload = validateCreatePatientPayload({
+      firstName: "Jane",
+      lastName: "Doe",
+      address: "123 Main St",
+      visitWindows: [],
+    });
+
+    expect(payload.visitWindows).toEqual([]);
+  });
+
   it("throws 400 for invalid visitTimeType", () => {
     expect(() =>
       validateCreatePatientPayload({
         firstName: "Jane",
         lastName: "Doe",
         address: "123 Main St",
-        preferredVisitStartTime: "14:00",
-        preferredVisitEndTime: "16:00",
-        visitTimeType: "sometimes",
+        visitWindows: [
+          {
+            startTime: "14:00",
+            endTime: "16:00",
+            visitTimeType: "sometimes",
+          },
+        ],
       }),
-    ).toThrow("visitTimeType must be one of: fixed, flexible.");
+    ).toThrow("visitWindows[0].visitTimeType must be one of: fixed, flexible.");
   });
 
   it("throws 400 for invalid time format", () => {
@@ -53,11 +76,15 @@ describe("patientValidation", () => {
         firstName: "Jane",
         lastName: "Doe",
         address: "123 Main St",
-        preferredVisitStartTime: "1400",
-        preferredVisitEndTime: "16:00",
-        visitTimeType: "fixed",
+        visitWindows: [
+          {
+            startTime: "1400",
+            endTime: "16:00",
+            visitTimeType: "fixed",
+          },
+        ],
       }),
-    ).toThrow("preferredVisitStartTime must use HH:MM 24-hour format.");
+    ).toThrow("visitWindows[0].startTime must use HH:MM 24-hour format.");
   });
 
   it("throws 400 when end time is not later than start", () => {
@@ -70,21 +97,36 @@ describe("patientValidation", () => {
     const payload = validateUpdatePatientPayload({
       firstName: "  Jane  ",
       googlePlaceId: null,
-      preferredVisitStartTime: "08:30",
-      visitTimeType: "flexible",
+      visitWindows: [
+        {
+          startTime: "08:30",
+          endTime: "09:00",
+          visitTimeType: "flexible",
+        },
+      ],
     });
 
     expect(payload).toEqual({
       firstName: "Jane",
       googlePlaceId: null,
-      preferredVisitStartTime: "08:30",
-      visitTimeType: "flexible",
+      visitWindows: [
+        {
+          startTime: "08:30",
+          endTime: "09:00",
+          visitTimeType: "flexible",
+        },
+      ],
     });
   });
 
   it("keeps trimmed non-empty optional strings on update", () => {
     const payload = validateUpdatePatientPayload({ googlePlaceId: "  place-123  " });
     expect(payload).toEqual({ googlePlaceId: "place-123" });
+  });
+
+  it("allows clearing visit windows on update", () => {
+    const payload = validateUpdatePatientPayload({ visitWindows: [] });
+    expect(payload).toEqual({ visitWindows: [] });
   });
 
   it("throws 400 for invalid optional update field types", () => {
@@ -103,14 +145,34 @@ describe("patientValidation", () => {
   });
 
   it("validates provided end-time format during update", () => {
-    expect(() => validateUpdatePatientPayload({ preferredVisitEndTime: "25:00" })).toThrow(
-      "preferredVisitEndTime must use HH:MM 24-hour format.",
+    expect(() =>
+      validateUpdatePatientPayload({
+        visitWindows: [
+          {
+            startTime: "10:00",
+            endTime: "25:00",
+            visitTimeType: "fixed",
+          },
+        ],
+      }),
+    ).toThrow(
+      "visitWindows[0].endTime must use HH:MM 24-hour format.",
     );
   });
 
   it("validates visitTimeType when provided in update", () => {
-    expect(() => validateUpdatePatientPayload({ visitTimeType: "invalid" })).toThrow(
-      "visitTimeType must be one of: fixed, flexible.",
+    expect(() =>
+      validateUpdatePatientPayload({
+        visitWindows: [
+          {
+            startTime: "10:00",
+            endTime: "11:00",
+            visitTimeType: "invalid",
+          },
+        ],
+      }),
+    ).toThrow(
+      "visitWindows[0].visitTimeType must be one of: fixed, flexible.",
     );
   });
 });

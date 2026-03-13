@@ -10,18 +10,40 @@ type PatientsTableProps = {
   onEdit: (patient: Patient) => void;
 };
 
-const renderVisitType = (patient: Patient) => (
-  <span
-    className={[
-      "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
-      patient.visitTimeType === "fixed"
-        ? "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200"
-        : "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200",
-    ].join(" ")}
-  >
-    {patient.visitTimeType}
-  </span>
-);
+const resolveVisitTypeLabel = (patient: Patient): "fixed" | "flexible" | "mixed" => {
+  const windows = Array.isArray(patient.visitWindows) ? patient.visitWindows : [];
+  if (windows.length === 0) {
+    return patient.visitTimeType === "flexible" ? "flexible" : "fixed";
+  }
+
+  const visitTypes = new Set(windows.map((window) => window.visitTimeType));
+  if (visitTypes.size > 1) {
+    return "mixed";
+  }
+
+  return visitTypes.has("flexible") ? "flexible" : "fixed";
+};
+
+const renderVisitType = (patient: Patient) => {
+  const typeLabel = resolveVisitTypeLabel(patient);
+  const typeClassName =
+    typeLabel === "fixed"
+      ? "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200"
+      : typeLabel === "flexible"
+        ? "bg-violet-100 text-violet-700 dark:bg-violet-950/50 dark:text-violet-200"
+        : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200";
+
+  return (
+    <span
+      className={[
+        "inline-flex rounded-full px-2.5 py-1 text-xs font-semibold uppercase tracking-wide",
+        typeClassName,
+      ].join(" ")}
+    >
+      {typeLabel}
+    </span>
+  );
+};
 
 export const PatientsTable = ({
   isLoading,

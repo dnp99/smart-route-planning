@@ -1,16 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { getDbMock, validateTimeWindowMock } = vi.hoisted(() => ({
+const { getDbMock } = vi.hoisted(() => ({
   getDbMock: vi.fn(),
-  validateTimeWindowMock: vi.fn(),
 }));
 
 vi.mock("../../db", () => ({
   getDb: getDbMock,
-}));
-
-vi.mock("./patientValidation", () => ({
-  validateTimeWindow: validateTimeWindowMock,
 }));
 
 import {
@@ -29,7 +24,6 @@ import {
 describe("patientRepository", () => {
   beforeEach(() => {
     getDbMock.mockReset();
-    validateTimeWindowMock.mockReset();
   });
 
   it("finds nurse by id", async () => {
@@ -120,7 +114,9 @@ describe("patientRepository", () => {
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
     getDbMock.mockReturnValue({ select: selectMock });
 
-    await expect(listPatientsByNurse("nurse-1")).resolves.toEqual([{ id: "patient-1" }]);
+    await expect(listPatientsByNurse("nurse-1")).resolves.toEqual([
+      { id: "patient-1", visitWindows: [] },
+    ]);
   });
 
   it("lists patients for nurse with name query", async () => {
@@ -130,7 +126,9 @@ describe("patientRepository", () => {
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
     getDbMock.mockReturnValue({ select: selectMock });
 
-    await expect(listPatientsByNurse("nurse-1", " jane ")).resolves.toEqual([{ id: "patient-2" }]);
+    await expect(listPatientsByNurse("nurse-1", " jane ")).resolves.toEqual([
+      { id: "patient-2", visitWindows: [] },
+    ]);
   });
 
   it("creates patient row for nurse", async () => {
@@ -144,11 +142,42 @@ describe("patientRepository", () => {
         firstName: "Jane",
         lastName: "Doe",
         address: "123 Main St",
-        preferredVisitStartTime: "14:00",
-        preferredVisitEndTime: "16:00",
-        visitTimeType: "fixed",
+        visitWindows: [
+          {
+            startTime: "14:00",
+            endTime: "16:00",
+            visitTimeType: "fixed",
+          },
+        ],
       }),
-    ).resolves.toEqual({ id: "patient-1" });
+    ).resolves.toEqual({ id: "patient-1", visitWindows: [{ id: "patient-1" }] });
+  });
+
+  it("creates flexible patient without persisted windows", async () => {
+    const patientReturningMock = vi.fn().mockResolvedValue([{ id: "patient-2", visitTimeType: "flexible" }]);
+    const patientValuesMock = vi.fn().mockReturnValue({ returning: patientReturningMock });
+    const insertMock = vi
+      .fn()
+      .mockReturnValueOnce({ values: patientValuesMock });
+
+    getDbMock.mockReturnValue({ insert: insertMock });
+
+    await expect(
+      createPatientForNurse("nurse-1", {
+        firstName: "No",
+        lastName: "Window",
+        address: "123 Main St",
+        visitWindows: [],
+      }),
+    ).resolves.toEqual({ id: "patient-2", visitTimeType: "flexible", visitWindows: [] });
+
+    expect(patientValuesMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preferredVisitStartTime: "00:00",
+        preferredVisitEndTime: "23:59",
+        visitTimeType: "flexible",
+      }),
+    );
   });
 
   it("finds patient by id for nurse", async () => {
@@ -158,7 +187,10 @@ describe("patientRepository", () => {
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
     getDbMock.mockReturnValue({ select: selectMock });
 
-    await expect(findPatientByIdForNurse("nurse-1", "patient-1")).resolves.toEqual({ id: "patient-1" });
+    await expect(findPatientByIdForNurse("nurse-1", "patient-1")).resolves.toEqual({
+      id: "patient-1",
+      visitWindows: [],
+    });
   });
 
   it("returns null when patient lookup is empty", async () => {
@@ -215,9 +247,7 @@ describe("patientRepository", () => {
       updatePatientForNurse("nurse-1", "patient-1", {
         firstName: "Janet",
       }),
-    ).resolves.toEqual({ id: "patient-1", firstName: "Janet" });
-
-    expect(validateTimeWindowMock).toHaveBeenCalledWith("09:00", "11:00");
+    ).resolves.toEqual({ id: "patient-1", firstName: "Janet", visitWindows: [] });
   });
 
   it("returns null when update query returns no row", async () => {
