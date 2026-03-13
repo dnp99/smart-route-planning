@@ -167,6 +167,34 @@ describe("optimize-route v2 request validation", () => {
     );
   });
 
+  it("throws when start is not a JSON object", () => {
+    const payload = buildValidPayload();
+
+    expectHttpError(
+      () =>
+        parseAndValidateBody({
+          ...payload,
+          start: null,
+        }),
+      400,
+      "start must be a JSON object.",
+    );
+  });
+
+  it("throws when end is not a JSON object", () => {
+    const payload = buildValidPayload();
+
+    expectHttpError(
+      () =>
+        parseAndValidateBody({
+          ...payload,
+          end: null,
+        }),
+      400,
+      "end must be a JSON object.",
+    );
+  });
+
   it("throws when there are more than 40 visits", () => {
     const payload = buildValidPayload();
     payload.visits = Array.from({ length: 41 }).map((_, index) => ({
@@ -205,6 +233,54 @@ describe("optimize-route v2 request validation", () => {
       () => parseAndValidateBody(payload),
       400,
       "Visit windows must not overlap. Found overlap between visit-1 and visit-2.",
+    );
+  });
+
+  it("detects overlaps when windows share the same start but different end times", () => {
+    const payload = buildValidPayload();
+    payload.visits = [
+      {
+        ...payload.visits[0],
+        visitId: "visit-a",
+        windowStart: "10:00",
+        windowEnd: "10:45",
+      },
+      {
+        ...payload.visits[1],
+        visitId: "visit-b",
+        windowStart: "10:00",
+        windowEnd: "10:30",
+      },
+    ];
+
+    expectHttpError(
+      () => parseAndValidateBody(payload),
+      400,
+      "Visit windows must not overlap. Found overlap between visit-b and visit-a.",
+    );
+  });
+
+  it("sorts same-window overlaps by visitId for deterministic errors", () => {
+    const payload = buildValidPayload();
+    payload.visits = [
+      {
+        ...payload.visits[0],
+        visitId: "visit-z",
+        windowStart: "09:00",
+        windowEnd: "10:00",
+      },
+      {
+        ...payload.visits[1],
+        visitId: "visit-a",
+        windowStart: "09:00",
+        windowEnd: "10:00",
+      },
+    ];
+
+    expectHttpError(
+      () => parseAndValidateBody(payload),
+      400,
+      "Visit windows must not overlap. Found overlap between visit-a and visit-z.",
     );
   });
 

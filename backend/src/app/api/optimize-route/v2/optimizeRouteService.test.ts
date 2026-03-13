@@ -182,6 +182,114 @@ describe("optimizeRouteV2 service", () => {
     ]);
   });
 
+  it("breaks equal-distance ties by earlier window end, then visitId", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Address Z", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Address A", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Address M", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-z",
+            patientId: "patient-z",
+            patientName: "Patient Z",
+            address: "Address Z",
+            windowStart: "10:00",
+            windowEnd: "10:30",
+            windowType: "fixed",
+            serviceDurationMinutes: 15,
+          },
+          {
+            visitId: "visit-a",
+            patientId: "patient-a",
+            patientName: "Patient A",
+            address: "Address A",
+            windowStart: "10:00",
+            windowEnd: "10:30",
+            windowType: "fixed",
+            serviceDurationMinutes: 15,
+          },
+          {
+            visitId: "visit-m",
+            patientId: "patient-m",
+            patientName: "Patient M",
+            address: "Address M",
+            windowStart: "10:00",
+            windowEnd: "10:20",
+            windowType: "fixed",
+            serviceDurationMinutes: 15,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const passedOrderedStops = call?.[1] ?? [];
+    expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
+      "Address M",
+      "Address A",
+      "Address Z",
+      "End",
+    ]);
+  });
+
+  it("throws when geocoding returns fewer targets than required", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+    ]);
+
+    await expect(
+      optimizeRouteV2(
+        {
+          planningDate: "2026-03-13",
+          timezone: "America/Toronto",
+          start: {
+            address: "Start",
+            departureTime: "2026-03-13T07:30:00-04:00",
+          },
+          end: {
+            address: "End",
+          },
+          visits: [
+            {
+              visitId: "visit-1",
+              patientId: "patient-1",
+              patientName: "Patient One",
+              address: "Address One",
+              windowStart: "08:00",
+              windowEnd: "09:00",
+              windowType: "fixed",
+              serviceDurationMinutes: 15,
+            },
+          ],
+        },
+        "google-key",
+      ),
+    ).rejects.toMatchObject({
+      status: 500,
+      message: "Route geocoding data is incomplete.",
+    });
+  });
+
   it("groups consecutive same-location visits into one stop and returns metrics", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
