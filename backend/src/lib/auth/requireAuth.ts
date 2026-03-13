@@ -26,7 +26,7 @@ export const requireAuth = async (request: Request): Promise<AuthContext> => {
   const verified = await verifyAccessToken(token);
   const nurse = await findNurseById(verified.sub);
 
-  if (!nurse || !nurse.isActive) {
+  if (!nurse || !nurse.isActive || !nurse.email) {
     throw new HttpError(401, "Unauthorized.");
   }
 

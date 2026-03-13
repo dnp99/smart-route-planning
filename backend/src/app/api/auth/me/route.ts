@@ -43,11 +43,20 @@ export async function GET(request: Request) {
 
     const auth = await requireAuth(request);
     const nurse = await findNurseById(auth.nurseId);
-    if (!nurse || !nurse.isActive) {
+    if (!nurse || !nurse.isActive || !nurse.email) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401, headers: corsHeaders });
     }
 
-    return NextResponse.json({ user: toAuthUser(nurse) }, { headers: corsHeaders });
+    return NextResponse.json(
+      {
+        user: toAuthUser({
+          id: nurse.id,
+          email: nurse.email,
+          displayName: nurse.displayName,
+        }),
+      },
+      { headers: corsHeaders },
+    );
   } catch (error) {
     return toErrorResponse(error, "Failed to resolve current user.", corsHeaders);
   }

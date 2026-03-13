@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     }
 
     const nurse = await findNurseByEmail(email);
-    if (!nurse || !nurse.isActive) {
+    if (!nurse || !nurse.isActive || !nurse.email || !nurse.passwordHash) {
       return NextResponse.json(
         { error: "Invalid email or password." },
         { status: 401, headers: corsHeaders },
@@ -104,7 +104,11 @@ export async function POST(request: Request) {
     return NextResponse.json(
       {
         token,
-        user: toAuthUser(nurse),
+        user: toAuthUser({
+          id: nurse.id,
+          email: nurse.email,
+          displayName: nurse.displayName,
+        }),
       },
       { headers: corsHeaders },
     );

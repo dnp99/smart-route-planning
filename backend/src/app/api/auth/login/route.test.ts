@@ -143,6 +143,28 @@ describe("/api/auth/login route", () => {
     await expect(response.json()).resolves.toEqual({ error: "Invalid email or password." });
   });
 
+  it("returns 401 when legacy nurse row has not been bootstrapped for auth", async () => {
+    findNurseByEmailMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Legacy Nurse",
+      passwordHash: null,
+      isActive: true,
+    });
+
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ email: "nurse@example.com", password: "secret" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Invalid email or password." });
+    expect(verifyPasswordMock).not.toHaveBeenCalled();
+  });
+
   it("returns 401 when password does not match", async () => {
     findNurseByEmailMock.mockResolvedValue({
       id: "nurse-1",

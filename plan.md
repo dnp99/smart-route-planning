@@ -7,6 +7,7 @@ Files:
 - `plans/change-log.md` - implementation history and completed change log
 - `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
 - `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
+- `plans/jwt-authentication-remediation-plan.md` - safe upgrade and legacy-data preservation plan for the JWT rollout
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
@@ -114,6 +115,25 @@ Completed backend-first nurse/patient work by fixing patient update semantics an
   - `npm run build` ✅
 
 For full implementation history, see `plans/change-log.md`.
+
+## Latest change addendum
+
+### Change
+Added a dedicated remediation plan for the current JWT-auth branch issues covering unsafe migration sequencing, legacy nurse identity preservation, and duplicate-signup race handling.
+
+### Files added/updated/deleted
+- Added:
+  - `plans/jwt-authentication-remediation-plan.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- The current auth branch needs a concrete follow-up plan before implementation because the first rollout path can break on legacy `nurses` rows, orphan existing patient visibility behind a new nurse id, and surface duplicate-signup races as `500` errors.
+- The remediation document captures the recommended phased upgrade path, bootstrap strategy, rollout order, and acceptance criteria in one place under `plans/`.
+
+### Verification
+- Documentation-only change.
+- Runtime verification not run.
 
 ## Latest change addendum
 
@@ -554,6 +574,62 @@ Polished the frontend auth experience by adding sign-up password confirmation an
 ### Verification
 - Frontend:
   - `npm test` ✅ (14 files, 46 tests)
+
+## Latest change addendum
+
+### Change
+Added a one-time legacy nurse bootstrap command that upgrades the original nurse row in place, preserving patient ownership while preparing upgraded environments for JWT login.
+
+### Files added/updated/deleted
+- Added:
+  - `backend/scripts/bootstrap-legacy-nurse.mjs`
+  - `backend/src/db/bootstrapLegacyNurse.test.ts`
+- Updated:
+  - `backend/package.json`
+  - `backend/.env.local.example`
+  - `backend/README.md`
+  - `DEPLOYMENT.md`
+  - `plan.md`
+
+### Why
+- Upgraded environments need an operator-safe way to attach auth credentials to the existing legacy nurse row instead of creating a replacement nurse account with a new `id`.
+- The bootstrap command preserves the original nurse id so existing patient rows remain visible after login and gives production rollout docs a concrete step before auth goes live.
+
+### Verification
+- Backend:
+  - `npm test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
+Reworked the auth schema rollout into a transitional migration by keeping `nurses.email` and `nurses.password_hash` nullable for legacy rows, then hardened auth runtime checks so un-bootstrapped nurse rows are rejected safely.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/db/schema.ts`
+  - `backend/drizzle/0001_useful_skaar.sql`
+  - `backend/drizzle/meta/0001_snapshot.json`
+  - `backend/src/app/api/auth/login/route.ts`
+  - `backend/src/app/api/auth/signup/route.ts`
+  - `backend/src/app/api/auth/me/route.ts`
+  - `backend/src/lib/auth/requireAuth.ts`
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/src/app/api/auth/me/route.test.ts`
+  - `backend/src/lib/auth/requireAuth.test.ts`
+  - `backend/README.md`
+  - `plan.md`
+
+### Why
+- The previous auth migration could fail on any upgraded database that already contained legacy `nurses` rows because it added nullable columns and then immediately enforced `NOT NULL`.
+- Keeping the auth columns nullable during the transitional phase lets the schema upgrade succeed first, while runtime guards make sure incomplete legacy rows cannot authenticate until the planned bootstrap/backfill step is added.
+
+### Verification
+- Backend:
+  - `npm test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
 
 ## Latest change addendum
 

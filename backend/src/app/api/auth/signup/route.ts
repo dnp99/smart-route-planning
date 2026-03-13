@@ -106,6 +106,10 @@ export const POST = async (request: Request) => {
       passwordHash,
     });
 
+    if (!nurse.email) {
+      throw new HttpError(500, "Failed to provision nurse account.");
+    }
+
     await updateNurseLastLoginAt(nurse.id);
 
     const token = await signAccessToken({
@@ -116,7 +120,11 @@ export const POST = async (request: Request) => {
     return NextResponse.json(
       {
         token,
-        user: toAuthUser(nurse),
+        user: toAuthUser({
+          id: nurse.id,
+          email: nurse.email,
+          displayName: nurse.displayName,
+        }),
       },
       { status: 201, headers: corsHeaders },
     );

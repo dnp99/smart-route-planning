@@ -41,6 +41,15 @@ Use two environments:
   - Required for route legs and address autocomplete.
 - `NOMINATIM_CONTACT_EMAIL`
   - Real monitored email address required for responsible upstream usage.
+- `LEGACY_NURSE_EXTERNAL_KEY`
+  - Optional one-time selector for upgraded environments when running `npm run db:bootstrap-legacy-nurse`.
+  - Default: `default-nurse`.
+- `LEGACY_NURSE_EMAIL`
+  - Optional one-time bootstrap email for upgraded environments.
+- `LEGACY_NURSE_PASSWORD`
+  - Optional one-time bootstrap password for upgraded environments.
+- `LEGACY_NURSE_DISPLAY_NAME`
+  - Optional one-time display-name override during legacy bootstrap.
 
 ### Frontend runtime API URL
 
@@ -103,14 +112,15 @@ Deploy workflow should be gated by CI success using branch protection rules:
 
 Before first prod cut:
 
-1. Verify backend CORS allows only frontend domain.
-2. Confirm API health:
+1. If the production database predates JWT auth, run `npm run db:bootstrap-legacy-nurse` once against the production `DATABASE_URL` before allowing user login.
+2. Verify backend CORS allows only frontend domain.
+3. Confirm API health:
    - `POST /api/auth/login`
    - `GET /api/auth/me` with `Authorization: Bearer <token>`
    - `GET /api/address-autocomplete?query=Toronto` with bearer token
    - `POST /api/optimize-route` with bearer token
-3. Validate frontend runtime API URL points to prod backend.
-4. Smoke test route optimization in browser.
+4. Validate frontend runtime API URL points to prod backend.
+5. Smoke test route optimization in browser.
 
 ---
 

@@ -82,6 +82,25 @@ describe("/api/auth/me route", () => {
     await expect(response.json()).resolves.toEqual({ error: "Unauthorized." });
   });
 
+  it("returns 401 when nurse account is missing auth email", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: null,
+      displayName: "Legacy Nurse",
+      isActive: true,
+    });
+
+    const response = await GET(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "GET",
+        headers: { origin: "http://localhost:5173" },
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized." });
+  });
+
   it("returns auth user for valid token", async () => {
     findNurseByIdMock.mockResolvedValue({
       id: "nurse-1",
