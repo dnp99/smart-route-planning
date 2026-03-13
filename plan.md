@@ -604,6 +604,68 @@ Added a one-time legacy nurse bootstrap command that upgrades the original nurse
 ## Latest change addendum
 
 ### Change
+Prepared Phase F by adding the final auth-constraint migration (`nurses.email` and `nurses.password_hash` back to `NOT NULL`) and removing the temporary runtime guards that only existed for the transitional null-auth rollout.
+
+### Files added/updated/deleted
+- Added:
+  - `backend/drizzle/0002_worthless_spirit.sql`
+  - `backend/drizzle/meta/0002_snapshot.json`
+- Updated:
+  - `backend/drizzle/meta/_journal.json`
+  - `backend/src/db/schema.ts`
+  - `backend/src/app/api/auth/login/route.ts`
+  - `backend/src/app/api/auth/me/route.ts`
+  - `backend/src/lib/auth/requireAuth.ts`
+  - `backend/src/app/api/auth/signup/route.ts`
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/src/app/api/auth/me/route.test.ts`
+  - `backend/src/lib/auth/requireAuth.test.ts`
+  - `backend/README.md`
+  - `DEPLOYMENT.md`
+  - `plan.md`
+
+### Why
+- All durable environments are expected to be backfilled before the final cleanup step, so the schema can once again enforce non-null auth fields at the database layer.
+- Removing the transitional null checks simplifies auth runtime behavior and ensures the database, ORM schema, and application assumptions are aligned again.
+
+### Verification
+- Backend:
+  - `npm test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Deployment note:
+  - final migration should only be deployed after `select id, external_key, email, password_hash from nurses where email is null or password_hash is null;` returns zero rows in each durable environment.
+
+## Latest change addendum
+
+### Change
+Implemented Phase E signup hardening by mapping database unique-email conflicts to deterministic `409 Conflict` responses, including the concurrent-signup race path.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/lib/patients/patientRepository.ts`
+  - `backend/src/lib/patients/patientRepository.test.ts`
+  - `backend/src/app/api/auth/signup/route.ts`
+  - `backend/src/app/api/auth/signup/route.test.ts`
+  - `plan.md`
+
+### Why
+- Signup already returned `409` when a duplicate email was found before insert, but concurrent duplicate requests could still race and surface as generic `500` errors.
+- The repository now translates database unique-constraint failures into a dedicated conflict error so the signup route can return the intended `409` consistently.
+
+### Verification
+- Production smoke test (unauthenticated):
+  - `POST /api/auth/login` with invalid credentials ✅ `401`
+  - `GET /api/auth/me` without token ✅ `401`
+  - `GET /api/patients` without token ✅ `401`
+- Backend:
+  - `npm test` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
 Reworked the auth schema rollout into a transitional migration by keeping `nurses.email` and `nurses.password_hash` nullable for legacy rows, then hardened auth runtime checks so un-bootstrapped nurse rows are rejected safely.
 
 ### Files added/updated/deleted

@@ -98,28 +98,4 @@ describe("requireAuth", () => {
     });
   });
 
-  it("throws when token nurse has not been bootstrapped with auth email", async () => {
-    process.env.JWT_SECRET = "test-jwt-secret";
-    findNurseByIdMock.mockResolvedValue({
-      id: "nurse-1",
-      email: null,
-      isActive: true,
-    });
-
-    const token = await signAccessToken({
-      nurseId: "nurse-1",
-      email: "nurse@example.com",
-    });
-
-    const request = new Request("http://localhost:3000/api/patients", {
-      headers: {
-        authorization: `Bearer ${token}`,
-      },
-    });
-
-    await expect(requireAuth(request)).rejects.toMatchObject({
-      status: 401,
-      message: "Unauthorized.",
-    });
-  });
 });
