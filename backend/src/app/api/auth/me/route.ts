@@ -43,7 +43,7 @@ export async function GET(request: Request) {
 
     const auth = await requireAuth(request);
     const nurse = await findNurseById(auth.nurseId);
-    if (!nurse || !nurse.isActive || !nurse.email) {
+    if (!nurse || !nurse.isActive) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401, headers: corsHeaders });
     }
 

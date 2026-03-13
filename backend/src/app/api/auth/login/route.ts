@@ -79,7 +79,7 @@ export async function POST(request: Request) {
     }
 
     const nurse = await findNurseByEmail(email);
-    if (!nurse || !nurse.isActive || !nurse.email || !nurse.passwordHash) {
+    if (!nurse || !nurse.isActive) {
       return NextResponse.json(
         { error: "Invalid email or password." },
         { status: 401, headers: corsHeaders },

@@ -15,6 +15,13 @@
       "when": 1773353524141,
       "tag": "0001_useful_skaar",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773368656380,
+      "tag": "0002_worthless_spirit",
+      "breakpoints": true
     }
   ]
 }

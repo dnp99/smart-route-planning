@@ -157,8 +157,9 @@ Authentication behavior:
 - Missing/invalid/malformed bearer token returns `401`.
 - Missing `JWT_SECRET` returns `500` configuration error.
 - Authentication assumes nurse accounts already exist in the database; no default bootstrap nurse is created automatically.
-- During the transitional auth rollout, legacy nurse rows may still have null `email` / `password_hash` values until they are bootstrapped in place; those rows cannot authenticate yet.
 - `npm run db:bootstrap-legacy-nurse` upgrades the legacy nurse row in place using `external_key`, preserving the original nurse `id` so existing patient ownership remains intact.
+- Before applying the final auth-constraint migration, confirm `select id, external_key, email, password_hash from nurses where email is null or password_hash is null;` returns zero rows in every durable environment.
+- Before applying the final auth-constraint migration in a durable environment, verify no `nurses` rows remain with null `email` or `password_hash`.
 
 Patient update behavior note:
 

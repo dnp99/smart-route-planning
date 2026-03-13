@@ -113,14 +113,15 @@ Deploy workflow should be gated by CI success using branch protection rules:
 Before first prod cut:
 
 1. If the production database predates JWT auth, run `npm run db:bootstrap-legacy-nurse` once against the production `DATABASE_URL` before allowing user login.
-2. Verify backend CORS allows only frontend domain.
-3. Confirm API health:
+2. Before deploying the final auth-constraint migration, run `select id, external_key, email, password_hash from nurses where email is null or password_hash is null;` and confirm it returns zero rows.
+3. Verify backend CORS allows only frontend domain.
+4. Confirm API health:
    - `POST /api/auth/login`
    - `GET /api/auth/me` with `Authorization: Bearer <token>`
    - `GET /api/address-autocomplete?query=Toronto` with bearer token
    - `POST /api/optimize-route` with bearer token
-4. Validate frontend runtime API URL points to prod backend.
-5. Smoke test route optimization in browser.
+5. Validate frontend runtime API URL points to prod backend.
+6. Smoke test route optimization in browser.
 
 ---
 
