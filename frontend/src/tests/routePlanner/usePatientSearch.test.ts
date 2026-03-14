@@ -17,6 +17,7 @@ const mockPatient = {
   lastName: "Doe",
   address: "123 Main St",
   googlePlaceId: null,
+  visitDurationMinutes: 30,
   preferredVisitStartTime: "09:00:00",
   preferredVisitEndTime: "10:00:00",
   visitTimeType: "fixed" as const,

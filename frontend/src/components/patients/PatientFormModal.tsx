@@ -9,7 +9,11 @@ import type {
   PatientFormValues,
   PatientFormVisitWindow,
 } from "./patientForm";
-import { getPatientDisplayName } from "./patientForm";
+import {
+  MAX_VISIT_DURATION_MINUTES,
+  MIN_VISIT_DURATION_MINUTES,
+  getPatientDisplayName,
+} from "./patientForm";
 
 type PatientFormModalProps = {
   formMode: FormMode;
@@ -175,22 +179,52 @@ export const PatientFormModal = ({
             required
           />
 
-          <div className="grid gap-1">
-            <label
-              htmlFor="patient-visit-type"
-              className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-            >
-              Type
-            </label>
-            <select
-              id="patient-visit-type"
-              value={selectedVisitType}
-              onChange={(event) => onVisitTypeChange(event.target.value as VisitTimeType)}
-              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-            >
-              <option value="fixed">Fixed</option>
-              <option value="flexible">Flexible</option>
-            </select>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-1">
+              <label
+                htmlFor="patient-visit-type"
+                className="text-sm font-semibold text-slate-800 dark:text-slate-200"
+              >
+                Type
+              </label>
+              <select
+                id="patient-visit-type"
+                value={selectedVisitType}
+                onChange={(event) => onVisitTypeChange(event.target.value as VisitTimeType)}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              >
+                <option value="fixed">Fixed</option>
+                <option value="flexible">Flexible</option>
+              </select>
+            </div>
+
+            <div className="grid gap-1">
+              <label
+                htmlFor="patient-visit-duration"
+                className="text-sm font-semibold text-slate-800 dark:text-slate-200"
+              >
+                Visit duration (minutes)
+              </label>
+              <input
+                id="patient-visit-duration"
+                type="number"
+                min={MIN_VISIT_DURATION_MINUTES}
+                max={MAX_VISIT_DURATION_MINUTES}
+                step={1}
+                value={formValues.visitDurationMinutes}
+                onChange={(event) => {
+                  const parsed = Number.parseInt(event.target.value, 10);
+                  const safeValue = parsed !== parsed ? 0 : parsed;
+                  onFieldChange("visitDurationMinutes", safeValue);
+                }}
+                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              />
+              {formErrors.visitDurationMinutes && (
+                <p className="m-0 text-xs text-red-600 dark:text-red-400">
+                  {formErrors.visitDurationMinutes}
+                </p>
+              )}
+            </div>
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

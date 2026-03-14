@@ -11,7 +11,8 @@ import type {
 } from "./types";
 import type { ValidatedOptimizeRouteV2Request } from "./validation";
 
-const ALGORITHM_VERSION = "v2.1.0-greedy-window-first";
+const ALGORITHM_VERSION = "v2.2.1-window-distance-duration";
+const ESTIMATED_DRIVE_SPEED_KM_PER_HOUR = 40;
 
 type GeocodeTarget = {
   address: string;
@@ -179,52 +180,151 @@ const geocodeLocations = async (
   return coordsByLocationKey;
 };
 
-const orderVisitsWindowFirst = (
+type VisitProjection = {
+  visit: VisitWithCoords;
+  estimatedDistanceKm: number;
+  estimatedTravelSeconds: number;
+  arrivalSeconds: number;
+  serviceStartSeconds: number;
+  serviceEndSeconds: number;
+  waitSeconds: number;
+  lateBySeconds: number;
+  slackSeconds: number;
+  futureFixedLateCount: number;
+  futureFixedLateSeconds: number;
+};
+
+const estimateTravelSeconds = (distanceKm: number) =>
+  Math.round((distanceKm / ESTIMATED_DRIVE_SPEED_KM_PER_HOUR) * 3600);
+
+const projectVisit = (
+  visit: VisitWithCoords,
+  fromCoords: LatLng,
+  fromTimeSeconds: number,
+): Omit<VisitProjection, "futureFixedLateCount" | "futureFixedLateSeconds"> => {
+  const estimatedDistanceKm = haversineDistanceKm(fromCoords, visit.coords);
+  const estimatedTravelSeconds = estimateTravelSeconds(estimatedDistanceKm);
+  const arrivalSeconds = fromTimeSeconds + estimatedTravelSeconds;
+  const serviceStartSeconds = Math.max(arrivalSeconds, visit.windowStartSeconds);
+  const serviceEndSeconds = serviceStartSeconds + visit.serviceDurationMinutes * 60;
+  const waitSeconds = Math.max(0, serviceStartSeconds - arrivalSeconds);
+  const lateBySeconds = Math.max(0, serviceStartSeconds - visit.windowEndSeconds);
+  const slackSeconds = visit.windowEndSeconds - serviceEndSeconds;
+
+  return {
+    visit,
+    estimatedDistanceKm,
+    estimatedTravelSeconds,
+    arrivalSeconds,
+    serviceStartSeconds,
+    serviceEndSeconds,
+    waitSeconds,
+    lateBySeconds,
+    slackSeconds,
+  };
+};
+
+const estimateFutureFixedLateMetrics = (
+  remainingVisits: VisitWithCoords[],
+  nextVisit: VisitWithCoords,
+  nextServiceEndSeconds: number,
+): { futureFixedLateCount: number; futureFixedLateSeconds: number } => {
+  let futureFixedLateCount = 0;
+  let futureFixedLateSeconds = 0;
+
+  remainingVisits.forEach((remainingVisit) => {
+    if (remainingVisit.visitId === nextVisit.visitId || remainingVisit.windowType !== "fixed") {
+      return;
+    }
+
+    const estimatedDistanceKm = haversineDistanceKm(nextVisit.coords, remainingVisit.coords);
+    const estimatedTravelSeconds = estimateTravelSeconds(estimatedDistanceKm);
+    const arrivalSeconds = nextServiceEndSeconds + estimatedTravelSeconds;
+    const projectedServiceStartSeconds = Math.max(arrivalSeconds, remainingVisit.windowStartSeconds);
+    const projectedLateBySeconds = Math.max(0, projectedServiceStartSeconds - remainingVisit.windowEndSeconds);
+
+    if (projectedLateBySeconds > 0) {
+      futureFixedLateCount += 1;
+      futureFixedLateSeconds += projectedLateBySeconds;
+    }
+  });
+
+  return {
+    futureFixedLateCount,
+    futureFixedLateSeconds,
+  };
+};
+
+const compareVisitProjections = (left: VisitProjection, right: VisitProjection) => {
+  if (left.futureFixedLateCount !== right.futureFixedLateCount) {
+    return left.futureFixedLateCount - right.futureFixedLateCount;
+  }
+
+  if (left.futureFixedLateSeconds !== right.futureFixedLateSeconds) {
+    return left.futureFixedLateSeconds - right.futureFixedLateSeconds;
+  }
+
+  if (left.lateBySeconds !== right.lateBySeconds) {
+    return left.lateBySeconds - right.lateBySeconds;
+  }
+
+  if (left.serviceStartSeconds !== right.serviceStartSeconds) {
+    return left.serviceStartSeconds - right.serviceStartSeconds;
+  }
+
+  if (left.waitSeconds !== right.waitSeconds) {
+    return left.waitSeconds - right.waitSeconds;
+  }
+
+  if (left.estimatedTravelSeconds !== right.estimatedTravelSeconds) {
+    return left.estimatedTravelSeconds - right.estimatedTravelSeconds;
+  }
+
+  if (left.slackSeconds !== right.slackSeconds) {
+    return left.slackSeconds - right.slackSeconds;
+  }
+
+  if (left.visit.windowEndSeconds !== right.visit.windowEndSeconds) {
+    return left.visit.windowEndSeconds - right.visit.windowEndSeconds;
+  }
+
+  return left.visit.visitId.localeCompare(right.visit.visitId);
+};
+
+const orderVisitsByWindowDistanceAndDuration = (
   visits: VisitWithCoords[],
   startCoords: LatLng,
+  departureLocalSeconds: number,
 ) => {
   const remaining = [...visits];
   const ordered: VisitWithCoords[] = [];
   let currentCoords = startCoords;
+  let currentTimeSeconds = departureLocalSeconds;
 
   while (remaining.length > 0) {
-    let bestIndex = 0;
+    const projections = remaining.map((visit) => {
+      const projected = projectVisit(visit, currentCoords, currentTimeSeconds);
+      return {
+        ...projected,
+        ...estimateFutureFixedLateMetrics(remaining, visit, projected.serviceEndSeconds),
+      };
+    });
 
-    for (let index = 1; index < remaining.length; index += 1) {
-      const candidate = remaining[index];
-      const best = remaining[bestIndex];
-
-      if (candidate.windowStartSeconds !== best.windowStartSeconds) {
-        if (candidate.windowStartSeconds < best.windowStartSeconds) {
-          bestIndex = index;
-        }
-        continue;
-      }
-
-      const candidateDistance = haversineDistanceKm(currentCoords, candidate.coords);
-      const bestDistance = haversineDistanceKm(currentCoords, best.coords);
-      if (candidateDistance !== bestDistance) {
-        if (candidateDistance < bestDistance) {
-          bestIndex = index;
-        }
-        continue;
-      }
-
-      if (candidate.windowEndSeconds !== best.windowEndSeconds) {
-        if (candidate.windowEndSeconds < best.windowEndSeconds) {
-          bestIndex = index;
-        }
-        continue;
-      }
-
-      if (candidate.visitId.localeCompare(best.visitId) < 0) {
-        bestIndex = index;
-      }
+    projections.sort(compareVisitProjections);
+    const selected = projections[0];
+    if (!selected) {
+      throw new HttpError(500, "Unable to select next visit.");
     }
 
-    const [nextVisit] = remaining.splice(bestIndex, 1);
+    const selectedIndex = remaining.findIndex((visit) => visit.visitId === selected.visit.visitId);
+    if (selectedIndex < 0) {
+      throw new HttpError(500, "Unable to resolve selected visit.");
+    }
+
+    const [nextVisit] = remaining.splice(selectedIndex, 1);
     ordered.push(nextVisit);
     currentCoords = nextVisit.coords;
+    currentTimeSeconds = selected.serviceEndSeconds;
   }
 
   return {
@@ -295,7 +395,11 @@ export const optimizeRouteV2 = async (
   const departureTimestampMs = departureDate.getTime();
   const departureLocalSeconds = getLocalSecondsOfDay(departureDate, request.timezone);
 
-  const { orderedVisits, unscheduledTasks } = orderVisitsWindowFirst(visitsWithCoords, startCoords);
+  const { orderedVisits, unscheduledTasks } = orderVisitsByWindowDistanceAndDuration(
+    visitsWithCoords,
+    startCoords,
+    departureLocalSeconds,
+  );
   const plannedStops = groupVisitsIntoStops(orderedVisits, {
     address: request.end.address,
     googlePlaceId: request.end.googlePlaceId,

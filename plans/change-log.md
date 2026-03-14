@@ -1676,3 +1676,93 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Frontend:
   - `npm run lint` ✅
   - `npm test` ✅
+
+---
+
+## 54) Visit Duration Rollout + Patient Table Window Layout Refinements
+
+### Files updated
+- `backend/drizzle.config.ts`
+- `frontend/src/components/patients/PatientsTable.tsx`
+
+### What changed
+- Updated Drizzle config to explicitly load `.env.local` / `.env` before reading `DATABASE_URL`.
+  - This resolves local migration failures where `drizzle-kit` did not auto-load env files (`url: ''`).
+- Refined patient table rendering for preferred windows and type pills:
+  - Removed standalone `Type` table column.
+  - Moved type display into preferred-window content.
+  - Added per-window list rendering (one line per time window).
+  - Applied separate mobile/desktop placement behavior:
+    - Desktop: type pill above time windows.
+    - Mobile: type pill below time windows.
+  - Mobile card layout updated to keep `Time windows` and `Visit duration` side-by-side, with `Address` above.
+  - Adjusted desktop column widths to allocate more space to address/window columns and reduce `Duration`/`Actions` widths.
+  - Prevented pill stretching in grid layout (`w-fit` / `justify-self-start`).
+
+### Verification
+- Backend:
+  - `npm run db:migrate` ✅
+  - `npm run lint` ✅
+- Frontend:
+  - `npm run lint` ✅
+  - targeted tests for patients page + integration path ✅
+
+---
+
+## 55) V2 Rolling Scheduler: Overlap Support + Duration-Aware Next-Stop Selection
+
+### Files updated
+- `backend/src/app/api/optimize-route/v2/validation.ts`
+- `backend/src/app/api/optimize-route/v2/validation.test.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+
+### What changed
+- Removed v2 backend validation that rejected overlapping visit windows.
+- Replaced the v2 greedy window-start ordering with a rolling selector that reevaluates every remaining visit after each stop using:
+  - estimated travel time/distance from current location,
+  - projected arrival/service start/service end,
+  - wait time and lateness,
+  - duration-aware slack (`windowEnd - projectedServiceEnd`),
+  - projected downstream impact on remaining fixed windows (count/seconds late).
+- Kept fixed visits in-route when late; lateness remains visible through `lateBySeconds` and `fixedWindowViolations`.
+- Updated v2 service tests for the new behavior:
+  - urgent windows first,
+  - distance tie-break when urgency is equivalent,
+  - duration-aware prioritization.
+- Removed frontend overlap-blocking behavior so the planner can submit overlapping windows to v2.
+- Updated route planner patient-selection test to confirm overlapping windows can still be optimized.
+- Updated v2 algorithm version to `v2.2.0-window-distance-duration`.
+
+### Verification
+- Backend:
+  - `npm test -- src/app/api/optimize-route/v2/validation.test.ts src/app/api/optimize-route/v2/optimizeRouteService.test.ts` ✅
+  - `npm run lint` ✅
+- Frontend:
+  - `npm test -- src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+  - `npm run lint` ✅
+
+---
+
+## 56) V2 Scheduler Tuning: Availability-First Tie-Break Refinement
+
+### Files updated
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+
+### What changed
+- Tuned v2 candidate ranking so, after lateness-risk checks, it now prefers:
+  - earlier achievable `serviceStartSeconds`,
+  - lower waiting time,
+  - then lower travel time,
+  - then tighter slack/window tie-breaks.
+- This reduces unnecessary long idle waits for far-future windows when a feasible earlier-start visit is available.
+- Bumped v2 algorithm version to `v2.2.1-window-distance-duration`.
+- Updated tests to reflect the tuned ordering semantics.
+
+### Verification
+- Backend:
+  - `npm test -- src/app/api/optimize-route/v2/optimizeRouteService.test.ts src/app/api/optimize-route/v2/validation.test.ts src/app/api/optimize-route/v2/route.test.ts` ✅
+  - `npm run lint` ✅

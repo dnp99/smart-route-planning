@@ -23,6 +23,7 @@ export type Patient = {
   lastName: string;
   address: string;
   googlePlaceId: string | null;
+  visitDurationMinutes: number;
   // Legacy single-window fields kept for compatibility.
   preferredVisitStartTime: string;
   preferredVisitEndTime: string;
@@ -41,6 +42,7 @@ export type CreatePatientRequest = {
   lastName: string;
   address: string;
   googlePlaceId?: string | null;
+  visitDurationMinutes: number;
   visitWindows: PatientVisitWindowInput[];
 };
 
@@ -55,6 +57,9 @@ export type DeletePatientResponse = {
 
 export const isVisitTimeType = (value: unknown): value is VisitTimeType =>
   value === "fixed" || value === "flexible";
+
+const isVisitDurationMinutes = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 180;
 
 const isPatientVisitWindow = (value: unknown): value is PatientVisitWindow => {
   if (!isObject(value)) {
@@ -109,6 +114,7 @@ export const isPatient = (value: unknown): value is Patient => {
     typeof value.lastName === "string" &&
     typeof value.address === "string" &&
     (value.googlePlaceId === null || typeof value.googlePlaceId === "string") &&
+    isVisitDurationMinutes(value.visitDurationMinutes) &&
     Array.isArray(visitWindows) &&
     typeof value.preferredVisitStartTime === "string" &&
     typeof value.preferredVisitEndTime === "string" &&

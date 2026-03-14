@@ -100,6 +100,7 @@ const janePatient = {
   lastName: "Doe",
   address: "123 Main St",
   googlePlaceId: "place-1",
+  visitDurationMinutes: 30,
   preferredVisitStartTime: "09:00:00",
   preferredVisitEndTime: "11:00:00",
   visitTimeType: "fixed" as const,
@@ -122,6 +123,7 @@ const johnPatient = {
   lastName: "Smith",
   address: "456 Queen St",
   googlePlaceId: null,
+  visitDurationMinutes: 45,
   preferredVisitStartTime: "10:00:00",
   preferredVisitEndTime: "12:00:00",
   visitTimeType: "flexible" as const,
@@ -144,6 +146,7 @@ const flexNoWindowPatient = {
   lastName: "Patient",
   address: "789 King St",
   googlePlaceId: null,
+  visitDurationMinutes: 25,
   preferredVisitStartTime: "00:00:00",
   preferredVisitEndTime: "23:59:00",
   visitTimeType: "flexible" as const,
@@ -159,6 +162,7 @@ const multiWindowPatient = {
   lastName: "Lee",
   address: "900 Lakeshore Rd",
   googlePlaceId: "place-4",
+  visitDurationMinutes: 60,
   preferredVisitStartTime: "09:00:00",
   preferredVisitEndTime: "10:00:00",
   visitTimeType: "fixed" as const,
@@ -218,7 +222,7 @@ describe("RoutePlanner patient selection integration", () => {
     );
   });
 
-  it("blocks route optimization when selected patient windows overlap", () => {
+  it("allows route optimization when selected patient windows overlap", () => {
     render(<RoutePlanner />);
 
     fireEvent.change(screen.getByLabelText("Ending point"), {
@@ -227,21 +231,40 @@ describe("RoutePlanner patient selection integration", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
     fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
 
-    expect(
-      screen.getAllByText("Overlaps with another selected visit window."),
-    ).toHaveLength(2);
-
     expect(screen.getByRole("button", { name: "Optimize Route" })).toHaveProperty(
       "disabled",
-      true,
+      false,
     );
 
-    expect(optimizeRouteMock).not.toHaveBeenCalled();
-    expect(
-      screen.getByText(
-        "Resolve overlapping patient windows to enable route optimization.",
-      ),
-    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith({
+      startAddress: "3361 Ingram Road, Mississauga, ON",
+      endAddress: "Airport",
+      destinations: [
+        {
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "123 Main St",
+          googlePlaceId: "place-1",
+          windowStart: "09:00",
+          windowEnd: "11:00",
+          windowType: "fixed",
+          serviceDurationMinutes: 30,
+        },
+        {
+          patientId: "patient-2",
+          patientName: "John Smith",
+          address: "456 Queen St",
+          googlePlaceId: null,
+          windowStart: "10:00",
+          windowEnd: "12:00",
+          windowType: "flexible",
+          serviceDurationMinutes: 45,
+        },
+      ],
+      canOptimize: true,
+    });
   });
 
   it("promotes selected destination patient to end patient and removes from destinations", () => {
@@ -276,6 +299,7 @@ describe("RoutePlanner patient selection integration", () => {
           windowStart: "10:00",
           windowEnd: "12:00",
           windowType: "flexible",
+          serviceDurationMinutes: 45,
         },
       ],
       canOptimize: true,
@@ -312,6 +336,7 @@ describe("RoutePlanner patient selection integration", () => {
           windowStart: "10:30",
           windowEnd: "11:30",
           windowType: "fixed",
+          serviceDurationMinutes: 30,
         },
       ],
       canOptimize: true,
@@ -337,6 +362,7 @@ describe("RoutePlanner patient selection integration", () => {
           windowStart: "09:00",
           windowEnd: "11:00",
           windowType: "fixed",
+          serviceDurationMinutes: 30,
         },
       ],
       canOptimize: true,
@@ -408,6 +434,7 @@ describe("RoutePlanner patient selection integration", () => {
           windowStart: "13:00",
           windowEnd: "14:00",
           windowType: "flexible",
+          serviceDurationMinutes: 25,
         },
       ],
       canOptimize: true,
@@ -442,6 +469,7 @@ describe("RoutePlanner patient selection integration", () => {
           windowStart: "09:00",
           windowEnd: "10:00",
           windowType: "fixed",
+          serviceDurationMinutes: 60,
         },
       ],
       canOptimize: true,
@@ -491,6 +519,7 @@ describe("RoutePlanner patient selection integration", () => {
             windowStart: "13:00",
             windowEnd: "14:00",
             windowType: "flexible",
+            serviceDurationMinutes: 25,
           },
         ],
         canOptimize: true,

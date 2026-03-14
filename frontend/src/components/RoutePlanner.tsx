@@ -23,6 +23,7 @@ type SelectedPatientDestination = {
   windowStart: string;
   windowEnd: string;
   windowType: "fixed" | "flexible";
+  serviceDurationMinutes: number;
   requiresPlanningWindow: boolean;
   isIncluded: boolean;
   persistPlanningWindow: boolean;
@@ -47,55 +48,6 @@ const timeToMinutes = (value: string) => {
 const hasCompleteWindow = (destination: SelectedPatientDestination) =>
   HH_MM_PATTERN.test(destination.windowStart) && HH_MM_PATTERN.test(destination.windowEnd);
 
-const getOverlappingVisitKeySet = (
-  destinations: SelectedPatientDestination[],
-) => {
-  const windows = destinations
-    .filter((destination) => hasCompleteWindow(destination))
-    .map((destination) => ({
-      visitKey: destination.visitKey,
-      startMinutes: timeToMinutes(destination.windowStart),
-      endMinutes: timeToMinutes(destination.windowEnd),
-    }))
-    .filter((destination) => destination.endMinutes > destination.startMinutes)
-    .sort((left, right) => {
-      const startDelta = left.startMinutes - right.startMinutes;
-      if (startDelta !== 0) {
-        return startDelta;
-      }
-
-      const endDelta = left.endMinutes - right.endMinutes;
-      if (endDelta !== 0) {
-        return endDelta;
-      }
-
-      return left.visitKey.localeCompare(right.visitKey);
-    });
-
-  const conflictVisitKeys = new Set<string>();
-  if (windows.length < 2) {
-    return conflictVisitKeys;
-  }
-
-  let previous = windows[0];
-  for (let index = 1; index < windows.length; index += 1) {
-    const current = windows[index];
-    if (current.startMinutes < previous.endMinutes) {
-      conflictVisitKeys.add(previous.visitKey);
-      conflictVisitKeys.add(current.visitKey);
-
-      if (current.endMinutes > previous.endMinutes) {
-        previous = current;
-      }
-      continue;
-    }
-
-    previous = current;
-  }
-
-  return conflictVisitKeys;
-};
-
 const toSelectedPatientDestinations = (
   patient: Patient,
 ): SelectedPatientDestination[] => {
@@ -112,6 +64,7 @@ const toSelectedPatientDestinations = (
       windowStart: toWindowTime(window.startTime),
       windowEnd: toWindowTime(window.endTime),
       windowType: window.visitTimeType,
+      serviceDurationMinutes: patient.visitDurationMinutes,
       requiresPlanningWindow: false,
       isIncluded: true,
       persistPlanningWindow: false,
@@ -130,6 +83,7 @@ const toSelectedPatientDestinations = (
         windowStart: "",
         windowEnd: "",
         windowType: "flexible",
+        serviceDurationMinutes: patient.visitDurationMinutes,
         requiresPlanningWindow: true,
         isIncluded: true,
         persistPlanningWindow: false,
@@ -148,6 +102,7 @@ const toSelectedPatientDestinations = (
       windowStart: toWindowTime(patient.preferredVisitStartTime),
       windowEnd: toWindowTime(patient.preferredVisitEndTime),
       windowType: patient.visitTimeType,
+      serviceDurationMinutes: patient.visitDurationMinutes,
       requiresPlanningWindow: false,
       isIncluded: true,
       persistPlanningWindow: false,
@@ -308,12 +263,6 @@ function RoutePlanner() {
     ];
   }, [endMode, selectedDestinations, selectedEndPatient]);
 
-  const overlappingVisitKeySet = useMemo(
-    () => getOverlappingVisitKeySet(requestDestinations),
-    [requestDestinations],
-  );
-  const hasOverlapConflicts = overlappingVisitKeySet.size > 0;
-
   const handleStartAddressChange = (value: string) => {
     setStartAddress(value);
     setStartGooglePlaceId(null);
@@ -466,11 +415,6 @@ function RoutePlanner() {
       setLocalValidationError(
         "All selected visit windows must end after they start.",
       );
-      return;
-    }
-
-    if (hasOverlapConflicts) {
-      setLocalValidationError("Selected patient windows overlap. Please adjust patient timings before planning.");
       return;
     }
 
@@ -699,16 +643,10 @@ function RoutePlanner() {
                   </p>
                   <div className="mt-2 grid gap-2">
                     {selectedEndPatient.visitDestinations.map((destination, index) => {
-                      const hasOverlapConflict = overlappingVisitKeySet.has(destination.visitKey);
-
                       return (
                         <div
                           key={destination.visitKey}
-                          className={`grid gap-2 rounded-lg border p-2 ${
-                            hasOverlapConflict
-                              ? "border-red-300 bg-red-50/70 dark:border-red-900/70 dark:bg-red-950/30"
-                              : "border-emerald-300/70 dark:border-emerald-800"
-                          }`}
+                          className="grid gap-2 rounded-lg border border-emerald-300/70 p-2 dark:border-emerald-800"
                         >
                           <label className="inline-flex items-start gap-2 text-xs font-semibold leading-snug text-emerald-900 dark:text-emerald-200">
                             <input
@@ -720,12 +658,6 @@ function RoutePlanner() {
                             />
                             Include visit window {index + 1}
                           </label>
-
-                          {hasOverlapConflict && (
-                            <p className="m-0 text-xs font-semibold text-red-700 dark:text-red-300">
-                              Overlaps with another selected visit window.
-                            </p>
-                          )}
 
                           <div className="grid gap-2">
                             <p className="m-0 text-xs text-emerald-800 dark:text-emerald-300">
@@ -906,16 +838,12 @@ function RoutePlanner() {
             ) : (
               <ol className="m-0 space-y-2">
                 {selectedDestinations.map((destination, index) => {
-                  const hasOverlapConflict = overlappingVisitKeySet.has(destination.visitKey);
-
                   return (
                     <li
                       key={destination.visitKey}
-                      className={`${responsiveStyles.destinationItem} rounded-xl border px-2 py-2 ${
-                        hasOverlapConflict
-                          ? "border-red-200 bg-red-50/70 dark:border-red-900/70 dark:bg-red-950/30"
-                          : "border-transparent dark:border-transparent"
-                      } ${destination.isIncluded ? "" : "opacity-60"}`}
+                      className={`${responsiveStyles.destinationItem} rounded-xl border border-transparent px-2 py-2 dark:border-transparent ${
+                        destination.isIncluded ? "" : "opacity-60"
+                      }`}
                     >
                       <div className={responsiveStyles.destinationItemBody}>
                         <span className="min-w-8 text-sm font-semibold text-slate-500 dark:text-slate-400">
@@ -941,11 +869,6 @@ function RoutePlanner() {
                             />
                             Include this visit in route
                           </label>
-                          {hasOverlapConflict && (
-                            <p className="m-0 mt-2 text-xs font-semibold text-red-700 dark:text-red-300">
-                              Overlaps with another selected visit window.
-                            </p>
-                          )}
                           <div className="mt-2">
                             <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
                               {destination.requiresPlanningWindow
@@ -1017,7 +940,7 @@ function RoutePlanner() {
             </span>
             <button
               type="submit"
-              disabled={isLoading || !canOptimize || hasOverlapConflicts}
+              disabled={isLoading || !canOptimize}
               className={`${responsiveStyles.optimizeButton} optimize-route-button`}
               data-loading={isLoading ? "true" : "false"}
               data-success={showOptimizeSuccess ? "true" : "false"}
@@ -1033,13 +956,7 @@ function RoutePlanner() {
           </div>
         </form>
 
-        {hasOverlapConflicts && (
-          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
-            Resolve overlapping patient windows to enable route optimization.
-          </p>
-        )}
-
-        {!hasOverlapConflicts && optimizeEndpointHint && (
+        {optimizeEndpointHint && (
           <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
             {optimizeEndpointHint}
           </p>

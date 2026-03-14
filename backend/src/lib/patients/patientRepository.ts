@@ -164,6 +164,7 @@ export const createPatientForNurse = async (nurseId: string, payload: CreatePati
         lastName: payload.lastName,
         address: payload.address,
         googlePlaceId: payload.googlePlaceId ?? null,
+        visitDurationMinutes: payload.visitDurationMinutes,
         preferredVisitStartTime: primaryWindow.startTime,
         preferredVisitEndTime: primaryWindow.endTime,
         visitTimeType: primaryWindow.visitTimeType,
@@ -242,6 +243,9 @@ export const updatePatientForNurse = async (
         ...(payload.lastName !== undefined ? { lastName: payload.lastName } : {}),
         ...(payload.address !== undefined ? { address: payload.address } : {}),
         googlePlaceId: nextGooglePlaceId,
+        ...(payload.visitDurationMinutes !== undefined
+          ? { visitDurationMinutes: payload.visitDurationMinutes }
+          : {}),
         ...(hasVisitWindowsUpdate && primaryWindow
           ? {
               preferredVisitStartTime: primaryWindow.startTime,
