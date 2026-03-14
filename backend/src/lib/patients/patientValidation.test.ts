@@ -211,4 +211,41 @@ describe("patientValidation", () => {
       "visitWindows[0].visitTimeType must be one of: fixed, flexible.",
     );
   });
+
+  it("rejects non-array visitWindows payloads", () => {
+    expect(() =>
+      validateCreatePatientPayload({
+        firstName: "Jane",
+        lastName: "Doe",
+        address: "123 Main St",
+        visitWindows: "09:00-10:00",
+      }),
+    ).toThrow("visitWindows must be an array.");
+
+    expect(() => validateUpdatePatientPayload({ visitWindows: "09:00-10:00" })).toThrow(
+      "visitWindows must be an array.",
+    );
+  });
+
+  it("rejects overlapping visit windows", () => {
+    expect(() =>
+      validateCreatePatientPayload({
+        firstName: "Jane",
+        lastName: "Doe",
+        address: "123 Main St",
+        visitWindows: [
+          {
+            startTime: "09:00",
+            endTime: "10:00",
+            visitTimeType: "fixed",
+          },
+          {
+            startTime: "09:30",
+            endTime: "10:30",
+            visitTimeType: "flexible",
+          },
+        ],
+      }),
+    ).toThrow("visitWindows must not contain overlapping time windows.");
+  });
 });

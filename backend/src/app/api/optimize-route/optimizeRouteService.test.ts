@@ -187,4 +187,50 @@ describe("optimizeRoute service", () => {
       message: "Route geocoding data is incomplete.",
     } satisfies Partial<HttpError>);
   });
+
+  it("upgrades duplicate geocode targets with googlePlaceId when later destination provides it", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start Address", coords: { lat: 43.1, lon: -79.1 } },
+      { address: "Stop A", coords: { lat: 43.2, lon: -79.2 } },
+      { address: "End Address", coords: { lat: 43.3, lon: -79.3 } },
+    ]);
+    mockedComputeNearestNeighborRoute.mockReturnValue([]);
+    mockedBuildDrivingRoute.mockResolvedValue({
+      orderedStops: [],
+      routeLegs: [],
+      totalDistanceMeters: 0,
+      totalDistanceKm: 0,
+      totalDurationSeconds: 0,
+    });
+
+    await optimizeRoute(
+      {
+        startAddress: "Start Address",
+        endAddress: "End Address",
+        destinations: [
+          {
+            patientId: "patient-1",
+            patientName: "First",
+            address: "Stop A",
+          },
+          {
+            patientId: "patient-2",
+            patientName: "Second",
+            address: "STOP A",
+            googlePlaceId: "place-upgrade",
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(mockedGeocodeTargetsSequentially).toHaveBeenCalledWith(
+      [
+        { address: "Start Address" },
+        { address: "Stop A", googlePlaceId: "place-upgrade" },
+        { address: "End Address" },
+      ],
+      "google-key",
+    );
+  });
 });
