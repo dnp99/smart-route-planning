@@ -1817,3 +1817,35 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Frontend:
   - `npm test -- src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/routePlanner/routePlannerService.test.ts` ✅
   - `npm run lint` ✅
+
+---
+
+## 59) V2 Backend Dynamic Departure From Earliest First Stop
+
+### Files updated
+- `shared/contracts/optimizeRouteV2.ts`
+- `backend/src/app/api/optimize-route/v2/validation.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/validation.test.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `backend/src/app/api/optimize-route/v2/route.test.ts`
+- `frontend/src/components/routePlanner/routePlannerService.ts`
+- `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+
+### What changed
+- Made `start.departureTime` optional in v2 request contract and backend validation.
+- Added backend departure auto-resolution when `start.departureTime` is omitted:
+  - select a first-stop anchor using earliest window start (tie-break: fixed over flexible, then closer to start),
+  - compute start-to-anchor travel duration,
+  - set departure to `anchor.windowStart - travel - 10 minutes`, clamped to day start.
+- Applied computed departure throughout timeline generation and response payload.
+- Bumped algorithm version to `v2.2.3-dynamic-departure-buffer`.
+- Removed frontend-side departure baseline defaulting so UI does not need to pass departure time.
+
+### Verification
+- Backend:
+  - `npm test -- src/app/api/optimize-route/v2/optimizeRouteService.test.ts src/app/api/optimize-route/v2/validation.test.ts src/app/api/optimize-route/v2/route.test.ts` ✅
+  - `npm run lint` ✅
+- Frontend:
+  - `npm test -- src/tests/routePlanner/routePlannerService.test.ts` ✅
+  - `npm run lint` ✅

@@ -27,7 +27,7 @@ export type OptimizeRouteV2Request = {
   start: {
     address: string;
     googlePlaceId?: string | null;
-    departureTime: string;
+    departureTime?: string;
   };
   end: {
     address: string;
@@ -243,8 +243,14 @@ export const isOptimizeRouteV2Request = (payload: unknown): payload is OptimizeR
     typeof payload.planningDate !== "string" ||
     typeof payload.timezone !== "string" ||
     typeof payload.start.address !== "string" ||
-    typeof payload.start.departureTime !== "string" ||
     typeof payload.end.address !== "string"
+  ) {
+    return false;
+  }
+
+  if (
+    payload.start.departureTime !== undefined &&
+    typeof payload.start.departureTime !== "string"
   ) {
     return false;
   }

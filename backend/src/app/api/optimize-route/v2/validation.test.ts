@@ -114,6 +114,17 @@ describe("optimize-route v2 request validation", () => {
     });
   });
 
+  it("accepts missing departure time and leaves it undefined", () => {
+    const payload = buildValidPayload();
+    delete (payload.start as { departureTime?: string }).departureTime;
+
+    const parsed = parseAndValidateBody(payload);
+
+    expect(parsed.start).toEqual({
+      address: "3361 Ingram Road, Mississauga, ON",
+    });
+  });
+
   it("keeps same-address visits when visit ids differ", () => {
     const payload = parseAndValidateBody({
       ...buildValidPayload(),

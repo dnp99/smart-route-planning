@@ -257,6 +257,69 @@ describe("optimize-route v2 route handler", () => {
     );
   });
 
+  it("accepts requests without departureTime and passes parsed payload to service", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    mockedOptimizeRouteV2.mockResolvedValue({
+      start: {
+        address: "Start Address",
+        coords: { lat: 43.6, lon: -79.6 },
+        departureTime: "2026-03-13T12:00:00.000Z",
+      },
+      end: {
+        address: "End Address",
+        coords: { lat: 43.8, lon: -79.8 },
+      },
+      orderedStops: [],
+      routeLegs: [],
+      unscheduledTasks: [],
+      metrics: {
+        fixedWindowViolations: 0,
+        totalLateSeconds: 0,
+        totalWaitSeconds: 0,
+        totalDistanceMeters: 0,
+        totalDistanceKm: 0,
+        totalDurationSeconds: 0,
+      },
+      algorithmVersion: "v2.2.3-dynamic-departure-buffer",
+    });
+
+    const requestBodyWithoutDeparture = {
+      ...validRequestBody,
+      start: {
+        address: "Start Address",
+      },
+    };
+
+    const response = await POST(buildPostRequest(JSON.stringify(requestBodyWithoutDeparture)));
+
+    expect(response.status).toBe(200);
+    expect(mockedOptimizeRouteV2).toHaveBeenCalledWith(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start Address",
+        },
+        end: {
+          address: "End Address",
+        },
+        visits: [
+          {
+            visitId: "visit-1",
+            patientId: "patient-1",
+            patientName: "Jane Doe",
+            address: "Stop A",
+            windowStart: "08:30",
+            windowEnd: "09:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 20,
+          },
+        ],
+      },
+      "test-key",
+    );
+  });
+
   it("returns 500 when optimize service returns an invalid response shape", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     mockedOptimizeRouteV2.mockResolvedValue({ invalid: true } as never);

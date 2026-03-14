@@ -80,84 +80,6 @@ const formatDateInTimeZone = (date: Date, timezone: string) => {
   return `${year}-${month}-${day}`;
 };
 
-const parsePlanningDateParts = (planningDate: string) => {
-  const [yearString, monthString, dayString] = planningDate.split("-");
-  const year = Number(yearString);
-  const month = Number(monthString);
-  const day = Number(dayString);
-
-  if (year !== year || month !== month || day !== day) {
-    throw new Error("Invalid planning date.");
-  }
-
-  return { year, month, day };
-};
-
-const parseOffsetMinutesFromTimeZoneName = (value: string) => {
-  if (value === "GMT" || value === "UTC") {
-    return 0;
-  }
-
-  const match = value.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
-  if (!match) {
-    throw new Error("Unable to resolve timezone offset.");
-  }
-
-  const sign = match[1] === "-" ? -1 : 1;
-  const hours = Number(match[2]);
-  const minutes = Number(match[3] ?? "0");
-
-  if (hours !== hours || minutes !== minutes) {
-    throw new Error("Unable to resolve timezone offset.");
-  }
-
-  return sign * (hours * 60 + minutes);
-};
-
-const resolveTimeZoneOffsetMinutes = (timestampMs: number, timezone: string) => {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timezone,
-    timeZoneName: "longOffset",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).formatToParts(new Date(timestampMs));
-
-  const timeZoneName = parts.find((part) => part.type === "timeZoneName")?.value;
-  if (!timeZoneName) {
-    throw new Error("Unable to resolve timezone offset.");
-  }
-
-  return parseOffsetMinutesFromTimeZoneName(timeZoneName);
-};
-
-const toIsoFromPlanningDateTime = (
-  planningDate: string,
-  timezone: string,
-  minutesOfDay: number,
-) => {
-  const { year, month, day } = parsePlanningDateParts(planningDate);
-  const safeMinutes = Math.max(0, Math.min(23 * 60 + 59, Math.floor(minutesOfDay)));
-  const hours = Math.floor(safeMinutes / 60);
-  const minutes = safeMinutes % 60;
-  const utcGuessMs = Date.UTC(year, month - 1, day, hours, minutes, 0, 0);
-
-  let offsetMinutes = resolveTimeZoneOffsetMinutes(utcGuessMs, timezone);
-  let timestampMs = utcGuessMs - offsetMinutes * 60 * 1000;
-  const refinedOffsetMinutes = resolveTimeZoneOffsetMinutes(timestampMs, timezone);
-
-  if (refinedOffsetMinutes !== offsetMinutes) {
-    offsetMinutes = refinedOffsetMinutes;
-    timestampMs = utcGuessMs - offsetMinutes * 60 * 1000;
-  }
-
-  return new Date(timestampMs).toISOString();
-};
-
 const buildVisitId = (patientId: string, index: number) =>
   `visit-${index + 1}-${patientId}`;
 
@@ -312,11 +234,10 @@ export const requestOptimizedRoute = async ({
   const now = new Date();
   const resolvedPlanningDate =
     planningDate ?? formatDateInTimeZone(now, resolvedTimezone);
-  const resolvedDepartureTime =
-    departureTime ?? toIsoFromPlanningDateTime(resolvedPlanningDate, resolvedTimezone, 0);
-  const resolvedDepartureDate = new Date(resolvedDepartureTime);
+  const resolvedDepartureTime = departureTime;
+  const resolvedDepartureDate = resolvedDepartureTime ? new Date(resolvedDepartureTime) : null;
 
-  if (resolvedDepartureDate.getTime() !== resolvedDepartureDate.getTime()) {
+  if (resolvedDepartureDate && resolvedDepartureDate.getTime() !== resolvedDepartureDate.getTime()) {
     throw new Error("Invalid departure time.");
   }
 
@@ -363,7 +284,9 @@ export const requestOptimizedRoute = async ({
           ...(startGooglePlaceId !== undefined
             ? { googlePlaceId: startGooglePlaceId }
             : {}),
-          departureTime: resolvedDepartureTime,
+          ...(resolvedDepartureTime !== undefined
+            ? { departureTime: resolvedDepartureTime }
+            : {}),
         },
         end: {
           address: endAddress,
