@@ -241,6 +241,18 @@ function RoutePlanner() {
   const canOptimize =
     startAddress.trim().length > 0 && resolvedEndAddress.trim().length > 0;
 
+  const optimizeEndpointHint = useMemo(() => {
+    if (endMode === "manual" && manualEndAddress.trim().length === 0) {
+      return "Select an ending point to enable route optimization.";
+    }
+
+    if (endMode === "patient" && !selectedEndPatient) {
+      return "Select an end patient to enable route optimization.";
+    }
+
+    return undefined;
+  }, [endMode, manualEndAddress, selectedEndPatient]);
+
   const startFieldError =
     (hasAttemptedOptimize || startTouched) && startAddress.trim().length === 0
       ? "Starting point is required."
@@ -1024,6 +1036,12 @@ function RoutePlanner() {
         {hasOverlapConflicts && (
           <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
             Resolve overlapping patient windows to enable route optimization.
+          </p>
+        )}
+
+        {!hasOverlapConflicts && optimizeEndpointHint && (
+          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
+            {optimizeEndpointHint}
           </p>
         )}
 

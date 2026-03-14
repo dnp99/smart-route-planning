@@ -2,7 +2,7 @@ import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import AddressAutocompleteInput from "../AddressAutocompleteInput";
 import { responsiveStyles } from "../responsiveStyles";
-import type { Patient } from "../../../../shared/contracts";
+import type { Patient, VisitTimeType } from "../../../../shared/contracts";
 import type {
   FormFieldErrors,
   FormMode,
@@ -28,9 +28,28 @@ type PatientFormModalProps = {
   ) => void;
   onAddVisitWindow: () => void;
   onRemoveVisitWindow: (windowId: string) => void;
+  selectedVisitType: VisitTimeType;
+  onVisitTypeChange: (visitTimeType: VisitTimeType) => void;
   onAddressChange: (value: string) => void;
   onAddressPick: (suggestion: AddressSuggestion) => void;
 };
+
+const CloseIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
 
 export const PatientFormModal = ({
   formMode,
@@ -45,6 +64,8 @@ export const PatientFormModal = ({
   onVisitWindowChange,
   onAddVisitWindow,
   onRemoveVisitWindow,
+  selectedVisitType,
+  onVisitTypeChange,
   onAddressChange,
   onAddressPick,
 }: PatientFormModalProps) => {
@@ -80,21 +101,28 @@ export const PatientFormModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            aria-label="Close modal"
+            title="Close modal"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
-            Close
+            <CloseIcon className="h-4 w-4" />
           </button>
         </div>
 
         <form className="grid gap-4" onSubmit={onSubmit}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1">
-              <label
-                htmlFor="patient-first-name"
-                className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-              >
-                First name
-              </label>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="patient-first-name"
+                  className="text-sm font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  First name
+                </label>
+                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                  Required
+                </span>
+              </div>
               <input
                 id="patient-first-name"
                 value={formValues.firstName}
@@ -109,12 +137,17 @@ export const PatientFormModal = ({
             </div>
 
             <div className="grid gap-1">
-              <label
-                htmlFor="patient-last-name"
-                className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-              >
-                Last name
-              </label>
+              <div className="flex items-center gap-2">
+                <label
+                  htmlFor="patient-last-name"
+                  className="text-sm font-semibold text-slate-800 dark:text-slate-200"
+                >
+                  Last name
+                </label>
+                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                  Required
+                </span>
+              </div>
               <input
                 id="patient-last-name"
                 value={formValues.lastName}
@@ -142,6 +175,24 @@ export const PatientFormModal = ({
             required
           />
 
+          <div className="grid gap-1">
+            <label
+              htmlFor="patient-visit-type"
+              className="text-sm font-semibold text-slate-800 dark:text-slate-200"
+            >
+              Type
+            </label>
+            <select
+              id="patient-visit-type"
+              value={selectedVisitType}
+              onChange={(event) => onVisitTypeChange(event.target.value as VisitTimeType)}
+              className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+            >
+              <option value="fixed">Fixed</option>
+              <option value="flexible">Flexible</option>
+            </select>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="sm:col-span-2 grid gap-3 rounded-2xl border border-slate-200 p-3 dark:border-slate-800">
               <div className="flex items-center justify-between gap-2">
@@ -160,7 +211,7 @@ export const PatientFormModal = ({
               {formValues.visitWindows.map((window, index) => (
                 <div
                   key={window.id}
-                  className="grid gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800 sm:grid-cols-[1fr_1fr_1fr_auto]"
+                  className="grid gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800 sm:grid-cols-[1fr_1fr_auto]"
                 >
                   <div className="grid gap-1">
                     <label
@@ -196,7 +247,9 @@ export const PatientFormModal = ({
                       id={`patient-visit-end-${window.id}`}
                       type="time"
                       value={window.endTime}
-                      onChange={(event) => onVisitWindowChange(window.id, "endTime", event.target.value)}
+                      onChange={(event) =>
+                        onVisitWindowChange(window.id, "endTime", event.target.value)
+                      }
                       className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                     />
                     {formErrors.visitWindowRows?.[index]?.endTime && (
@@ -204,26 +257,6 @@ export const PatientFormModal = ({
                         {formErrors.visitWindowRows[index].endTime}
                       </p>
                     )}
-                  </div>
-
-                  <div className="grid gap-1">
-                    <label
-                      htmlFor={`patient-visit-type-${window.id}`}
-                      className="text-xs font-semibold text-slate-700 dark:text-slate-300"
-                    >
-                      Type
-                    </label>
-                    <select
-                      id={`patient-visit-type-${window.id}`}
-                      value={window.visitTimeType}
-                      onChange={(event) =>
-                        onVisitWindowChange(window.id, "visitTimeType", event.target.value)
-                      }
-                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                    >
-                      <option value="fixed">Fixed</option>
-                      <option value="flexible">Flexible</option>
-                    </select>
                   </div>
 
                   <div className="flex items-end">

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import { responsiveStyles } from "../responsiveStyles";
-import type { Patient } from "../../../../shared/contracts";
+import type { Patient, VisitTimeType } from "../../../../shared/contracts";
 import { PatientFormModal } from "./PatientFormModal";
 import { PatientsTable } from "./PatientsTable";
 import {
@@ -23,6 +23,23 @@ import {
   updatePatient,
 } from "./patientService";
 
+const PlusIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M12 5v14" />
+    <path d="M5 12h14" />
+  </svg>
+);
+
 const PatientsPage = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -39,6 +56,8 @@ const PatientsPage = () => {
     () => patients.find((patient) => patient.id === selectedPatientId) ?? null,
     [patients, selectedPatientId],
   );
+  const selectedVisitType: VisitTimeType =
+    formValues.visitWindows[0]?.visitTimeType ?? "flexible";
 
   const fetchPatients = async (query: string) => {
     setIsLoadingPatients(true);
@@ -118,7 +137,13 @@ const PatientsPage = () => {
   const handleAddVisitWindow = () => {
     setFormValues((current) => ({
       ...current,
-      visitWindows: [...current.visitWindows, createEmptyVisitWindow()],
+      visitWindows: [
+        ...current.visitWindows,
+        createEmptyVisitWindow(
+          current.visitWindows[0]?.visitTimeType ?? "flexible",
+          current.visitWindows.length,
+        ),
+      ],
     }));
     setFormErrors((current) => ({
       ...current,
@@ -132,6 +157,37 @@ const PatientsPage = () => {
       ...current,
       visitWindows: current.visitWindows.filter((window) => window.id !== windowId),
     }));
+    setFormErrors((current) => ({
+      ...current,
+      visitWindows: undefined,
+      visitWindowRows: undefined,
+    }));
+  };
+
+  const handleVisitTypeChange = (visitTimeType: VisitTimeType) => {
+    setFormValues((current) => {
+      if (visitTimeType === "flexible") {
+        return {
+          ...current,
+          visitWindows: [],
+        };
+      }
+
+      if (current.visitWindows.length === 0) {
+        return {
+          ...current,
+          visitWindows: [createEmptyVisitWindow("fixed", 0)],
+        };
+      }
+
+      return {
+        ...current,
+        visitWindows: current.visitWindows.map((window) => ({
+          ...window,
+          visitTimeType,
+        })),
+      };
+    });
     setFormErrors((current) => ({
       ...current,
       visitWindows: undefined,
@@ -221,9 +277,20 @@ const PatientsPage = () => {
     <main className={responsiveStyles.page}>
       <section className={responsiveStyles.section}>
         <div className={responsiveStyles.sectionHeader}>
-          <h1 className="m-0 text-2xl font-bold text-slate-900 dark:text-slate-100">
-            Patients
-          </h1>
+          <div className="flex items-start justify-between gap-3">
+            <h1 className="m-0 text-2xl font-bold text-slate-900 dark:text-slate-100">
+              Patients
+            </h1>
+            <button
+              type="button"
+              onClick={openCreateModal}
+              aria-label="Add patient"
+              title="Add patient"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:hidden"
+            >
+              <PlusIcon className="h-4 w-4" />
+            </button>
+          </div>
           <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
             Search, create, update, and delete patients for route-planning workflows.
           </p>
@@ -255,7 +322,7 @@ const PatientsPage = () => {
             <button
               type="button"
               onClick={openCreateModal}
-              className="w-full rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 sm:w-auto sm:shrink-0"
+              className="hidden w-full rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 sm:inline-flex sm:w-auto sm:shrink-0"
             >
               Add New Patient
             </button>
@@ -284,6 +351,8 @@ const PatientsPage = () => {
           onVisitWindowChange={handleVisitWindowChange}
           onAddVisitWindow={handleAddVisitWindow}
           onRemoveVisitWindow={handleRemoveVisitWindow}
+          selectedVisitType={selectedVisitType}
+          onVisitTypeChange={handleVisitTypeChange}
           onAddressChange={handleAddressChange}
           onAddressPick={handleAddressPick}
         />

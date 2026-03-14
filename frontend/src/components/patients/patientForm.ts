@@ -43,12 +43,36 @@ const createWindowId = () => {
   return `window-${Math.random().toString(36).slice(2, 10)}`;
 };
 
-export const createEmptyVisitWindow = (): PatientFormVisitWindow => ({
-  id: createWindowId(),
-  startTime: "09:00",
-  endTime: "10:00",
-  visitTimeType: "fixed",
-});
+const toHourMinute = (minutes: number) => {
+  const normalized = Math.max(0, Math.min(minutes, 23 * 60 + 59));
+  const hours = Math.floor(normalized / 60)
+    .toString()
+    .padStart(2, "0");
+  const mins = (normalized % 60).toString().padStart(2, "0");
+  return `${hours}:${mins}`;
+};
+
+export const getDefaultVisitWindowTimes = (position = 0) => {
+  const slotMinutes = Math.max(0, position) * 60;
+  const startTime = toHourMinute(9 * 60 + slotMinutes);
+  const endTime = toHourMinute(Math.min(23 * 60 + 59, 10 * 60 + slotMinutes));
+
+  return { startTime, endTime };
+};
+
+export const createEmptyVisitWindow = (
+  visitTimeType: VisitTimeType = "fixed",
+  position = 0,
+): PatientFormVisitWindow => {
+  const { startTime, endTime } = getDefaultVisitWindowTimes(position);
+
+  return {
+    id: createWindowId(),
+    startTime,
+    endTime,
+    visitTimeType,
+  };
+};
 
 export const EMPTY_FORM: PatientFormValues = {
   firstName: "",
