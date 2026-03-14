@@ -310,6 +310,75 @@ describe("optimizeRouteV2 service", () => {
     ]);
   });
 
+  it("fills long idle gaps with a feasible nearby visit before returning to a later fixed window", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Shared Fixed Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Nearby Gap Visit", coords: { lat: 43.705, lon: -79.705 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "fixed-am",
+            patientId: "patient-fixed-am",
+            patientName: "Fixed AM",
+            address: "Shared Fixed Address",
+            windowStart: "08:30",
+            windowEnd: "09:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "fixed-late-morning",
+            patientId: "patient-fixed-late",
+            patientName: "Fixed Late Morning",
+            address: "Shared Fixed Address",
+            windowStart: "10:30",
+            windowEnd: "11:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "flex-gap",
+            patientId: "patient-gap",
+            patientName: "Gap Filler",
+            address: "Nearby Gap Visit",
+            windowStart: "08:30",
+            windowEnd: "10:30",
+            windowType: "flexible",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const passedOrderedStops = call?.[1] ?? [];
+    expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
+      "Shared Fixed Address",
+      "Nearby Gap Visit",
+      "Shared Fixed Address",
+      "End",
+    ]);
+  });
+
   it("throws when geocoding returns fewer targets than required", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
@@ -396,7 +465,7 @@ describe("optimizeRouteV2 service", () => {
       "google-key",
     );
 
-    expect(result.algorithmVersion).toBe("v2.2.1-window-distance-duration");
+    expect(result.algorithmVersion).toBe("v2.2.2-window-distance-duration-gap-fill");
     expect(result.orderedStops).toHaveLength(2);
     expect(result.orderedStops[0].tasks).toHaveLength(2);
     expect(result.orderedStops[0].tasks[0].visitId).toBe("fixed-am");

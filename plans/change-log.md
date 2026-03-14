@@ -1766,3 +1766,29 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Backend:
   - `npm test -- src/app/api/optimize-route/v2/optimizeRouteService.test.ts src/app/api/optimize-route/v2/validation.test.ts src/app/api/optimize-route/v2/route.test.ts` ✅
   - `npm run lint` ✅
+
+---
+
+## 57) V2 Anti-Idle Gap Filling for Fixed-Window Anchors
+
+### Files updated
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+
+### What changed
+- Added a gap-filling rule to v2 selection:
+  - when the best candidate would cause a long idle wait, the scheduler now looks for a feasible filler visit that can be completed and still return to the anchor window on time.
+- Added guardrails for filler selection:
+  - do not increase anchor lateness,
+  - bounded filler wait,
+  - minimum useful gap utilization,
+  - deterministic tie-break ordering.
+- Added regression test for the real-world pattern:
+  - two fixed windows at the same address with a large gap,
+  - nearby flexible visit should be scheduled between them instead of waiting at the fixed address.
+- Bumped algorithm version to `v2.2.2-window-distance-duration-gap-fill`.
+
+### Verification
+- Backend:
+  - `npm test -- src/app/api/optimize-route/v2/optimizeRouteService.test.ts src/app/api/optimize-route/v2/route.test.ts src/app/api/optimize-route/v2/validation.test.ts` ✅
+  - `npm run lint` ✅

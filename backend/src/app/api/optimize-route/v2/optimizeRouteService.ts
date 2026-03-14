@@ -11,8 +11,12 @@ import type {
 } from "./types";
 import type { ValidatedOptimizeRouteV2Request } from "./validation";
 
-const ALGORITHM_VERSION = "v2.2.1-window-distance-duration";
+const ALGORITHM_VERSION = "v2.2.2-window-distance-duration-gap-fill";
 const ESTIMATED_DRIVE_SPEED_KM_PER_HOUR = 40;
+const IDLE_GAP_FILL_THRESHOLD_SECONDS = 30 * 60;
+const IDLE_GAP_RETURN_BUFFER_SECONDS = 5 * 60;
+const IDLE_GAP_FILLER_MAX_WAIT_SECONDS = 10 * 60;
+const IDLE_GAP_MIN_UTILIZATION_SECONDS = 15 * 60;
 
 type GeocodeTarget = {
   address: string;
@@ -291,6 +295,118 @@ const compareVisitProjections = (left: VisitProjection, right: VisitProjection) 
   return left.visit.visitId.localeCompare(right.visit.visitId);
 };
 
+type GapFillerCandidate = {
+  projection: VisitProjection;
+  anchorReturnTravelSeconds: number;
+  anchorArrivalAfterFiller: number;
+  gapUtilizationSeconds: number;
+};
+
+const compareGapFillerCandidates = (left: GapFillerCandidate, right: GapFillerCandidate) => {
+  if (left.projection.futureFixedLateCount !== right.projection.futureFixedLateCount) {
+    return left.projection.futureFixedLateCount - right.projection.futureFixedLateCount;
+  }
+
+  if (left.projection.futureFixedLateSeconds !== right.projection.futureFixedLateSeconds) {
+    return left.projection.futureFixedLateSeconds - right.projection.futureFixedLateSeconds;
+  }
+
+  if (left.projection.lateBySeconds !== right.projection.lateBySeconds) {
+    return left.projection.lateBySeconds - right.projection.lateBySeconds;
+  }
+
+  if (left.projection.serviceStartSeconds !== right.projection.serviceStartSeconds) {
+    return left.projection.serviceStartSeconds - right.projection.serviceStartSeconds;
+  }
+
+  if (left.gapUtilizationSeconds !== right.gapUtilizationSeconds) {
+    return right.gapUtilizationSeconds - left.gapUtilizationSeconds;
+  }
+
+  if (left.anchorReturnTravelSeconds !== right.anchorReturnTravelSeconds) {
+    return left.anchorReturnTravelSeconds - right.anchorReturnTravelSeconds;
+  }
+
+  if (left.projection.visit.windowEndSeconds !== right.projection.visit.windowEndSeconds) {
+    return left.projection.visit.windowEndSeconds - right.projection.visit.windowEndSeconds;
+  }
+
+  return left.projection.visit.visitId.localeCompare(right.projection.visit.visitId);
+};
+
+const maybeSelectGapFiller = (
+  selectedProjection: VisitProjection,
+  projections: VisitProjection[],
+  currentTimeSeconds: number,
+) => {
+  if (selectedProjection.waitSeconds < IDLE_GAP_FILL_THRESHOLD_SECONDS) {
+    return selectedProjection;
+  }
+
+  const anchor = selectedProjection.visit;
+  const latestAnchorArrivalSeconds = Math.max(
+    currentTimeSeconds,
+    anchor.windowStartSeconds - IDLE_GAP_RETURN_BUFFER_SECONDS,
+  );
+
+  const fillers = projections
+    .filter((projection) => projection.visit.visitId !== anchor.visitId)
+    .map((projection): GapFillerCandidate | null => {
+      if (projection.waitSeconds > IDLE_GAP_FILLER_MAX_WAIT_SECONDS) {
+        return null;
+      }
+
+      if (projection.lateBySeconds > 0) {
+        return null;
+      }
+
+      const anchorReturnTravelSeconds = estimateTravelSeconds(
+        haversineDistanceKm(projection.visit.coords, anchor.coords),
+      );
+
+      const anchorArrivalAfterFiller = projection.serviceEndSeconds + anchorReturnTravelSeconds;
+      if (anchorArrivalAfterFiller > latestAnchorArrivalSeconds) {
+        return null;
+      }
+
+      const anchorServiceStartAfterFiller = Math.max(
+        anchorArrivalAfterFiller,
+        anchor.windowStartSeconds,
+      );
+      const anchorLateAfterFiller = Math.max(
+        0,
+        anchorServiceStartAfterFiller - anchor.windowEndSeconds,
+      );
+      if (anchorLateAfterFiller > selectedProjection.lateBySeconds) {
+        return null;
+      }
+
+      const gapUtilizationSeconds = projection.serviceEndSeconds + anchorReturnTravelSeconds - currentTimeSeconds;
+      if (gapUtilizationSeconds < IDLE_GAP_MIN_UTILIZATION_SECONDS) {
+        return null;
+      }
+
+      if (gapUtilizationSeconds > selectedProjection.waitSeconds - IDLE_GAP_RETURN_BUFFER_SECONDS) {
+        return null;
+      }
+
+      return {
+        projection,
+        anchorReturnTravelSeconds,
+        anchorArrivalAfterFiller,
+        gapUtilizationSeconds,
+      };
+    })
+    .filter((candidate): candidate is GapFillerCandidate => candidate !== null);
+
+  if (fillers.length === 0) {
+    return selectedProjection;
+  }
+
+  fillers.sort(compareGapFillerCandidates);
+  return fillers[0]?.projection ?? selectedProjection;
+};
+
 const orderVisitsByWindowDistanceAndDuration = (
   visits: VisitWithCoords[],
   startCoords: LatLng,
@@ -311,7 +427,16 @@ const orderVisitsByWindowDistanceAndDuration = (
     });
 
     projections.sort(compareVisitProjections);
-    const selected = projections[0];
+    const firstProjection = projections[0];
+    if (!firstProjection) {
+      throw new HttpError(500, "Unable to evaluate route candidates.");
+    }
+
+    const selected = maybeSelectGapFiller(
+      firstProjection,
+      projections,
+      currentTimeSeconds,
+    );
     if (!selected) {
       throw new HttpError(500, "Unable to select next visit.");
     }
