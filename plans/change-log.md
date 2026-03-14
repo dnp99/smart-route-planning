@@ -1626,3 +1626,53 @@ An Oracle review was performed and its recommendations were incorporated, includ
 ### Verification
 - Frontend: `npm run test:coverage` ✅
 - Backend: `npm run test:coverage` ✅ (coverage improved), threshold still failing on branches by policy.
+
+---
+
+## 53) Planner Window Editing + Mobile UX + Patient Form Flow Refinements
+
+### Commits
+- `92f0e1d` - `feat(frontend): add editable planning windows and enforce light mode`
+- `c8b082e` - `feat(frontend): improve mobile layout and patient list actions`
+- `3f97d02` - `feat(frontend): refine patient form flow and planner controls`
+
+### Files updated
+- `frontend/src/App.jsx`
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/components/patients/PatientFormModal.tsx`
+- `frontend/src/components/patients/PatientsPage.tsx`
+- `frontend/src/components/patients/PatientsTable.tsx`
+- `frontend/src/components/patients/patientForm.ts`
+- `frontend/src/components/routePlanner/routePlannerService.ts`
+- `frontend/src/components/responsiveStyles.ts`
+- `frontend/src/main.jsx`
+- `frontend/src/tests/appRoutes.test.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+
+### What changed
+- Removed theme-toggle behavior and standardized the app shell to light-mode presentation.
+- Updated header navigation/layout:
+  - tab cards moved into a dedicated row with tighter responsive spacing,
+  - logout moved behind an icon-triggered menu,
+  - workspace subtitle now renders from capitalized nurse display name.
+- Improved patients-list mobile UX:
+  - icon actions for edit/delete,
+  - refined card hierarchy and spacing (name/action alignment, type pill placement, reduced vertical gaps),
+  - improved tab typography and mobile treatment.
+- Expanded route-planner controls:
+  - explicit optimize endpoint validation hint when no ending point is selected,
+  - row-level overlap highlighting and conflict messaging tied to included visit windows,
+  - retained overlap-blocking behavior until conflicts are resolved.
+- Refined patient form modal flow:
+  - icon-only close control,
+  - required badges on first/last name,
+  - field order aligned to `name -> address -> type -> windows`,
+  - flexible type supports optional windows added only through `Add window`,
+  - persisted multi-window editing remains supported.
+- Updated routing/planner tests and service tests to cover these UI and validation behavior changes.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test` ✅

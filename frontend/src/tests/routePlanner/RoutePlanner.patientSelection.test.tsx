@@ -206,6 +206,18 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.queryAllByRole("button", { name: /Jane Doe/i })).toHaveLength(0);
   });
 
+  it("shows a clear hint when ending point is not selected", () => {
+    render(<RoutePlanner />);
+
+    expect(
+      screen.getByText("Select an ending point to enable route optimization."),
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Optimize Route" })).toHaveProperty(
+      "disabled",
+      true,
+    );
+  });
+
   it("blocks route optimization when selected patient windows overlap", () => {
     render(<RoutePlanner />);
 
