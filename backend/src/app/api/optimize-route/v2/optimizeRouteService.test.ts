@@ -42,12 +42,12 @@ describe("optimizeRouteV2 service", () => {
     mockedBuildDrivingRoute.mockReset();
   });
 
-  it("orders visits by configured window start time", async () => {
+  it("prefers the next available visit before far-future windows when no fixed risk is introduced", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Address A", coords: { lat: 43.7, lon: -79.7 } },
-      { address: "Address B", coords: { lat: 43.7005, lon: -79.7005 } },
-      { address: "Address C", coords: { lat: 43.701, lon: -79.701 } },
+      { address: "Address B", coords: { lat: 43.6005, lon: -79.6005 } },
+      { address: "Address C", coords: { lat: 43.601, lon: -79.601 } },
       { address: "Address D", coords: { lat: 43.7015, lon: -79.7015 } },
       { address: "End", coords: { lat: 43.8, lon: -79.8 } },
     ]);
@@ -73,8 +73,8 @@ describe("optimizeRouteV2 service", () => {
             patientId: "patient-c",
             patientName: "Patient C",
             address: "Address C",
-            windowStart: "16:00",
-            windowEnd: "17:00",
+            windowStart: "11:00",
+            windowEnd: "12:00",
             windowType: "fixed",
             serviceDurationMinutes: 30,
           },
@@ -83,10 +83,10 @@ describe("optimizeRouteV2 service", () => {
             patientId: "patient-a",
             patientName: "Patient A",
             address: "Address A",
-            windowStart: "10:00",
-            windowEnd: "11:00",
-            windowType: "fixed",
-            serviceDurationMinutes: 15,
+            windowStart: "09:00",
+            windowEnd: "16:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 30,
           },
           {
             visitId: "visit-d",
@@ -103,10 +103,10 @@ describe("optimizeRouteV2 service", () => {
             patientId: "patient-b",
             patientName: "Patient B",
             address: "Address B",
-            windowStart: "11:00",
-            windowEnd: "12:00",
+            windowStart: "08:00",
+            windowEnd: "08:30",
             windowType: "fixed",
-            serviceDurationMinutes: 15,
+            serviceDurationMinutes: 30,
           },
         ],
       },
@@ -116,15 +116,15 @@ describe("optimizeRouteV2 service", () => {
     const call = mockedBuildDrivingRoute.mock.calls[0];
     const passedOrderedStops = call?.[1] ?? [];
     expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
-      "Address A",
       "Address B",
-      "Address D",
+      "Address A",
       "Address C",
+      "Address D",
       "End",
     ]);
   });
 
-  it("breaks same-window ties by nearest distance from the current location", async () => {
+  it("breaks equal-urgency ties by earliest achievable service start (then distance)", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Far Address", coords: { lat: 43.75, lon: -79.75 } },
@@ -153,8 +153,8 @@ describe("optimizeRouteV2 service", () => {
             patientId: "patient-far",
             patientName: "Far Patient",
             address: "Far Address",
-            windowStart: "10:00",
-            windowEnd: "10:20",
+            windowStart: "07:00",
+            windowEnd: "12:00",
             windowType: "fixed",
             serviceDurationMinutes: 15,
           },
@@ -163,8 +163,8 @@ describe("optimizeRouteV2 service", () => {
             patientId: "patient-near",
             patientName: "Near Patient",
             address: "Near Address",
-            windowStart: "10:00",
-            windowEnd: "10:30",
+            windowStart: "07:00",
+            windowEnd: "12:00",
             windowType: "fixed",
             serviceDurationMinutes: 15,
           },
@@ -178,6 +178,64 @@ describe("optimizeRouteV2 service", () => {
     expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
       "Near Address",
       "Far Address",
+      "End",
+    ]);
+  });
+
+  it("uses service duration to prioritize tighter visits", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Long Duration", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Short Duration", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-long",
+            patientId: "patient-long",
+            patientName: "Long Visit",
+            address: "Long Duration",
+            windowStart: "10:00",
+            windowEnd: "11:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 60,
+          },
+          {
+            visitId: "visit-short",
+            patientId: "patient-short",
+            patientName: "Short Visit",
+            address: "Short Duration",
+            windowStart: "10:00",
+            windowEnd: "11:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const passedOrderedStops = call?.[1] ?? [];
+    expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
+      "Long Duration",
+      "Short Duration",
       "End",
     ]);
   });
@@ -338,7 +396,7 @@ describe("optimizeRouteV2 service", () => {
       "google-key",
     );
 
-    expect(result.algorithmVersion).toBe("v2.1.0-greedy-window-first");
+    expect(result.algorithmVersion).toBe("v2.2.1-window-distance-duration");
     expect(result.orderedStops).toHaveLength(2);
     expect(result.orderedStops[0].tasks).toHaveLength(2);
     expect(result.orderedStops[0].tasks[0].visitId).toBe("fixed-am");

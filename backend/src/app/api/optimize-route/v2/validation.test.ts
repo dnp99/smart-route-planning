@@ -222,66 +222,27 @@ describe("optimize-route v2 request validation", () => {
     expectHttpError(() => parseAndValidateBody(payload), 400, "visitId values must be unique.");
   });
 
-  it("throws when visit windows overlap", () => {
-    const payload = buildValidPayload();
-    payload.visits[0].windowStart = "10:00";
-    payload.visits[0].windowEnd = "11:30";
-    payload.visits[1].windowStart = "11:00";
-    payload.visits[1].windowEnd = "12:00";
-
-    expectHttpError(
-      () => parseAndValidateBody(payload),
-      400,
-      "Visit windows must not overlap. Found overlap between visit-1 and visit-2.",
-    );
-  });
-
-  it("detects overlaps when windows share the same start but different end times", () => {
+  it("allows overlapping visit windows", () => {
     const payload = buildValidPayload();
     payload.visits = [
       {
         ...payload.visits[0],
         visitId: "visit-a",
-        windowStart: "10:00",
-        windowEnd: "10:45",
+        windowStart: "09:00",
+        windowEnd: "10:00",
       },
       {
         ...payload.visits[1],
         visitId: "visit-b",
-        windowStart: "10:00",
-        windowEnd: "10:30",
+        windowStart: "09:00",
+        windowEnd: "09:30",
       },
     ];
 
-    expectHttpError(
-      () => parseAndValidateBody(payload),
-      400,
-      "Visit windows must not overlap. Found overlap between visit-b and visit-a.",
-    );
-  });
-
-  it("sorts same-window overlaps by visitId for deterministic errors", () => {
-    const payload = buildValidPayload();
-    payload.visits = [
-      {
-        ...payload.visits[0],
-        visitId: "visit-z",
-        windowStart: "09:00",
-        windowEnd: "10:00",
-      },
-      {
-        ...payload.visits[1],
-        visitId: "visit-a",
-        windowStart: "09:00",
-        windowEnd: "10:00",
-      },
-    ];
-
-    expectHttpError(
-      () => parseAndValidateBody(payload),
-      400,
-      "Visit windows must not overlap. Found overlap between visit-a and visit-z.",
-    );
+    const parsed = parseAndValidateBody(payload);
+    expect(parsed.visits).toHaveLength(2);
+    expect(parsed.visits[0].visitId).toBe("visit-a");
+    expect(parsed.visits[1].visitId).toBe("visit-b");
   });
 
   it("throws for invalid visit window format", () => {

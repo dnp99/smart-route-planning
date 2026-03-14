@@ -222,7 +222,7 @@ describe("RoutePlanner patient selection integration", () => {
     );
   });
 
-  it("blocks route optimization when selected patient windows overlap", () => {
+  it("allows route optimization when selected patient windows overlap", () => {
     render(<RoutePlanner />);
 
     fireEvent.change(screen.getByLabelText("Ending point"), {
@@ -231,21 +231,40 @@ describe("RoutePlanner patient selection integration", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
     fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
 
-    expect(
-      screen.getAllByText("Overlaps with another selected visit window."),
-    ).toHaveLength(2);
-
     expect(screen.getByRole("button", { name: "Optimize Route" })).toHaveProperty(
       "disabled",
-      true,
+      false,
     );
 
-    expect(optimizeRouteMock).not.toHaveBeenCalled();
-    expect(
-      screen.getByText(
-        "Resolve overlapping patient windows to enable route optimization.",
-      ),
-    ).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith({
+      startAddress: "3361 Ingram Road, Mississauga, ON",
+      endAddress: "Airport",
+      destinations: [
+        {
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "123 Main St",
+          googlePlaceId: "place-1",
+          windowStart: "09:00",
+          windowEnd: "11:00",
+          windowType: "fixed",
+          serviceDurationMinutes: 30,
+        },
+        {
+          patientId: "patient-2",
+          patientName: "John Smith",
+          address: "456 Queen St",
+          googlePlaceId: null,
+          windowStart: "10:00",
+          windowEnd: "12:00",
+          windowType: "flexible",
+          serviceDurationMinutes: 45,
+        },
+      ],
+      canOptimize: true,
+    });
   });
 
   it("promotes selected destination patient to end patient and removes from destinations", () => {

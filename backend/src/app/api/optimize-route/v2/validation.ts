@@ -215,34 +215,6 @@ const parseVisit = (value: unknown, index: number): VisitV2 => {
   };
 };
 
-const assertNoOverlappingVisitWindows = (visits: VisitV2[]) => {
-  const ordered = [...visits].sort((left, right) => {
-    const startDelta = timeToMinutes(left.windowStart) - timeToMinutes(right.windowStart);
-    if (startDelta !== 0) {
-      return startDelta;
-    }
-
-    const endDelta = timeToMinutes(left.windowEnd) - timeToMinutes(right.windowEnd);
-    if (endDelta !== 0) {
-      return endDelta;
-    }
-
-    return left.visitId.localeCompare(right.visitId);
-  });
-
-  for (let index = 1; index < ordered.length; index += 1) {
-    const previous = ordered[index - 1];
-    const current = ordered[index];
-
-    if (timeToMinutes(current.windowStart) < timeToMinutes(previous.windowEnd)) {
-      throw new HttpError(
-        400,
-        `Visit windows must not overlap. Found overlap between ${previous.visitId} and ${current.visitId}.`,
-      );
-    }
-  }
-};
-
 const buildLocationKey = ({ address, googlePlaceId }: { address: string; googlePlaceId?: string | null }) => {
   if (googlePlaceId && googlePlaceId.trim().length > 0) {
     return `place:${googlePlaceId.trim()}`;
@@ -298,8 +270,6 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteV2Req
 
     visitIds.add(visit.visitId);
   });
-
-  assertNoOverlappingVisitWindows(visits);
 
   const uniqueLocationKeys = new Set<string>();
   uniqueLocationKeys.add(buildLocationKey({ address: startAddress, googlePlaceId: startGooglePlaceId }));
