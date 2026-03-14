@@ -1,6 +1,16 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const { routeOptimizationState } = vi.hoisted(() => ({
+  routeOptimizationState: {
+    result: null as unknown,
+    error: "",
+    isLoading: false,
+    showOptimizeSuccess: false,
+    hasAttemptedOptimize: false,
+  },
+}));
+
 const optimizeRouteMock = vi.fn();
 const persistPlanningWindowsMock = vi.fn();
 const usePatientSearchMock = vi.fn<
@@ -17,11 +27,11 @@ const usePatientSearchMock = vi.fn<
 
 vi.mock("../../components/routePlanner/useRouteOptimization", () => ({
   useRouteOptimization: () => ({
-    result: null,
-    error: "",
-    isLoading: false,
-    showOptimizeSuccess: false,
-    hasAttemptedOptimize: false,
+    result: routeOptimizationState.result,
+    error: routeOptimizationState.error,
+    isLoading: routeOptimizationState.isLoading,
+    showOptimizeSuccess: routeOptimizationState.showOptimizeSuccess,
+    hasAttemptedOptimize: routeOptimizationState.hasAttemptedOptimize,
     optimizeRoute: optimizeRouteMock,
   }),
 }));
@@ -189,6 +199,11 @@ describe("RoutePlanner patient selection integration", () => {
     optimizeRouteMock.mockReset();
     persistPlanningWindowsMock.mockReset();
     persistPlanningWindowsMock.mockResolvedValue(undefined);
+    routeOptimizationState.result = null;
+    routeOptimizationState.error = "";
+    routeOptimizationState.isLoading = false;
+    routeOptimizationState.showOptimizeSuccess = false;
+    routeOptimizationState.hasAttemptedOptimize = false;
     usePatientSearchMock.mockReset();
     usePatientSearchMock.mockImplementation(({ enabled }: { enabled: boolean }) => ({
       patients: enabled ? [janePatient, johnPatient, flexNoWindowPatient, multiWindowPatient] : [],
@@ -384,6 +399,89 @@ describe("RoutePlanner patient selection integration", () => {
       destinations: [],
       canOptimize: true,
     });
+  });
+
+  it("shows a leave-by suggestion from the first planned stop", () => {
+    routeOptimizationState.result = {
+      start: {
+        address: "3361 Ingram Road, Mississauga, ON",
+        coords: { lat: 43.527, lon: -79.707 },
+        departureTime: "2026-03-14T00:00:00.000Z",
+      },
+      end: {
+        address: "Airport",
+        coords: { lat: 43.6777, lon: -79.6248 },
+      },
+      orderedStops: [
+        {
+          stopId: "stop-1",
+          address: "123 Main St",
+          coords: { lat: 43.58, lon: -79.77 },
+          arrivalTime: "2026-03-14T08:17:00.000Z",
+          departureTime: "2026-03-14T08:47:00.000Z",
+          tasks: [
+            {
+              visitId: "visit-1-patient-1",
+              patientId: "patient-1",
+              patientName: "Jane Doe",
+              address: "123 Main St",
+              googlePlaceId: "place-1",
+              windowStart: "08:30",
+              windowEnd: "09:00",
+              windowType: "fixed",
+              serviceDurationMinutes: 30,
+              arrivalTime: "2026-03-14T08:17:00.000Z",
+              serviceStartTime: "2026-03-14T08:30:00.000Z",
+              serviceEndTime: "2026-03-14T09:00:00.000Z",
+              waitSeconds: 780,
+              lateBySeconds: 0,
+              onTime: true,
+            },
+          ],
+          distanceFromPreviousKm: 13.49,
+          durationFromPreviousSeconds: 780,
+        },
+        {
+          stopId: "stop-2",
+          address: "Airport",
+          coords: { lat: 43.6777, lon: -79.6248 },
+          arrivalTime: "2026-03-14T09:10:00.000Z",
+          departureTime: "2026-03-14T09:10:00.000Z",
+          tasks: [],
+          distanceFromPreviousKm: 10,
+          durationFromPreviousSeconds: 600,
+          isEndingPoint: true,
+        },
+      ],
+      routeLegs: [
+        {
+          fromStopId: "start",
+          toStopId: "stop-1",
+          fromAddress: "3361 Ingram Road, Mississauga, ON",
+          toAddress: "123 Main St",
+          distanceMeters: 13490,
+          durationSeconds: 780,
+          encodedPolyline: "abc",
+        },
+      ],
+      unscheduledTasks: [],
+      metrics: {
+        fixedWindowViolations: 0,
+        totalLateSeconds: 0,
+        totalWaitSeconds: 780,
+        totalDistanceMeters: 23490,
+        totalDistanceKm: 23.49,
+        totalDurationSeconds: 1380,
+      },
+      algorithmVersion: "v2.2.2-window-distance-duration-gap-fill",
+    };
+
+    render(<RoutePlanner />);
+
+    expect(screen.getByText(/Suggested leave-by:/)).toBeTruthy();
+    expect(
+      screen.getByText(/Based on the first planned visit \(Jane Doe\)/),
+    ).toBeTruthy();
   });
 
   it("removes selected destination patient from planner state", () => {

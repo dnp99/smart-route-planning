@@ -103,7 +103,15 @@ const formatDateInTimeZone = (date: Date, timezone: string) => {
   return `${year}-${month}-${day}`;
 };
 
-const parseDepartureTime = (value: unknown, planningDate: string, timezone: string) => {
+const parseDepartureTime = (
+  value: unknown,
+  planningDate: string,
+  timezone: string,
+): string | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
   const departureTime = trimRequiredString(value, "start.departureTime");
   if (!ISO_WITH_OFFSET_PATTERN.test(departureTime)) {
     throw new HttpError(400, "start.departureTime must be an ISO-8601 timestamp with timezone.");
@@ -288,7 +296,7 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteV2Req
     start: {
       address: startAddress,
       ...(startGooglePlaceId !== undefined ? { googlePlaceId: startGooglePlaceId } : {}),
-      departureTime,
+      ...(departureTime !== undefined ? { departureTime } : {}),
     },
     end: {
       address: endAddress,

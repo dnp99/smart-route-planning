@@ -231,15 +231,15 @@ export const requestOptimizedRoute = async ({
   departureTime,
 }: OptimizeRouteRequestInput): Promise<OptimizeRouteResponse> => {
   const resolvedTimezone = resolveTimezone(timezone);
-  const resolvedDepartureTime = departureTime ?? new Date().toISOString();
-  const resolvedDepartureDate = new Date(resolvedDepartureTime);
+  const now = new Date();
+  const resolvedPlanningDate =
+    planningDate ?? formatDateInTimeZone(now, resolvedTimezone);
+  const resolvedDepartureTime = departureTime;
+  const resolvedDepartureDate = resolvedDepartureTime ? new Date(resolvedDepartureTime) : null;
 
-  if (resolvedDepartureDate.getTime() !== resolvedDepartureDate.getTime()) {
+  if (resolvedDepartureDate && resolvedDepartureDate.getTime() !== resolvedDepartureDate.getTime()) {
     throw new Error("Invalid departure time.");
   }
-
-  const resolvedPlanningDate =
-    planningDate ?? formatDateInTimeZone(resolvedDepartureDate, resolvedTimezone);
 
   const visits = destinations.map((destination, index) => {
     const windowStart = normalizeWindowTime(destination.windowStart);
@@ -284,7 +284,9 @@ export const requestOptimizedRoute = async ({
           ...(startGooglePlaceId !== undefined
             ? { googlePlaceId: startGooglePlaceId }
             : {}),
-          departureTime: resolvedDepartureTime,
+          ...(resolvedDepartureTime !== undefined
+            ? { departureTime: resolvedDepartureTime }
+            : {}),
         },
         end: {
           address: endAddress,

@@ -11,12 +11,13 @@ import type {
 } from "./types";
 import type { ValidatedOptimizeRouteV2Request } from "./validation";
 
-const ALGORITHM_VERSION = "v2.2.2-window-distance-duration-gap-fill";
+const ALGORITHM_VERSION = "v2.2.3-dynamic-departure-buffer";
 const ESTIMATED_DRIVE_SPEED_KM_PER_HOUR = 40;
 const IDLE_GAP_FILL_THRESHOLD_SECONDS = 30 * 60;
 const IDLE_GAP_RETURN_BUFFER_SECONDS = 5 * 60;
 const IDLE_GAP_FILLER_MAX_WAIT_SECONDS = 10 * 60;
 const IDLE_GAP_MIN_UTILIZATION_SECONDS = 15 * 60;
+const DEPARTURE_BUFFER_SECONDS = 10 * 60;
 
 type GeocodeTarget = {
   address: string;
@@ -83,6 +84,85 @@ const getLocalSecondsOfDay = (date: Date, timezone: string) => {
   const second = Number(parts.find((part) => part.type === "second")?.value ?? "0");
 
   return hour * 3600 + minute * 60 + second;
+};
+
+const parsePlanningDateParts = (planningDate: string) => {
+  const [yearString, monthString, dayString] = planningDate.split("-");
+  const year = Number(yearString);
+  const month = Number(monthString);
+  const day = Number(dayString);
+
+  if (year !== year || month !== month || day !== day) {
+    throw new HttpError(400, "planningDate must be a valid calendar date.");
+  }
+
+  return { year, month, day };
+};
+
+const parseOffsetMinutesFromTimeZoneName = (value: string) => {
+  if (value === "GMT" || value === "UTC") {
+    return 0;
+  }
+
+  const match = value.match(/^GMT([+-])(\d{1,2})(?::?(\d{2}))?$/);
+  if (!match) {
+    throw new HttpError(400, "timezone must be a valid IANA timezone.");
+  }
+
+  const sign = match[1] === "-" ? -1 : 1;
+  const hours = Number(match[2]);
+  const minutes = Number(match[3] ?? "0");
+
+  if (hours !== hours || minutes !== minutes) {
+    throw new HttpError(400, "timezone must be a valid IANA timezone.");
+  }
+
+  return sign * (hours * 60 + minutes);
+};
+
+const resolveTimeZoneOffsetMinutes = (timestampMs: number, timezone: string) => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    timeZoneName: "longOffset",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(new Date(timestampMs));
+
+  const timeZoneName = parts.find((part) => part.type === "timeZoneName")?.value;
+  if (!timeZoneName) {
+    throw new HttpError(400, "timezone must be a valid IANA timezone.");
+  }
+
+  return parseOffsetMinutesFromTimeZoneName(timeZoneName);
+};
+
+const toIsoFromPlanningDateAndLocalSeconds = (
+  planningDate: string,
+  timezone: string,
+  localSeconds: number,
+) => {
+  const { year, month, day } = parsePlanningDateParts(planningDate);
+  const safeSeconds = Math.max(0, Math.min(24 * 3600 - 1, Math.floor(localSeconds)));
+  const hours = Math.floor(safeSeconds / 3600);
+  const minutes = Math.floor((safeSeconds % 3600) / 60);
+  const seconds = safeSeconds % 60;
+  const utcGuessMs = Date.UTC(year, month - 1, day, hours, minutes, seconds, 0);
+
+  let offsetMinutes = resolveTimeZoneOffsetMinutes(utcGuessMs, timezone);
+  let timestampMs = utcGuessMs - offsetMinutes * 60 * 1000;
+  const refinedOffsetMinutes = resolveTimeZoneOffsetMinutes(timestampMs, timezone);
+
+  if (refinedOffsetMinutes !== offsetMinutes) {
+    offsetMinutes = refinedOffsetMinutes;
+    timestampMs = utcGuessMs - offsetMinutes * 60 * 1000;
+  }
+
+  return new Date(timestampMs).toISOString();
 };
 
 const groupVisitsIntoStops = (orderedVisits: VisitWithCoords[], end: GeocodeTarget & { coords: LatLng }) => {
@@ -200,6 +280,117 @@ type VisitProjection = {
 
 const estimateTravelSeconds = (distanceKm: number) =>
   Math.round((distanceKm / ESTIMATED_DRIVE_SPEED_KM_PER_HOUR) * 3600);
+
+const compareDepartureAnchors = (left: VisitWithCoords, right: VisitWithCoords, startCoords: LatLng) => {
+  if (left.windowStartSeconds !== right.windowStartSeconds) {
+    return left.windowStartSeconds - right.windowStartSeconds;
+  }
+
+  if (left.windowType !== right.windowType) {
+    return left.windowType === "fixed" ? -1 : 1;
+  }
+
+  const leftTravelSeconds = estimateTravelSeconds(haversineDistanceKm(startCoords, left.coords));
+  const rightTravelSeconds = estimateTravelSeconds(haversineDistanceKm(startCoords, right.coords));
+  if (leftTravelSeconds !== rightTravelSeconds) {
+    return leftTravelSeconds - rightTravelSeconds;
+  }
+
+  if (left.windowEndSeconds !== right.windowEndSeconds) {
+    return left.windowEndSeconds - right.windowEndSeconds;
+  }
+
+  return left.visitId.localeCompare(right.visitId);
+};
+
+const resolveFirstDepartureAnchor = (visits: VisitWithCoords[], startCoords: LatLng) => {
+  if (visits.length === 0) {
+    return null;
+  }
+
+  const sortedVisits = [...visits];
+  sortedVisits.sort((left, right) => compareDepartureAnchors(left, right, startCoords));
+
+  return sortedVisits[0] ?? null;
+};
+
+const resolveTravelSecondsFromStartToVisit = async (
+  request: ValidatedOptimizeRouteV2Request,
+  startCoords: LatLng,
+  visit: VisitWithCoords,
+  googleMapsApiKey: string,
+) => {
+  const fallbackEstimate = estimateTravelSeconds(haversineDistanceKm(startCoords, visit.coords));
+
+  if (visit.locationKey === resolveLocationKey(request.start)) {
+    return 0;
+  }
+
+  const startStop: LegacyGeocodedStop = {
+    address: request.start.address,
+    coords: startCoords,
+  };
+  const targetStop: LegacyOrderedStop = {
+    address: visit.address,
+    coords: visit.coords,
+    distanceFromPreviousKm: 0,
+    durationFromPreviousSeconds: 0,
+  };
+
+  try {
+    const routeToFirstStop = await buildDrivingRoute(startStop, [targetStop], googleMapsApiKey);
+    const legDurationSeconds = routeToFirstStop.routeLegs[0]?.durationSeconds;
+    if (typeof legDurationSeconds === "number" && legDurationSeconds >= 0) {
+      return legDurationSeconds;
+    }
+  } catch {
+    return fallbackEstimate;
+  }
+
+  return fallbackEstimate;
+};
+
+const resolveDepartureContext = async (
+  request: ValidatedOptimizeRouteV2Request,
+  visits: VisitWithCoords[],
+  startCoords: LatLng,
+  googleMapsApiKey: string,
+) => {
+  if (request.start.departureTime) {
+    const departureDate = new Date(request.start.departureTime);
+    const departureTimestampMs = departureDate.getTime();
+    const departureLocalSeconds = getLocalSecondsOfDay(departureDate, request.timezone);
+
+    return {
+      departureTime: request.start.departureTime,
+      departureTimestampMs,
+      departureLocalSeconds,
+    };
+  }
+
+  const firstAnchor = resolveFirstDepartureAnchor(visits, startCoords);
+  const departureLocalSeconds = firstAnchor
+    ? Math.max(
+        0,
+        firstAnchor.windowStartSeconds -
+          (await resolveTravelSecondsFromStartToVisit(request, startCoords, firstAnchor, googleMapsApiKey)) -
+          DEPARTURE_BUFFER_SECONDS,
+      )
+    : 0;
+
+  const departureTime = toIsoFromPlanningDateAndLocalSeconds(
+    request.planningDate,
+    request.timezone,
+    departureLocalSeconds,
+  );
+  const departureTimestampMs = new Date(departureTime).getTime();
+
+  return {
+    departureTime,
+    departureTimestampMs,
+    departureLocalSeconds,
+  };
+};
 
 const projectVisit = (
   visit: VisitWithCoords,
@@ -516,9 +707,14 @@ export const optimizeRouteV2 = async (
     windowEndSeconds: parseTimeToSeconds(visit.windowEnd),
   }));
 
-  const departureDate = new Date(request.start.departureTime);
-  const departureTimestampMs = departureDate.getTime();
-  const departureLocalSeconds = getLocalSecondsOfDay(departureDate, request.timezone);
+  const departureContext = await resolveDepartureContext(
+    request,
+    visitsWithCoords,
+    startCoords,
+    googleMapsApiKey,
+  );
+  const departureTimestampMs = departureContext.departureTimestampMs;
+  const departureLocalSeconds = departureContext.departureLocalSeconds;
 
   const { orderedVisits, unscheduledTasks } = orderVisitsByWindowDistanceAndDuration(
     visitsWithCoords,
@@ -600,7 +796,7 @@ export const optimizeRouteV2 = async (
     start: {
       address: request.start.address,
       coords: startCoords,
-      departureTime: request.start.departureTime,
+      departureTime: departureContext.departureTime,
     },
     end: {
       address: request.end.address,
