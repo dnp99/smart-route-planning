@@ -1,0 +1,2 @@
+ALTER TABLE "patients" ADD COLUMN "visit_duration_minutes" integer DEFAULT 30 NOT NULL;--> statement-breakpoint
+ALTER TABLE "patients" ADD CONSTRAINT "patients_visit_duration_minutes_chk" CHECK ("patients"."visit_duration_minutes" between 1 and 180);

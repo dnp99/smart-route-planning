@@ -26,6 +26,7 @@ export const toPatientDto = (patient: PatientWithVisitWindows): PatientContract 
     lastName: patient.lastName,
     address: patient.address,
     googlePlaceId: patient.googlePlaceId,
+    visitDurationMinutes: patient.visitDurationMinutes,
     preferredVisitStartTime: toHourMinute(patient.preferredVisitStartTime),
     preferredVisitEndTime: toHourMinute(patient.preferredVisitEndTime),
     visitTimeType: toVisitTimeType(patient.visitTimeType),

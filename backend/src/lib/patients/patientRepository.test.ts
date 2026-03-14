@@ -142,6 +142,7 @@ describe("patientRepository", () => {
         firstName: "Jane",
         lastName: "Doe",
         address: "123 Main St",
+        visitDurationMinutes: 30,
         visitWindows: [
           {
             startTime: "14:00",
@@ -167,12 +168,14 @@ describe("patientRepository", () => {
         firstName: "No",
         lastName: "Window",
         address: "123 Main St",
+        visitDurationMinutes: 30,
         visitWindows: [],
       }),
     ).resolves.toEqual({ id: "patient-2", visitTimeType: "flexible", visitWindows: [] });
 
     expect(patientValuesMock).toHaveBeenCalledWith(
       expect.objectContaining({
+        visitDurationMinutes: 30,
         preferredVisitStartTime: "00:00",
         preferredVisitEndTime: "23:59",
         visitTimeType: "flexible",
@@ -221,6 +224,7 @@ describe("patientRepository", () => {
       lastName: "Doe",
       address: "123 Main St",
       googlePlaceId: null,
+      visitDurationMinutes: 30,
       preferredVisitStartTime: "09:00:00",
       preferredVisitEndTime: "11:00:00",
       visitTimeType: "fixed",
@@ -258,6 +262,7 @@ describe("patientRepository", () => {
       lastName: "Doe",
       address: "123 Main St",
       googlePlaceId: null,
+      visitDurationMinutes: 30,
       preferredVisitStartTime: "09:00:00",
       preferredVisitEndTime: "11:00:00",
       visitTimeType: "fixed",
@@ -291,6 +296,7 @@ describe("patientRepository", () => {
       lastName: "Doe",
       address: "123 Main St",
       googlePlaceId: "place-123",
+      visitDurationMinutes: 30,
       preferredVisitStartTime: "09:00:00",
       preferredVisitEndTime: "11:00:00",
       visitTimeType: "fixed",
@@ -330,6 +336,7 @@ describe("patientRepository", () => {
       lastName: "Doe",
       address: "123 Main St",
       googlePlaceId: "place-123",
+      visitDurationMinutes: 30,
       preferredVisitStartTime: "09:00:00",
       preferredVisitEndTime: "11:00:00",
       visitTimeType: "fixed",

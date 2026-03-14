@@ -14,6 +14,7 @@ type PatientRecord = {
   lastName: string;
   address: string;
   googlePlaceId: string | null;
+  visitDurationMinutes: number;
   visitWindows: Array<{
     id: string;
     startTime: string;
@@ -50,6 +51,7 @@ const createPatientMock = vi.fn<
     lastName: string;
     address: string;
     googlePlaceId?: string | null;
+    visitDurationMinutes: number;
     visitWindows: Array<{
       startTime: string;
       endTime: string;
@@ -72,6 +74,7 @@ const createPatientMock = vi.fn<
     lastName: request.lastName,
     address: request.address,
     googlePlaceId: request.googlePlaceId ?? null,
+    visitDurationMinutes: request.visitDurationMinutes,
     visitWindows,
     preferredVisitStartTime: primaryWindow.startTime,
     preferredVisitEndTime: primaryWindow.endTime,
@@ -93,6 +96,7 @@ const updatePatientMock = vi.fn<
       lastName?: string;
       address?: string;
       googlePlaceId?: string | null;
+      visitDurationMinutes?: number;
       visitWindows?: Array<{
         startTime: string;
         endTime: string;
@@ -153,6 +157,7 @@ const requestOptimizedRouteMock = vi.fn(
       windowStart: string;
       windowEnd: string;
       windowType: "fixed" | "flexible";
+      serviceDurationMinutes?: number;
     }>;
   }) => {
     const visitStops = request.destinations.map((destination, index) => ({
@@ -173,7 +178,7 @@ const requestOptimizedRouteMock = vi.fn(
           windowStart: destination.windowStart,
           windowEnd: destination.windowEnd,
           windowType: destination.windowType,
-          serviceDurationMinutes: 20,
+          serviceDurationMinutes: destination.serviceDurationMinutes ?? 20,
           arrivalTime: `2026-03-13T0${8 + index}:00:00.000Z`,
           serviceStartTime: `2026-03-13T0${8 + index}:00:00.000Z`,
           serviceEndTime: `2026-03-13T0${8 + index}:20:00.000Z`,

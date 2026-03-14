@@ -27,6 +27,7 @@ describe("patientValidation", () => {
       lastName: "Doe",
       address: "123 Main St",
       googlePlaceId: null,
+      visitDurationMinutes: 30,
       visitWindows: [
         {
           startTime: "14:00",
@@ -51,6 +52,29 @@ describe("patientValidation", () => {
     });
 
     expect(payload.visitWindows).toEqual([]);
+    expect(payload.visitDurationMinutes).toBe(30);
+  });
+
+  it("accepts valid visitDurationMinutes and rejects values over max", () => {
+    expect(
+      validateCreatePatientPayload({
+        firstName: "Jane",
+        lastName: "Doe",
+        address: "123 Main St",
+        visitDurationMinutes: 180,
+        visitWindows: [],
+      }).visitDurationMinutes,
+    ).toBe(180);
+
+    expect(() =>
+      validateCreatePatientPayload({
+        firstName: "Jane",
+        lastName: "Doe",
+        address: "123 Main St",
+        visitDurationMinutes: 181,
+        visitWindows: [],
+      }),
+    ).toThrow("visitDurationMinutes must be between 1 and 180.");
   });
 
   it("throws 400 for invalid visitTimeType", () => {
@@ -97,6 +121,7 @@ describe("patientValidation", () => {
     const payload = validateUpdatePatientPayload({
       firstName: "  Jane  ",
       googlePlaceId: null,
+      visitDurationMinutes: 45,
       visitWindows: [
         {
           startTime: "08:30",
@@ -109,6 +134,7 @@ describe("patientValidation", () => {
     expect(payload).toEqual({
       firstName: "Jane",
       googlePlaceId: null,
+      visitDurationMinutes: 45,
       visitWindows: [
         {
           startTime: "08:30",
@@ -122,6 +148,16 @@ describe("patientValidation", () => {
   it("keeps trimmed non-empty optional strings on update", () => {
     const payload = validateUpdatePatientPayload({ googlePlaceId: "  place-123  " });
     expect(payload).toEqual({ googlePlaceId: "place-123" });
+  });
+
+  it("validates visitDurationMinutes on update when provided", () => {
+    expect(validateUpdatePatientPayload({ visitDurationMinutes: 120 })).toEqual({
+      visitDurationMinutes: 120,
+    });
+
+    expect(() => validateUpdatePatientPayload({ visitDurationMinutes: 0 })).toThrow(
+      "visitDurationMinutes must be between 1 and 180.",
+    );
   });
 
   it("allows clearing visit windows on update", () => {

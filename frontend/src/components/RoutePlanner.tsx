@@ -23,6 +23,7 @@ type SelectedPatientDestination = {
   windowStart: string;
   windowEnd: string;
   windowType: "fixed" | "flexible";
+  serviceDurationMinutes: number;
   requiresPlanningWindow: boolean;
   isIncluded: boolean;
   persistPlanningWindow: boolean;
@@ -112,6 +113,7 @@ const toSelectedPatientDestinations = (
       windowStart: toWindowTime(window.startTime),
       windowEnd: toWindowTime(window.endTime),
       windowType: window.visitTimeType,
+      serviceDurationMinutes: patient.visitDurationMinutes,
       requiresPlanningWindow: false,
       isIncluded: true,
       persistPlanningWindow: false,
@@ -130,6 +132,7 @@ const toSelectedPatientDestinations = (
         windowStart: "",
         windowEnd: "",
         windowType: "flexible",
+        serviceDurationMinutes: patient.visitDurationMinutes,
         requiresPlanningWindow: true,
         isIncluded: true,
         persistPlanningWindow: false,
@@ -148,6 +151,7 @@ const toSelectedPatientDestinations = (
       windowStart: toWindowTime(patient.preferredVisitStartTime),
       windowEnd: toWindowTime(patient.preferredVisitEndTime),
       windowType: patient.visitTimeType,
+      serviceDurationMinutes: patient.visitDurationMinutes,
       requiresPlanningWindow: false,
       isIncluded: true,
       persistPlanningWindow: false,

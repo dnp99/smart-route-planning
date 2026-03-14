@@ -26,9 +26,18 @@ const seedPatient = {
   lastName: "Doe",
   address: "123 Main St",
   googlePlaceId: null,
+  visitDurationMinutes: 30,
   preferredVisitStartTime: "09:00:00",
   preferredVisitEndTime: "11:00:00",
   visitTimeType: "fixed" as const,
+  visitWindows: [
+    {
+      id: "window-1",
+      startTime: "09:00:00",
+      endTime: "11:00:00",
+      visitTimeType: "fixed" as const,
+    },
+  ],
   createdAt: "2026-03-12T12:00:00.000Z",
   updatedAt: "2026-03-12T12:00:00.000Z",
 };
@@ -40,9 +49,18 @@ const secondPatient = {
   lastName: "Smith",
   address: "456 Queen St",
   googlePlaceId: null,
+  visitDurationMinutes: 45,
   preferredVisitStartTime: "10:00:00",
   preferredVisitEndTime: "12:00:00",
   visitTimeType: "flexible" as const,
+  visitWindows: [
+    {
+      id: "window-2",
+      startTime: "10:00:00",
+      endTime: "12:00:00",
+      visitTimeType: "flexible" as const,
+    },
+  ],
   createdAt: "2026-03-12T12:00:00.000Z",
   updatedAt: "2026-03-12T12:00:00.000Z",
 };

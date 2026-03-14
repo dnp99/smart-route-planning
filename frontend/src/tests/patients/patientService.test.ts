@@ -42,9 +42,18 @@ describe("patientService", () => {
             lastName: "Doe",
             address: "123 Main St",
             googlePlaceId: null,
+            visitDurationMinutes: 30,
             preferredVisitStartTime: "09:00:00",
             preferredVisitEndTime: "11:00:00",
             visitTimeType: "fixed",
+            visitWindows: [
+              {
+                id: "window-1",
+                startTime: "09:00:00",
+                endTime: "11:00:00",
+                visitTimeType: "fixed",
+              },
+            ],
             createdAt: "2026-03-12T12:00:00.000Z",
             updatedAt: "2026-03-12T12:00:00.000Z",
           },
@@ -77,9 +86,18 @@ describe("patientService", () => {
         lastName: "Doe",
         address: "123 Main St",
         googlePlaceId: "place-1",
+        visitDurationMinutes: 45,
         preferredVisitStartTime: "09:00:00",
         preferredVisitEndTime: "11:00:00",
         visitTimeType: "fixed",
+        visitWindows: [
+          {
+            id: "window-1",
+            startTime: "09:00:00",
+            endTime: "11:00:00",
+            visitTimeType: "fixed",
+          },
+        ],
         createdAt: "2026-03-12T12:00:00.000Z",
         updatedAt: "2026-03-12T12:00:00.000Z",
       }),
@@ -90,9 +108,14 @@ describe("patientService", () => {
       lastName: "Doe",
       address: "123 Main St",
       googlePlaceId: "place-1",
-      preferredVisitStartTime: "09:00",
-      preferredVisitEndTime: "11:00",
-      visitTimeType: "fixed",
+      visitDurationMinutes: 45,
+      visitWindows: [
+        {
+          startTime: "09:00",
+          endTime: "11:00",
+          visitTimeType: "fixed",
+        },
+      ],
     });
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -105,9 +128,14 @@ describe("patientService", () => {
           lastName: "Doe",
           address: "123 Main St",
           googlePlaceId: "place-1",
-          preferredVisitStartTime: "09:00",
-          preferredVisitEndTime: "11:00",
-          visitTimeType: "fixed",
+          visitDurationMinutes: 45,
+          visitWindows: [
+            {
+              startTime: "09:00",
+              endTime: "11:00",
+              visitTimeType: "fixed",
+            },
+          ],
         }),
       }),
     );

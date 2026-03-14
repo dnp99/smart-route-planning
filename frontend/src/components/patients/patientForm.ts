@@ -17,6 +17,7 @@ export type PatientFormValues = {
   lastName: string;
   address: string;
   googlePlaceId: string | null;
+  visitDurationMinutes: number;
   visitWindows: PatientFormVisitWindow[];
 };
 
@@ -31,9 +32,14 @@ export type FormFieldErrors = {
   firstName?: string;
   lastName?: string;
   address?: string;
+  visitDurationMinutes?: string;
   visitWindows?: string;
   visitWindowRows?: VisitWindowFieldErrors[];
 };
+
+export const MIN_VISIT_DURATION_MINUTES = 1;
+export const MAX_VISIT_DURATION_MINUTES = 180;
+export const DEFAULT_VISIT_DURATION_MINUTES = 30;
 
 const createWindowId = () => {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -79,6 +85,7 @@ export const EMPTY_FORM: PatientFormValues = {
   lastName: "",
   address: "",
   googlePlaceId: null,
+  visitDurationMinutes: DEFAULT_VISIT_DURATION_MINUTES,
   visitWindows: [createEmptyVisitWindow()],
 };
 
@@ -102,6 +109,7 @@ export const toFormValues = (patient: Patient): PatientFormValues => ({
   lastName: patient.lastName,
   address: patient.address,
   googlePlaceId: patient.googlePlaceId,
+  visitDurationMinutes: patient.visitDurationMinutes,
   visitWindows:
     getPatientVisitWindows(patient).length > 0
       ? getPatientVisitWindows(patient).map((window) => ({
@@ -141,6 +149,7 @@ export const toCreateRequest = (values: PatientFormValues): CreatePatientRequest
   lastName: values.lastName.trim(),
   address: values.address.trim(),
   googlePlaceId: values.googlePlaceId,
+  visitDurationMinutes: values.visitDurationMinutes,
   visitWindows: values.visitWindows.map((window) => ({
     startTime: window.startTime,
     endTime: window.endTime,
@@ -161,6 +170,14 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
 
   if (!values.address.trim()) {
     errors.address = "Address is required.";
+  }
+
+  if (
+    !Number.isInteger(values.visitDurationMinutes) ||
+    values.visitDurationMinutes < MIN_VISIT_DURATION_MINUTES ||
+    values.visitDurationMinutes > MAX_VISIT_DURATION_MINUTES
+  ) {
+    errors.visitDurationMinutes = `Visit duration must be an integer between ${MIN_VISIT_DURATION_MINUTES} and ${MAX_VISIT_DURATION_MINUTES} minutes.`;
   }
 
   if (values.visitWindows.length === 0) {

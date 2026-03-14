@@ -66,9 +66,18 @@ describe("PatientsPage address autocomplete integration", () => {
       lastName: "Doe",
       address: "11 Test Rd",
       googlePlaceId: "place-xyz",
+      visitDurationMinutes: 30,
       preferredVisitStartTime: "09:00:00",
       preferredVisitEndTime: "10:00:00",
       visitTimeType: "fixed",
+      visitWindows: [
+        {
+          id: "window-1",
+          startTime: "09:00:00",
+          endTime: "10:00:00",
+          visitTimeType: "fixed" as const,
+        },
+      ],
       createdAt: "2026-03-12T12:00:00.000Z",
       updatedAt: "2026-03-12T12:00:00.000Z",
     });

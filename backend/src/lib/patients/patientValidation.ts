@@ -10,6 +10,9 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
 const HH_MM_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+const DEFAULT_VISIT_DURATION_MINUTES = 30;
+const MIN_VISIT_DURATION_MINUTES = 1;
+const MAX_VISIT_DURATION_MINUTES = 180;
 
 const requireNonEmptyString = (value: unknown, fieldName: string) => {
   if (typeof value !== "string" || value.trim().length === 0) {
@@ -44,6 +47,27 @@ const requireTime = (value: unknown, fieldName: string) => {
 const parseVisitTimeType = (value: unknown, fieldName = "visitTimeType"): VisitTimeType => {
   if (value !== "fixed" && value !== "flexible") {
     throw new HttpError(400, `${fieldName} must be one of: fixed, flexible.`);
+  }
+
+  return value;
+};
+
+const parseVisitDurationMinutes = (
+  value: unknown,
+  fieldName = "visitDurationMinutes",
+): number => {
+  if (typeof value !== "number" || !Number.isInteger(value)) {
+    throw new HttpError(
+      400,
+      `${fieldName} must be an integer between ${MIN_VISIT_DURATION_MINUTES} and ${MAX_VISIT_DURATION_MINUTES}.`,
+    );
+  }
+
+  if (value < MIN_VISIT_DURATION_MINUTES || value > MAX_VISIT_DURATION_MINUTES) {
+    throw new HttpError(
+      400,
+      `${fieldName} must be between ${MIN_VISIT_DURATION_MINUTES} and ${MAX_VISIT_DURATION_MINUTES}.`,
+    );
   }
 
   return value;
@@ -131,6 +155,10 @@ export const validateCreatePatientPayload = (payload: unknown): CreatePatientReq
     lastName: requireNonEmptyString(payload.lastName, "lastName"),
     address: requireNonEmptyString(payload.address, "address"),
     googlePlaceId: parseOptionalString(payload.googlePlaceId, "googlePlaceId"),
+    visitDurationMinutes:
+      payload.visitDurationMinutes === undefined
+        ? DEFAULT_VISIT_DURATION_MINUTES
+        : parseVisitDurationMinutes(payload.visitDurationMinutes),
     visitWindows: parseVisitWindows(payload.visitWindows, "visitWindows"),
   };
 
@@ -158,6 +186,10 @@ export const validateUpdatePatientPayload = (payload: unknown): UpdatePatientReq
 
   if (payload.googlePlaceId !== undefined) {
     parsed.googlePlaceId = parseOptionalString(payload.googlePlaceId, "googlePlaceId");
+  }
+
+  if (payload.visitDurationMinutes !== undefined) {
+    parsed.visitDurationMinutes = parseVisitDurationMinutes(payload.visitDurationMinutes);
   }
 
   if (payload.visitWindows !== undefined) {

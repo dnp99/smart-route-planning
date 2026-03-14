@@ -152,6 +152,12 @@ export const PatientsTable = ({
                 <dd className="m-0 text-slate-600 dark:text-slate-400">{formatTimeWindow(patient)}</dd>
               </div>
               <div>
+                <dt className="font-semibold text-slate-700 dark:text-slate-300">Visit duration</dt>
+                <dd className="m-0 text-slate-600 dark:text-slate-400">
+                  {patient.visitDurationMinutes} min
+                </dd>
+              </div>
+              <div>
                 <dt className="font-semibold text-slate-700 dark:text-slate-300">Address</dt>
                 <dd className="m-0 text-slate-600 dark:text-slate-400">{patient.address}</dd>
               </div>
@@ -166,11 +172,12 @@ export const PatientsTable = ({
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <colgroup>
               <col className="w-20" />
+              <col className="w-[16%]" />
+              <col className="w-[30%]" />
               <col className="w-[18%]" />
-              <col className="w-[32%]" />
-              <col className="w-[20%]" />
-              <col className="w-[12%]" />
-              <col className="w-[18%]" />
+              <col className="w-[10%]" />
+              <col className="w-[10%]" />
+              <col className="w-[16%]" />
             </colgroup>
             <thead className="bg-slate-50 dark:bg-slate-950">
               <tr>
@@ -185,6 +192,9 @@ export const PatientsTable = ({
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                   Preferred window
+                </th>
+                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                  Duration
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                   Type
@@ -211,6 +221,9 @@ export const PatientsTable = ({
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                     {formatTimeWindow(patient)}
+                  </td>
+                  <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                    {patient.visitDurationMinutes} min
                   </td>
                   <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
                     {renderVisitType(patient)}
