@@ -14,7 +14,6 @@ type OptimizeRouteInput = {
   canOptimize: boolean;
   planningDate?: string;
   timezone?: string;
-  departureTime?: string;
 };
 
 export const useRouteOptimization = () => {
@@ -47,7 +46,6 @@ export const useRouteOptimization = () => {
     canOptimize,
     planningDate,
     timezone,
-    departureTime,
   }: OptimizeRouteInput) => {
     setError("");
     setResult(null);
@@ -68,7 +66,6 @@ export const useRouteOptimization = () => {
         destinations,
         ...(planningDate !== undefined ? { planningDate } : {}),
         ...(timezone !== undefined ? { timezone } : {}),
-        ...(departureTime !== undefined ? { departureTime } : {}),
       });
 
       setResult(optimizedResult);

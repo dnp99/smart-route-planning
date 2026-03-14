@@ -120,6 +120,33 @@ const unscheduledReasonLabels = {
   insufficient_day_capacity: "Not enough day capacity for this visit.",
 } as const;
 
+const formatVisitDurationMinutes = (minutes: number) => {
+  if (
+    typeof minutes !== "number" ||
+    minutes !== minutes ||
+    minutes === Infinity ||
+    minutes === -Infinity ||
+    minutes <= 0
+  ) {
+    return "";
+  }
+
+  const wholeMinutes = Math.round(minutes);
+  const hours = Math.floor(wholeMinutes / 60);
+  const remainingMinutes = wholeMinutes % 60;
+
+  if (hours === 0) {
+    return `${wholeMinutes} min`;
+  }
+
+  if (remainingMinutes === 0) {
+    return hours === 1 ? "1 hr" : `${hours} hrs`;
+  }
+
+  const hourLabel = hours === 1 ? "1 hr" : `${hours} hrs`;
+  return `${hourLabel} ${remainingMinutes} min`;
+};
+
 function RoutePlanner() {
   const [startAddress, setStartAddress] = useState(
     "3361 Ingram Road, Mississauga, ON",
@@ -1118,7 +1145,10 @@ function RoutePlanner() {
                     key={stop.stopId}
                     className="text-sm text-slate-800 dark:text-slate-200"
                   >
-                    <span>{stop.address}</span>
+                    <span>
+                      {stop.address}
+                      {stop.isEndingPoint ? " • Ending point" : ""}
+                    </span>
                     {stop.tasks.length > 0 ? (
                       <>
                         {stop.tasks.map((task) => (
@@ -1127,7 +1157,8 @@ function RoutePlanner() {
                             className="block text-xs font-medium text-blue-600 dark:text-blue-300"
                           >
                             Patient: {formatNameWords(task.patientName)} • {task.windowStart} -{" "}
-                            {task.windowEnd} • {task.windowType}
+                            {task.windowEnd} • {task.windowType} •{" "}
+                            {formatVisitDurationMinutes(task.serviceDurationMinutes)}
                           </small>
                         ))}
                       </>
@@ -1140,7 +1171,6 @@ function RoutePlanner() {
                       {stop.distanceFromPreviousKm} km •{" "}
                       {formatDuration(stop.durationFromPreviousSeconds)} from
                       previous stop
-                      {stop.isEndingPoint ? " • ending point" : ""}
                     </small>
                   </li>
                 ))}

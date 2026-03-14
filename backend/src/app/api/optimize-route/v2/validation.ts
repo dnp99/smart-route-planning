@@ -205,7 +205,7 @@ const parseVisit = (value: unknown, index: number): VisitV2 => {
   if (windowType === "fixed" && windowEndMinutes - windowStartMinutes < serviceDurationMinutes) {
     throw new HttpError(
       400,
-      `visits[${index}] fixed window must be at least serviceDurationMinutes long.`,
+      `${patientName} fixed window must be at least serviceDurationMinutes long.`,
     );
   }
 
