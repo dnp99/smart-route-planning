@@ -48,6 +48,7 @@ describe("requestOptimizedRoute", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
     window.localStorage.clear();
   });
@@ -170,6 +171,52 @@ describe("requestOptimizedRoute", () => {
       },
       visits: [],
     });
+  });
+
+  it("defaults departureTime to planning-date midnight in timezone when omitted", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-13T15:45:00.000Z"));
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => buildValidResponse(),
+    } as Response);
+
+    await requestOptimizedRoute({
+      startAddress: "Start",
+      endAddress: "End",
+      timezone: "America/Toronto",
+      destinations: [],
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init.body));
+
+    expect(body.planningDate).toBe("2026-03-13");
+    expect(body.start.departureTime).toBe("2026-03-13T04:00:00.000Z");
+  });
+
+  it("uses provided planningDate to compute automatic departure baseline", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => buildValidResponse(),
+    } as Response);
+
+    await requestOptimizedRoute({
+      startAddress: "Start",
+      endAddress: "End",
+      planningDate: "2026-01-15",
+      timezone: "America/Toronto",
+      destinations: [],
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0];
+    const body = JSON.parse(String(init.body));
+
+    expect(body.planningDate).toBe("2026-01-15");
+    expect(body.start.departureTime).toBe("2026-01-15T05:00:00.000Z");
   });
 
   it("throws API-provided error message on non-ok response", async () => {

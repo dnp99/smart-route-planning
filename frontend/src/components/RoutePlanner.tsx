@@ -248,6 +248,52 @@ function RoutePlanner() {
     [result],
   );
 
+  const leaveBySuggestion = useMemo(() => {
+    if (!result) {
+      return null;
+    }
+
+    const firstScheduledStop = result.orderedStops.find(
+      (stop) => !stop.isEndingPoint && stop.tasks.length > 0,
+    );
+    if (!firstScheduledStop) {
+      return null;
+    }
+
+    const [firstTask] = firstScheduledStop.tasks;
+    if (!firstTask) {
+      return null;
+    }
+
+    const firstTaskStartMs = new Date(firstTask.serviceStartTime).getTime();
+    if (firstTaskStartMs !== firstTaskStartMs) {
+      return null;
+    }
+
+    const startLeg = result.routeLegs.find(
+      (leg) => leg.fromStopId === "start" && leg.toStopId === firstScheduledStop.stopId,
+    );
+    const travelSecondsFromStart =
+      startLeg?.durationSeconds ?? firstScheduledStop.durationFromPreviousSeconds;
+    const leaveByMs = firstTaskStartMs - Math.max(0, travelSecondsFromStart) * 1000;
+    if (leaveByMs !== leaveByMs) {
+      return null;
+    }
+
+    const leaveByDate = new Date(leaveByMs);
+    return {
+      label: new Intl.DateTimeFormat(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "2-digit",
+        hour: "numeric",
+        minute: "2-digit",
+      }).format(leaveByDate),
+      travelDurationLabel: formatDuration(Math.max(0, travelSecondsFromStart)),
+      firstPatientName: formatNameWords(firstTask.patientName),
+    };
+  }, [result]);
+
   const requestDestinations = useMemo(() => {
     const includedDestinationVisits = selectedDestinations.filter(
       (destination) => destination.isIncluded,
@@ -599,6 +645,7 @@ function RoutePlanner() {
                 Patient end address
               </label>
             </fieldset>
+
           </section>
 
           {endMode === "patient" && (
@@ -1032,6 +1079,16 @@ function RoutePlanner() {
                 </p>
               </div>
             </div>
+
+            {leaveBySuggestion && (
+              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-200">
+                <p className="m-0 font-semibold">Suggested leave-by: {leaveBySuggestion.label}</p>
+                <p className="m-0 text-xs text-emerald-700 dark:text-emerald-300">
+                  Based on the first planned visit ({leaveBySuggestion.firstPatientName}) and a{" "}
+                  {leaveBySuggestion.travelDurationLabel} drive from the starting point.
+                </p>
+              </div>
+            )}
 
             <RouteMap
               start={result.start}

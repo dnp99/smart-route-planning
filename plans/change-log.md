@@ -1792,3 +1792,28 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Backend:
   - `npm test -- src/app/api/optimize-route/v2/optimizeRouteService.test.ts src/app/api/optimize-route/v2/route.test.ts src/app/api/optimize-route/v2/validation.test.ts` ✅
   - `npm run lint` ✅
+
+---
+
+## 58) Route Planner: Auto Departure Baseline + Leave-By Suggestion
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/components/routePlanner/routePlannerService.ts`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+
+### What changed
+- Reverted manual departure-time input from the route planner form.
+- Removed the implicit "depart now" default for optimize-route requests.
+- When no departure time is supplied, the planner now auto-anchors departure to planning-date midnight in the selected timezone.
+- Added a UI leave-by recommendation:
+  - computed from the first planned visit start and first leg travel time from the starting point.
+- Added/updated test coverage for:
+  - automatic departure baseline generation,
+  - leave-by suggestion rendering.
+
+### Verification
+- Frontend:
+  - `npm test -- src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/routePlanner/routePlannerService.test.ts` ✅
+  - `npm run lint` ✅
