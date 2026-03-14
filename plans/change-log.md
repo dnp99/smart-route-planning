@@ -1967,3 +1967,55 @@ An Oracle review was performed and its recommendations were incorporated, includ
   - `POST /api/optimize-route/v2`
   - optional backend-derived departure behavior when frontend omits `start.departureTime`.
 - Kept frontend API-base configuration order and runtime override behavior in docs.
+
+---
+
+## 65) Backend Coverage Expansion (Routing + Patients + Validation)
+
+### Files updated
+- `backend/src/lib/patients/patientRepository.test.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `backend/src/lib/patients/patientValidation.test.ts`
+- `backend/src/app/api/optimize-route/geocoding.test.ts`
+- `backend/src/app/api/optimize-route/optimizeRouteService.test.ts`
+- `backend/coverage/coverage-summary.json`
+
+### What changed
+- Added branch-focused backend tests across lower-covered modules:
+  - `patientRepository`:
+    - transaction-path coverage (`db.transaction`) for create/update flows,
+    - nurse create non-unique vs generic error handling,
+    - visit-window sorting/attachment behavior,
+    - non-array windows lookup fallback,
+    - visit-window replacement and empty-window fallback behavior on update.
+  - `v2 optimizeRouteService`:
+    - no duplicate end-stop when last visit equals ending point,
+    - dynamic departure fallback when first-leg route lookup fails,
+    - dynamic departure default to planning-date midnight with no visits,
+    - invalid planning-date rejection in dynamic departure path.
+  - `patientValidation`:
+    - non-array `visitWindows` rejection,
+    - overlapping visit window rejection.
+  - `geocoding`:
+    - Google text-search network failure path,
+    - Google text-search rate-limit mapping,
+    - Google text-search unexpected error mapping.
+  - legacy `optimizeRouteService`:
+    - duplicate geocode target upgrade with later `googlePlaceId`.
+
+### Verification
+- Backend:
+  - `npm test -- src/lib/patients/patientRepository.test.ts src/app/api/optimize-route/v2/optimizeRouteService.test.ts` ✅
+  - `npm test -- src/lib/patients/patientValidation.test.ts src/app/api/optimize-route/geocoding.test.ts src/app/api/optimize-route/optimizeRouteService.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run test:coverage` ✅ (execution complete; global branch threshold still below configured target)
+
+### Coverage delta
+- Global:
+  - statements: `89.95% -> 92.44%`
+  - lines: `89.84% -> 92.33%`
+  - branches: `78.68% -> 83.83%`
+- Key files:
+  - `src/lib/patients/patientRepository.ts` branches: `63.15% -> 89.47%`
+  - `src/app/api/optimize-route/geocoding.ts` branches: `80.00% -> 90.00%`
+  - `src/lib/patients/patientValidation.ts` branches: `85.48% -> 90.32%`

@@ -183,6 +183,48 @@ describe("geocoding helpers", () => {
     });
   });
 
+  it("maps Google text search network failures to unavailable errors", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as Response)
+      .mockRejectedValueOnce(new Error("search unavailable"));
+
+    await expect(geocodeTargetsSequentially([{ address: "Address A" }], "google-key")).rejects.toMatchObject({
+      status: 503,
+      message: "Place lookup service is currently unavailable.",
+    });
+  });
+
+  it("maps Google text search 429 responses to rate-limit errors", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as Response)
+      .mockResolvedValueOnce({ ok: false, status: 429 } as Response);
+
+    await expect(geocodeTargetsSequentially([{ address: "Address A" }], "google-key")).rejects.toMatchObject({
+      status: 503,
+      message: "Place lookup service is rate-limited. Please try again shortly.",
+    });
+  });
+
+  it("maps unexpected Google text search errors", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as Response)
+      .mockResolvedValueOnce({ ok: false, status: 500 } as Response);
+
+    await expect(geocodeTargetsSequentially([{ address: "Address A" }], "google-key")).rejects.toMatchObject({
+      status: 503,
+      message: "Place lookup service returned an unexpected error.",
+    });
+  });
+
   it("maps network failures to unavailable geocoding error", async () => {
     fetchMock.mockRejectedValue(new Error("network down"));
 

@@ -611,4 +611,157 @@ describe("optimizeRouteV2 service", () => {
     expect(result.orderedStops[0].tasks.map((task) => task.visitId)).toEqual(["fixed-impossible"]);
     expect(result.orderedStops[1].tasks.map((task) => task.visitId)).toEqual(["flex-ok"]);
   });
+
+  it("does not append a duplicate ending stop when last visit location matches end location", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Shared Address", coords: { lat: 43.7, lon: -79.7 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: {
+          address: "Shared Address",
+        },
+        visits: [
+          {
+            visitId: "visit-1",
+            patientId: "patient-1",
+            patientName: "Patient One",
+            address: "Shared Address",
+            windowStart: "08:30",
+            windowEnd: "09:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 20,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(result.orderedStops).toHaveLength(1);
+    expect(result.orderedStops[0]).toMatchObject({
+      address: "Shared Address",
+      isEndingPoint: true,
+    });
+    expect(mockedBuildDrivingRoute).toHaveBeenCalledWith(
+      expect.any(Object),
+      [expect.objectContaining({ address: "Shared Address", isEndingPoint: true })],
+      "google-key",
+    );
+  });
+
+  it("falls back to estimated travel for dynamic departure when first-leg driving lookup fails", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "First Visit", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute
+      .mockRejectedValueOnce(new Error("routes unavailable"))
+      .mockImplementationOnce(async (_, orderedStops) =>
+        buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+      );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-1",
+            patientId: "patient-1",
+            patientName: "Patient One",
+            address: "First Visit",
+            windowStart: "08:30",
+            windowEnd: "09:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 20,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(mockedBuildDrivingRoute).toHaveBeenCalledTimes(2);
+    expect(result.start.departureTime).not.toBe("2026-03-13T00:00:00.000Z");
+  });
+
+  it("defaults dynamic departure to planning-date midnight when there are no visits", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [],
+      },
+      "google-key",
+    );
+
+    expect(result.start.departureTime).toBe("2026-03-13T00:00:00.000Z");
+    expect(result.orderedStops).toHaveLength(1);
+    expect(result.orderedStops[0]).toMatchObject({
+      address: "End",
+      isEndingPoint: true,
+      tasks: [],
+    });
+  });
+
+  it("throws when dynamic departure planningDate is invalid", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    await expect(
+      optimizeRouteV2(
+        {
+          planningDate: "invalid-date",
+          timezone: "UTC",
+          start: {
+            address: "Start",
+          },
+          end: {
+            address: "End",
+          },
+          visits: [],
+        } as never,
+        "google-key",
+      ),
+    ).rejects.toMatchObject({
+      status: 400,
+      message: "planningDate must be a valid calendar date.",
+    });
+  });
 });
