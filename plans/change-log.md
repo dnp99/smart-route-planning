@@ -1676,3 +1676,33 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Frontend:
   - `npm run lint` ✅
   - `npm test` ✅
+
+---
+
+## 54) Visit Duration Rollout + Patient Table Window Layout Refinements
+
+### Files updated
+- `backend/drizzle.config.ts`
+- `frontend/src/components/patients/PatientsTable.tsx`
+
+### What changed
+- Updated Drizzle config to explicitly load `.env.local` / `.env` before reading `DATABASE_URL`.
+  - This resolves local migration failures where `drizzle-kit` did not auto-load env files (`url: ''`).
+- Refined patient table rendering for preferred windows and type pills:
+  - Removed standalone `Type` table column.
+  - Moved type display into preferred-window content.
+  - Added per-window list rendering (one line per time window).
+  - Applied separate mobile/desktop placement behavior:
+    - Desktop: type pill above time windows.
+    - Mobile: type pill below time windows.
+  - Mobile card layout updated to keep `Time windows` and `Visit duration` side-by-side, with `Address` above.
+  - Adjusted desktop column widths to allocate more space to address/window columns and reduce `Duration`/`Actions` widths.
+  - Prevented pill stretching in grid layout (`w-fit` / `justify-self-start`).
+
+### Verification
+- Backend:
+  - `npm run db:migrate` ✅
+  - `npm run lint` ✅
+- Frontend:
+  - `npm run lint` ✅
+  - targeted tests for patients page + integration path ✅
