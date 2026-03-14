@@ -66,7 +66,6 @@ describe("requestOptimizedRoute", () => {
       endAddress: "End",
       planningDate: "2026-03-13",
       timezone: "America/Toronto",
-      departureTime: "2026-03-13T07:30:00-04:00",
       destinations: [
         {
           address: "A",
@@ -100,7 +99,6 @@ describe("requestOptimizedRoute", () => {
       timezone: "America/Toronto",
       start: {
         address: "Start",
-        departureTime: "2026-03-13T07:30:00-04:00",
       },
       end: {
         address: "End",
@@ -149,7 +147,6 @@ describe("requestOptimizedRoute", () => {
       endGooglePlaceId: "end-place",
       planningDate: "2026-03-13",
       timezone: "America/Toronto",
-      departureTime: "2026-03-13T07:30:00-04:00",
       destinations: [],
     });
 
@@ -163,7 +160,6 @@ describe("requestOptimizedRoute", () => {
       start: {
         address: "Start",
         googlePlaceId: "start-place",
-        departureTime: "2026-03-13T07:30:00-04:00",
       },
       end: {
         address: "End",
@@ -199,6 +195,85 @@ describe("requestOptimizedRoute", () => {
     });
   });
 
+  it("falls back to UTC when timezone is missing and browser timezone is unavailable", async () => {
+    const originalDateTimeFormat = Intl.DateTimeFormat;
+    const dateTimeFormatMock = vi
+      .spyOn(Intl, "DateTimeFormat")
+      .mockImplementation((function (...args: unknown[]) {
+        if (args.length === 0) {
+          return {
+            resolvedOptions: () => ({ timeZone: "   " }),
+          };
+        }
+
+        const DateTimeFormatCtor =
+          originalDateTimeFormat as unknown as new (
+            locales?: Intl.LocalesArgument,
+            options?: Intl.DateTimeFormatOptions,
+          ) => Intl.DateTimeFormat;
+        return new DateTimeFormatCtor(
+          args[0] as Intl.LocalesArgument | undefined,
+          args[1] as Intl.DateTimeFormatOptions | undefined,
+        );
+      }) as typeof Intl.DateTimeFormat);
+
+    try {
+      fetchMock.mockResolvedValue({
+        ok: true,
+        json: async () => buildValidResponse(),
+      } as Response);
+
+      await requestOptimizedRoute({
+        startAddress: "Start",
+        endAddress: "End",
+        planningDate: "2026-03-13",
+        destinations: [],
+      });
+
+      expect(fetchMock).toHaveBeenCalledTimes(1);
+      const [, init] = fetchMock.mock.calls[0];
+      const body = JSON.parse(String(init.body));
+      expect(body.timezone).toBe("UTC");
+    } finally {
+      dateTimeFormatMock.mockRestore();
+    }
+  });
+
+  it("throws when planning date cannot be formatted in timezone", async () => {
+    const dateTimeFormatMock = vi
+      .spyOn(Intl, "DateTimeFormat")
+      .mockImplementation((function (...args: unknown[]) {
+        if (args.length === 0) {
+          return {
+            resolvedOptions: () => ({ timeZone: "America/Toronto" }),
+          };
+        }
+
+        return {
+          formatToParts: () => [
+            { type: "year", value: "2026" },
+            { type: "month", value: "03" },
+          ],
+          resolvedOptions: () => ({ timeZone: "America/Toronto" }),
+        };
+      }) as typeof Intl.DateTimeFormat);
+
+    try {
+      await expect(
+        requestOptimizedRoute({
+          startAddress: "Start",
+          endAddress: "End",
+          timezone: "America/Toronto",
+          destinations: [],
+        }),
+      ).rejects.toThrow("Unable to resolve planning date in timezone.");
+
+      expect(fetchMock).not.toHaveBeenCalled();
+    } finally {
+      dateTimeFormatMock.mockRestore();
+    }
+  });
+
   it("throws API-provided error message on non-ok response", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
@@ -227,19 +302,6 @@ describe("requestOptimizedRoute", () => {
         destinations: [],
       }),
     ).rejects.toThrow("Unable to optimize route.");
-  });
-
-  it("throws when provided departureTime is invalid", async () => {
-    await expect(
-      requestOptimizedRoute({
-        startAddress: "Start",
-        endAddress: "End",
-        departureTime: "not-a-date",
-        destinations: [],
-      }),
-    ).rejects.toThrow("Invalid departure time.");
-
-    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("throws when payload shape is unexpected on ok response", async () => {
@@ -277,7 +339,6 @@ describe("requestOptimizedRoute", () => {
       endAddress: "End",
       planningDate: "2026-03-13",
       timezone: "America/Toronto",
-      departureTime: "2026-03-13T07:30:00-04:00",
       destinations: [
         {
           address: "A",
@@ -504,5 +565,82 @@ describe("requestOptimizedRoute", () => {
   it("returns early when there are no planning windows to persist", async () => {
     await persistPlanningWindows([]);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sorts visit windows by start time, then end time, then window type", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          patients: [
+            {
+              id: "patient-1",
+              nurseId: "nurse-1",
+              firstName: "Jane",
+              lastName: "Doe",
+              address: "123 Main St",
+              googlePlaceId: null,
+              visitDurationMinutes: 30,
+              preferredVisitStartTime: "09:00",
+              preferredVisitEndTime: "10:00",
+              visitTimeType: "fixed",
+              visitWindows: [],
+              createdAt: "2026-03-12T12:00:00.000Z",
+              updatedAt: "2026-03-12T12:00:00.000Z",
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        json: async () => ({}),
+      } as Response);
+
+    await persistPlanningWindows([
+      {
+        patientId: "patient-1",
+        sourceWindowId: null,
+        startTime: "09:00",
+        endTime: "11:00",
+        visitTimeType: "fixed",
+      },
+      {
+        patientId: "patient-1",
+        sourceWindowId: null,
+        startTime: "09:00",
+        endTime: "10:00",
+        visitTimeType: "flexible",
+      },
+      {
+        patientId: "patient-1",
+        sourceWindowId: null,
+        startTime: "09:00",
+        endTime: "10:00",
+        visitTimeType: "fixed",
+      },
+    ]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const [, patchCall] = fetchMock.mock.calls;
+    const [, patchInit] = patchCall;
+    expect(JSON.parse(String(patchInit.body))).toEqual({
+      visitWindows: [
+        {
+          startTime: "09:00",
+          endTime: "10:00",
+          visitTimeType: "fixed",
+        },
+        {
+          startTime: "09:00",
+          endTime: "10:00",
+          visitTimeType: "flexible",
+        },
+        {
+          startTime: "09:00",
+          endTime: "11:00",
+          visitTimeType: "fixed",
+        },
+      ],
+    });
   });
 });

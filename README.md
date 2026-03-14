@@ -1,30 +1,38 @@
-# Smart Route Planner
+# CAREFLOW
 
-React frontend + Next.js backend route planner.
+CareFlow is a nurse-focused route planning app with a React frontend and Next.js backend.
 
 ## What it does
 
-- User enters a **starting point**.
-- User enters an **ending point**.
-- User selects one or more **destination patients**.
-- Users must authenticate before viewing patient or route-planning data.
-- Backend geocodes addresses and returns a route ordered by **nearest next stop first**, then
-  ends at the provided ending point.
-- Backend enriches the ordered route with **Google driving distance, duration, and route geometry**
-  for each leg.
-- Backend also provides **Google Places-based address suggestions** while typing.
-- Frontend renders a **Leaflet map** with the actual driving path and stop markers.
-- Frontend uses **Tailwind CSS** and includes a light/dark mode toggle.
+- Requires authenticated access for patient and route-planner workflows.
+- Manages patient records and visit windows.
+- Optimizes daily visits with time windows, travel distance/time, and visit duration.
+- Renders the planned route on a Leaflet map with stop markers and driving path.
 
-## Project structure
+## Tech stack
 
-- `frontend/` → React app (Vite)
-- `backend/` → Next.js app with API route at `POST /api/optimize-route`
+- `frontend/`: Vite + React + TypeScript + Tailwind
+- `backend/`: Next.js (App Router) + TypeScript
+- `shared/`: shared contracts and validators
+- Database: Postgres via Drizzle migrations
 
-Frontend implementation note:
-- UI logic is organized under `frontend/src/components/`.
+## Core APIs
 
-## Run locally
+- Auth:
+  - `POST /api/auth/signup`
+  - `POST /api/auth/login`
+  - `GET /api/auth/me`
+- Patients:
+  - `GET /api/patients`
+  - `POST /api/patients`
+  - `PATCH /api/patients/:id`
+  - `DELETE /api/patients/:id`
+- Route planning:
+  - `POST /api/optimize-route/v2` (current planner flow)
+- Address suggestions:
+  - `GET /api/address-autocomplete?query=...`
+
+## Local run
 
 Install dependencies once:
 
@@ -33,36 +41,35 @@ cd backend && npm ci
 cd ../frontend && npm ci
 ```
 
-### 1) Backend
+Backend:
 
 ```bash
 cd backend
 cp .env.local.example .env.local
+npm run db:generate
+npm run db:migrate
 npm run dev
 ```
 
-Runs on `http://localhost:3000`.
-
-Required local backend envs live in `backend/.env.local`, for example:
-
-```bash
-JWT_SECRET=replace_with_a_long_random_secret
-JWT_EXPIRES_IN=1h
-GOOGLE_MAPS_API_KEY=your_google_maps_api_key
-ALLOWED_ORIGINS=http://localhost:5173
-OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
-```
-
-### 2) Frontend
+Frontend:
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Runs on `http://localhost:5173`.
+- Backend: `http://localhost:3000`
+- Frontend: `http://localhost:5173`
 
-Frontend API base URL defaults to `http://localhost:3000`. For deployed environments, set:
+## API base URL configuration (frontend)
+
+The frontend resolves API base URL in this order:
+
+1. `VITE_API_BASE_URL`
+2. `window.__NAVIGATE_EASY_API_BASE_URL__` (runtime override)
+3. `http://localhost:3000`
+
+Example runtime override:
 
 ```html
 <script>
@@ -70,73 +77,24 @@ Frontend API base URL defaults to `http://localhost:3000`. For deployed environm
 </script>
 ```
 
-## API request example
+## V2 planning request shape
 
-Create an account or login first:
+`POST /api/optimize-route/v2` expects:
 
-`POST http://localhost:3000/api/auth/signup`
+- `planningDate` (`YYYY-MM-DD`)
+- `timezone` (IANA timezone, example `America/Toronto`)
+- `start`: `{ address, googlePlaceId? }`
+- `end`: `{ address, googlePlaceId? }`
+- `visits[]`: `{ visitId, patientId, patientName, address, windowStart, windowEnd, windowType, serviceDurationMinutes, googlePlaceId?, priority? }`
 
-```json
-{
-  "displayName": "Nurse One",
-  "email": "nurse@example.com",
-  "password": "your-password"
-}
-```
+Notes:
 
-Or login:
+- `start.departureTime` is optional and typically omitted by frontend.
+- Backend computes departure dynamically when omitted (earliest first-stop anchor with travel-time + buffer).
 
-`POST http://localhost:3000/api/auth/login`
+## Additional docs
 
-```json
-{
-  "email": "nurse@example.com",
-  "password": "your-password"
-}
-```
-
-Then call optimize-route with bearer auth:
-
-`POST http://localhost:3000/api/optimize-route`
-
-```json
-{
-  "startAddress": "1 Apple Park Way, Cupertino",
-  "endAddress": "San Francisco International Airport",
-  "destinations": [
-    {
-      "patientId": "patient-1",
-      "patientName": "Jane Doe",
-      "address": "1600 Amphitheatre Parkway, Mountain View",
-      "googlePlaceId": null
-    }
-  ]
-}
-```
-
-Required auth header:
-
-```http
-Authorization: Bearer your_jwt_access_token
-```
-
-If `OPTIMIZE_ROUTE_API_KEY` is configured on the backend, include this header:
-
-```http
-x-optimize-route-key: your_optional_optimize_route_key
-```
-
-Current production note:
-- `OPTIMIZE_ROUTE_API_KEY` is not set in production right now, so production requests do not send or require `x-optimize-route-key`.
-
-## Notes
-
-- Geocoding uses OpenStreetMap Nominatim.
-- Driving route distance, duration, and geometry use Google Routes API.
-- Address suggestions use Google Places API.
-- All business backend endpoints require JWT bearer authentication.
-- Nurse accounts must exist in the database before login; no default nurse account is created automatically.
-- Route ordering uses greedy nearest-neighbor logic (nearest next stop from current stop).
-- Stop ordering still uses straight-line nearest-neighbor in Phase 1, but displayed route metrics
-  and map geometry are road-network based.
-- Backend development uses webpack mode by default because that is the stable local startup path for this project.
+- [Backend guide](backend/README.md)
+- [Frontend guide](frontend/README.md)
+- [Deployment notes](DEPLOYMENT.md)
+- [Implementation log](plans/change-log.md)

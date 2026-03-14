@@ -1849,3 +1849,121 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Frontend:
   - `npm test -- src/tests/routePlanner/routePlannerService.test.ts` ✅
   - `npm run lint` ✅
+
+---
+
+## 60) Frontend Route Planner: Never Send `start.departureTime`
+
+### Files updated
+- `frontend/src/components/routePlanner/routePlannerService.ts`
+- `frontend/src/components/routePlanner/useRouteOptimization.ts`
+- `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+
+### What changed
+- Removed frontend request wiring for `departureTime` entirely.
+- `requestOptimizedRoute` no longer accepts or validates `departureTime` input.
+- Route planner payload now always sends:
+  - `planningDate`
+  - `timezone`
+  - `start.address` (+ optional `start.googlePlaceId`)
+  - without `start.departureTime`
+- Updated service tests to assert `start.departureTime` is omitted.
+
+### Verification
+- Frontend:
+  - `npm test -- src/tests/routePlanner/routePlannerService.test.ts src/tests/routePlanner/useRouteOptimization.test.ts src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+  - `npm run lint` ✅
+
+---
+
+## 61) V2 Validation + Route Summary UX Refresh
+
+### Files updated
+- `backend/src/app/api/optimize-route/v2/validation.ts`
+- `backend/src/app/api/optimize-route/v2/validation.test.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+
+### What changed
+- Updated fixed-window validation messaging in v2 to show the patient name instead of indexed payload paths:
+  - from `visits[2] ...`
+  - to `<patientName> fixed window must be at least serviceDurationMinutes long.`
+- Updated route summary task rows to include visit duration:
+  - `Patient: Name • HH:MM - HH:MM • fixed/flexible • <duration>`
+- Moved ending-point labeling to the stop header line:
+  - `<address> • Ending point`
+
+### Verification
+- Backend:
+  - `npm test -- src/app/api/optimize-route/v2/validation.test.ts` ✅
+  - `npm run lint` ✅
+- Frontend:
+  - `npm test -- src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+  - `npm run lint` ✅
+
+---
+
+## 62) Map Marker Labels + Overlap Visibility
+
+### Files updated
+- `frontend/src/components/RouteMap.tsx`
+- `frontend/src/tests/routePlanner/RouteMap.helpers.test.ts`
+
+### What changed
+- Replaced numeric stop markers with patient-initial marker labels.
+- For multi-visit stops, marker text now aggregates initials:
+  - same patient twice: `YR+YR`
+  - different patients: `YR+XR`
+- Added label capping for very dense stops:
+  - example: `YR+XR+2`
+- Added dynamic marker sizing + centered anchoring for longer labels.
+- Added overlap offset clustering so markers at the same or near-identical coordinates no longer collapse visually.
+- Added focused unit coverage for:
+  - initials generation,
+  - marker text aggregation,
+  - icon metric sizing/anchoring,
+  - overlap offset behavior.
+
+### Verification
+- Frontend:
+  - `npm test -- src/tests/routePlanner/RouteMap.helpers.test.ts src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+  - `npm run lint` ✅
+
+---
+
+## 63) Frontend Coverage Expansion For Route Planner Service
+
+### Files updated
+- `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+- `frontend/coverage/coverage-summary.json`
+
+### What changed
+- Added test coverage for previously under-covered `routePlannerService` branches:
+  - timezone fallback to `UTC` when browser timezone resolution is unavailable,
+  - planning-date formatting failure path,
+  - visit-window sorting tie-breakers (`start`, then `end`, then `visitTimeType`).
+- Hardened Intl mocking in tests to avoid constructor-mock leakage between cases.
+
+### Verification
+- Frontend:
+  - `npm test -- src/tests/routePlanner/routePlannerService.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run test:coverage` ✅
+- Coverage snapshot:
+  - overall branches: `80.76% -> 85.57%`
+  - `routePlannerService.ts` branches: `79.31% -> 87.93%`
+
+---
+
+## 64) Root README Refresh + CAREFLOW Branding
+
+### Files updated
+- `README.md`
+
+### What changed
+- Updated root documentation to current app state and naming.
+- Renamed the project heading to `CAREFLOW`.
+- Refreshed API and local-run sections to emphasize v2 route planning flow:
+  - `POST /api/optimize-route/v2`
+  - optional backend-derived departure behavior when frontend omits `start.departureTime`.
+- Kept frontend API-base configuration order and runtime override behavior in docs.

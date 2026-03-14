@@ -297,7 +297,7 @@ describe("optimize-route v2 request validation", () => {
     expectHttpError(
       () => parseAndValidateBody(payload),
       400,
-      "visits[0] fixed window must be at least serviceDurationMinutes long.",
+      "Jane Doe fixed window must be at least serviceDurationMinutes long.",
     );
   });
 

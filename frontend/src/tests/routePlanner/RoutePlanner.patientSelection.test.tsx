@@ -482,6 +482,10 @@ describe("RoutePlanner patient selection integration", () => {
     expect(
       screen.getByText(/Based on the first planned visit \(Jane Doe\)/),
     ).toBeTruthy();
+    expect(
+      screen.getByText(/Patient:\s*Jane Doe\s*•\s*08:30 - 09:00\s*•\s*fixed\s*•\s*30 min/i),
+    ).toBeTruthy();
+    expect(screen.getByText(/Airport\s*•\s*Ending point/)).toBeTruthy();
   });
 
   it("removes selected destination patient from planner state", () => {

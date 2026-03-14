@@ -111,7 +111,6 @@ type OptimizeRouteRequestInput = {
   destinations: OptimizeRouteDestinationInput[];
   planningDate?: string;
   timezone?: string;
-  departureTime?: string;
 };
 
 export const persistPlanningWindows = async (
@@ -228,18 +227,11 @@ export const requestOptimizedRoute = async ({
   destinations,
   planningDate,
   timezone,
-  departureTime,
 }: OptimizeRouteRequestInput): Promise<OptimizeRouteResponse> => {
   const resolvedTimezone = resolveTimezone(timezone);
   const now = new Date();
   const resolvedPlanningDate =
     planningDate ?? formatDateInTimeZone(now, resolvedTimezone);
-  const resolvedDepartureTime = departureTime;
-  const resolvedDepartureDate = resolvedDepartureTime ? new Date(resolvedDepartureTime) : null;
-
-  if (resolvedDepartureDate && resolvedDepartureDate.getTime() !== resolvedDepartureDate.getTime()) {
-    throw new Error("Invalid departure time.");
-  }
 
   const visits = destinations.map((destination, index) => {
     const windowStart = normalizeWindowTime(destination.windowStart);
@@ -283,9 +275,6 @@ export const requestOptimizedRoute = async ({
           address: startAddress,
           ...(startGooglePlaceId !== undefined
             ? { googlePlaceId: startGooglePlaceId }
-            : {}),
-          ...(resolvedDepartureTime !== undefined
-            ? { departureTime: resolvedDepartureTime }
             : {}),
         },
         end: {
