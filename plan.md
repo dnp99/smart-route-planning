@@ -18,6 +18,25 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Moved fixed-window duration validation feedback to the patient modal action area so the message appears alongside the Cancel/Save buttons for both create and edit flows.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/patients/PatientFormModal.tsx`
+  - `plan.md`
+
+### Why
+- The fixed-window duration error should be visible at the point of submission so nurses can immediately understand why save is blocked.
+- Keeping this specific error near the action buttons improves clarity while preserving row-level placement for other field-specific errors.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/patients/PatientsPage.test.tsx src/tests/patients/patientForm.validation.test.ts` ✅ (2 files, 13 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
 Added patient-form UI validation (create and edit flows) to block fixed windows shorter than the configured visit duration, with the same detailed message format used in optimize-route validation.
 
 ### Files added/updated/deleted
