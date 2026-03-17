@@ -525,6 +525,66 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByText(/Airport\s*•\s*Ending point/)).toBeTruthy();
   });
 
+  it("shows expected start time and late warning text from optimized route task timing", () => {
+    routeOptimizationState.result = {
+      start: {
+        address: "3361 Ingram Road, Mississauga, ON",
+        coords: { lat: 43.527, lon: -79.707 },
+        departureTime: "2026-03-14T00:00:00.000Z",
+      },
+      end: {
+        address: "Airport",
+        coords: { lat: 43.6777, lon: -79.6248 },
+      },
+      orderedStops: [
+        {
+          stopId: "stop-late",
+          address: "456 Queen St",
+          coords: { lat: 43.61, lon: -79.7 },
+          arrivalTime: "2026-03-14T10:20:00.000Z",
+          departureTime: "2026-03-14T10:50:00.000Z",
+          tasks: [
+            {
+              visitId: "visit-late-1",
+              patientId: "patient-2",
+              patientName: "John Smith",
+              address: "456 Queen St",
+              googlePlaceId: null,
+              windowStart: "09:00",
+              windowEnd: "10:00",
+              windowType: "fixed",
+              serviceDurationMinutes: 30,
+              arrivalTime: "2026-03-14T10:20:00.000Z",
+              serviceStartTime: "2026-03-14T10:20:00.000Z",
+              serviceEndTime: "2026-03-14T10:50:00.000Z",
+              waitSeconds: 0,
+              lateBySeconds: 1200,
+              onTime: false,
+            },
+          ],
+          distanceFromPreviousKm: 20.0,
+          durationFromPreviousSeconds: 1900,
+        },
+      ],
+      routeLegs: [],
+      unscheduledTasks: [],
+      metrics: {
+        fixedWindowViolations: 1,
+        totalLateSeconds: 1200,
+        totalWaitSeconds: 0,
+        totalDistanceMeters: 20000,
+        totalDistanceKm: 20,
+        totalDurationSeconds: 1900,
+      },
+      algorithmVersion: "v2.3.0-matrix-lookahead-unscheduled",
+    };
+
+    render(<RoutePlanner />);
+
+    expect(screen.getByText(/Expected start time 10:20 AM/i)).toBeTruthy();
+    expect(screen.getByText(/Outside preferred window by 20 min/i)).toBeTruthy();
+  });
+
   it("removes selected destination patient from planner state", () => {
     render(<RoutePlanner />);
 

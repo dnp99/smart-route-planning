@@ -17,6 +17,106 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Updated route-task line copy to show expected start time for every patient while preserving late-window warning for late tasks.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### What changed
+- Task rows now always include:
+  - `Expected start time HH:MM AM/PM` (derived from each task `serviceStartTime`)
+- Late tasks additionally include:
+  - `Outside preferred window by X min` (in red)
+- Updated route-planner test coverage to assert both expected-start-time and outside-window text for a late task.
+
+### Why
+- Users requested expected start time visibility for every scheduled patient, not only late tasks.
+- Keeping the late-window warning provides conflict context when a task starts after the preferred window ends.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
+Updated optimized-route task rows to show expected start time from scheduler output.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### What changed
+- Replaced the late-state suffix text with a scheduler-driven expected start-time suffix:
+  - `Expected start time HH:MM AM/PM`
+- Added formatting helper to derive `HH:MM AM/PM` from each task’s `serviceStartTime`.
+- Added/updated route-planner test coverage to assert expected-start-time rendering.
+
+### Why
+- Users asked for schedule clarity in the exact task-line format and preferred expected start time over lateness phrasing.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
+Styled late-task preferred-window warning text in red within route summary rows.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `plan.md`
+
+### What changed
+- Updated the `Outside preferred window by X min` segment in route-task rows to render with red text (`text-red-600` / `dark:text-red-400`) when `lateBySeconds > 0`.
+- Kept the rest of the task line styling unchanged.
+
+### Why
+- The lateness/conflict indicator should stand out visually from neutral route metadata.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
+Updated route summary wording for late tasks to use user-friendly preferred-window language.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### What changed
+- Updated task-row late-state text in optimized route details:
+  - from implicit lateness handling
+  - to explicit copy: `Outside preferred window by X min` when `lateBySeconds > 0`.
+- Added route-planner test coverage to verify the new copy appears for a task with non-zero `lateBySeconds`.
+
+### Why
+- “Late” phrasing was less clear in overlapping-window scenarios.
+- Preferred-window wording better matches planner intent and is easier for nurses to interpret.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
 Improved route-planner validation messages by naming the patients that caused window-validation failures.
 
 ### Files added/updated/deleted

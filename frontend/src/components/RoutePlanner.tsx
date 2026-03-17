@@ -170,6 +170,21 @@ const formatVisitDurationMinutes = (minutes: number) => {
   return `${hourLabel} ${remainingMinutes} min`;
 };
 
+const formatExpectedStartTimeText = (serviceStartTime: string) => {
+  const match = serviceStartTime.match(/T([01]\d|2[0-3]):([0-5]\d)/);
+  if (!match) {
+    return "";
+  }
+
+  const hours24 = Number(match[1]);
+  const minutes = match[2];
+  const period = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 || 12;
+  const hourLabel = hours12 < 10 ? `0${hours12}` : String(hours12);
+
+  return `Expected start time ${hourLabel}:${minutes} ${period}`;
+};
+
 const formatPatientListLabel = (destinations: SelectedPatientDestination[]) => {
   const names = [...new Set(
     destinations
@@ -1652,6 +1667,16 @@ function RoutePlanner() {
                             Patient: {formatNameWords(task.patientName)} • {task.windowStart} -{" "}
                             {task.windowEnd} • {task.windowType} •{" "}
                             {formatVisitDurationMinutes(task.serviceDurationMinutes)}
+                            {formatExpectedStartTimeText(task.serviceStartTime)
+                              ? ` • ${formatExpectedStartTimeText(task.serviceStartTime)}`
+                              : ""}
+                            {task.lateBySeconds > 0 && (
+                              <span className="text-red-600 dark:text-red-400">
+                                {" "}
+                                • Outside preferred window by{" "}
+                                {Math.ceil(task.lateBySeconds / 60)} min
+                              </span>
+                            )}
                           </small>
                         ))}
                       </>
