@@ -185,8 +185,6 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
   }
 
   const visitWindowRows: VisitWindowFieldErrors[] = values.visitWindows.map(() => ({}));
-  const parsedWindows: { index: number; startMinutes: number; endMinutes: number }[] = [];
-
   values.visitWindows.forEach((window, index) => {
     if (!HH_MM_PATTERN.test(window.startTime)) {
       visitWindowRows[index].startTime = "Start time must use HH:MM 24-hour format.";
@@ -209,26 +207,7 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
       return;
     }
 
-    parsedWindows.push({ index, startMinutes, endMinutes });
   });
-
-  const ordered = [...parsedWindows].sort((left, right) => {
-    const startDelta = left.startMinutes - right.startMinutes;
-    if (startDelta !== 0) {
-      return startDelta;
-    }
-
-    return left.endMinutes - right.endMinutes;
-  });
-
-  for (let index = 1; index < ordered.length; index += 1) {
-    const previous = ordered[index - 1];
-    const current = ordered[index];
-    if (current.startMinutes < previous.endMinutes) {
-      visitWindowRows[current.index].startTime = "Overlaps with another visit window.";
-      errors.visitWindows = "Visit windows must not overlap.";
-    }
-  }
 
   if (visitWindowRows.some((entry) => Object.keys(entry).length > 0)) {
     errors.visitWindowRows = visitWindowRows;

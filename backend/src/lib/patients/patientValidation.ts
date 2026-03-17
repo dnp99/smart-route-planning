@@ -113,36 +113,12 @@ const parseVisitWindow = (value: unknown, index: number): PatientVisitWindowInpu
   };
 };
 
-const assertNoOverlappingWindows = (windows: PatientVisitWindowInput[]) => {
-  const ordered = [...windows].sort((left, right) => {
-    const startDelta = timeToMinutes(left.startTime) - timeToMinutes(right.startTime);
-    if (startDelta !== 0) {
-      return startDelta;
-    }
-
-    const endDelta = timeToMinutes(left.endTime) - timeToMinutes(right.endTime);
-    if (endDelta !== 0) {
-      return endDelta;
-    }
-
-    return left.visitTimeType.localeCompare(right.visitTimeType);
-  });
-
-  for (let index = 1; index < ordered.length; index += 1) {
-    if (timeToMinutes(ordered[index].startTime) < timeToMinutes(ordered[index - 1].endTime)) {
-      throw new HttpError(400, "visitWindows must not contain overlapping time windows.");
-    }
-  }
-};
-
 const parseVisitWindows = (value: unknown, fieldName: string): PatientVisitWindowInput[] => {
   if (!Array.isArray(value)) {
     throw new HttpError(400, `${fieldName} must be an array.`);
   }
 
-  const parsed = value.map((entry, index) => parseVisitWindow(entry, index));
-  assertNoOverlappingWindows(parsed);
-  return parsed;
+  return value.map((entry, index) => parseVisitWindow(entry, index));
 };
 
 export const validateCreatePatientPayload = (payload: unknown): CreatePatientRequest => {

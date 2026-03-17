@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import AddressAutocompleteInput from "./AddressAutocompleteInput";
 import RouteMap from "./RouteMap";
@@ -12,6 +12,9 @@ import type { AddressSuggestion } from "./types";
 import { formatNameWords, formatPatientNameFromParts } from "./patients/patientName";
 
 type EndMode = "manual" | "patient";
+type MobilePlannerStep = "trip" | "patients" | "review";
+
+const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 
 type SelectedPatientDestination = {
   visitKey: string;
@@ -148,6 +151,15 @@ const formatVisitDurationMinutes = (minutes: number) => {
 };
 
 function RoutePlanner() {
+  const [isMobileViewport, setIsMobileViewport] = useState(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return false;
+    }
+
+    return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
+  });
+  const [activeMobileStep, setActiveMobileStep] =
+    useState<MobilePlannerStep>("trip");
   const [startAddress, setStartAddress] = useState(
     "3361 Ingram Road, Mississauga, ON",
   );
@@ -165,6 +177,8 @@ function RoutePlanner() {
   const [selectedDestinations, setSelectedDestinations] = useState<
     SelectedPatientDestination[]
   >([]);
+  const [expandedDestinationVisitKeys, setExpandedDestinationVisitKeys] =
+    useState<Record<string, boolean>>({});
   const [selectedEndPatient, setSelectedEndPatient] = useState<
     SelectedEndPatient | null
   >(null);
@@ -195,6 +209,62 @@ function RoutePlanner() {
     hasAttemptedOptimize,
     optimizeRoute,
   } = useRouteOptimization();
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+      return;
+    }
+
+    const mediaQueryList = window.matchMedia(MOBILE_MEDIA_QUERY);
+    const updateMobileViewport = (matches: boolean) => {
+      setIsMobileViewport(matches);
+      if (!matches) {
+        setActiveMobileStep("trip");
+      }
+    };
+
+    updateMobileViewport(mediaQueryList.matches);
+
+    const handleMediaQueryChange = (event: MediaQueryListEvent) => {
+      updateMobileViewport(event.matches);
+    };
+
+    if (typeof mediaQueryList.addEventListener === "function") {
+      mediaQueryList.addEventListener("change", handleMediaQueryChange);
+      return () => {
+        mediaQueryList.removeEventListener("change", handleMediaQueryChange);
+      };
+    }
+
+    mediaQueryList.addListener(handleMediaQueryChange);
+    return () => {
+      mediaQueryList.removeListener(handleMediaQueryChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    setExpandedDestinationVisitKeys((current) => {
+      let changed = false;
+      const next: Record<string, boolean> = {};
+
+      selectedDestinations.forEach((destination) => {
+        const existing = current[destination.visitKey];
+        if (existing === undefined) {
+          next[destination.visitKey] = !isMobileViewport;
+          changed = true;
+          return;
+        }
+
+        next[destination.visitKey] = existing;
+      });
+
+      if (!changed && Object.keys(current).length !== selectedDestinations.length) {
+        changed = true;
+      }
+
+      return changed ? next : current;
+    });
+  }, [isMobileViewport, selectedDestinations]);
 
   const selectedDestinationIdSet = useMemo(
     () => new Set(selectedDestinations.map((destination) => destination.patientId)),
@@ -551,12 +621,35 @@ function RoutePlanner() {
 
       return [...current, ...destinations];
     });
+    setExpandedDestinationVisitKeys((current) => {
+      const next = { ...current };
+      destinations.forEach((destination) => {
+        next[destination.visitKey] = !isMobileViewport;
+      });
+      return next;
+    });
   };
 
   const removeDestinationVisit = (visitKey: string) => {
     setSelectedDestinations((current) =>
       current.filter((entry) => entry.visitKey !== visitKey),
     );
+    setExpandedDestinationVisitKeys((current) => {
+      if (current[visitKey] === undefined) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[visitKey];
+      return next;
+    });
+  };
+
+  const toggleDestinationDetails = (visitKey: string) => {
+    setExpandedDestinationVisitKeys((current) => ({
+      ...current,
+      [visitKey]: !(current[visitKey] ?? !isMobileViewport),
+    }));
   };
 
   const selectEndPatient = (patient: Patient) => {
@@ -582,6 +675,9 @@ function RoutePlanner() {
   const destinationCount = selectedDestinations.filter(
     (destination) => destination.isIncluded,
   ).length;
+  const isTripStepVisible = !isMobileViewport || activeMobileStep === "trip";
+  const isPatientsStepVisible = !isMobileViewport || activeMobileStep === "patients";
+  const isReviewStepVisible = !isMobileViewport || activeMobileStep === "review";
 
   return (
     <main className={responsiveStyles.page}>
@@ -600,82 +696,123 @@ function RoutePlanner() {
         </div>
 
         <form className={responsiveStyles.form} onSubmit={handleSubmit}>
-          <section className={responsiveStyles.panel}>
-            <div className={responsiveStyles.cardHeader}>
-              <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
-              <p className={responsiveStyles.cardDescription}>
-                Define where the nurse starts and how the route should end.
-              </p>
-            </div>
+          {isMobileViewport && (
+            <nav
+              aria-label="Route planner steps"
+              className={responsiveStyles.mobileStepNav}
+            >
+              {[
+                { key: "trip", label: "Trip" },
+                { key: "patients", label: "Patients" },
+                { key: "review", label: "Review" },
+              ].map((step) => {
+                const isActive = activeMobileStep === step.key;
+                return (
+                  <button
+                    key={step.key}
+                    type="button"
+                    aria-pressed={isActive}
+                    onClick={() => setActiveMobileStep(step.key as MobilePlannerStep)}
+                    className={`${responsiveStyles.mobileStepButton} ${
+                      isActive
+                        ? responsiveStyles.mobileStepButtonActive
+                        : responsiveStyles.mobileStepButtonInactive
+                    }`}
+                  >
+                    {step.label}
+                  </button>
+                );
+              })}
+            </nav>
+          )}
 
-            <AddressAutocompleteInput
-              id="startAddress"
-              label="Starting point"
-              placeholder="e.g. 1 Apple Park Way, Cupertino"
-              value={startAddress}
-              onChange={handleStartAddressChange}
-              onSuggestionPick={handleStartAddressPick}
-              onBlur={() => setStartTouched(true)}
-              helperText="Type at least 3 characters to see suggestions."
-              errorText={startFieldError}
-              required
-            />
+          {isTripStepVisible && (
+            <section className={responsiveStyles.panel}>
+              <div className={responsiveStyles.cardHeader}>
+                <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
+                <p className={responsiveStyles.cardDescription}>
+                  Define where the nurse starts and how the route should end.
+                </p>
+              </div>
 
-            <AddressAutocompleteInput
-              id="endAddress"
-              label="Ending point"
-              placeholder="e.g. Pearson International Airport"
-              value={manualEndAddress}
-              onChange={handleManualEndAddressChange}
-              onSuggestionPick={handleManualEndAddressPick}
-              onBlur={() => {
-                if (endMode === "manual") {
-                  setEndTouched(true);
+              <AddressAutocompleteInput
+                id="startAddress"
+                label="Starting point"
+                placeholder="e.g. 1 Apple Park Way, Cupertino"
+                value={startAddress}
+                onChange={handleStartAddressChange}
+                onSuggestionPick={handleStartAddressPick}
+                onBlur={() => setStartTouched(true)}
+                helperText="Type at least 3 characters to see suggestions."
+                errorText={startFieldError}
+                required
+              />
+
+              <AddressAutocompleteInput
+                id="endAddress"
+                label="Ending point"
+                placeholder="e.g. Pearson International Airport"
+                value={manualEndAddress}
+                onChange={handleManualEndAddressChange}
+                onSuggestionPick={handleManualEndAddressPick}
+                onBlur={() => {
+                  if (endMode === "manual") {
+                    setEndTouched(true);
+                  }
+                }}
+                helperText={
+                  endMode === "manual"
+                    ? "Type at least 3 characters to see suggestions."
+                    : "Switch to Manual end address mode to edit this field."
                 }
-              }}
-              helperText={
-                endMode === "manual"
-                  ? "Type at least 3 characters to see suggestions."
-                  : "Switch to Manual end address mode to edit this field."
-              }
-              errorText={endMode === "manual" ? endFieldError : undefined}
-              required={endMode === "manual"}
-              disabled={endMode !== "manual"}
-            />
+                errorText={endMode === "manual" ? endFieldError : undefined}
+                required={endMode === "manual"}
+                disabled={endMode !== "manual"}
+              />
 
-            <fieldset className="grid gap-2 rounded-xl border border-slate-300 px-3 py-2 dark:border-slate-700">
-              <legend className="px-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                End mode
-              </legend>
-              <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                <input
-                  type="radio"
-                  name="end-mode"
-                  checked={endMode === "manual"}
-                  onChange={() => {
-                    setEndMode("manual");
-                    setEndTouched(false);
-                  }}
-                />
-                Manual end address
-              </label>
-              <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
-                <input
-                  type="radio"
-                  name="end-mode"
-                  checked={endMode === "patient"}
-                  onChange={() => {
-                    setEndMode("patient");
-                    setEndTouched(false);
-                  }}
-                />
-                Patient end address
-              </label>
-            </fieldset>
+              <fieldset className="grid gap-2 rounded-xl border border-slate-300 px-3 py-2 dark:border-slate-700">
+                <legend className="px-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  End mode
+                </legend>
+                <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                  <input
+                    type="radio"
+                    name="end-mode"
+                    checked={endMode === "manual"}
+                    onChange={() => {
+                      setEndMode("manual");
+                      setEndTouched(false);
+                    }}
+                  />
+                  Manual end address
+                </label>
+                <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
+                  <input
+                    type="radio"
+                    name="end-mode"
+                    checked={endMode === "patient"}
+                    onChange={() => {
+                      setEndMode("patient");
+                      setEndTouched(false);
+                    }}
+                  />
+                  Patient end address
+                </label>
+              </fieldset>
 
-          </section>
+              {isMobileViewport && (
+                <button
+                  type="button"
+                  onClick={() => setActiveMobileStep("patients")}
+                  className={responsiveStyles.secondaryButton}
+                >
+                  Continue to Patients
+                </button>
+              )}
+            </section>
+          )}
 
-          {endMode === "patient" && (
+          {endMode === "patient" && isTripStepVisible && (
             <section className={responsiveStyles.panel}>
               <div className={responsiveStyles.cardHeader}>
                 <h2 className={responsiveStyles.cardTitle}>Select end patient</h2>
@@ -838,7 +975,8 @@ function RoutePlanner() {
             </section>
           )}
 
-          <section className={responsiveStyles.panel}>
+          {isPatientsStepVisible && (
+            <section className={responsiveStyles.panel}>
             <div className={responsiveStyles.cardHeader}>
               <h2 className={responsiveStyles.cardTitle}>
                 Destination patient search
@@ -893,9 +1031,11 @@ function RoutePlanner() {
                 })}
               </ul>
             )}
-          </section>
+            </section>
+          )}
 
-          <section className={responsiveStyles.panel}>
+          {isPatientsStepVisible && (
+            <section className={responsiveStyles.panel}>
             <div className={responsiveStyles.cardHeader}>
               <h2 className={responsiveStyles.cardTitle}>
                 Selected destination patients
@@ -912,6 +1052,9 @@ function RoutePlanner() {
             ) : (
               <ol className="m-0 space-y-2">
                 {selectedDestinations.map((destination, index) => {
+                  const isDestinationExpanded =
+                    expandedDestinationVisitKeys[destination.visitKey] ??
+                    !isMobileViewport;
                   return (
                     <li
                       key={destination.visitKey}
@@ -923,13 +1066,31 @@ function RoutePlanner() {
                         <span className="min-w-8 text-sm font-semibold text-slate-500 dark:text-slate-400">
                           {index + 1}.
                         </span>
-                        <span className="min-w-0 flex-1 break-words text-sm">
+                        <div className="min-w-0 flex-1 break-words text-sm">
                           <span className="block font-semibold text-slate-900 dark:text-slate-100">
                             {destination.patientName}
                           </span>
                           <span className="block text-slate-600 dark:text-slate-300">
                             {destination.address}
                           </span>
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleDestinationDetails(destination.visitKey)}
+                              className={responsiveStyles.destinationDetailsToggle}
+                            >
+                              {isDestinationExpanded ? "Hide details" : "Edit window"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeDestinationVisit(destination.visitKey)}
+                              className={responsiveStyles.destinationRemove}
+                            >
+                              Remove
+                            </button>
+                          </div>
+                          {isDestinationExpanded && (
+                            <>
                           <label className="mt-2 inline-flex items-start gap-2 text-xs leading-snug text-slate-600 dark:text-slate-300">
                             <input
                               type="checkbox"
@@ -991,24 +1152,69 @@ function RoutePlanner() {
                               Save this window to patient record
                             </label>
                           </div>
-                        </span>
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => removeDestinationVisit(destination.visitKey)}
-                        className={responsiveStyles.destinationRemove}
-                      >
-                        Remove
-                      </button>
                     </li>
                   );
                 })}
               </ol>
             )}
             </div>
-          </section>
+            {isMobileViewport && (
+              <button
+                type="button"
+                onClick={() => setActiveMobileStep("review")}
+                className={responsiveStyles.secondaryButton}
+              >
+                Continue to Review
+              </button>
+            )}
+            </section>
+          )}
 
-          <div className={responsiveStyles.footerRow}>
+          {isReviewStepVisible && isMobileViewport && (
+            <section className={responsiveStyles.mobileReviewCard}>
+              <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
+                Ready to optimize
+              </p>
+              <p className="m-0 text-xs text-slate-600 dark:text-slate-300">
+                {destinationCount} destination(s) included
+                {resolvedEndAddress.trim().length === 0
+                  ? " • ending point missing"
+                  : ""}
+              </p>
+              {overlappingVisitCount > 0 && (
+                <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
+                  {overlappingVisitCount} overlap warning(s) detected.
+                </p>
+              )}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveMobileStep("trip")}
+                  className={responsiveStyles.secondaryButton}
+                >
+                  Edit trip
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveMobileStep("patients")}
+                  className={responsiveStyles.secondaryButton}
+                >
+                  Edit patients
+                </button>
+              </div>
+            </section>
+          )}
+
+          {isReviewStepVisible && (
+            <div
+              className={`${responsiveStyles.footerRow} ${
+                isMobileViewport ? responsiveStyles.stickyFooter : ""
+              }`}
+            >
             <span className={responsiveStyles.countPill}>
               {destinationCount} destination(s) detected
             </span>
@@ -1027,7 +1233,8 @@ function RoutePlanner() {
               )}
               {isLoading ? "Optimizing..." : "Optimize Route"}
             </button>
-          </div>
+            </div>
+          )}
         </form>
 
         {optimizeEndpointHint && (
