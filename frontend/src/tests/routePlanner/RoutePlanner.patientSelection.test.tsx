@@ -196,6 +196,7 @@ const multiWindowPatient = {
 
 describe("RoutePlanner patient selection integration", () => {
   beforeEach(() => {
+    window.localStorage.clear();
     optimizeRouteMock.mockReset();
     persistPlanningWindowsMock.mockReset();
     persistPlanningWindowsMock.mockResolvedValue(undefined);
@@ -213,6 +214,7 @@ describe("RoutePlanner patient selection integration", () => {
   });
 
   afterEach(() => {
+    window.localStorage.clear();
     cleanup();
   });
 
@@ -235,6 +237,41 @@ describe("RoutePlanner patient selection integration", () => {
       "disabled",
       true,
     );
+  });
+
+  it("restores draft selections after remounting route planner", () => {
+    const { unmount } = render(<RoutePlanner />);
+
+    fireEvent.change(screen.getByLabelText("Ending point"), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+
+    unmount();
+    render(<RoutePlanner />);
+
+    expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "Airport");
+    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith({
+      startAddress: "3361 Ingram Road, Mississauga, ON",
+      endAddress: "Airport",
+      destinations: [
+        {
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "123 Main St",
+          googlePlaceId: "place-1",
+          windowStart: "09:00",
+          windowEnd: "11:00",
+          windowType: "fixed",
+          serviceDurationMinutes: 30,
+        },
+      ],
+      canOptimize: true,
+    });
   });
 
   it("allows route optimization when selected patient windows overlap", () => {

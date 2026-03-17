@@ -15,6 +15,7 @@ type EndMode = "manual" | "patient";
 type MobilePlannerStep = "trip" | "patients" | "review";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
+const ROUTE_PLANNER_DRAFT_STORAGE_KEY = "careflow.route-planner.draft.v1";
 
 type SelectedPatientDestination = {
   visitKey: string;
@@ -38,6 +39,18 @@ type SelectedEndPatient = {
   address: string;
   googlePlaceId: string | null;
   visitDestinations: SelectedPatientDestination[];
+};
+
+type RoutePlannerDraft = {
+  version: 1;
+  startAddress: string;
+  manualEndAddress: string;
+  startGooglePlaceId: string | null;
+  manualEndGooglePlaceId: string | null;
+  endMode: EndMode;
+  activeMobileStep: MobilePlannerStep;
+  selectedDestinations: SelectedPatientDestination[];
+  selectedEndPatient: SelectedEndPatient | null;
 };
 
 const toWindowTime = (value: string) => value.slice(0, 5);
@@ -157,7 +170,181 @@ const formatVisitDurationMinutes = (minutes: number) => {
   return `${hourLabel} ${remainingMinutes} min`;
 };
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === "object" && value !== null;
+
+const isWindowType = (value: unknown): value is "fixed" | "flexible" =>
+  value === "fixed" || value === "flexible";
+
+const isEndMode = (value: unknown): value is EndMode =>
+  value === "manual" || value === "patient";
+
+const isMobilePlannerStep = (value: unknown): value is MobilePlannerStep =>
+  value === "trip" || value === "patients" || value === "review";
+
+const parseSelectedPatientDestination = (
+  value: unknown,
+): SelectedPatientDestination | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    typeof value.visitKey !== "string" ||
+    (value.sourceWindowId !== null && typeof value.sourceWindowId !== "string") ||
+    typeof value.patientId !== "string" ||
+    typeof value.patientName !== "string" ||
+    typeof value.address !== "string" ||
+    (value.googlePlaceId !== null && typeof value.googlePlaceId !== "string") ||
+    typeof value.windowStart !== "string" ||
+    typeof value.windowEnd !== "string" ||
+    !isWindowType(value.windowType) ||
+    typeof value.serviceDurationMinutes !== "number" ||
+    value.serviceDurationMinutes !== value.serviceDurationMinutes ||
+    value.serviceDurationMinutes === Infinity ||
+    value.serviceDurationMinutes === -Infinity ||
+    typeof value.requiresPlanningWindow !== "boolean" ||
+    typeof value.isIncluded !== "boolean" ||
+    typeof value.persistPlanningWindow !== "boolean"
+  ) {
+    return null;
+  }
+
+  return {
+    visitKey: value.visitKey,
+    sourceWindowId: value.sourceWindowId,
+    patientId: value.patientId,
+    patientName: value.patientName,
+    address: value.address,
+    googlePlaceId: value.googlePlaceId,
+    windowStart: value.windowStart,
+    windowEnd: value.windowEnd,
+    windowType: value.windowType,
+    serviceDurationMinutes: value.serviceDurationMinutes,
+    requiresPlanningWindow: value.requiresPlanningWindow,
+    isIncluded: value.isIncluded,
+    persistPlanningWindow: value.persistPlanningWindow,
+  };
+};
+
+const parseSelectedEndPatient = (value: unknown): SelectedEndPatient | null => {
+  if (value === null) {
+    return null;
+  }
+
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  if (
+    typeof value.patientId !== "string" ||
+    typeof value.patientName !== "string" ||
+    typeof value.address !== "string" ||
+    (value.googlePlaceId !== null && typeof value.googlePlaceId !== "string") ||
+    !Array.isArray(value.visitDestinations)
+  ) {
+    return null;
+  }
+
+  const parsedVisitDestinations = value.visitDestinations
+    .map(parseSelectedPatientDestination)
+    .filter((destination): destination is SelectedPatientDestination => destination !== null);
+
+  if (parsedVisitDestinations.length !== value.visitDestinations.length) {
+    return null;
+  }
+
+  return {
+    patientId: value.patientId,
+    patientName: value.patientName,
+    address: value.address,
+    googlePlaceId: value.googlePlaceId,
+    visitDestinations: parsedVisitDestinations,
+  };
+};
+
+const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const rawValue = window.localStorage.getItem(ROUTE_PLANNER_DRAFT_STORAGE_KEY);
+    if (!rawValue) {
+      return null;
+    }
+
+    const parsed = JSON.parse(rawValue) as unknown;
+    if (!isRecord(parsed) || parsed.version !== 1) {
+      return null;
+    }
+
+    if (
+      typeof parsed.startAddress !== "string" ||
+      typeof parsed.manualEndAddress !== "string" ||
+      (parsed.startGooglePlaceId !== null &&
+        typeof parsed.startGooglePlaceId !== "string") ||
+      (parsed.manualEndGooglePlaceId !== null &&
+        typeof parsed.manualEndGooglePlaceId !== "string") ||
+      !isEndMode(parsed.endMode) ||
+      !isMobilePlannerStep(parsed.activeMobileStep) ||
+      !Array.isArray(parsed.selectedDestinations)
+    ) {
+      return null;
+    }
+
+    const selectedDestinations = parsed.selectedDestinations
+      .map(parseSelectedPatientDestination)
+      .filter(
+        (destination): destination is SelectedPatientDestination => destination !== null,
+      );
+
+    if (selectedDestinations.length !== parsed.selectedDestinations.length) {
+      return null;
+    }
+
+    const selectedEndPatient = parseSelectedEndPatient(parsed.selectedEndPatient);
+    if (parsed.selectedEndPatient !== null && selectedEndPatient === null) {
+      return null;
+    }
+
+    return {
+      version: 1,
+      startAddress: parsed.startAddress,
+      manualEndAddress: parsed.manualEndAddress,
+      startGooglePlaceId: parsed.startGooglePlaceId,
+      manualEndGooglePlaceId: parsed.manualEndGooglePlaceId,
+      endMode: parsed.endMode,
+      activeMobileStep: parsed.activeMobileStep,
+      selectedDestinations,
+      selectedEndPatient,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const persistRoutePlannerDraft = (draft: RoutePlannerDraft) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(
+    ROUTE_PLANNER_DRAFT_STORAGE_KEY,
+    JSON.stringify(draft),
+  );
+};
+
+const clearRoutePlannerDraft = () => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.removeItem(ROUTE_PLANNER_DRAFT_STORAGE_KEY);
+};
+
 function RoutePlanner() {
+  const initialDraft = useMemo(() => readRoutePlannerDraft(), []);
   const [isMobileViewport, setIsMobileViewport] = useState(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return false;
@@ -166,14 +353,20 @@ function RoutePlanner() {
     return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
   });
   const [activeMobileStep, setActiveMobileStep] =
-    useState<MobilePlannerStep>("trip");
+    useState<MobilePlannerStep>(initialDraft?.activeMobileStep ?? "trip");
   const [startAddress, setStartAddress] = useState(
-    "3361 Ingram Road, Mississauga, ON",
+    initialDraft?.startAddress ?? "3361 Ingram Road, Mississauga, ON",
   );
-  const [manualEndAddress, setManualEndAddress] = useState("");
-  const [startGooglePlaceId, setStartGooglePlaceId] = useState<string | null>(null);
-  const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<string | null>(null);
-  const [endMode, setEndMode] = useState<EndMode>("manual");
+  const [manualEndAddress, setManualEndAddress] = useState(
+    initialDraft?.manualEndAddress ?? "",
+  );
+  const [startGooglePlaceId, setStartGooglePlaceId] = useState<string | null>(
+    initialDraft?.startGooglePlaceId ?? null,
+  );
+  const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<string | null>(
+    initialDraft?.manualEndGooglePlaceId ?? null,
+  );
+  const [endMode, setEndMode] = useState<EndMode>(initialDraft?.endMode ?? "manual");
 
   const [startTouched, setStartTouched] = useState(false);
   const [endTouched, setEndTouched] = useState(false);
@@ -183,12 +376,12 @@ function RoutePlanner() {
   const [localValidationError, setLocalValidationError] = useState("");
   const [selectedDestinations, setSelectedDestinations] = useState<
     SelectedPatientDestination[]
-  >([]);
+  >(initialDraft?.selectedDestinations ?? []);
   const [expandedDestinationVisitKeys, setExpandedDestinationVisitKeys] =
     useState<Record<string, boolean>>({});
   const [selectedEndPatient, setSelectedEndPatient] = useState<
     SelectedEndPatient | null
-  >(null);
+  >(initialDraft?.selectedEndPatient ?? null);
 
   const {
     patients: destinationSearchPatients,
@@ -272,6 +465,29 @@ function RoutePlanner() {
       return changed ? next : current;
     });
   }, [isMobileViewport, selectedDestinations]);
+
+  useEffect(() => {
+    persistRoutePlannerDraft({
+      version: 1,
+      startAddress,
+      manualEndAddress,
+      startGooglePlaceId,
+      manualEndGooglePlaceId,
+      endMode,
+      activeMobileStep,
+      selectedDestinations,
+      selectedEndPatient,
+    });
+  }, [
+    activeMobileStep,
+    endMode,
+    manualEndAddress,
+    manualEndGooglePlaceId,
+    selectedDestinations,
+    selectedEndPatient,
+    startAddress,
+    startGooglePlaceId,
+  ]);
 
   const selectedDestinationIdSet = useMemo(
     () => new Set(selectedDestinations.map((destination) => destination.patientId)),

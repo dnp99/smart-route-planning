@@ -17,6 +17,39 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Added route-planner trip draft persistence so planning selections survive navigation to `/patients` and back.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### What changed
+- Added a typed local draft model for the route planner and persisted it in browser `localStorage`.
+- Hydrated planner state from saved draft on mount, including:
+  - start/end address + place IDs
+  - end mode
+  - selected destination visits and per-visit include/window/save flags
+  - selected end-patient state
+  - active mobile step
+- Added guarded draft parsing to ignore malformed/stale payloads safely.
+- Added a remount test to verify selected trip state is restored and can be submitted after returning to route planner.
+- Added localStorage cleanup in route-planner test setup/teardown to keep tests isolated.
+
+### Why
+- Nurses could lose in-progress trip planning when leaving route planner to add a missing patient.
+- Draft persistence removes the need to reselect all destinations after switching pages.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅
+  - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
 Fixed a mobile route-planner runtime crash by restoring overlap helper state used by the review step summary.
 
 ### Files added/updated/deleted
