@@ -227,25 +227,36 @@ describe("patientValidation", () => {
     );
   });
 
-  it("rejects overlapping visit windows", () => {
-    expect(() =>
-      validateCreatePatientPayload({
-        firstName: "Jane",
-        lastName: "Doe",
-        address: "123 Main St",
-        visitWindows: [
-          {
-            startTime: "09:00",
-            endTime: "10:00",
-            visitTimeType: "fixed",
-          },
-          {
-            startTime: "09:30",
-            endTime: "10:30",
-            visitTimeType: "flexible",
-          },
-        ],
-      }),
-    ).toThrow("visitWindows must not contain overlapping time windows.");
+  it("allows overlapping visit windows", () => {
+    const payload = validateCreatePatientPayload({
+      firstName: "Jane",
+      lastName: "Doe",
+      address: "123 Main St",
+      visitWindows: [
+        {
+          startTime: "09:00",
+          endTime: "10:00",
+          visitTimeType: "fixed",
+        },
+        {
+          startTime: "09:30",
+          endTime: "10:30",
+          visitTimeType: "flexible",
+        },
+      ],
+    });
+
+    expect(payload.visitWindows).toEqual([
+      {
+        startTime: "09:00",
+        endTime: "10:00",
+        visitTimeType: "fixed",
+      },
+      {
+        startTime: "09:30",
+        endTime: "10:30",
+        visitTimeType: "flexible",
+      },
+    ]);
   });
 });

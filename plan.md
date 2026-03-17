@@ -17,6 +17,70 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Allowed overlapping persisted patient visit windows by removing overlap rejection in backend patient payload validation and frontend patient form validation.
+
+### Files added/updated/deleted
+- Added:
+  - `frontend/src/tests/patients/patientForm.validation.test.ts`
+- Updated:
+  - `backend/src/lib/patients/patientValidation.ts`
+  - `backend/src/lib/patients/patientValidation.test.ts`
+  - `frontend/src/components/patients/patientForm.ts`
+  - `plan.md`
+
+### What changed
+- Removed backend overlap enforcement for `visitWindows` so create/update patient payloads no longer throw on overlapping time windows.
+- Kept existing window format and same-day ordering validation (`HH:MM` and `end > start`) unchanged.
+- Removed frontend patient form overlap validation errors (`Visit windows must not overlap` and per-row overlap errors) so overlapping windows can be submitted and persisted.
+- Added a new frontend test file to assert overlap-allowed behavior in `validateForm` while preserving `end > start` validation.
+- Updated backend patient validation test to assert overlapping windows are accepted.
+
+### Why
+- Route-planning and persistence behavior now needs to support overlapping visit windows end-to-end, including saved patient records.
+- Rejecting overlap at patient save time conflicted with the intended scheduling workflow.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/lib/patients/patientValidation.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm test -- --run src/tests/patients/patientForm.validation.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
+Implemented a mobile-focused route planner UX pass with a step-based flow, collapsible destination cards, and a sticky optimize action bar.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/components/responsiveStyles.ts`
+  - `plan.md`
+
+### What changed
+- Added a mobile step navigator (`Trip`, `Patients`, `Review`) and gated planner sections by active step on small screens.
+- Added mobile “continue” actions between steps while keeping desktop fully expanded.
+- Added per-destination details toggles so destination cards can collapse/expand their planning-window controls.
+- Added mobile review summary card with quick jump-back actions.
+- Added sticky mobile optimize footer treatment so the optimize CTA stays reachable while scrolling.
+- Kept desktop behavior and optimize payload logic unchanged.
+
+### Why
+- The planner form had become too long and dense on phones, which made route setup and optimization harder to complete efficiently.
+- A step-based mobile flow and collapsible destination controls reduce cognitive load and scrolling overhead without changing backend contract behavior.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅
+  - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
 Wired manual route-planner start and end autocomplete selections to carry Google place ids through the optimize-route request so manual addresses can use place-aware geocoding instead of plain text alone.
 
 ### Files added/updated/deleted
