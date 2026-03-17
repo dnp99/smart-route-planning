@@ -51,6 +51,13 @@ const timeToMinutes = (value: string) => {
 const hasCompleteWindow = (destination: SelectedPatientDestination) =>
   HH_MM_PATTERN.test(destination.windowStart) && HH_MM_PATTERN.test(destination.windowEnd);
 
+const windowsOverlap = (
+  left: Pick<SelectedPatientDestination, "windowStart" | "windowEnd">,
+  right: Pick<SelectedPatientDestination, "windowStart" | "windowEnd">,
+) =>
+  timeToMinutes(left.windowStart) < timeToMinutes(right.windowEnd) &&
+  timeToMinutes(right.windowStart) < timeToMinutes(left.windowEnd);
+
 const toSelectedPatientDestinations = (
   patient: Patient,
 ): SelectedPatientDestination[] => {
@@ -405,6 +412,43 @@ function RoutePlanner() {
       ...selectedEndPatient.visitDestinations.filter((destination) => destination.isIncluded),
     ];
   }, [endMode, selectedDestinations, selectedEndPatient]);
+
+  const overlappingVisitCount = useMemo(() => {
+    let overlapCount = 0;
+
+    for (let leftIndex = 0; leftIndex < requestDestinations.length; leftIndex += 1) {
+      const left = requestDestinations[leftIndex];
+      if (!hasCompleteWindow(left)) {
+        continue;
+      }
+
+      let hasOverlap = false;
+      for (
+        let rightIndex = 0;
+        rightIndex < requestDestinations.length && !hasOverlap;
+        rightIndex += 1
+      ) {
+        if (leftIndex === rightIndex) {
+          continue;
+        }
+
+        const right = requestDestinations[rightIndex];
+        if (!hasCompleteWindow(right)) {
+          continue;
+        }
+
+        if (windowsOverlap(left, right)) {
+          hasOverlap = true;
+        }
+      }
+
+      if (hasOverlap) {
+        overlapCount += 1;
+      }
+    }
+
+    return overlapCount;
+  }, [requestDestinations]);
 
   const handleStartAddressChange = (value: string) => {
     setStartAddress(value);

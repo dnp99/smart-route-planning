@@ -17,6 +17,28 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Fixed a mobile route-planner runtime crash by restoring overlap helper state used by the review step summary.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `plan.md`
+
+### What changed
+- Restored the missing `windowsOverlap` helper used in overlap computations.
+- Restored computed `overlappingVisitCount` for selected request destinations so the mobile review card can render overlap warnings without runtime errors.
+
+### Why
+- The mobile review step referenced `overlappingVisitCount` but the corresponding helper/computation was removed, causing `ReferenceError` at runtime.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
 Allowed overlapping persisted patient visit windows by removing overlap rejection in backend patient payload validation and frontend patient form validation.
 
 ### Files added/updated/deleted
