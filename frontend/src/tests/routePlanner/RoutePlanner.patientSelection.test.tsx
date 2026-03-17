@@ -290,6 +290,7 @@ describe("RoutePlanner patient selection integration", () => {
       "disabled",
       false,
     );
+    expect(screen.getByText(/1 overlap pair\(s\) detected\./i)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 

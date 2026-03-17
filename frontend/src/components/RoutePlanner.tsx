@@ -667,41 +667,28 @@ function RoutePlanner() {
     ];
   }, [endMode, selectedDestinations, selectedEndPatient]);
 
-  const overlappingVisitCount = useMemo(() => {
-    let overlapCount = 0;
+  const overlappingVisitPairCount = useMemo(() => {
+    let pairCount = 0;
 
     for (let leftIndex = 0; leftIndex < requestDestinations.length; leftIndex += 1) {
       const left = requestDestinations[leftIndex];
-      if (!hasCompleteWindow(left)) {
+      if (!left || !hasCompleteWindow(left)) {
         continue;
       }
 
-      let hasOverlap = false;
-      for (
-        let rightIndex = 0;
-        rightIndex < requestDestinations.length && !hasOverlap;
-        rightIndex += 1
-      ) {
-        if (leftIndex === rightIndex) {
-          continue;
-        }
-
+      for (let rightIndex = leftIndex + 1; rightIndex < requestDestinations.length; rightIndex += 1) {
         const right = requestDestinations[rightIndex];
-        if (!hasCompleteWindow(right)) {
+        if (!right || !hasCompleteWindow(right)) {
           continue;
         }
 
         if (windowsOverlap(left, right)) {
-          hasOverlap = true;
+          pairCount += 1;
         }
-      }
-
-      if (hasOverlap) {
-        overlapCount += 1;
       }
     }
 
-    return overlapCount;
+    return pairCount;
   }, [requestDestinations]);
 
   const handleStartAddressChange = (value: string) => {
@@ -1487,9 +1474,9 @@ function RoutePlanner() {
                   ? " • ending point missing"
                   : ""}
               </p>
-              {overlappingVisitCount > 0 && (
+              {overlappingVisitPairCount > 0 && (
                 <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
-                  {overlappingVisitCount} overlap warning(s) detected.
+                  {overlappingVisitPairCount} overlap pair(s) detected.
                 </p>
               )}
               <div className="grid grid-cols-2 gap-2">
@@ -1517,6 +1504,11 @@ function RoutePlanner() {
                 isMobileViewport ? responsiveStyles.stickyFooter : ""
               }`}
             >
+            {!isMobileViewport && overlappingVisitPairCount > 0 && (
+              <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
+                {overlappingVisitPairCount} overlap pair(s) detected.
+              </p>
+            )}
             <span className={responsiveStyles.countPill}>
               {destinationCount} destination(s) detected
             </span>

@@ -9,10 +9,50 @@ Files:
 - `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
 - `plans/jwt-authentication-remediation-plan.md` - safe upgrade and legacy-data preservation plan for the JWT rollout
 - `plans/jwt-authentication-remediation-release-note.md` - short release note for the completed JWT remediation rollout
+- `plans/optimize-route-v2-no-preferred-window-autoscheduling-execution-plan.md` - execution plan for auto-scheduling flexible visits without preferred windows
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
 ## Latest change record
+
+## Latest change addendum
+
+### Change
+Updated Route Planner overlap messaging to count unique overlap pairs and show the overlap warning in desktop review, not only mobile review.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### Why
+- The previous overlap counter reported overlapping visits, which showed `2` for a single pair (`A↔B`) and was confusing.
+- Overlap warning visibility was mobile-only, so desktop users had no equivalent warning context before optimizing.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 15 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
+Added a dedicated execution plan for Route Planner and optimize-route v2 support of flexible patients with no preferred visit windows (no required manual time entry).
+
+### Files added/updated/deleted
+- Added:
+  - `plans/optimize-route-v2-no-preferred-window-autoscheduling-execution-plan.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- The current planner blocks optimization for flexible patients without windows, which adds avoidable workflow friction.
+- A written execution plan is needed before implementation to align contract, validation, scheduler behavior, and UI copy across frontend/backend.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
 
 ## Latest change addendum
 
