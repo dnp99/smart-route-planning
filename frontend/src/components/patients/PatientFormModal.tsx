@@ -77,6 +77,15 @@ export const PatientFormModal = ({
     return null;
   }
 
+  const fixedWindowDurationError =
+    formErrors.visitWindowRows
+      ?.map((row) => row.endTime)
+      .find(
+        (message): message is string =>
+          typeof message === "string" &&
+          message.indexOf("fixed window must be at least") !== -1,
+      ) ?? null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 sm:items-center sm:p-4">
       <div
@@ -287,9 +296,11 @@ export const PatientFormModal = ({
                       className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                     />
                     {formErrors.visitWindowRows?.[index]?.endTime && (
-                      <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                        {formErrors.visitWindowRows[index].endTime}
-                      </p>
+                      formErrors.visitWindowRows[index].endTime !== fixedWindowDurationError && (
+                        <p className="m-0 text-xs text-red-600 dark:text-red-400">
+                          {formErrors.visitWindowRows[index].endTime}
+                        </p>
+                      )
                     )}
                   </div>
 
@@ -319,26 +330,36 @@ export const PatientFormModal = ({
             </div>
           </div>
 
-          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className={responsiveStyles.secondaryButton}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className={responsiveStyles.optimizeButton}
-            >
-              {isSubmitting
-                ? "Saving..."
-                : formMode === "create"
-                  ? "Save new patient"
-                  : "Save changes"}
-            </button>
+          <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-start">
+            <div>
+              {fixedWindowDurationError && (
+                <p className="m-0 text-xs text-red-600 dark:text-red-400">
+                  {fixedWindowDurationError}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className={responsiveStyles.secondaryButton}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className={responsiveStyles.optimizeButton}
+              >
+                {isSubmitting
+                  ? "Saving..."
+                  : formMode === "create"
+                    ? "Save new patient"
+                    : "Save changes"}
+              </button>
+            </div>
           </div>
         </form>
       </div>

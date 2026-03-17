@@ -9,10 +9,333 @@ Files:
 - `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
 - `plans/jwt-authentication-remediation-plan.md` - safe upgrade and legacy-data preservation plan for the JWT rollout
 - `plans/jwt-authentication-remediation-release-note.md` - short release note for the completed JWT remediation rollout
+- `plans/optimize-route-v2-no-preferred-window-autoscheduling-execution-plan.md` - execution plan for auto-scheduling flexible visits without preferred windows
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
 ## Latest change record
+
+## Latest change addendum
+
+### Change
+Moved fixed-window duration validation feedback to the patient modal action area so the message appears alongside the Cancel/Save buttons for both create and edit flows.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/patients/PatientFormModal.tsx`
+  - `plan.md`
+
+### Why
+- The fixed-window duration error should be visible at the point of submission so nurses can immediately understand why save is blocked.
+- Keeping this specific error near the action buttons improves clarity while preserving row-level placement for other field-specific errors.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/patients/PatientsPage.test.tsx src/tests/patients/patientForm.validation.test.ts` ✅ (2 files, 13 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
+Added patient-form UI validation (create and edit flows) to block fixed windows shorter than the configured visit duration, with the same detailed message format used in optimize-route validation.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/patients/patientForm.ts`
+  - `frontend/src/tests/patients/patientForm.validation.test.ts`
+  - `frontend/src/tests/patients/PatientsPage.test.tsx`
+  - `plan.md`
+
+### Why
+- Nurses can change preferred window and duration in the patient form; invalid fixed windows should be caught immediately in UI instead of surfacing later during route optimization.
+- Showing the exact required minutes and patient-specific copy improves correction speed and reduces confusion.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/patients/patientForm.validation.test.ts src/tests/patients/PatientsPage.test.tsx` ✅ (2 files, 13 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
+Updated optimize-route v2 fixed-window validation error copy to include the patient’s actual required visit minutes and append “as per patient’s profile.”
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/app/api/optimize-route/v2/validation.ts`
+  - `backend/src/app/api/optimize-route/v2/validation.test.ts`
+  - `plan.md`
+
+### Why
+- The previous message did not show the real required duration, so users could not immediately tell the exact minutes causing validation failure.
+- Adding explicit minutes plus profile context makes the error more actionable and understandable in the planner UI.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/optimize-route/v2/validation.test.ts` ✅ (1 file, 19 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
+Updated Route Planner overlap messaging to count unique overlap pairs and show the overlap warning in desktop review, not only mobile review.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### Why
+- The previous overlap counter reported overlapping visits, which showed `2` for a single pair (`A↔B`) and was confusing.
+- Overlap warning visibility was mobile-only, so desktop users had no equivalent warning context before optimizing.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 15 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
+Added a dedicated execution plan for Route Planner and optimize-route v2 support of flexible patients with no preferred visit windows (no required manual time entry).
+
+### Files added/updated/deleted
+- Added:
+  - `plans/optimize-route-v2-no-preferred-window-autoscheduling-execution-plan.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- The current planner blocks optimization for flexible patients without windows, which adds avoidable workflow friction.
+- A written execution plan is needed before implementation to align contract, validation, scheduler behavior, and UI copy across frontend/backend.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
+Updated route-task line copy to show expected start time for every patient while preserving late-window warning for late tasks.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### What changed
+- Task rows now always include:
+  - `Expected start time HH:MM AM/PM` (derived from each task `serviceStartTime`)
+- Late tasks additionally include:
+  - `Outside preferred window by X min` (in red)
+- Updated route-planner test coverage to assert both expected-start-time and outside-window text for a late task.
+
+### Why
+- Users requested expected start time visibility for every scheduled patient, not only late tasks.
+- Keeping the late-window warning provides conflict context when a task starts after the preferred window ends.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
+Fixed optimized-route expected start-time rendering to use local time conversion from the ISO timestamp, preventing UTC hour display in the Route Planner results panel.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### Why
+- The previous formatter extracted `Txx:yy` directly from the ISO string, so UTC timestamps were shown as local clock times (for example showing `01:00 PM` instead of `09:00 AM` in Toronto).
+- Parsing as a `Date` and formatting with `Intl.DateTimeFormat` keeps `Expected start time` consistent with locale-aware time rendering already used elsewhere in the planner.
+- The updated test now derives its expected label from locale formatting so it remains correct across environments with different timezones.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 15 tests)
+
+## Latest change addendum
+
+### Change
+Updated optimized-route task rows to show expected start time from scheduler output.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### What changed
+- Replaced the late-state suffix text with a scheduler-driven expected start-time suffix:
+  - `Expected start time HH:MM AM/PM`
+- Added formatting helper to derive `HH:MM AM/PM` from each task’s `serviceStartTime`.
+- Added/updated route-planner test coverage to assert expected-start-time rendering.
+
+### Why
+- Users asked for schedule clarity in the exact task-line format and preferred expected start time over lateness phrasing.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
+Styled late-task preferred-window warning text in red within route summary rows.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `plan.md`
+
+### What changed
+- Updated the `Outside preferred window by X min` segment in route-task rows to render with red text (`text-red-600` / `dark:text-red-400`) when `lateBySeconds > 0`.
+- Kept the rest of the task line styling unchanged.
+
+### Why
+- The lateness/conflict indicator should stand out visually from neutral route metadata.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
+Updated route summary wording for late tasks to use user-friendly preferred-window language.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### What changed
+- Updated task-row late-state text in optimized route details:
+  - from implicit lateness handling
+  - to explicit copy: `Outside preferred window by X min` when `lateBySeconds > 0`.
+- Added route-planner test coverage to verify the new copy appears for a task with non-zero `lateBySeconds`.
+
+### Why
+- “Late” phrasing was less clear in overlapping-window scenarios.
+- Preferred-window wording better matches planner intent and is easier for nurses to interpret.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
+Improved route-planner validation messages by naming the patients that caused window-validation failures.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### What changed
+- Added patient-name list formatting for submit-time validation errors.
+- Updated missing-window error to include affected patient names.
+- Updated invalid window-order error to include affected patient names.
+- Updated route-planner tests to assert the new patient-specific validation message.
+
+### Why
+- Generic validation copy made it hard for users to identify which selected patient needed a window fix.
+- Patient-specific errors reduce confusion and speed up correction.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
+Cleared the destination patient search input after selecting a patient in Route Planner.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `plan.md`
+
+### What changed
+- Updated `addDestinationPatient` to reset `destinationSearchQuery` to an empty string immediately after a patient is added.
+- This clears the typed search text so users can quickly search for the next patient without manually deleting prior input.
+
+### Why
+- After selecting a destination patient, the search query remained in the input and created friction for adding multiple patients.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
+Added route-planner trip draft persistence so planning selections survive navigation to `/patients` and back.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### What changed
+- Added a typed local draft model for the route planner and persisted it in browser `localStorage`.
+- Hydrated planner state from saved draft on mount, including:
+  - start/end address + place IDs
+  - end mode
+  - selected destination visits and per-visit include/window/save flags
+  - selected end-patient state
+  - active mobile step
+- Added guarded draft parsing to ignore malformed/stale payloads safely.
+- Added a remount test to verify selected trip state is restored and can be submitted after returning to route planner.
+- Added localStorage cleanup in route-planner test setup/teardown to keep tests isolated.
+
+### Why
+- Nurses could lose in-progress trip planning when leaving route planner to add a missing patient.
+- Draft persistence removes the need to reselect all destinations after switching pages.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅
+  - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
+Fixed a mobile route-planner runtime crash by restoring overlap helper state used by the review step summary.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `plan.md`
+
+### What changed
+- Restored the missing `windowsOverlap` helper used in overlap computations.
+- Restored computed `overlappingVisitCount` for selected request destinations so the mobile review card can render overlap warnings without runtime errors.
+
+### Why
+- The mobile review step referenced `overlappingVisitCount` but the corresponding helper/computation was removed, causing `ReferenceError` at runtime.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
 
 ## Latest change addendum
 

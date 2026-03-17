@@ -157,6 +157,15 @@ export const toCreateRequest = (values: PatientFormValues): CreatePatientRequest
   })),
 });
 
+const resolvePatientValidationName = (values: PatientFormValues) => {
+  const patientName = formatPatientNameFromParts(values.firstName, values.lastName);
+  if (patientName.length > 0) {
+    return patientName;
+  }
+
+  return "Patient";
+};
+
 export const validateForm = (values: PatientFormValues): FormFieldErrors => {
   const errors: FormFieldErrors = {};
 
@@ -185,6 +194,7 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
   }
 
   const visitWindowRows: VisitWindowFieldErrors[] = values.visitWindows.map(() => ({}));
+  const patientValidationName = resolvePatientValidationName(values);
   values.visitWindows.forEach((window, index) => {
     if (!HH_MM_PATTERN.test(window.startTime)) {
       visitWindowRows[index].startTime = "Start time must use HH:MM 24-hour format.";
@@ -205,6 +215,15 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
       visitWindowRows[index].endTime =
         "End time must be later than start time (cross-midnight windows are not supported).";
       return;
+    }
+
+    if (
+      !errors.visitDurationMinutes &&
+      window.visitTimeType === "fixed" &&
+      endMinutes - startMinutes < values.visitDurationMinutes
+    ) {
+      const minuteLabel = values.visitDurationMinutes === 1 ? "minute" : "minutes";
+      visitWindowRows[index].endTime = `${patientValidationName} fixed window must be at least ${values.visitDurationMinutes} ${minuteLabel} long as per patient's profile.`;
     }
 
   });

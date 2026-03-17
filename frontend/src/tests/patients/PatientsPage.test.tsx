@@ -13,11 +13,13 @@ import {
   createPatient,
   deletePatient,
   listPatients,
+  updatePatient,
 } from "../../components/patients/patientService";
 
 const mockedListPatients = vi.mocked(listPatients);
 const mockedCreatePatient = vi.mocked(createPatient);
 const mockedDeletePatient = vi.mocked(deletePatient);
+const mockedUpdatePatient = vi.mocked(updatePatient);
 
 const seedPatient = {
   id: "patient-1",
@@ -72,6 +74,7 @@ describe("PatientsPage", () => {
     mockedListPatients.mockReset();
     mockedCreatePatient.mockReset();
     mockedDeletePatient.mockReset();
+    mockedUpdatePatient.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockResolvedValue({
       ok: true,
@@ -271,6 +274,66 @@ describe("PatientsPage", () => {
         ),
       ).toBeTruthy();
       expect(mockedCreatePatient).not.toHaveBeenCalled();
+    });
+  });
+
+  it("shows fixed-window duration validation while adding a patient", async () => {
+    mockedListPatients.mockResolvedValue([]);
+
+    render(<PatientsPage />);
+
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
+    fireEvent.change(screen.getByLabelText("First name"), {
+      target: { value: "Jane" },
+    });
+    fireEvent.change(screen.getByLabelText("Last name"), {
+      target: { value: "Doe" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Search and select an address"), {
+      target: { value: "123 Main St" },
+    });
+    fireEvent.change(screen.getByLabelText("Visit duration (minutes)"), {
+      target: { value: "90" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Jane Doe fixed window must be at least 90 minutes long as per patient's profile.",
+        ),
+      ).toBeTruthy();
+      expect(mockedCreatePatient).not.toHaveBeenCalled();
+    });
+  });
+
+  it("shows fixed-window duration validation while editing a patient", async () => {
+    mockedListPatients.mockResolvedValue([seedPatient]);
+
+    render(<PatientsPage />);
+
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("");
+    });
+
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit patient Jane Doe/i })[0]);
+    fireEvent.change(screen.getByLabelText("Visit duration (minutes)"), {
+      target: { value: "130" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          "Jane Doe fixed window must be at least 130 minutes long as per patient's profile.",
+        ),
+      ).toBeTruthy();
+      expect(mockedUpdatePatient).not.toHaveBeenCalled();
     });
   });
 });

@@ -103,6 +103,9 @@ vi.mock("../../components/RouteMap", () => ({
 
 import RoutePlanner from "../../components/RoutePlanner";
 
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const janePatient = {
   id: "patient-1",
   nurseId: "nurse-1",
@@ -196,6 +199,7 @@ const multiWindowPatient = {
 
 describe("RoutePlanner patient selection integration", () => {
   beforeEach(() => {
+    window.localStorage.clear();
     optimizeRouteMock.mockReset();
     persistPlanningWindowsMock.mockReset();
     persistPlanningWindowsMock.mockResolvedValue(undefined);
@@ -213,6 +217,7 @@ describe("RoutePlanner patient selection integration", () => {
   });
 
   afterEach(() => {
+    window.localStorage.clear();
     cleanup();
   });
 
@@ -237,6 +242,41 @@ describe("RoutePlanner patient selection integration", () => {
     );
   });
 
+  it("restores draft selections after remounting route planner", () => {
+    const { unmount } = render(<RoutePlanner />);
+
+    fireEvent.change(screen.getByLabelText("Ending point"), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+
+    unmount();
+    render(<RoutePlanner />);
+
+    expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "Airport");
+    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith({
+      startAddress: "3361 Ingram Road, Mississauga, ON",
+      endAddress: "Airport",
+      destinations: [
+        {
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "123 Main St",
+          googlePlaceId: "place-1",
+          windowStart: "09:00",
+          windowEnd: "11:00",
+          windowType: "fixed",
+          serviceDurationMinutes: 30,
+        },
+      ],
+      canOptimize: true,
+    });
+  });
+
   it("allows route optimization when selected patient windows overlap", () => {
     render(<RoutePlanner />);
 
@@ -250,6 +290,7 @@ describe("RoutePlanner patient selection integration", () => {
       "disabled",
       false,
     );
+    expect(screen.getByText(/1 overlap pair\(s\) detected\./i)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 
@@ -488,6 +529,79 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByText(/Airport\s*•\s*Ending point/)).toBeTruthy();
   });
 
+  it("shows expected start time and late warning text from optimized route task timing", () => {
+    routeOptimizationState.result = {
+      start: {
+        address: "3361 Ingram Road, Mississauga, ON",
+        coords: { lat: 43.527, lon: -79.707 },
+        departureTime: "2026-03-14T00:00:00.000Z",
+      },
+      end: {
+        address: "Airport",
+        coords: { lat: 43.6777, lon: -79.6248 },
+      },
+      orderedStops: [
+        {
+          stopId: "stop-late",
+          address: "456 Queen St",
+          coords: { lat: 43.61, lon: -79.7 },
+          arrivalTime: "2026-03-14T10:20:00.000Z",
+          departureTime: "2026-03-14T10:50:00.000Z",
+          tasks: [
+            {
+              visitId: "visit-late-1",
+              patientId: "patient-2",
+              patientName: "John Smith",
+              address: "456 Queen St",
+              googlePlaceId: null,
+              windowStart: "09:00",
+              windowEnd: "10:00",
+              windowType: "fixed",
+              serviceDurationMinutes: 30,
+              arrivalTime: "2026-03-14T10:20:00.000Z",
+              serviceStartTime: "2026-03-14T10:20:00.000Z",
+              serviceEndTime: "2026-03-14T10:50:00.000Z",
+              waitSeconds: 0,
+              lateBySeconds: 1200,
+              onTime: false,
+            },
+          ],
+          distanceFromPreviousKm: 20.0,
+          durationFromPreviousSeconds: 1900,
+        },
+      ],
+      routeLegs: [],
+      unscheduledTasks: [],
+      metrics: {
+        fixedWindowViolations: 1,
+        totalLateSeconds: 1200,
+        totalWaitSeconds: 0,
+        totalDistanceMeters: 20000,
+        totalDistanceKm: 20,
+        totalDurationSeconds: 1900,
+      },
+      algorithmVersion: "v2.3.0-matrix-lookahead-unscheduled",
+    };
+
+    render(<RoutePlanner />);
+
+    const expectedStartTimeLabel = new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date("2026-03-14T10:20:00.000Z"));
+
+    expect(
+      screen.getByText(
+        new RegExp(
+          `Expected start time ${escapeRegExp(expectedStartTimeLabel)}`,
+          "i",
+        ),
+      ),
+    ).toBeTruthy();
+    expect(screen.getByText(/Outside preferred window by 20 min/i)).toBeTruthy();
+  });
+
   it("removes selected destination patient from planner state", () => {
     render(<RoutePlanner />);
 
@@ -512,7 +626,7 @@ describe("RoutePlanner patient selection integration", () => {
     expect(optimizeRouteMock).not.toHaveBeenCalled();
     expect(
       screen.getByText(
-        "Set start and end time for flexible patients without preferred windows before optimizing.",
+        "Set start and end time before optimizing for: Flex Patient.",
       ),
     ).toBeTruthy();
 
