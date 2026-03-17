@@ -549,7 +549,7 @@ describe("RoutePlanner patient selection integration", () => {
     expect(optimizeRouteMock).not.toHaveBeenCalled();
     expect(
       screen.getByText(
-        "Set start and end time for flexible patients without preferred windows before optimizing.",
+        "Set start and end time before optimizing for: Flex Patient.",
       ),
     ).toBeTruthy();
 

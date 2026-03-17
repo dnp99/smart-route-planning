@@ -170,6 +170,28 @@ const formatVisitDurationMinutes = (minutes: number) => {
   return `${hourLabel} ${remainingMinutes} min`;
 };
 
+const formatPatientListLabel = (destinations: SelectedPatientDestination[]) => {
+  const names = [...new Set(
+    destinations
+      .map((destination) => formatNameWords(destination.patientName))
+      .filter((name) => name.length > 0),
+  )];
+
+  if (names.length === 0) {
+    return "selected patients";
+  }
+
+  if (names.length === 1) {
+    return names[0];
+  }
+
+  if (names.length === 2) {
+    return `${names[0]} and ${names[1]}`;
+  }
+
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+};
+
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
@@ -803,20 +825,23 @@ function RoutePlanner() {
     event.preventDefault();
     setLocalValidationError("");
 
-    if (requestDestinations.some((destination) => !hasCompleteWindow(destination))) {
+    const destinationsMissingWindow = requestDestinations.filter(
+      (destination) => !hasCompleteWindow(destination),
+    );
+    if (destinationsMissingWindow.length > 0) {
       setLocalValidationError(
-        "Set start and end time for flexible patients without preferred windows before optimizing.",
+        `Set start and end time before optimizing for: ${formatPatientListLabel(destinationsMissingWindow)}.`,
       );
       return;
     }
 
-    if (
-      requestDestinations.some(
-        (destination) => timeToMinutes(destination.windowEnd) <= timeToMinutes(destination.windowStart),
-      )
-    ) {
+    const destinationsWithInvalidWindowOrder = requestDestinations.filter(
+      (destination) =>
+        timeToMinutes(destination.windowEnd) <= timeToMinutes(destination.windowStart),
+    );
+    if (destinationsWithInvalidWindowOrder.length > 0) {
       setLocalValidationError(
-        "All selected visit windows must end after they start.",
+        `Visit end time must be later than start time for: ${formatPatientListLabel(destinationsWithInvalidWindowOrder)}.`,
       );
       return;
     }
@@ -888,6 +913,7 @@ function RoutePlanner() {
       });
       return next;
     });
+    setDestinationSearchQuery("");
   };
 
   const removeDestinationVisit = (visitKey: string) => {

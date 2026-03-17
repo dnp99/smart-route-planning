@@ -17,6 +17,54 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Improved route-planner validation messages by naming the patients that caused window-validation failures.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### What changed
+- Added patient-name list formatting for submit-time validation errors.
+- Updated missing-window error to include affected patient names.
+- Updated invalid window-order error to include affected patient names.
+- Updated route-planner tests to assert the new patient-specific validation message.
+
+### Why
+- Generic validation copy made it hard for users to identify which selected patient needed a window fix.
+- Patient-specific errors reduce confusion and speed up correction.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
+Cleared the destination patient search input after selecting a patient in Route Planner.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `plan.md`
+
+### What changed
+- Updated `addDestinationPatient` to reset `destinationSearchQuery` to an empty string immediately after a patient is added.
+- This clears the typed search text so users can quickly search for the next patient without manually deleting prior input.
+
+### Why
+- After selecting a destination patient, the search query remained in the input and created friction for adding multiple patients.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
 Added route-planner trip draft persistence so planning selections survive navigation to `/patients` and back.
 
 ### Files added/updated/deleted
