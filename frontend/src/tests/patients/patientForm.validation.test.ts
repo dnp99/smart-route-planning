@@ -67,4 +67,42 @@ describe("patientForm validateForm", () => {
       "End time must be later than start time (cross-midnight windows are not supported).",
     );
   });
+
+  it("rejects fixed windows shorter than the configured visit duration", () => {
+    const errors = validateForm(
+      buildValues({
+        visitDurationMinutes: 45,
+        visitWindows: [
+          {
+            id: "window-1",
+            startTime: "09:00",
+            endTime: "09:30",
+            visitTimeType: "fixed",
+          },
+        ],
+      }),
+    );
+
+    expect(errors.visitWindowRows?.[0]?.endTime).toBe(
+      "Jane Doe fixed window must be at least 45 minutes long as per patient's profile.",
+    );
+  });
+
+  it("allows short flexible windows when duration is longer", () => {
+    const errors = validateForm(
+      buildValues({
+        visitDurationMinutes: 45,
+        visitWindows: [
+          {
+            id: "window-1",
+            startTime: "09:00",
+            endTime: "09:30",
+            visitTimeType: "flexible",
+          },
+        ],
+      }),
+    );
+
+    expect(errors.visitWindowRows).toBeUndefined();
+  });
 });

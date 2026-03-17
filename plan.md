@@ -18,6 +18,27 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Added patient-form UI validation (create and edit flows) to block fixed windows shorter than the configured visit duration, with the same detailed message format used in optimize-route validation.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/patients/patientForm.ts`
+  - `frontend/src/tests/patients/patientForm.validation.test.ts`
+  - `frontend/src/tests/patients/PatientsPage.test.tsx`
+  - `plan.md`
+
+### Why
+- Nurses can change preferred window and duration in the patient form; invalid fixed windows should be caught immediately in UI instead of surfacing later during route optimization.
+- Showing the exact required minutes and patient-specific copy improves correction speed and reduces confusion.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/patients/patientForm.validation.test.ts src/tests/patients/PatientsPage.test.tsx` ✅ (2 files, 13 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
 Updated optimize-route v2 fixed-window validation error copy to include the patient’s actual required visit minutes and append “as per patient’s profile.”
 
 ### Files added/updated/deleted
