@@ -18,6 +18,26 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Updated optimize-route v2 fixed-window validation error copy to include the patient’s actual required visit minutes and append “as per patient’s profile.”
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/app/api/optimize-route/v2/validation.ts`
+  - `backend/src/app/api/optimize-route/v2/validation.test.ts`
+  - `plan.md`
+
+### Why
+- The previous message did not show the real required duration, so users could not immediately tell the exact minutes causing validation failure.
+- Adding explicit minutes plus profile context makes the error more actionable and understandable in the planner UI.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/optimize-route/v2/validation.test.ts` ✅ (1 file, 19 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
 Updated Route Planner overlap messaging to count unique overlap pairs and show the overlap warning in desktop review, not only mobile review.
 
 ### Files added/updated/deleted

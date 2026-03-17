@@ -203,9 +203,10 @@ const parseVisit = (value: unknown, index: number): VisitV2 => {
   }
 
   if (windowType === "fixed" && windowEndMinutes - windowStartMinutes < serviceDurationMinutes) {
+    const minuteLabel = serviceDurationMinutes === 1 ? "minute" : "minutes";
     throw new HttpError(
       400,
-      `${patientName} fixed window must be at least serviceDurationMinutes long.`,
+      `${patientName} fixed window must be at least ${serviceDurationMinutes} ${minuteLabel} long as per patient's profile.`,
     );
   }
 
