@@ -103,6 +103,9 @@ vi.mock("../../components/RouteMap", () => ({
 
 import RoutePlanner from "../../components/RoutePlanner";
 
+const escapeRegExp = (value: string) =>
+  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const janePatient = {
   id: "patient-1",
   nurseId: "nurse-1",
@@ -581,7 +584,20 @@ describe("RoutePlanner patient selection integration", () => {
 
     render(<RoutePlanner />);
 
-    expect(screen.getByText(/Expected start time 10:20 AM/i)).toBeTruthy();
+    const expectedStartTimeLabel = new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date("2026-03-14T10:20:00.000Z"));
+
+    expect(
+      screen.getByText(
+        new RegExp(
+          `Expected start time ${escapeRegExp(expectedStartTimeLabel)}`,
+          "i",
+        ),
+      ),
+    ).toBeTruthy();
     expect(screen.getByText(/Outside preferred window by 20 min/i)).toBeTruthy();
   });
 

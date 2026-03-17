@@ -170,19 +170,20 @@ const formatVisitDurationMinutes = (minutes: number) => {
   return `${hourLabel} ${remainingMinutes} min`;
 };
 
+const expectedStartTimeFormatter = new Intl.DateTimeFormat(undefined, {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: true,
+});
+
 const formatExpectedStartTimeText = (serviceStartTime: string) => {
-  const match = serviceStartTime.match(/T([01]\d|2[0-3]):([0-5]\d)/);
-  if (!match) {
+  const parsedDate = new Date(serviceStartTime);
+  const parsedTimeMs = parsedDate.getTime();
+  if (parsedTimeMs !== parsedTimeMs) {
     return "";
   }
 
-  const hours24 = Number(match[1]);
-  const minutes = match[2];
-  const period = hours24 >= 12 ? "PM" : "AM";
-  const hours12 = hours24 % 12 || 12;
-  const hourLabel = hours12 < 10 ? `0${hours12}` : String(hours12);
-
-  return `Expected start time ${hourLabel}:${minutes} ${period}`;
+  return `Expected start time ${expectedStartTimeFormatter.format(parsedDate)}`;
 };
 
 const formatPatientListLabel = (destinations: SelectedPatientDestination[]) => {

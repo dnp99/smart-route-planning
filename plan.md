@@ -39,7 +39,27 @@ Updated route-task line copy to show expected start time for every patient while
 ### Verification
 - Frontend:
   - `npm run lint` ✅
-  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+
+## Latest change addendum
+
+### Change
+Fixed optimized-route expected start-time rendering to use local time conversion from the ISO timestamp, preventing UTC hour display in the Route Planner results panel.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### Why
+- The previous formatter extracted `Txx:yy` directly from the ISO string, so UTC timestamps were shown as local clock times (for example showing `01:00 PM` instead of `09:00 AM` in Toronto).
+- Parsing as a `Date` and formatting with `Intl.DateTimeFormat` keeps `Expected start time` consistent with locale-aware time rendering already used elsewhere in the planner.
+- The updated test now derives its expected label from locale formatting so it remains correct across environments with different timezones.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 15 tests)
 
 ## Latest change addendum
 
