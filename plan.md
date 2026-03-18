@@ -5,12 +5,48 @@ The repository planning documents are stored under `plans/`.
 Files:
 
 - `plans/change-log.md` - implementation history and completed change log
+- `plans/account-settings-and-working-hours-execution-plan.md` - execution plan for account menu/settings and future weekly schedule-aware route constraints
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
 ## Latest change record
 
 ## Latest change addendum
+
+### Change
+Updated the account settings execution plan to include nurse home-address management and Route Planner defaulting of both start/end points from saved home address, with this scope prioritized before weekly schedule work.
+
+### Files added/updated/deleted
+- Updated:
+  - `plans/account-settings-and-working-hours-execution-plan.md`
+  - `plan.md`
+
+### Why
+- Product scope now requires an account-level home address that can be reused as default trip start and end points.
+- Weekly schedule remains future work, but home-address integration is now the next priority and should be delivered first.
+- The execution plan needed explicit phase ordering, API contract updates, and acceptance criteria for this behavior.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
+
+### Change
+Added a new execution plan under `plans/` for account options menu, account settings password update flow, and future nurse weekly working-hours integration with optimize-route-v2.
+
+### Files added/updated/deleted
+- Added:
+  - `plans/account-settings-and-working-hours-execution-plan.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- Product direction now requires account settings from the header menu and a clear password-update flow for nurses.
+- Route-planning future scope needs a concrete design path for weekly working-hours constraints when patients are flexible/no-window.
+- Capturing this as an execution plan keeps implementation scope, API contract, and acceptance criteria explicit before coding begins.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
 
 ### Change
 Changed Route Planner destination cards to default to collapsed window details (`Edit window`) when a patient is added.
