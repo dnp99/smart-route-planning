@@ -75,6 +75,19 @@ export const isUpdateMeRequest = (value: unknown): value is UpdateMeRequest => {
   return typeof value.homeAddress === "string";
 };
 
+export type UpdatePasswordRequest = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+export const isUpdatePasswordRequest = (value: unknown): value is UpdatePasswordRequest => {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  return typeof value.currentPassword === "string" && typeof value.newPassword === "string";
+};
+
 export const parseLoginResponse = (value: unknown): LoginResponse | null => {
   if (!isObject(value)) {
     return null;
