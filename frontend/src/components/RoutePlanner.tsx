@@ -409,6 +409,9 @@ function RoutePlanner() {
   >(initialDraft?.selectedDestinations ?? []);
   const [expandedDestinationVisitKeys, setExpandedDestinationVisitKeys] =
     useState<Record<string, boolean>>({});
+  const [expandedResultTaskIds, setExpandedResultTaskIds] = useState<
+    Record<string, boolean>
+  >({});
   const [selectedEndPatient, setSelectedEndPatient] = useState<
     SelectedEndPatient | null
   >(initialDraft?.selectedEndPatient ?? null);
@@ -480,7 +483,7 @@ function RoutePlanner() {
       selectedDestinations.forEach((destination) => {
         const existing = current[destination.visitKey];
         if (existing === undefined) {
-          next[destination.visitKey] = !isMobileViewport;
+          next[destination.visitKey] = false;
           changed = true;
           return;
         }
@@ -494,7 +497,11 @@ function RoutePlanner() {
 
       return changed ? next : current;
     });
-  }, [isMobileViewport, selectedDestinations]);
+  }, [selectedDestinations]);
+
+  useEffect(() => {
+    setExpandedResultTaskIds({});
+  }, [result]);
 
   useEffect(() => {
     persistRoutePlannerDraft({
@@ -850,7 +857,7 @@ function RoutePlanner() {
     setExpandedDestinationVisitKeys((current) => {
       const next = { ...current };
       destinations.forEach((destination) => {
-        next[destination.visitKey] = !isMobileViewport;
+        next[destination.visitKey] = false;
       });
       return next;
     });
@@ -875,7 +882,7 @@ function RoutePlanner() {
   const toggleDestinationDetails = (visitKey: string) => {
     setExpandedDestinationVisitKeys((current) => ({
       ...current,
-      [visitKey]: !(current[visitKey] ?? !isMobileViewport),
+      [visitKey]: !(current[visitKey] ?? false),
     }));
   };
 
@@ -1202,7 +1209,7 @@ function RoutePlanner() {
                 {selectedDestinations.map((destination, index) => {
                   const isDestinationExpanded =
                     expandedDestinationVisitKeys[destination.visitKey] ??
-                    !isMobileViewport;
+                    false;
                   return (
                     <li
                       key={destination.visitKey}
@@ -1505,40 +1512,79 @@ function RoutePlanner() {
                     key={stop.stopId}
                     className="text-sm text-slate-800 dark:text-slate-200"
                   >
-                    <span>
-                      {stop.address}
-                      {stop.isEndingPoint ? " • Ending point" : ""}
-                    </span>
                     {stop.tasks.length > 0 ? (
-                      <>
-                        {stop.tasks.map((task) => (
-                          <small
-                            key={task.visitId}
-                            className="block text-xs font-medium text-blue-600 dark:text-blue-300"
-                          >
-                            Patient: {formatNameWords(task.patientName)} •{" "}
-                            {task.windowStart && task.windowEnd
-                              ? `${task.windowStart} - ${task.windowEnd}`
-                              : "No preferred window"}{" "}
-                            • {task.windowType} •{" "}
-                            {formatVisitDurationMinutes(task.serviceDurationMinutes)}
-                            {formatExpectedStartTimeText(task.serviceStartTime)
-                              ? ` • ${formatExpectedStartTimeText(task.serviceStartTime)}`
-                              : ""}
-                            {task.windowStart && task.windowEnd && task.lateBySeconds > 0 && (
-                              <span className="text-red-600 dark:text-red-400">
-                                {" "}
-                                • Outside preferred window by{" "}
-                                {Math.ceil(task.lateBySeconds / 60)} min
-                              </span>
-                            )}
-                          </small>
-                        ))}
-                      </>
+                      <div className="space-y-2">
+                        {stop.tasks.map((task) => {
+                          const formattedPatientName = formatNameWords(task.patientName);
+                          const expectedStartLabel = formatExpectedStartTimeText(
+                            task.serviceStartTime,
+                          );
+                          const detailsKey = `${task.visitId}`;
+                          const isDetailsExpanded = Boolean(expandedResultTaskIds[detailsKey]);
+
+                          return (
+                            <div
+                              key={task.visitId}
+                              className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40"
+                            >
+                              <button
+                                type="button"
+                                aria-label={`Toggle details for ${formattedPatientName}`}
+                                aria-expanded={isDetailsExpanded}
+                                onClick={() => {
+                                  setExpandedResultTaskIds((current) => ({
+                                    ...current,
+                                    [detailsKey]: !current[detailsKey],
+                                  }));
+                                }}
+                                className="m-0 bg-transparent p-0 text-sm font-semibold text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+                              >
+                                {formattedPatientName}
+                              </button>
+
+                              {expectedStartLabel && (
+                                <p className="m-0 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                  {expectedStartLabel}
+                                </p>
+                              )}
+
+                              {task.windowStart && task.windowEnd && task.lateBySeconds > 0 && (
+                                <p className="m-0 text-xs font-semibold text-red-600 dark:text-red-400">
+                                  Outside preferred window by {Math.ceil(task.lateBySeconds / 60)}{" "}
+                                  min
+                                </p>
+                              )}
+
+                              {isDetailsExpanded && (
+                                <div className="mt-1 space-y-0.5 text-xs text-slate-600 dark:text-slate-300">
+                                  <p className="m-0">Address: {task.address}</p>
+                                  <p className="m-0">
+                                    Preferred window:{" "}
+                                    {task.windowStart && task.windowEnd
+                                      ? `${task.windowStart} - ${task.windowEnd}`
+                                      : "No preferred window"}
+                                  </p>
+                                  <p className="m-0">Visit type: {task.windowType}</p>
+                                  <p className="m-0">
+                                    Duration:{" "}
+                                    {formatVisitDurationMinutes(task.serviceDurationMinutes)}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
                     ) : (
-                      <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
-                        No scheduled visit tasks at this stop.
-                      </small>
+                      <>
+                        <span>
+                          {stop.address}
+                          {stop.isEndingPoint ? " • Ending point" : ""}
+                        </span>
+                        <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
+                          No scheduled visit tasks at this stop.
+                        </small>
+                      </>
                     )}
                     <small className="block text-xs text-slate-500 dark:text-slate-400">
                       {stop.distanceFromPreviousKm} km •{" "}

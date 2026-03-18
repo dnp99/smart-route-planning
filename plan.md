@@ -13,6 +13,48 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Changed Route Planner destination cards to default to collapsed window details (`Edit window`) when a patient is added.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### Why
+- Nurses requested newly added destinations to open in compact mode first, matching the `Edit window` card state instead of expanded details.
+- This reduces visual noise when adding multiple patients and keeps window editing opt-in.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 19 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
+Updated optimize-route result rendering in Route Planner to a patient-first layout with clickable patient names that reveal details inline.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+  - `plan.md`
+
+### Why
+- The existing result rows were address-first and dense; nurses requested a clearer patient-centric summary.
+- Patient names are now interactive so details are available on demand while keeping the default list compact.
+- Expected start time is now visually emphasized on its own line to improve scanability.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 19 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
 Deleted `plans/optimize-route-v2-time-first-execution-plan.md` from the plans folder.
 
 ### Files added/updated/deleted
