@@ -2637,3 +2637,23 @@ Phase 2 of the scheduling-priority execution plan: surfaces lateness tolerance v
 ### 84 — Motivation
 
 Phase 3 of the scheduling-priority execution plan: nurses are now warned about unresolvable window clashes before they read the stop list. When two fixed patients share a window and the travel between them makes it impossible to serve both on time, a conflict notice appears at the top of the result so the nurse can contact one patient before departing.
+
+---
+
+## 85) Fix: Already-Late Fixed Patients Scheduled Before Far-Future Fixed Patients
+
+### 85 — Files updated
+
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+
+### 85 — Changes
+
+- In the primary candidate selection loop, added a late-fixed sub-group: when any fixed projection has `lateBySeconds > 0`, those patients form the highest-priority candidates (above non-late fixed patients).
+- Non-late fixed patients remain primary when no late fixed patients exist (existing behavior preserved).
+- Bumped `ALGORITHM_VERSION` to `v2.4.1-late-fixed-priority`.
+- Added a test covering the scenario: two same-window fixed patients finish, one is already late — the late fixed patient goes before the no-window patient rather than letting the no-window patient fill the gap.
+
+### 85 — Motivation
+
+After a fixed patient's window closes, the depth-2 lookahead was selecting a far-future fixed patient (fixedLateCount=0 in the immediate+1 step) over the already-late one (fixedLateCount=1). This triggered the gap-filler, which accepted the no-window patient (lateBySeconds=0) and rejected the late fixed patient (lateBySeconds>0), causing the already-late patient to run even later. In the reported case, Ravi R was 49 min late instead of ~13 min. The fix ensures already-late fixed patients are always visited as soon as possible to minimise accumulated lateness.
