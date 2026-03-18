@@ -2323,3 +2323,28 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 21 tests)
   - `npm run lint` ✅
+
+---
+
+## 75) Ending Point Card: Home Labeling + Click-to-Reveal Details
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Updated ending-point rendering in optimize results to a dedicated clickable card.
+- If ending stop address matches nurse home address:
+  - line 1 shows `Home` (blue, clickable)
+  - clicking reveals `Address: <ending-address>` and `Ending Point.`
+- If ending stop does not match nurse home address:
+  - line 1 shows the ending address (blue, clickable)
+  - clicking reveals `Ending Point.`
+- Ending-point travel summary (`X km • Y min from previous stop`) now renders inside the ending-point card in muted gray.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 22 tests)
+  - `npm run lint` ✅

@@ -197,6 +197,80 @@ const multiWindowPatient = {
   updatedAt: "2026-03-12T12:00:00.000Z",
 };
 
+const buildResultWithSingleScheduledStop = () => ({
+  start: {
+    address: "3361 Ingram Road, Mississauga, ON",
+    coords: { lat: 43.527, lon: -79.707 },
+    departureTime: "2026-03-14T00:00:00.000Z",
+  },
+  end: {
+    address: "Airport",
+    coords: { lat: 43.6777, lon: -79.6248 },
+  },
+  orderedStops: [
+    {
+      stopId: "stop-1",
+      address: "123 Main St",
+      coords: { lat: 43.58, lon: -79.77 },
+      arrivalTime: "2026-03-14T08:17:00.000Z",
+      departureTime: "2026-03-14T08:47:00.000Z",
+      tasks: [
+        {
+          visitId: "visit-1-patient-1",
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "123 Main St",
+          googlePlaceId: "place-1",
+          windowStart: "08:30",
+          windowEnd: "09:00",
+          windowType: "fixed" as const,
+          serviceDurationMinutes: 30,
+          arrivalTime: "2026-03-14T08:17:00.000Z",
+          serviceStartTime: "2026-03-14T08:30:00.000Z",
+          serviceEndTime: "2026-03-14T09:00:00.000Z",
+          waitSeconds: 780,
+          lateBySeconds: 0,
+          onTime: true,
+        },
+      ],
+      distanceFromPreviousKm: 13.49,
+      durationFromPreviousSeconds: 780,
+    },
+    {
+      stopId: "stop-2",
+      address: "Airport",
+      coords: { lat: 43.6777, lon: -79.6248 },
+      arrivalTime: "2026-03-14T09:10:00.000Z",
+      departureTime: "2026-03-14T09:10:00.000Z",
+      tasks: [],
+      distanceFromPreviousKm: 10,
+      durationFromPreviousSeconds: 600,
+      isEndingPoint: true,
+    },
+  ],
+  routeLegs: [
+    {
+      fromStopId: "start",
+      toStopId: "stop-1",
+      fromAddress: "3361 Ingram Road, Mississauga, ON",
+      toAddress: "123 Main St",
+      distanceMeters: 13490,
+      durationSeconds: 780,
+      encodedPolyline: "abc",
+    },
+  ],
+  unscheduledTasks: [],
+  metrics: {
+    fixedWindowViolations: 0,
+    totalLateSeconds: 0,
+    totalWaitSeconds: 780,
+    totalDistanceMeters: 23490,
+    totalDistanceKm: 23.49,
+    totalDurationSeconds: 1380,
+  },
+  algorithmVersion: "v2.2.2-window-distance-duration-gap-fill",
+});
+
 describe("RoutePlanner patient selection integration", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -470,79 +544,7 @@ describe("RoutePlanner patient selection integration", () => {
   });
 
   it("shows a leave-by suggestion from the first planned stop", () => {
-    routeOptimizationState.result = {
-      start: {
-        address: "3361 Ingram Road, Mississauga, ON",
-        coords: { lat: 43.527, lon: -79.707 },
-        departureTime: "2026-03-14T00:00:00.000Z",
-      },
-      end: {
-        address: "Airport",
-        coords: { lat: 43.6777, lon: -79.6248 },
-      },
-      orderedStops: [
-        {
-          stopId: "stop-1",
-          address: "123 Main St",
-          coords: { lat: 43.58, lon: -79.77 },
-          arrivalTime: "2026-03-14T08:17:00.000Z",
-          departureTime: "2026-03-14T08:47:00.000Z",
-          tasks: [
-            {
-              visitId: "visit-1-patient-1",
-              patientId: "patient-1",
-              patientName: "Jane Doe",
-              address: "123 Main St",
-              googlePlaceId: "place-1",
-              windowStart: "08:30",
-              windowEnd: "09:00",
-              windowType: "fixed",
-              serviceDurationMinutes: 30,
-              arrivalTime: "2026-03-14T08:17:00.000Z",
-              serviceStartTime: "2026-03-14T08:30:00.000Z",
-              serviceEndTime: "2026-03-14T09:00:00.000Z",
-              waitSeconds: 780,
-              lateBySeconds: 0,
-              onTime: true,
-            },
-          ],
-          distanceFromPreviousKm: 13.49,
-          durationFromPreviousSeconds: 780,
-        },
-        {
-          stopId: "stop-2",
-          address: "Airport",
-          coords: { lat: 43.6777, lon: -79.6248 },
-          arrivalTime: "2026-03-14T09:10:00.000Z",
-          departureTime: "2026-03-14T09:10:00.000Z",
-          tasks: [],
-          distanceFromPreviousKm: 10,
-          durationFromPreviousSeconds: 600,
-          isEndingPoint: true,
-        },
-      ],
-      routeLegs: [
-        {
-          fromStopId: "start",
-          toStopId: "stop-1",
-          fromAddress: "3361 Ingram Road, Mississauga, ON",
-          toAddress: "123 Main St",
-          distanceMeters: 13490,
-          durationSeconds: 780,
-          encodedPolyline: "abc",
-        },
-      ],
-      unscheduledTasks: [],
-      metrics: {
-        fixedWindowViolations: 0,
-        totalLateSeconds: 0,
-        totalWaitSeconds: 780,
-        totalDistanceMeters: 23490,
-        totalDistanceKm: 23.49,
-        totalDurationSeconds: 1380,
-      },
-      algorithmVersion: "v2.2.2-window-distance-duration-gap-fill",
-    };
+    routeOptimizationState.result = buildResultWithSingleScheduledStop();
 
     render(<RoutePlanner />);
 
@@ -577,7 +579,37 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByText("Preferred window: 08:30 - 09:00")).toBeTruthy();
     expect(screen.getByText("Visit type: fixed")).toBeTruthy();
     expect(screen.getByText("Duration: 30 min")).toBeTruthy();
-    expect(screen.getByText(/Airport\s*•\s*Ending point/)).toBeTruthy();
+    const endingPointDetailsToggle = screen.getByRole("button", {
+      name: /Toggle details for Ending point/i,
+    });
+    const endingPointCard = endingPointDetailsToggle.closest("div");
+    if (!endingPointCard) {
+      throw new Error("Expected ending point result card container");
+    }
+    expect(endingPointCard.textContent).toContain("10 km • 10 min from previous stop");
+
+    fireEvent.click(endingPointDetailsToggle);
+    expect(screen.getByText("Ending Point.")).toBeTruthy();
+  });
+
+  it("labels ending point as Home when it matches nurse home address and reveals address on toggle", () => {
+    routeOptimizationState.result = buildResultWithSingleScheduledStop();
+
+    render(<RoutePlanner nurseHomeAddress="Airport" />);
+
+    expect(screen.getByText("Home")).toBeTruthy();
+    const homeEndingPointDetailsToggle = screen.getByRole("button", {
+      name: /Toggle details for Home ending point/i,
+    });
+    const homeEndingPointCard = homeEndingPointDetailsToggle.closest("div");
+    if (!homeEndingPointCard) {
+      throw new Error("Expected home ending point result card container");
+    }
+    expect(homeEndingPointCard.textContent).toContain("10 km • 10 min from previous stop");
+
+    fireEvent.click(homeEndingPointDetailsToggle);
+    expect(screen.getByText("Address: Airport")).toBeTruthy();
+    expect(screen.getByText("Ending Point.")).toBeTruthy();
   });
 
   it("shows expected start time and late warning text from optimized route task timing", () => {

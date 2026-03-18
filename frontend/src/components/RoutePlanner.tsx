@@ -61,6 +61,15 @@ const timeToMinutes = (value: string) => {
   return Number(hoursString) * 60 + Number(minutesString);
 };
 
+const normalizeAddressForComparison = (value: string) =>
+  value.trim().toLowerCase().replace(/\s+/g, " ");
+
+const addressesMatch = (leftAddress: string, rightAddress: string) => {
+  const normalizedLeft = normalizeAddressForComparison(leftAddress);
+  const normalizedRight = normalizeAddressForComparison(rightAddress);
+  return normalizedLeft.length > 0 && normalizedLeft === normalizedRight;
+};
+
 const hasCompleteWindow = (destination: SelectedPatientDestination) =>
   HH_MM_PATTERN.test(destination.windowStart) && HH_MM_PATTERN.test(destination.windowEnd);
 
@@ -419,6 +428,9 @@ function RoutePlanner({ nurseHomeAddress = null }: RoutePlannerProps) {
   const [expandedResultTaskIds, setExpandedResultTaskIds] = useState<
     Record<string, boolean>
   >({});
+  const [expandedResultEndingStopIds, setExpandedResultEndingStopIds] = useState<
+    Record<string, boolean>
+  >({});
   const [selectedEndPatient, setSelectedEndPatient] = useState<
     SelectedEndPatient | null
   >(initialDraft?.selectedEndPatient ?? null);
@@ -533,6 +545,7 @@ function RoutePlanner({ nurseHomeAddress = null }: RoutePlannerProps) {
 
   useEffect(() => {
     setExpandedResultTaskIds({});
+    setExpandedResultEndingStopIds({});
   }, [result]);
 
   useEffect(() => {
@@ -1615,16 +1628,62 @@ function RoutePlanner({ nurseHomeAddress = null }: RoutePlannerProps) {
                       </div>
                     ) : (
                       <>
-                        <span>
-                          {stop.address}
-                          {stop.isEndingPoint ? " • Ending point" : ""}
-                        </span>
-                        <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
-                          No scheduled visit tasks at this stop.
-                        </small>
+                        {stop.isEndingPoint ? (
+                          (() => {
+                            const endingDetailsKey = `ending:${stop.stopId}`;
+                            const isEndingDetailsExpanded = Boolean(
+                              expandedResultEndingStopIds[endingDetailsKey],
+                            );
+                            const isHomeEndingPoint = addressesMatch(
+                              stop.address,
+                              normalizedHomeAddress,
+                            );
+
+                            return (
+                              <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40">
+                                <button
+                                  type="button"
+                                  aria-label={`Toggle details for ${isHomeEndingPoint ? "Home ending point" : "Ending point"}`}
+                                  aria-expanded={isEndingDetailsExpanded}
+                                  onClick={() => {
+                                    setExpandedResultEndingStopIds((current) => ({
+                                      ...current,
+                                      [endingDetailsKey]: !current[endingDetailsKey],
+                                    }));
+                                  }}
+                                  className="m-0 bg-transparent p-0 text-sm font-semibold text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+                                >
+                                  {isHomeEndingPoint ? "Home" : stop.address}
+                                </button>
+
+                                {isEndingDetailsExpanded && (
+                                  <div className="mt-1 space-y-0.5 text-xs text-slate-600 dark:text-slate-300">
+                                    {isHomeEndingPoint && (
+                                      <p className="m-0">Address: {stop.address}</p>
+                                    )}
+                                    <p className="m-0">Ending Point.</p>
+                                  </div>
+                                )}
+
+                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                  {stop.distanceFromPreviousKm} km •{" "}
+                                  {formatDuration(stop.durationFromPreviousSeconds)} from previous
+                                  stop
+                                </p>
+                              </div>
+                            );
+                          })()
+                        ) : (
+                          <>
+                            <span>{stop.address}</span>
+                            <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
+                              No scheduled visit tasks at this stop.
+                            </small>
+                          </>
+                        )}
                       </>
                     )}
-                    {stop.tasks.length === 0 && (
+                    {stop.tasks.length === 0 && !stop.isEndingPoint && (
                       <small className="block text-xs text-slate-500 dark:text-slate-400">
                         {stop.distanceFromPreviousKm} km •{" "}
                         {formatDuration(stop.durationFromPreviousSeconds)} from previous stop

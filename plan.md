@@ -14,6 +14,28 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Updated optimize-route ending-stop rendering to a clickable card that labels the last stop as `Home` when it matches nurse home address, otherwise shows the ending address.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- Requested UX behavior for the final stop:
+  - show `Home` as the clickable title when ending point equals home address
+  - otherwise show the ending address as the clickable title
+  - keep distance/time summary inside the ending-stop card
+- Clicking the ending-stop title now reveals ending-point details per the requested content rules.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 22 tests)
+  - `npm run lint` ✅
+
+### Change
 Moved per-stop travel summary (`X km • Y min from previous stop`) into each patient result card in the optimize-route output.
 
 ### Files added/updated/deleted
