@@ -339,6 +339,19 @@ describe("optimize-route v2 request validation", () => {
     );
   });
 
+  it("throws when flexible preferred window is shorter than service duration", () => {
+    const payload = buildValidPayload();
+    payload.visits[1].windowStart = "10:00";
+    payload.visits[1].windowEnd = "10:20";
+    payload.visits[1].serviceDurationMinutes = 30;
+
+    expectHttpError(
+      () => parseAndValidateBody(payload),
+      400,
+      "John Doe flexible preferred window must be at least 30 minutes long as per patient's profile.",
+    );
+  });
+
   it("throws when timezone is invalid", () => {
     const payload = buildValidPayload();
     payload.timezone = "Mars/Olympus";
