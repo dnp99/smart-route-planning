@@ -46,12 +46,27 @@ The backend runs on `http://localhost:3000`.
   - Default: `1h`.
 - `AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS`
   - Optional.
-  - Max login attempts per client within the auth rate-limit window.
+  - Max auth login/signup attempts per client/account bucket within the auth rate-limit window.
   - Default: `5`.
 - `AUTH_LOGIN_RATE_LIMIT_WINDOW_MS`
   - Optional.
   - Login rate-limit window in milliseconds.
   - Default: `60000`.
+- `AUTH_LOGIN_RATE_LIMIT_LOCKOUT_SECONDS`
+  - Optional.
+  - Lockout duration in seconds after exceeding auth login/signup limits.
+  - Default: `30`.
+- `AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_URL`
+  - Optional.
+  - Upstash Redis REST URL used for centralized auth login/signup rate limiting across instances.
+  - When omitted, auth rate limiting falls back to in-memory process-local buckets.
+- `AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_TOKEN`
+  - Optional.
+  - Upstash Redis REST token for centralized auth login/signup rate limiting.
+- `AUTH_ENFORCE_HTTPS`
+  - Optional.
+  - When `true`, rejects non-HTTPS requests for auth endpoints with `426`.
+  - Production (`NODE_ENV=production`) enforces HTTPS automatically.
 - `GOOGLE_MAPS_API_KEY`
   - Required for Google driving route distance, duration, route geometry, and address suggestions.
 - `OPTIMIZE_ROUTE_API_KEY`
@@ -77,6 +92,12 @@ JWT_SECRET=replace_with_a_long_random_secret
 JWT_EXPIRES_IN=1h
 AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS=5
 AUTH_LOGIN_RATE_LIMIT_WINDOW_MS=60000
+AUTH_LOGIN_RATE_LIMIT_LOCKOUT_SECONDS=30
+# Optional centralized auth limiter:
+# AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_URL=https://<your-upstash-endpoint>
+# AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_TOKEN=<your-upstash-token>
+# Optional local/proxy transport hardening override:
+# AUTH_ENFORCE_HTTPS=true
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ALLOWED_ORIGINS=http://localhost:5173
 OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
@@ -90,15 +111,20 @@ NOMINATIM_CONTACT_EMAIL=you@example.com
 - `POST /api/auth/login`
   - Accepts `{ email, password }`
   - Returns `{ token, user }` when credentials are valid
-  - Enforces per-client in-memory login rate limiting
+  - Enforces auth rate limiting by client IP and normalized account email
+  - Uses optional centralized Upstash Redis limiter when configured, otherwise in-memory fallback
+  - Returns `429` with `Retry-After` header while lockout is active
+  - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
 - `POST /api/auth/signup`
   - Accepts `{ displayName, email, password }`
   - Creates a nurse account and returns `{ token, user }`
   - Rejects duplicate emails with `409`
-  - Enforces per-client in-memory signup/login rate limiting
+  - Enforces shared auth rate limiting by client IP and normalized account email
+  - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
 - `GET /api/auth/me`
   - Requires `Authorization: Bearer <token>`
   - Returns current authenticated user
+  - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
 - `POST /api/optimize-route`
   - Requires `Authorization: Bearer <token>`
   - Accepts `startAddress`, `endAddress`, and `destinations[]`
@@ -131,6 +157,7 @@ Authentication behavior:
 
 - Missing/invalid/malformed bearer token returns `401`.
 - Missing `JWT_SECRET` returns `500` configuration error.
+- Auth endpoints include baseline security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and emit HSTS on HTTPS requests.
 - Authentication assumes nurse accounts already exist in the database; no default bootstrap nurse is created automatically.
 - The finalized auth schema requires every nurse account to have non-null `email` and `password_hash` values.
 

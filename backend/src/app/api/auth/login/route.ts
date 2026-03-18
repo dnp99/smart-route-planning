@@ -3,10 +3,15 @@ import {
   isLoginRequest,
   type AuthUser,
 } from "../../../../../../shared/contracts";
+import { logAuthAuditEvent } from "../../../../lib/auth/auditLogger";
 import { verifyPassword } from "../../../../lib/auth/password";
 import { signAccessToken } from "../../../../lib/auth/jwt";
 import { buildCorsHeaders, toErrorResponse } from "../../../../lib/http";
-import { enforceLoginRateLimit } from "../requestGuards";
+import {
+  enforceLoginRateLimit,
+  requireSecureAuthTransport,
+  resolveAuthClientKey,
+} from "../requestGuards";
 import {
   findNurseByEmail,
   updateNurseLastLoginAt,
@@ -23,23 +28,6 @@ const toAuthUser = (value: {
 });
 
 export async function OPTIONS(request: Request) {
-  try {
-    const corsHeaders = buildCorsHeaders(request, {
-      methods: "POST, OPTIONS",
-      allowedHeaders: "Content-Type, Authorization",
-      originPolicy: "strict",
-    });
-
-    return new NextResponse(null, {
-      status: 204,
-      headers: corsHeaders,
-    });
-  } catch (error) {
-    return toErrorResponse(error, "Failed to process preflight request.");
-  }
-}
-
-export async function POST(request: Request) {
   let corsHeaders: Record<string, string> | undefined;
 
   try {
@@ -47,14 +35,43 @@ export async function POST(request: Request) {
       methods: "POST, OPTIONS",
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
+      includeSecurityHeaders: true,
     });
+    requireSecureAuthTransport(request);
 
-    enforceLoginRateLimit(request);
+    return new NextResponse(null, {
+      status: 204,
+      headers: corsHeaders,
+    });
+  } catch (error) {
+    return toErrorResponse(error, "Failed to process preflight request.", corsHeaders);
+  }
+}
+
+export async function POST(request: Request) {
+  let corsHeaders: Record<string, string> | undefined;
+  const clientKey = resolveAuthClientKey(request);
+  let attemptedEmail: string | undefined;
+
+  try {
+    corsHeaders = buildCorsHeaders(request, {
+      methods: "POST, OPTIONS",
+      allowedHeaders: "Content-Type, Authorization",
+      originPolicy: "strict",
+      includeSecurityHeaders: true,
+    });
+    requireSecureAuthTransport(request);
 
     let body: unknown;
     try {
       body = await request.json();
     } catch {
+      await enforceLoginRateLimit(request);
+      logAuthAuditEvent({
+        action: "login",
+        outcome: "invalid_json",
+        clientKey,
+      });
       return NextResponse.json(
         { error: "Request body must be valid JSON." },
         { status: 400, headers: corsHeaders },
@@ -62,6 +79,12 @@ export async function POST(request: Request) {
     }
 
     if (!isLoginRequest(body)) {
+      await enforceLoginRateLimit(request);
+      logAuthAuditEvent({
+        action: "login",
+        outcome: "invalid_payload",
+        clientKey,
+      });
       return NextResponse.json(
         { error: "Login payload must include email and password." },
         { status: 400, headers: corsHeaders },
@@ -70,8 +93,16 @@ export async function POST(request: Request) {
 
     const email = body.email.trim().toLowerCase();
     const password = body.password;
+    attemptedEmail = email;
+    await enforceLoginRateLimit(request, email);
 
     if (!email || !password) {
+      logAuthAuditEvent({
+        action: "login",
+        outcome: "invalid_payload",
+        email,
+        clientKey,
+      });
       return NextResponse.json(
         { error: "Login payload must include email and password." },
         { status: 400, headers: corsHeaders },
@@ -80,6 +111,12 @@ export async function POST(request: Request) {
 
     const nurse = await findNurseByEmail(email);
     if (!nurse || !nurse.isActive) {
+      logAuthAuditEvent({
+        action: "login",
+        outcome: "invalid_credentials",
+        email,
+        clientKey,
+      });
       return NextResponse.json(
         { error: "Invalid email or password." },
         { status: 401, headers: corsHeaders },
@@ -88,6 +125,12 @@ export async function POST(request: Request) {
 
     const passwordMatches = await verifyPassword(password, nurse.passwordHash);
     if (!passwordMatches) {
+      logAuthAuditEvent({
+        action: "login",
+        outcome: "invalid_credentials",
+        email,
+        clientKey,
+      });
       return NextResponse.json(
         { error: "Invalid email or password." },
         { status: 401, headers: corsHeaders },
@@ -99,6 +142,13 @@ export async function POST(request: Request) {
     const token = await signAccessToken({
       nurseId: nurse.id,
       email: nurse.email,
+    });
+
+    logAuthAuditEvent({
+      action: "login",
+      outcome: "success",
+      email,
+      clientKey,
     });
 
     return NextResponse.json(
@@ -113,6 +163,39 @@ export async function POST(request: Request) {
       { headers: corsHeaders },
     );
   } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      (error as { status?: unknown }).status === 429
+    ) {
+      logAuthAuditEvent({
+        action: "login",
+        outcome: "rate_limited",
+        email: attemptedEmail,
+        clientKey,
+      });
+    } else if (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      (error as { status?: unknown }).status === 426
+    ) {
+      logAuthAuditEvent({
+        action: "login",
+        outcome: "transport_rejected",
+        email: attemptedEmail,
+        clientKey,
+      });
+    } else {
+      logAuthAuditEvent({
+        action: "login",
+        outcome: "error",
+        email: attemptedEmail,
+        clientKey,
+      });
+    }
+
     return toErrorResponse(error, "Failed to login.", corsHeaders);
   }
 }

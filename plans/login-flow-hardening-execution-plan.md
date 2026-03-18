@@ -5,15 +5,36 @@ Last updated: 2026-03-17
 
 ## Status
 
-Open.
+Implemented (backend hardening scope completed on 2026-03-17).
 
-This remains a planning/backlog document. It has not been marked completed in the repository change log yet.
+This document is now an execution record for the completed backend hardening work.
 
 ## Objective
 
 Harden the login flow with clear security controls and remove ambiguity around password transmission behavior between frontend and backend.
 
-This is a planning-only document and should be treated as pending until explicitly closed out.
+## Implementation Summary (2026-03-17)
+
+Completed changes:
+
+1. Enforced auth transport hardening for login/signup/me:
+   - `426 HTTPS is required for authentication endpoints.` on insecure requests when `NODE_ENV=production` or `AUTH_ENFORCE_HTTPS=true`.
+2. Added auth endpoint response hardening:
+   - strict CORS allowlist behavior (`originPolicy: strict`)
+   - security headers on auth responses (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`)
+   - HSTS emitted on HTTPS requests.
+3. Upgraded auth rate limiting:
+   - shared utility for auth endpoints
+   - client-IP + account-email keyed buckets
+   - lockout with `Retry-After` support
+   - optional centralized Upstash Redis REST backend with automatic in-memory fallback.
+4. Added structured auth audit logging for login outcomes with field redaction (email/client masking, no password logging).
+5. Extended tests and backend docs for new auth controls and configuration.
+
+Remaining backlog items outside this implementation:
+
+1. Token/session model ADR checkpoint from Phase 4.
+2. Full E2E auth rollout instrumentation and operations dashboard wiring from Phase 5.
 
 ## Context
 

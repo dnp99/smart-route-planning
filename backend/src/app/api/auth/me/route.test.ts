@@ -18,9 +18,11 @@ import { GET, OPTIONS } from "./route";
 
 describe("/api/auth/me route", () => {
   const originalAllowedOrigins = process.env.ALLOWED_ORIGINS;
+  const originalAuthEnforceHttps = process.env.AUTH_ENFORCE_HTTPS;
 
   beforeEach(() => {
     process.env.ALLOWED_ORIGINS = "http://localhost:5173";
+    delete process.env.AUTH_ENFORCE_HTTPS;
     requireAuthMock.mockReset();
     findNurseByIdMock.mockReset();
     requireAuthMock.mockResolvedValue({
@@ -34,6 +36,12 @@ describe("/api/auth/me route", () => {
       delete process.env.ALLOWED_ORIGINS;
     } else {
       process.env.ALLOWED_ORIGINS = originalAllowedOrigins;
+    }
+
+    if (originalAuthEnforceHttps === undefined) {
+      delete process.env.AUTH_ENFORCE_HTTPS;
+    } else {
+      process.env.AUTH_ENFORCE_HTTPS = originalAuthEnforceHttps;
     }
   });
 
@@ -50,6 +58,23 @@ describe("/api/auth/me route", () => {
     expect(response.headers.get("Access-Control-Allow-Headers")).toBe(
       "Content-Type, Authorization",
     );
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+
+  it("returns 426 for insecure transport when auth HTTPS enforcement is enabled", async () => {
+    process.env.AUTH_ENFORCE_HTTPS = "true";
+
+    const response = await GET(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "GET",
+        headers: { origin: "http://localhost:5173" },
+      }),
+    );
+
+    expect(response.status).toBe(426);
+    await expect(response.json()).resolves.toEqual({
+      error: "HTTPS is required for authentication endpoints.",
+    });
   });
 
   it("returns 401 when authorization is invalid", async () => {

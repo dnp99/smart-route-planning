@@ -20,6 +20,42 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Implemented login flow hardening backend controls across auth endpoints, including secure transport enforcement, security headers, distributed-capable auth rate limiting, and redaction-safe audit logging.
+
+### Files added/updated/deleted
+- Added:
+  - `backend/src/lib/rateLimit/authLoginRateLimit.ts`
+  - `backend/src/lib/rateLimit/authLoginRateLimit.test.ts`
+  - `backend/src/lib/auth/auditLogger.ts`
+  - `backend/src/lib/auth/auditLogger.test.ts`
+- Updated:
+  - `backend/src/lib/http.ts`
+  - `backend/src/lib/http.test.ts`
+  - `backend/src/app/api/auth/requestGuards.ts`
+  - `backend/src/app/api/auth/requestGuards.test.ts`
+  - `backend/src/app/api/auth/login/route.ts`
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/src/app/api/auth/signup/route.ts`
+  - `backend/src/app/api/auth/signup/route.test.ts`
+  - `backend/src/app/api/auth/me/route.ts`
+  - `backend/src/app/api/auth/me/route.test.ts`
+  - `backend/README.md`
+  - `plans/login-flow-hardening-execution-plan.md`
+  - `plan.md`
+
+### Why
+- Auth hardening requirements were still marked pending and only partially implemented, leaving transport policy, rate-limit consistency, and audit behavior uneven across auth endpoints.
+- This implementation closes the backend scope in the hardening plan and documents the exact controls and environment flags required for production operation.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/auth/requestGuards.test.ts src/app/api/auth/login/route.test.ts src/app/api/auth/signup/route.test.ts src/app/api/auth/me/route.test.ts src/lib/http.test.ts src/lib/rateLimit/authLoginRateLimit.test.ts src/lib/auth/auditLogger.test.ts` ✅ (7 files, 44 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+## Latest change addendum
+
+### Change
 Closed nurse patient-management follow-up gaps by updating patient-end request behavior in Route Planner and marking the follow-up tracker as completed.
 
 ### Files added/updated/deleted
