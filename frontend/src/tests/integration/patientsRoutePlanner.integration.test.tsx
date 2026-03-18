@@ -433,7 +433,11 @@ describe("patients and route planner integration", () => {
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/Patient: John Smith/i)).toBeTruthy();
+      expect(
+        screen.getByRole("button", {
+          name: /Toggle details for John Smith/i,
+        }),
+      ).toBeTruthy();
     });
   });
 });

@@ -227,6 +227,8 @@ describe("RoutePlanner patient selection integration", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
 
     expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Edit window" })).toBeTruthy();
+    expect(screen.queryByText("Include this visit in route")).toBeNull();
     expect(screen.queryAllByRole("button", { name: /Jane Doe/i })).toHaveLength(0);
   });
 
@@ -369,6 +371,7 @@ describe("RoutePlanner patient selection integration", () => {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
 
     fireEvent.change(screen.getByLabelText("Jane Doe start"), {
       target: { value: "10:30" },
@@ -508,13 +511,32 @@ describe("RoutePlanner patient selection integration", () => {
 
     render(<RoutePlanner />);
 
+    const janeDetailsToggle = screen.getByRole("button", {
+      name: /Toggle details for Jane Doe/i,
+    });
+    const janeExpectedStartTimeLabel = new Intl.DateTimeFormat(undefined, {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    }).format(new Date("2026-03-14T08:30:00.000Z"));
+
     expect(screen.getByText(/Suggested leave-by:/)).toBeTruthy();
     expect(
       screen.getByText(/Based on the first planned visit \(Jane Doe\)/),
     ).toBeTruthy();
     expect(
-      screen.getByText(/Patient:\s*Jane Doe\s*•\s*08:30 - 09:00\s*•\s*fixed\s*•\s*30 min/i),
+      screen.getByText(
+        new RegExp(
+          `Expected start time ${escapeRegExp(janeExpectedStartTimeLabel)}`,
+          "i",
+        ),
+      ),
     ).toBeTruthy();
+    fireEvent.click(janeDetailsToggle);
+    expect(screen.getByText("Address: 123 Main St")).toBeTruthy();
+    expect(screen.getByText("Preferred window: 08:30 - 09:00")).toBeTruthy();
+    expect(screen.getByText("Visit type: fixed")).toBeTruthy();
+    expect(screen.getByText("Duration: 30 min")).toBeTruthy();
     expect(screen.getByText(/Airport\s*•\s*Ending point/)).toBeTruthy();
   });
 
@@ -647,7 +669,13 @@ describe("RoutePlanner patient selection integration", () => {
 
     render(<RoutePlanner />);
 
-    expect(screen.getByText(/Patient:\s*Flex Patient\s*•\s*No preferred window/i)).toBeTruthy();
+    expect(screen.queryByText("Preferred window: No preferred window")).toBeNull();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: /Toggle details for Flex Patient/i,
+      }),
+    );
+    expect(screen.getByText("Preferred window: No preferred window")).toBeTruthy();
     expect(screen.queryByText(/Outside preferred window by/i)).toBeNull();
   });
 
@@ -698,6 +726,7 @@ describe("RoutePlanner patient selection integration", () => {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
     fireEvent.change(screen.getByLabelText("Flex Patient start"), {
       target: { value: "13:00" },
     });
@@ -718,6 +747,9 @@ describe("RoutePlanner patient selection integration", () => {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Mina Lee/i })[0]);
+    for (const toggle of screen.getAllByRole("button", { name: "Edit window" })) {
+      fireEvent.click(toggle);
+    }
 
     const includeCheckboxes = screen.getAllByRole("checkbox", {
       name: "Include this visit in route",
@@ -753,6 +785,7 @@ describe("RoutePlanner patient selection integration", () => {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
 
     fireEvent.change(screen.getByLabelText("Flex Patient start"), {
       target: { value: "13:00" },

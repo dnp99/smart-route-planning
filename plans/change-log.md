@@ -2159,3 +2159,32 @@ An Oracle review was performed and its recommendations were incorporated, includ
 ### Verification
 - Documentation:
   - `git diff --check` ✅
+
+---
+
+## 70) Route Planner Result Layout Refresh + Collapsed Destination Defaults
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Updated optimized-route results to a patient-first presentation:
+  - patient name is now the primary line item per task and is clickable
+  - expected start time is rendered on its own emphasized line
+  - distance/travel-from-previous remains as the summary line
+- Added inline patient-details toggling in optimized results:
+  - click patient name to reveal address, preferred window (or “No preferred window”), visit type, and duration
+  - preserves outside-window warning when applicable
+- Changed destination-card defaults when adding patients:
+  - new destination entries now start collapsed (`Edit window`) instead of expanded (`Hide details`)
+  - window-edit controls stay opt-in for faster multi-patient selection
+- Updated route-planner unit/integration tests for both new result rendering and collapsed-by-default destination behavior.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅
+  - `npm run lint` ✅
