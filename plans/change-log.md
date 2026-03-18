@@ -2278,3 +2278,144 @@ An Oracle review was performed and its recommendations were incorporated, includ
   - `npm test -- --run src/tests/appRoutes.test.tsx src/tests/auth/authService.test.ts src/tests/auth/LoginPage.test.tsx src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/routePlanner/routePlannerService.test.ts src/tests/patients/patientService.test.ts src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (7 files, 53 tests)
   - `npm run lint` ✅
   - `npm run build` ✅
+
+---
+
+## 73) Patients Header Count + Account Home-Address Autocomplete
+
+### Commit
+- `9a35faa` - `feat(frontend): add patient count heading and account address autocomplete`
+
+### Files updated
+- `frontend/src/App.jsx`
+- `frontend/src/components/patients/PatientsPage.tsx`
+- `frontend/src/tests/appRoutes.test.tsx`
+- `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+- `plan.md`
+
+### What changed
+- Patients page header now displays a live total as `Patients (X)`.
+- Account settings home-address input now reuses Google Maps autocomplete behavior.
+- Updated account-settings placeholder text to `Perason Internal Airport`.
+- Updated routing/integration tests for the new Patients heading format.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/appRoutes.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/patients/PatientsPage.test.tsx` ✅
+  - `npm run lint` ✅
+
+---
+
+## 74) Optimize-Route Result Cards: Move Distance/Time Into Each Patient Card
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Route Planner optimize results now render `X km • Y min from previous stop` inside each patient result card.
+- Removed detached per-stop summary under task rows when tasks exist; no-task stops continue to show travel summary in the existing line.
+- Added test coverage to assert the travel summary appears within the patient card container.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 21 tests)
+  - `npm run lint` ✅
+
+---
+
+## 75) Ending Point Card: Home Labeling + Click-to-Reveal Details
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Updated ending-point rendering in optimize results to a dedicated clickable card.
+- If ending stop address matches nurse home address:
+  - line 1 shows `Home` (blue, clickable)
+  - clicking reveals `Address: <ending-address>` and `Ending Point.`
+- If ending stop does not match nurse home address:
+  - line 1 shows the ending address (blue, clickable)
+  - clicking reveals `Ending Point.`
+- Ending-point travel summary (`X km • Y min from previous stop`) now renders inside the ending-point card in muted gray.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 22 tests)
+  - `npm run lint` ✅
+
+---
+
+## 76) Route Planner Trip Setup Simplification: Remove End Mode + Home-Address Warning CTA
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/App.jsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Removed `End mode` controls and the entire patient-end-address selection flow from Route Planner.
+- Route Planner now always uses a single editable `Ending point` address field (autocomplete/manual).
+- Added a non-blocking warning banner in Trip setup when nurse home address is missing.
+- Added `Open account settings` CTA button in the warning banner, wired through `App` to open the account settings modal.
+- Kept manual route planning unblocked even without a saved home address.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 30 tests)
+  - `npm run lint` ✅
+
+---
+
+## 77) Route Planner Quick-Add Patient in Destination Search
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Added `Add New Patient` action in Route Planner destination-patient search card.
+- Reused the existing patient form modal/validation workflow directly in Route Planner.
+- Saving a new patient now:
+  - creates the patient record
+  - closes the modal
+  - auto-selects the newly created patient as a route destination
+- Added inline error banner in the destination search card for create-patient failures.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 21 tests)
+  - `npm test -- --run src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (2 files, 10 tests)
+  - `npm run lint` ✅
+
+---
+
+## 78) Destination Card Actions Refresh (Desktop Right-Align + Mobile Overflow Remove)
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `frontend/src/tests/appRoutes.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Updated selected-destination card action layout:
+  - Desktop: moved `Edit window` and `Remove` controls to the right side on the same row as patient name/address.
+  - Mobile: kept `Edit window` directly visible and moved `Remove` into a per-card overflow actions menu.
+- Added destination action-menu state handling so menu closes when destination entries change.
+- Tightened route-planner test assertions impacted by the new action controls and improved `appRoutes` test isolation by clearing `localStorage` in `beforeEach`.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 31 tests)
+  - `npm run lint` ✅

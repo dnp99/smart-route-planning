@@ -14,6 +14,160 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Refined selected-destination patient card actions with a responsive layout: desktop right-aligned inline actions, and mobile overflow handling for remove.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `frontend/src/tests/appRoutes.test.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- Requested improved visual hierarchy for destination cards so `Edit window` and `Remove` actions align to the right on desktop.
+- Mobile needed safer destructive UX and less horizontal crowding, so remove is now placed under a per-card overflow action menu.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 31 tests)
+  - `npm run lint` ✅
+
+### Change
+Added in-place patient creation to Route Planner destination search so nurses can create and immediately add a missing patient without leaving the planner.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- Nurses were forced to navigate to the Patients page to add missing patients, which interrupted planning flow and risked losing context.
+- Route Planner now supports creating a patient directly from the destination search card and auto-selects the new patient as a route destination.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 21 tests)
+  - `npm test -- --run src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (2 files, 10 tests)
+  - `npm run lint` ✅
+
+### Change
+Removed Route Planner `End mode` (manual vs patient) and standardized trip setup to a single editable ending-point address, with a home-address warning banner when profile home address is missing.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/App.jsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- End-mode selection added complexity without improving primary workflow.
+- Start/end should default automatically from account home address, with manual override always available.
+- When home address is not set, nurses need a clear prompt and direct action to open Account settings.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 30 tests)
+  - `npm run lint` ✅
+
+### Change
+Updated optimize-route ending-stop rendering to a clickable card that labels the last stop as `Home` when it matches nurse home address, otherwise shows the ending address.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- Requested UX behavior for the final stop:
+  - show `Home` as the clickable title when ending point equals home address
+  - otherwise show the ending address as the clickable title
+  - keep distance/time summary inside the ending-stop card
+- Clicking the ending-stop title now reveals ending-point details per the requested content rules.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 22 tests)
+  - `npm run lint` ✅
+
+### Change
+Moved per-stop travel summary (`X km • Y min from previous stop`) into each patient result card in the optimize-route output.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- Requested UI adjustment to keep each patient result self-contained by showing distance/time inside the card instead of as a detached line below the list item.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 21 tests)
+  - `npm run lint` ✅
+
+### Change
+Updated the Patients page header to show the live patient count as `Patients (X)`.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/patients/PatientsPage.tsx`
+  - `frontend/src/tests/appRoutes.test.tsx`
+  - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+  - `plan.md`
+
+### Why
+- Nurses requested the total count directly in the Patients header for faster visibility without scanning the list.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/appRoutes.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 10 tests)
+  - `npm test -- --run src/tests/patients/PatientsPage.test.tsx` ✅ (1 file, 9 tests)
+  - `npm run lint` ✅
+
+### Change
+Updated account-settings home-address placeholder text to `Perason Internal Airport`.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/App.jsx`
+  - `plan.md`
+
+### Why
+- Requested wording update for the account-settings home-address input placeholder.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/appRoutes.test.tsx` ✅
+  - `npm run lint` ✅
+
+### Change
+Enabled Google Maps address autocomplete for the account-settings home-address field.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/App.jsx`
+  - `frontend/src/tests/appRoutes.test.tsx`
+  - `plan.md`
+
+### Why
+- Nurses should get the same guided address entry experience in account settings as Route Planner and Patients.
+- Reusing shared autocomplete behavior reduces manual address errors and improves default start/end data quality.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/appRoutes.test.tsx` ✅
+  - `npm run lint` ✅
+
+### Change
 Lowered backend coverage thresholds from `90` to `80` in the Vitest coverage config.
 
 ### Files added/updated/deleted

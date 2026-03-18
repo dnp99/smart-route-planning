@@ -333,7 +333,7 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Patients" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
     fireEvent.change(screen.getByLabelText("First name"), {
@@ -387,7 +387,7 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Patients" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
     fireEvent.change(screen.getByLabelText("First name"), {

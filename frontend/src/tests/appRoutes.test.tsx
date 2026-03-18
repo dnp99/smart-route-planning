@@ -16,7 +16,34 @@ vi.mock("../components/auth/authService", () => ({
   signUp: vi.fn(),
 }));
 
+vi.mock("../components/AddressAutocompleteInput", () => ({
+  default: ({
+    id,
+    label,
+    value,
+    onChange,
+    disabled,
+  }: {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    disabled?: boolean;
+  }) => (
+    <div>
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        value={value}
+        disabled={Boolean(disabled)}
+        onChange={(event) => onChange((event.target as HTMLInputElement).value)}
+      />
+    </div>
+  ),
+}));
+
 beforeEach(() => {
+  window.localStorage.clear();
   fetchMeMock.mockReset();
   updateProfileHomeAddressMock.mockReset();
   fetchMeMock.mockResolvedValue({
@@ -113,7 +140,7 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Patients" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
     expect(screen.getByText("Nurse operations workspace for Nurse One")).toBeTruthy();
   });
 
@@ -126,7 +153,7 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Patients" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Patients" }).getAttribute("aria-current")).toBe(
       "page",
     );
@@ -141,7 +168,7 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Patients" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
     expect(screen.queryByRole("menuitem", { name: "Logout" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
@@ -159,7 +186,7 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Patients" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
     fireEvent.click(screen.getByRole("menuitem", { name: "Account settings" }));

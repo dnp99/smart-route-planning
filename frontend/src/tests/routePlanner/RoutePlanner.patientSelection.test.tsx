@@ -13,8 +13,9 @@ const { routeOptimizationState } = vi.hoisted(() => ({
 
 const optimizeRouteMock = vi.fn();
 const persistPlanningWindowsMock = vi.fn();
+const createPatientMock = vi.fn();
 const usePatientSearchMock = vi.fn<
-  (args: { enabled: boolean }) => {
+  (args: { query: string; enabled: boolean }) => {
     patients: unknown[];
     isLoading: boolean;
     error: string;
@@ -42,6 +43,10 @@ vi.mock("../../components/routePlanner/usePatientSearch", () => ({
 
 vi.mock("../../components/routePlanner/routePlannerService", () => ({
   persistPlanningWindows: (...args: unknown[]) => persistPlanningWindowsMock(...args),
+}));
+
+vi.mock("../../components/patients/patientService", () => ({
+  createPatient: (...args: unknown[]) => createPatientMock(...args),
 }));
 
 vi.mock("../../components/AddressAutocompleteInput", () => ({
@@ -197,19 +202,116 @@ const multiWindowPatient = {
   updatedAt: "2026-03-12T12:00:00.000Z",
 };
 
+const buildResultWithSingleScheduledStop = () => ({
+  start: {
+    address: "3361 Ingram Road, Mississauga, ON",
+    coords: { lat: 43.527, lon: -79.707 },
+    departureTime: "2026-03-14T00:00:00.000Z",
+  },
+  end: {
+    address: "Airport",
+    coords: { lat: 43.6777, lon: -79.6248 },
+  },
+  orderedStops: [
+    {
+      stopId: "stop-1",
+      address: "123 Main St",
+      coords: { lat: 43.58, lon: -79.77 },
+      arrivalTime: "2026-03-14T08:17:00.000Z",
+      departureTime: "2026-03-14T08:47:00.000Z",
+      tasks: [
+        {
+          visitId: "visit-1-patient-1",
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          address: "123 Main St",
+          googlePlaceId: "place-1",
+          windowStart: "08:30",
+          windowEnd: "09:00",
+          windowType: "fixed" as const,
+          serviceDurationMinutes: 30,
+          arrivalTime: "2026-03-14T08:17:00.000Z",
+          serviceStartTime: "2026-03-14T08:30:00.000Z",
+          serviceEndTime: "2026-03-14T09:00:00.000Z",
+          waitSeconds: 780,
+          lateBySeconds: 0,
+          onTime: true,
+        },
+      ],
+      distanceFromPreviousKm: 13.49,
+      durationFromPreviousSeconds: 780,
+    },
+    {
+      stopId: "stop-2",
+      address: "Airport",
+      coords: { lat: 43.6777, lon: -79.6248 },
+      arrivalTime: "2026-03-14T09:10:00.000Z",
+      departureTime: "2026-03-14T09:10:00.000Z",
+      tasks: [],
+      distanceFromPreviousKm: 10,
+      durationFromPreviousSeconds: 600,
+      isEndingPoint: true,
+    },
+  ],
+  routeLegs: [
+    {
+      fromStopId: "start",
+      toStopId: "stop-1",
+      fromAddress: "3361 Ingram Road, Mississauga, ON",
+      toAddress: "123 Main St",
+      distanceMeters: 13490,
+      durationSeconds: 780,
+      encodedPolyline: "abc",
+    },
+  ],
+  unscheduledTasks: [],
+  metrics: {
+    fixedWindowViolations: 0,
+    totalLateSeconds: 0,
+    totalWaitSeconds: 780,
+    totalDistanceMeters: 23490,
+    totalDistanceKm: 23.49,
+    totalDurationSeconds: 1380,
+  },
+  algorithmVersion: "v2.2.2-window-distance-duration-gap-fill",
+});
+
 describe("RoutePlanner patient selection integration", () => {
   beforeEach(() => {
     window.localStorage.clear();
     optimizeRouteMock.mockReset();
     persistPlanningWindowsMock.mockReset();
+    createPatientMock.mockReset();
     persistPlanningWindowsMock.mockResolvedValue(undefined);
+    createPatientMock.mockResolvedValue({
+      id: "patient-5",
+      nurseId: "nurse-1",
+      firstName: "New",
+      lastName: "Patient",
+      address: "99 Test Ave",
+      googlePlaceId: null,
+      visitDurationMinutes: 30,
+      preferredVisitStartTime: "09:00:00",
+      preferredVisitEndTime: "10:00:00",
+      visitTimeType: "fixed",
+      visitWindows: [
+        {
+          id: "window-5",
+          startTime: "09:00:00",
+          endTime: "10:00:00",
+          visitTimeType: "fixed",
+        },
+      ],
+      createdAt: "2026-03-12T12:00:00.000Z",
+      updatedAt: "2026-03-12T12:00:00.000Z",
+    });
     routeOptimizationState.result = null;
     routeOptimizationState.error = "";
     routeOptimizationState.isLoading = false;
     routeOptimizationState.showOptimizeSuccess = false;
     routeOptimizationState.hasAttemptedOptimize = false;
     usePatientSearchMock.mockReset();
-    usePatientSearchMock.mockImplementation(({ enabled }: { enabled: boolean }) => ({
+    usePatientSearchMock.mockImplementation(({ enabled }: { query: string; enabled: boolean }) => ({
       patients: enabled ? [janePatient, johnPatient, flexNoWindowPatient, multiWindowPatient] : [],
       isLoading: false,
       error: "",
@@ -264,7 +366,7 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Edit window" })).toBeTruthy();
     expect(screen.queryByText("Include this visit in route")).toBeNull();
-    expect(screen.queryAllByRole("button", { name: /Jane Doe/i })).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /^Jane Doe$/i })).toBeNull();
   });
 
   it("shows a clear hint when ending point is not selected", () => {
@@ -360,15 +462,19 @@ describe("RoutePlanner patient selection integration", () => {
     });
   });
 
-  it("promotes selected destination patient to end patient and removes from destinations", () => {
-    render(<RoutePlanner />);
+  it("shows home-address warning banner and supports account settings action when home address is missing", () => {
+    const openAccountSettingsMock = vi.fn();
+    render(<RoutePlanner onOpenAccountSettings={openAccountSettingsMock} />);
 
-    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
-    fireEvent.click(screen.getByLabelText("Patient end address"));
-    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+    expect(screen.getByText("Home address not set")).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Set your home address in Account settings to auto-fill starting and ending points\./i,
+      ),
+    ).toBeTruthy();
 
-    expect(screen.getByText("End patient: Jane Doe")).toBeTruthy();
-    expect(screen.getByText("0 destination(s) detected")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    expect(openAccountSettingsMock).toHaveBeenCalledTimes(1);
   });
 
   it("submits optimize payload with patient-linked destinations", () => {
@@ -437,19 +543,43 @@ describe("RoutePlanner patient selection integration", () => {
     });
   });
 
-  it("uses selected end patient only as the route end and excludes it from destinations", () => {
+  it("hides home-address warning banner when home address exists", () => {
+    render(<RoutePlanner nurseHomeAddress="1 Home Way, Mississauga, ON" />);
+
+    expect(screen.queryByText("Home address not set")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Open account settings" })).toBeNull();
+  });
+
+  it("creates a new patient from destination card and auto-selects it", async () => {
     render(<RoutePlanner />);
 
-    fireEvent.click(screen.getByLabelText("Patient end address"));
-    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+    fireEvent.click(screen.getByRole("button", { name: "Add New Patient" }));
+    expect(screen.getByRole("heading", { name: "Add New Patient" })).toBeTruthy();
 
-    expect(optimizeRouteMock).toHaveBeenCalledWith({
-      startAddress: "3361 Ingram Road, Mississauga, ON",
-      endAddress: "123 Main St",
-      destinations: [],
-      canOptimize: true,
+    fireEvent.change(screen.getByLabelText("First name"), {
+      target: { value: "Olivia" },
     });
+    fireEvent.change(screen.getByLabelText("Last name"), {
+      target: { value: "Brown" },
+    });
+    fireEvent.change(screen.getByLabelText("Address"), {
+      target: { value: "88 Queen Street, Toronto, ON" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save new patient" }));
+
+    await waitFor(() => {
+      expect(createPatientMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          firstName: "Olivia",
+          lastName: "Brown",
+          address: "88 Queen Street, Toronto, ON",
+        }),
+      );
+    });
+
+    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+    expect(screen.getByText("New Patient")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Add New Patient" })).toBeNull();
   });
 
   it("submits manual start and end place ids picked from autocomplete", () => {
@@ -470,79 +600,7 @@ describe("RoutePlanner patient selection integration", () => {
   });
 
   it("shows a leave-by suggestion from the first planned stop", () => {
-    routeOptimizationState.result = {
-      start: {
-        address: "3361 Ingram Road, Mississauga, ON",
-        coords: { lat: 43.527, lon: -79.707 },
-        departureTime: "2026-03-14T00:00:00.000Z",
-      },
-      end: {
-        address: "Airport",
-        coords: { lat: 43.6777, lon: -79.6248 },
-      },
-      orderedStops: [
-        {
-          stopId: "stop-1",
-          address: "123 Main St",
-          coords: { lat: 43.58, lon: -79.77 },
-          arrivalTime: "2026-03-14T08:17:00.000Z",
-          departureTime: "2026-03-14T08:47:00.000Z",
-          tasks: [
-            {
-              visitId: "visit-1-patient-1",
-              patientId: "patient-1",
-              patientName: "Jane Doe",
-              address: "123 Main St",
-              googlePlaceId: "place-1",
-              windowStart: "08:30",
-              windowEnd: "09:00",
-              windowType: "fixed",
-              serviceDurationMinutes: 30,
-              arrivalTime: "2026-03-14T08:17:00.000Z",
-              serviceStartTime: "2026-03-14T08:30:00.000Z",
-              serviceEndTime: "2026-03-14T09:00:00.000Z",
-              waitSeconds: 780,
-              lateBySeconds: 0,
-              onTime: true,
-            },
-          ],
-          distanceFromPreviousKm: 13.49,
-          durationFromPreviousSeconds: 780,
-        },
-        {
-          stopId: "stop-2",
-          address: "Airport",
-          coords: { lat: 43.6777, lon: -79.6248 },
-          arrivalTime: "2026-03-14T09:10:00.000Z",
-          departureTime: "2026-03-14T09:10:00.000Z",
-          tasks: [],
-          distanceFromPreviousKm: 10,
-          durationFromPreviousSeconds: 600,
-          isEndingPoint: true,
-        },
-      ],
-      routeLegs: [
-        {
-          fromStopId: "start",
-          toStopId: "stop-1",
-          fromAddress: "3361 Ingram Road, Mississauga, ON",
-          toAddress: "123 Main St",
-          distanceMeters: 13490,
-          durationSeconds: 780,
-          encodedPolyline: "abc",
-        },
-      ],
-      unscheduledTasks: [],
-      metrics: {
-        fixedWindowViolations: 0,
-        totalLateSeconds: 0,
-        totalWaitSeconds: 780,
-        totalDistanceMeters: 23490,
-        totalDistanceKm: 23.49,
-        totalDurationSeconds: 1380,
-      },
-      algorithmVersion: "v2.2.2-window-distance-duration-gap-fill",
-    };
+    routeOptimizationState.result = buildResultWithSingleScheduledStop();
 
     render(<RoutePlanner />);
 
@@ -567,12 +625,47 @@ describe("RoutePlanner patient selection integration", () => {
         ),
       ),
     ).toBeTruthy();
+    const janeCard = janeDetailsToggle.closest("div");
+    if (!janeCard) {
+      throw new Error("Expected Jane Doe result card container");
+    }
+    expect(janeCard.textContent).toContain("13.49 km • 13 min from previous stop");
     fireEvent.click(janeDetailsToggle);
     expect(screen.getByText("Address: 123 Main St")).toBeTruthy();
     expect(screen.getByText("Preferred window: 08:30 - 09:00")).toBeTruthy();
     expect(screen.getByText("Visit type: fixed")).toBeTruthy();
     expect(screen.getByText("Duration: 30 min")).toBeTruthy();
-    expect(screen.getByText(/Airport\s*•\s*Ending point/)).toBeTruthy();
+    const endingPointDetailsToggle = screen.getByRole("button", {
+      name: /Toggle details for Ending point/i,
+    });
+    const endingPointCard = endingPointDetailsToggle.closest("div");
+    if (!endingPointCard) {
+      throw new Error("Expected ending point result card container");
+    }
+    expect(endingPointCard.textContent).toContain("10 km • 10 min from previous stop");
+
+    fireEvent.click(endingPointDetailsToggle);
+    expect(screen.getByText("Ending Point.")).toBeTruthy();
+  });
+
+  it("labels ending point as Home when it matches nurse home address and reveals address on toggle", () => {
+    routeOptimizationState.result = buildResultWithSingleScheduledStop();
+
+    render(<RoutePlanner nurseHomeAddress="Airport" />);
+
+    expect(screen.getByText("Home")).toBeTruthy();
+    const homeEndingPointDetailsToggle = screen.getByRole("button", {
+      name: /Toggle details for Home ending point/i,
+    });
+    const homeEndingPointCard = homeEndingPointDetailsToggle.closest("div");
+    if (!homeEndingPointCard) {
+      throw new Error("Expected home ending point result card container");
+    }
+    expect(homeEndingPointCard.textContent).toContain("10 km • 10 min from previous stop");
+
+    fireEvent.click(homeEndingPointDetailsToggle);
+    expect(screen.getByText("Address: Airport")).toBeTruthy();
+    expect(screen.getByText("Ending Point.")).toBeTruthy();
   });
 
   it("shows expected start time and late warning text from optimized route task timing", () => {
