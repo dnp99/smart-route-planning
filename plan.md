@@ -5,17 +5,52 @@ The repository planning documents are stored under `plans/`.
 Files:
 
 - `plans/change-log.md` - implementation history and completed change log
-- `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
-- `plans/jwt-authentication-remediation-release-note.md` - short release note for the completed JWT remediation rollout
-- `plans/login-flow-hardening-execution-plan.md` - login transport, hardening, and rollout checklist plan
 - `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
-- `plans/nurse-patient-management-follow-ups.md` - remaining nurse/patient follow-up items and intentional deviations
 - `plans/optimize-route-v2-time-first-execution-plan.md` - original v2 time-first endpoint design plan
-- `plans/optimize-route-v2-gap-closure-execution-plan.md` - v2.3 gap-closure rollout execution record
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
 ## Latest change record
+
+## Latest change addendum
+
+### Change
+Deleted `plans/jwt-authentication-remediation-release-note.md` from the plans folder.
+
+### Files added/updated/deleted
+- Deleted:
+  - `plans/jwt-authentication-remediation-release-note.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- The release note file is no longer needed in the active planning folder.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
+Deleted completed execution-plan records from `plans/` to keep the active planning folder focused on remaining/open planning artifacts.
+
+### Files added/updated/deleted
+- Deleted:
+  - `plans/jwt-authentication-execution-plan.md`
+  - `plans/login-flow-hardening-execution-plan.md`
+  - `plans/nurse-patient-management-follow-ups.md`
+  - `plans/optimize-route-v2-gap-closure-execution-plan.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- These documents were already marked `Completed`/`Implemented` and no longer represent active planning work.
+- Keeping completed execution records out of the active plan list reduces noise during planning reviews.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
 
 ## Latest change addendum
 
