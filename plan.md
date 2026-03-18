@@ -5,12 +5,46 @@ The repository planning documents are stored under `plans/`.
 Files:
 
 - `plans/change-log.md` - implementation history and completed change log
-- `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
-- `plans/optimize-route-v2-time-first-execution-plan.md` - original v2 time-first endpoint design plan
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
 ## Latest change record
+
+## Latest change addendum
+
+### Change
+Deleted `plans/optimize-route-v2-time-first-execution-plan.md` from the plans folder.
+
+### Files added/updated/deleted
+- Deleted:
+  - `plans/optimize-route-v2-time-first-execution-plan.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- The v2 time-first execution plan is no longer needed in the active planning folder.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
+Deleted `plans/nurse-patient-management-execution-plan.md` from the plans folder.
+
+### Files added/updated/deleted
+- Deleted:
+  - `plans/nurse-patient-management-execution-plan.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- The nurse patient-management execution plan is no longer needed in the active planning folder.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
 
 ## Latest change addendum
 
