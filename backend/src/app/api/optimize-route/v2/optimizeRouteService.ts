@@ -753,6 +753,42 @@ const maybeSelectGapFiller = (
   return fillers[0]?.projection ?? selectedProjection;
 };
 
+const detectWindowConflicts = (
+  fixedVisits: VisitWithCoords[],
+  resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+): ScheduleWarningV2[] => {
+  const warnings: ScheduleWarningV2[] = [];
+
+  for (let i = 0; i < fixedVisits.length; i++) {
+    for (let j = i + 1; j < fixedVisits.length; j++) {
+      const a = fixedVisits[i];
+      const b = fixedVisits[j];
+      if (!a || !b) {
+        continue;
+      }
+
+      const travelAtoB = resolveTravelSeconds(a, b);
+      const aBeforeBFeasible =
+        a.windowStartSeconds + a.serviceDurationMinutes * 60 + travelAtoB <= b.windowEndSeconds;
+
+      const travelBtoA = resolveTravelSeconds(b, a);
+      const bBeforeAFeasible =
+        b.windowStartSeconds + b.serviceDurationMinutes * 60 + travelBtoA <= a.windowEndSeconds;
+
+      if (!aBeforeBFeasible && !bBeforeAFeasible) {
+        warnings.push({
+          type: "window_conflict",
+          patientIds: [a.patientId, b.patientId],
+          patientNames: [a.patientName, b.patientName],
+          message: `${a.patientName} and ${b.patientName} have overlapping fixed windows. Only one can be served on time.`,
+        });
+      }
+    }
+  }
+
+  return warnings;
+};
+
 const orderVisitsByWindowDistanceAndDuration = (
   visits: VisitWithCoords[],
   startLocation: LocationRef,
@@ -967,6 +1003,11 @@ export const optimizeRouteV2 = async (
 
   const resolveTravelSeconds = buildTravelSecondsResolver(planningTravelMatrix);
 
+  const fixedVisitsWithWindow = visitsWithCoords.filter(
+    (visit) => visit.windowType === "fixed" && visit.hasPreferredWindow,
+  );
+  const conflictWarnings = detectWindowConflicts(fixedVisitsWithWindow, resolveTravelSeconds);
+
   const departureContext = await resolveDepartureContext(
     request,
     visitsWithCoords,
@@ -1065,7 +1106,7 @@ export const optimizeRouteV2 = async (
     (task) => task.reason === "fixed_window_unreachable",
   ).length;
 
-  const warnings: ScheduleWarningV2[] = [];
+  const warnings: ScheduleWarningV2[] = [...conflictWarnings];
   for (const stop of orderedStops) {
     for (const task of stop.tasks) {
       if (task.windowType === "fixed" && task.lateBySeconds > FIXED_LATE_TOLERANCE_SECONDS) {

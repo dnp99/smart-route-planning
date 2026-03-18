@@ -1259,6 +1259,137 @@ describe("optimizeRouteV2 service", () => {
     ]);
   });
 
+  it("emits window_conflict warning for two fixed patients whose windows cannot both be satisfied", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Ravi Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Deep Address", coords: { lat: 43.8, lon: -79.8 } },
+      { address: "End", coords: { lat: 43.9, lon: -79.9 } },
+    ]);
+
+    // Travel matrix: ~7200s (2h) between patients — cannot serve both within 09:00-10:00 window
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrix([
+        ["address:start", "address:ravi address", 600],
+        ["address:start", "address:deep address", 600],
+        ["address:ravi address", "address:deep address", 7200],
+        ["address:deep address", "address:ravi address", 7200],
+        ["address:ravi address", "address:end", 600],
+        ["address:deep address", "address:end", 600],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T08:30:00-04:00",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "visit-ravi",
+            patientId: "patient-ravi",
+            patientName: "Ravi R",
+            address: "Ravi Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-deep",
+            patientId: "patient-deep",
+            patientName: "Deep P",
+            address: "Deep Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const conflictWarning = result.warnings?.find((w) => w.type === "window_conflict");
+    expect(conflictWarning).toBeDefined();
+    expect(conflictWarning?.type).toBe("window_conflict");
+    if (conflictWarning?.type === "window_conflict") {
+      expect(conflictWarning.patientIds).toContain("patient-ravi");
+      expect(conflictWarning.patientIds).toContain("patient-deep");
+    }
+  });
+
+  it("does not emit window_conflict when two fixed patients can be served in sequence", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "First Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Second Address", coords: { lat: 43.8, lon: -79.8 } },
+      { address: "End", coords: { lat: 43.9, lon: -79.9 } },
+    ]);
+
+    // Travel matrix: 600s (10 min) between patients — can serve first at 08:30, finish at 09:00, travel 10 min, serve second by 09:10
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrix([
+        ["address:start", "address:first address", 600],
+        ["address:start", "address:second address", 600],
+        ["address:first address", "address:second address", 600],
+        ["address:second address", "address:first address", 600],
+        ["address:first address", "address:end", 600],
+        ["address:second address", "address:end", 600],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "visit-first",
+            patientId: "patient-first",
+            patientName: "First Patient",
+            address: "First Address",
+            windowStart: "08:00",
+            windowEnd: "09:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-second",
+            patientId: "patient-second",
+            patientName: "Second Patient",
+            address: "Second Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const conflictWarning = result.warnings?.find((w) => w.type === "window_conflict");
+    expect(conflictWarning).toBeUndefined();
+  });
+
   it("emits fixed_late warning when fixed patient is more than 15 min past window close", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },

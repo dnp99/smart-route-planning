@@ -76,12 +76,19 @@ export type OptimizeRouteV2UnscheduledTask = {
     | "insufficient_day_capacity";
 };
 
-export type OptimizeRouteV2ScheduleWarning = {
-  type: "fixed_late" | "flexible_late";
-  patientId: string;
-  patientName: string;
-  message: string;
-};
+export type OptimizeRouteV2ScheduleWarning =
+  | {
+      type: "fixed_late" | "flexible_late";
+      patientId: string;
+      patientName: string;
+      message: string;
+    }
+  | {
+      type: "window_conflict";
+      patientIds: [string, string];
+      patientNames: [string, string];
+      message: string;
+    };
 
 export type OptimizeRouteV2RouteLeg = {
   fromStopId: string;
@@ -230,19 +237,28 @@ const isRouteLeg = (value: unknown): value is OptimizeRouteV2RouteLeg => {
 };
 
 const isScheduleWarning = (value: unknown): value is OptimizeRouteV2ScheduleWarning => {
-  if (!isObject(value)) {
+  if (!isObject(value) || typeof value.message !== "string") {
     return false;
   }
 
-  if (
-    typeof value.patientId !== "string" ||
-    typeof value.patientName !== "string" ||
-    typeof value.message !== "string"
-  ) {
-    return false;
+  if (value.type === "window_conflict") {
+    return (
+      Array.isArray(value.patientIds) &&
+      value.patientIds.length === 2 &&
+      typeof value.patientIds[0] === "string" &&
+      typeof value.patientIds[1] === "string" &&
+      Array.isArray(value.patientNames) &&
+      value.patientNames.length === 2 &&
+      typeof value.patientNames[0] === "string" &&
+      typeof value.patientNames[1] === "string"
+    );
   }
 
-  return value.type === "fixed_late" || value.type === "flexible_late";
+  if (value.type === "fixed_late" || value.type === "flexible_late") {
+    return typeof value.patientId === "string" && typeof value.patientName === "string";
+  }
+
+  return false;
 };
 
 const isUnscheduledTask = (value: unknown): value is OptimizeRouteV2UnscheduledTask => {

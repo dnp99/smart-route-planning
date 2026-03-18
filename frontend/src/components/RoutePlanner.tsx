@@ -1406,32 +1406,66 @@ function RoutePlanner({
               </div>
             )}
 
-            {result.warnings && result.warnings.length > 0 && !warningsDismissed && (
-              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 dark:border-red-900/70 dark:bg-red-950/30">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="m-0 text-sm font-semibold text-red-800 dark:text-red-200">
-                    Scheduling {result.warnings.length === 1 ? "Warning" : "Warnings"}
-                  </p>
-                  <button
-                    type="button"
-                    aria-label="Dismiss warnings"
-                    onClick={() => setWarningsDismissed(true)}
-                    className="shrink-0 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                      <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                    </svg>
-                  </button>
+            {result.warnings && result.warnings.length > 0 && !warningsDismissed && (() => {
+              const conflictWarnings = result.warnings.filter((w) => w.type === "window_conflict");
+              const latenessWarnings = result.warnings.filter((w) => w.type !== "window_conflict");
+              const dismissButton = (
+                <button
+                  type="button"
+                  aria-label="Dismiss warnings"
+                  onClick={() => setWarningsDismissed(true)}
+                  className="shrink-0 text-current opacity-60 hover:opacity-100"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                  </svg>
+                </button>
+              );
+              return (
+                <div className="mt-3 space-y-2">
+                  {conflictWarnings.length > 0 && (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/70 dark:bg-amber-950/30">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="m-0 text-sm font-semibold text-amber-800 dark:text-amber-200">
+                          Scheduling {conflictWarnings.length === 1 ? "Conflict" : "Conflicts"}
+                        </p>
+                        {latenessWarnings.length === 0 && dismissButton}
+                      </div>
+                      <ul className="m-0 mt-1 space-y-0.5 pl-4">
+                        {conflictWarnings.map((warning) => (
+                          <li
+                            key={warning.type === "window_conflict" ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}` : `${warning.type}:${warning.patientId}`}
+                            className="text-xs text-amber-700 dark:text-amber-300"
+                          >
+                            {warning.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {latenessWarnings.length > 0 && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 dark:border-red-900/70 dark:bg-red-950/30">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="m-0 text-sm font-semibold text-red-800 dark:text-red-200">
+                          Lateness {latenessWarnings.length === 1 ? "Warning" : "Warnings"}
+                        </p>
+                        {dismissButton}
+                      </div>
+                      <ul className="m-0 mt-1 space-y-0.5 pl-4">
+                        {latenessWarnings.map((warning) => (
+                          <li
+                            key={warning.type === "window_conflict" ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}` : `${warning.type}:${warning.patientId}`}
+                            className="text-xs text-red-700 dark:text-red-300"
+                          >
+                            {warning.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
-                <ul className="m-0 mt-1 space-y-0.5 pl-4">
-                  {result.warnings.map((warning) => (
-                    <li key={`${warning.type}:${warning.patientId}`} className="text-xs text-red-700 dark:text-red-300">
-                      {warning.message}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+              );
+            })()}
 
             <RouteMap
               start={result.start}

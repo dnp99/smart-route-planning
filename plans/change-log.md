@@ -2611,3 +2611,29 @@ Phase 1 of the scheduling-priority execution plan: the greedy nearest-neighbor a
 ### 83 — Motivation
 
 Phase 2 of the scheduling-priority execution plan: surfaces lateness tolerance violations as structured warnings so nurses are alerted before reading the stop-by-stop detail. Fixed patients beyond 15 min and flexible patients beyond 60 min now produce named warnings in the API response and a dismissible banner in the UI.
+
+---
+
+## 84) Scheduling Priority Phase 3: Pre-Optimization Conflict Detection
+
+### 84 — Files updated
+
+- `shared/contracts/optimizeRouteV2.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/scheduling-priority-execution-plan.md`
+
+### 84 — Changes
+
+- Extended `OptimizeRouteV2ScheduleWarning` to a discriminated union: existing `fixed_late`/`flexible_late` shape unchanged; new `window_conflict` shape carries `patientIds: [string, string]` and `patientNames: [string, string]`.
+- Updated `isScheduleWarning` runtime guard to validate both union branches.
+- Added `detectWindowConflicts(fixedVisits, resolveTravelSeconds)` in the service: for every pair of fixed patients, checks both orderings (A→B and B→A) using `windowStart + serviceDuration + travel > windowEnd`; if both fail, emits a `window_conflict` warning.
+- Conflict detection runs after the travel matrix is resolved (so matrix durations are used when available) but before optimization, so the nurse sees the warning before reading stop-by-stop results.
+- Conflict warnings are prepended to the warnings array before lateness warnings.
+- Frontend: split the single warning banner into two styled sections — amber for `window_conflict` (pre-route conflicts) and red for `fixed_late`/`flexible_late` (post-route lateness). Dismiss button hides both sections.
+- Added two backend tests: `window_conflict` emitted for unresolvable overlapping windows (2h travel between same-window patients), no conflict when sequential ordering is feasible.
+
+### 84 — Motivation
+
+Phase 3 of the scheduling-priority execution plan: nurses are now warned about unresolvable window clashes before they read the stop list. When two fixed patients share a window and the travel between them makes it impossible to serve both on time, a conflict notice appears at the top of the result so the nurse can contact one patient before departing.
