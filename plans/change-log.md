@@ -2396,3 +2396,26 @@ An Oracle review was performed and its recommendations were incorporated, includ
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 21 tests)
   - `npm test -- --run src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (2 files, 10 tests)
   - `npm run lint` ✅
+
+---
+
+## 78) Destination Card Actions Refresh (Desktop Right-Align + Mobile Overflow Remove)
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `frontend/src/tests/appRoutes.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Updated selected-destination card action layout:
+  - Desktop: moved `Edit window` and `Remove` controls to the right side on the same row as patient name/address.
+  - Mobile: kept `Edit window` directly visible and moved `Remove` into a per-card overflow actions menu.
+- Added destination action-menu state handling so menu closes when destination entries change.
+- Tightened route-planner test assertions impacted by the new action controls and improved `appRoutes` test isolation by clearing `localStorage` in `beforeEach`.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 31 tests)
+  - `npm run lint` ✅

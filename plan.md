@@ -14,6 +14,26 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Refined selected-destination patient card actions with a responsive layout: desktop right-aligned inline actions, and mobile overflow handling for remove.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `frontend/src/tests/appRoutes.test.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- Requested improved visual hierarchy for destination cards so `Edit window` and `Remove` actions align to the right on desktop.
+- Mobile needed safer destructive UX and less horizontal crowding, so remove is now placed under a per-card overflow action menu.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 31 tests)
+  - `npm run lint` ✅
+
+### Change
 Added in-place patient creation to Route Planner destination search so nurses can create and immediately add a missing patient without leaving the planner.
 
 ### Files added/updated/deleted

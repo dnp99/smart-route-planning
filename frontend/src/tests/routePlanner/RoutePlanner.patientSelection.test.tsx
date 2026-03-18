@@ -366,7 +366,7 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Edit window" })).toBeTruthy();
     expect(screen.queryByText("Include this visit in route")).toBeNull();
-    expect(screen.queryAllByRole("button", { name: /Jane Doe/i })).toHaveLength(0);
+    expect(screen.queryByRole("button", { name: /^Jane Doe$/i })).toBeNull();
   });
 
   it("shows a clear hint when ending point is not selected", () => {

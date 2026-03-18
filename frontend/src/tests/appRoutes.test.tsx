@@ -43,6 +43,7 @@ vi.mock("../components/AddressAutocompleteInput", () => ({
 }));
 
 beforeEach(() => {
+  window.localStorage.clear();
   fetchMeMock.mockReset();
   updateProfileHomeAddressMock.mockReset();
   fetchMeMock.mockResolvedValue({
