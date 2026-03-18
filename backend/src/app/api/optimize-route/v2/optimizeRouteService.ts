@@ -17,7 +17,7 @@ import {
   type TravelMatrixNode,
 } from "./travelMatrix";
 
-const ALGORITHM_VERSION = "v2.4.0-fixed-first";
+const ALGORITHM_VERSION = "v2.4.1-late-fixed-priority";
 const FIXED_LATE_TOLERANCE_SECONDS = 15 * 60;
 const FLEXIBLE_LATE_TOLERANCE_SECONDS = 60 * 60;
 const ESTIMATED_DRIVE_SPEED_KM_PER_HOUR = 40;
@@ -850,9 +850,15 @@ const orderVisitsByWindowDistanceAndDuration = (
     });
 
     const hasFixedRemaining = projections.some((p) => p.visit.windowType === "fixed");
-    const primaryProjections = hasFixedRemaining
-      ? projections.filter((p) => p.visit.windowType === "fixed")
-      : projections;
+    const lateFixedProjections = hasFixedRemaining
+      ? projections.filter((p) => p.visit.windowType === "fixed" && p.lateBySeconds > 0)
+      : [];
+    const primaryProjections =
+      lateFixedProjections.length > 0
+        ? lateFixedProjections
+        : hasFixedRemaining
+          ? projections.filter((p) => p.visit.windowType === "fixed")
+          : projections;
     primaryProjections.sort(compareVisitProjections);
     const firstProjection = primaryProjections[0];
     if (!firstProjection) {

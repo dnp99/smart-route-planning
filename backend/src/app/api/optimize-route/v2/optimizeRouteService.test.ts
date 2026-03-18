@@ -691,7 +691,7 @@ describe("optimizeRouteV2 service", () => {
       "google-key",
     );
 
-    expect(result.algorithmVersion).toBe("v2.4.0-fixed-first");
+    expect(result.algorithmVersion).toBe("v2.4.1-late-fixed-priority");
     expect(result.orderedStops).toHaveLength(2);
     expect(result.orderedStops[0].tasks).toHaveLength(2);
     expect(result.orderedStops[0].tasks[0].visitId).toBe("fixed-am");
@@ -1581,6 +1581,88 @@ describe("optimizeRouteV2 service", () => {
     );
 
     expect(result.warnings).toBeUndefined();
+  });
+
+  it("schedules an already-late fixed patient before a no-window patient rather than letting the no-window fill the gap", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "First Fixed", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Second Fixed", coords: { lat: 43.705, lon: -79.705 } },
+      { address: "Far Future Fixed", coords: { lat: 43.8, lon: -79.8 } },
+      { address: "No Window", coords: { lat: 43.701, lon: -79.701 } },
+      { address: "End", coords: { lat: 43.9, lon: -79.9 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T08:30:00-04:00",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "first-fixed",
+            patientId: "patient-first",
+            patientName: "First Fixed",
+            address: "First Fixed",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 60,
+          },
+          {
+            visitId: "second-fixed",
+            patientId: "patient-second",
+            patientName: "Second Fixed",
+            address: "Second Fixed",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "far-future-fixed",
+            patientId: "patient-future",
+            patientName: "Far Future Fixed",
+            address: "Far Future Fixed",
+            windowStart: "17:00",
+            windowEnd: "18:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "no-window",
+            patientId: "patient-no-window",
+            patientName: "No Window",
+            address: "No Window",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const stopAddresses = (call?.[1] ?? []).map((stop) => stop.address);
+
+    // No-window patient must NOT appear before both same-window fixed patients
+    const firstFixedIndex = stopAddresses.indexOf("First Fixed");
+    const secondFixedIndex = stopAddresses.indexOf("Second Fixed");
+    const noWindowIndex = stopAddresses.indexOf("No Window");
+
+    // Both same-window fixed patients should appear before the no-window patient
+    expect(noWindowIndex).toBeGreaterThan(firstFixedIndex);
+    expect(noWindowIndex).toBeGreaterThan(secondFixedIndex);
   });
 
   it("throws when dynamic departure planningDate is invalid", async () => {
