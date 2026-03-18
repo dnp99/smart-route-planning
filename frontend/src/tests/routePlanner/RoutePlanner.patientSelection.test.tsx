@@ -567,6 +567,11 @@ describe("RoutePlanner patient selection integration", () => {
         ),
       ),
     ).toBeTruthy();
+    const janeCard = janeDetailsToggle.closest("div");
+    if (!janeCard) {
+      throw new Error("Expected Jane Doe result card container");
+    }
+    expect(janeCard.textContent).toContain("13.49 km • 13 min from previous stop");
     fireEvent.click(janeDetailsToggle);
     expect(screen.getByText("Address: 123 Main St")).toBeTruthy();
     expect(screen.getByText("Preferred window: 08:30 - 09:00")).toBeTruthy();

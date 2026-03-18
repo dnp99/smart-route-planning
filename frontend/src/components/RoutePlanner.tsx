@@ -1603,6 +1603,12 @@ function RoutePlanner({ nurseHomeAddress = null }: RoutePlannerProps) {
                                   </p>
                                 </div>
                               )}
+
+                              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                {stop.distanceFromPreviousKm} km •{" "}
+                                {formatDuration(stop.durationFromPreviousSeconds)} from previous
+                                stop
+                              </p>
                             </div>
                           );
                         })}
@@ -1618,11 +1624,12 @@ function RoutePlanner({ nurseHomeAddress = null }: RoutePlannerProps) {
                         </small>
                       </>
                     )}
-                    <small className="block text-xs text-slate-500 dark:text-slate-400">
-                      {stop.distanceFromPreviousKm} km •{" "}
-                      {formatDuration(stop.durationFromPreviousSeconds)} from
-                      previous stop
-                    </small>
+                    {stop.tasks.length === 0 && (
+                      <small className="block text-xs text-slate-500 dark:text-slate-400">
+                        {stop.distanceFromPreviousKm} km •{" "}
+                        {formatDuration(stop.durationFromPreviousSeconds)} from previous stop
+                      </small>
+                    )}
                   </li>
                 ))}
               </ol>

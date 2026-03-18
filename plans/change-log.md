@@ -2278,3 +2278,48 @@ An Oracle review was performed and its recommendations were incorporated, includ
   - `npm test -- --run src/tests/appRoutes.test.tsx src/tests/auth/authService.test.ts src/tests/auth/LoginPage.test.tsx src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/routePlanner/routePlannerService.test.ts src/tests/patients/patientService.test.ts src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (7 files, 53 tests)
   - `npm run lint` ✅
   - `npm run build` ✅
+
+---
+
+## 73) Patients Header Count + Account Home-Address Autocomplete
+
+### Commit
+- `9a35faa` - `feat(frontend): add patient count heading and account address autocomplete`
+
+### Files updated
+- `frontend/src/App.jsx`
+- `frontend/src/components/patients/PatientsPage.tsx`
+- `frontend/src/tests/appRoutes.test.tsx`
+- `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+- `plan.md`
+
+### What changed
+- Patients page header now displays a live total as `Patients (X)`.
+- Account settings home-address input now reuses Google Maps autocomplete behavior.
+- Updated account-settings placeholder text to `Perason Internal Airport`.
+- Updated routing/integration tests for the new Patients heading format.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/appRoutes.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/patients/PatientsPage.test.tsx` ✅
+  - `npm run lint` ✅
+
+---
+
+## 74) Optimize-Route Result Cards: Move Distance/Time Into Each Patient Card
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Route Planner optimize results now render `X km • Y min from previous stop` inside each patient result card.
+- Removed detached per-stop summary under task rows when tasks exist; no-task stops continue to show travel summary in the existing line.
+- Added test coverage to assert the travel summary appears within the patient card container.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 21 tests)
+  - `npm run lint` ✅

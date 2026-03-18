@@ -14,6 +14,24 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Moved per-stop travel summary (`X km • Y min from previous stop`) into each patient result card in the optimize-route output.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- Requested UI adjustment to keep each patient result self-contained by showing distance/time inside the card instead of as a detached line below the list item.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 21 tests)
+  - `npm run lint` ✅
+
+### Change
 Updated the Patients page header to show the live patient count as `Patients (X)`.
 
 ### Files added/updated/deleted
