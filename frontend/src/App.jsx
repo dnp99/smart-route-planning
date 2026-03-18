@@ -3,7 +3,7 @@ import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import AddressAutocompleteInput from "./components/AddressAutocompleteInput";
 import RoutePlanner from "./components/RoutePlanner";
 import LoginPage from "./components/auth/LoginPage";
-import { fetchMe, updateProfileHomeAddress } from "./components/auth/authService";
+import { fetchMe, updatePassword, updateProfileHomeAddress } from "./components/auth/authService";
 import {
   clearAuthSession,
   getAuthChangedEventName,
@@ -40,7 +40,44 @@ const OptionsIcon = ({ className }) => (
   </svg>
 );
 
+const EyeIcon = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+    <circle cx="12" cy="12" r="3" />
+  </svg>
+);
+
+const EyeOffIcon = ({ className }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
+    <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
+    <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
+    <line x1="2" x2="22" y1="2" y2="22" />
+  </svg>
+);
+
 const MAX_HOME_ADDRESS_LENGTH = 200;
+const MIN_PASSWORD_LENGTH = 8;
 const PROFILE_MODAL_HOME_ADDRESS_ID = "account-settings-home-address";
 
 function App() {
@@ -53,6 +90,15 @@ function App() {
   const [accountSettingsError, setAccountSettingsError] = useState("");
   const [accountSettingsSuccess, setAccountSettingsSuccess] = useState("");
   const [isSavingAccountSettings, setIsSavingAccountSettings] = useState(false);
+  const [currentPasswordInput, setCurrentPasswordInput] = useState("");
+  const [newPasswordInput, setNewPasswordInput] = useState("");
+  const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSuccess, setPasswordSuccess] = useState("");
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const accountMenuRef = useRef(null);
 
   useEffect(() => {
@@ -169,18 +215,28 @@ function App() {
     setHomeAddressInput(normalizedProfileHomeAddress);
     setAccountSettingsError("");
     setAccountSettingsSuccess("");
+    setCurrentPasswordInput("");
+    setNewPasswordInput("");
+    setConfirmPasswordInput("");
+    setPasswordError("");
+    setPasswordSuccess("");
+    setShowCurrentPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmPassword(false);
     setIsAccountMenuOpen(false);
     setIsAccountSettingsOpen(true);
   };
 
   const closeAccountSettingsModal = () => {
-    if (isSavingAccountSettings) {
+    if (isSavingAccountSettings || isUpdatingPassword) {
       return;
     }
 
     setIsAccountSettingsOpen(false);
     setAccountSettingsError("");
     setAccountSettingsSuccess("");
+    setPasswordError("");
+    setPasswordSuccess("");
   };
 
   const handleAccountSettingsSubmit = async (event) => {
@@ -218,6 +274,52 @@ function App() {
       );
     } finally {
       setIsSavingAccountSettings(false);
+    }
+  };
+
+  const handlePasswordUpdateSubmit = async (event) => {
+    event.preventDefault();
+    setPasswordError("");
+    setPasswordSuccess("");
+
+    if (!currentPasswordInput.trim()) {
+      setPasswordError("Current password is required.");
+      return;
+    }
+
+    if (newPasswordInput.length < MIN_PASSWORD_LENGTH) {
+      setPasswordError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
+    }
+
+    if (newPasswordInput !== confirmPasswordInput) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+
+    if (currentPasswordInput === newPasswordInput) {
+      setPasswordError("New password must differ from current password.");
+      return;
+    }
+
+    if (!authToken || !authUser) {
+      clearAuthSession();
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      await updatePassword(authToken, currentPasswordInput, newPasswordInput);
+      setCurrentPasswordInput("");
+      setNewPasswordInput("");
+      setConfirmPasswordInput("");
+      setPasswordSuccess("Password updated successfully.");
+    } catch (updateError) {
+      setPasswordError(
+        updateError instanceof Error ? updateError.message : "Unable to update password.",
+      );
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -428,15 +530,6 @@ function App() {
                 disabled={isSavingAccountSettings}
               />
 
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
-                <p className="m-0 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                  Security
-                </p>
-                <p className="m-0 mt-1 text-xs text-slate-600 dark:text-slate-300">
-                  Password update support is planned next.
-                </p>
-              </div>
-
               {accountSettingsError && (
                 <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
                   {accountSettingsError}
@@ -463,6 +556,132 @@ function App() {
                   className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isSavingAccountSettings ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
+
+            <div className="my-4 border-t border-slate-200 dark:border-slate-800" />
+
+            <form className="grid gap-3" onSubmit={handlePasswordUpdateSubmit}>
+              <p className="m-0 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                Security
+              </p>
+
+              <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
+                <span className="font-medium">Current password</span>
+                <div className="relative">
+                  <input
+                    type={showCurrentPassword ? "text" : "password"}
+                    value={currentPasswordInput}
+                    onChange={(event) => {
+                      setCurrentPasswordInput(event.target.value);
+                      if (passwordError) setPasswordError("");
+                      if (passwordSuccess) setPasswordSuccess("");
+                    }}
+                    autoComplete="current-password"
+                    disabled={isUpdatingPassword}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 pr-10 text-sm text-slate-900 transition focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPassword((v) => !v)}
+                    aria-label={showCurrentPassword ? "Hide password" : "Show password"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                  >
+                    {showCurrentPassword ? (
+                      <EyeOffIcon className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </label>
+
+              <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
+                <span className="font-medium">New password</span>
+                <div className="relative">
+                  <input
+                    type={showNewPassword ? "text" : "password"}
+                    value={newPasswordInput}
+                    onChange={(event) => {
+                      setNewPasswordInput(event.target.value);
+                      if (passwordError) setPasswordError("");
+                      if (passwordSuccess) setPasswordSuccess("");
+                    }}
+                    autoComplete="new-password"
+                    disabled={isUpdatingPassword}
+                    className="w-full rounded-xl border border-slate-300 px-3 py-2 pr-10 text-sm text-slate-900 transition focus:border-blue-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPassword((v) => !v)}
+                    aria-label={showNewPassword ? "Hide password" : "Show password"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                  >
+                    {showNewPassword ? (
+                      <EyeOffIcon className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </label>
+
+              <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
+                <span className="font-medium">Confirm new password</span>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPasswordInput}
+                    onChange={(event) => {
+                      setConfirmPasswordInput(event.target.value);
+                      if (passwordError) setPasswordError("");
+                      if (passwordSuccess) setPasswordSuccess("");
+                    }}
+                    autoComplete="new-password"
+                    disabled={isUpdatingPassword}
+                    className={[
+                      "w-full rounded-xl border px-3 py-2 pr-10 text-sm text-slate-900 transition focus:outline-none disabled:cursor-not-allowed disabled:opacity-70 dark:bg-slate-800 dark:text-slate-100",
+                      confirmPasswordInput.length > 0
+                        ? confirmPasswordInput === newPasswordInput
+                          ? "border-emerald-500 focus:border-emerald-500 dark:border-emerald-500"
+                          : "border-red-400 focus:border-red-400 dark:border-red-400"
+                        : "border-slate-300 focus:border-blue-500 dark:border-slate-700",
+                    ].join(" ")}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((v) => !v)}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOffIcon className="h-4 w-4" />
+                    ) : (
+                      <EyeIcon className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+              </label>
+
+              {passwordError && (
+                <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+                  {passwordError}
+                </p>
+              )}
+              {passwordSuccess && (
+                <p className="m-0 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  {passwordSuccess}
+                </p>
+              )}
+
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={isUpdatingPassword}
+                  className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isUpdatingPassword ? "Updating..." : "Update password"}
                 </button>
               </div>
             </form>

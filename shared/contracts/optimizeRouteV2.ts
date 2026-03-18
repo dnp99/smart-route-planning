@@ -114,7 +114,11 @@ const isWindowType = (value: unknown): value is OptimizeRouteV2WindowType =>
   value === "fixed" || value === "flexible";
 
 const isLatLng = (value: unknown): value is OptimizeRouteV2LatLng =>
-  isObject(value) && typeof value.lat === "number" && typeof value.lon === "number";
+  isObject(value) &&
+  typeof value.lat === "number" &&
+  Number.isFinite(value.lat) &&
+  typeof value.lon === "number" &&
+  Number.isFinite(value.lon);
 
 const isOptionalStringOrNull = (value: unknown) =>
   value === undefined || value === null || typeof value === "string";

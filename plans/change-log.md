@@ -2443,3 +2443,112 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 31 tests)
   - `npm run lint` ✅
+
+---
+
+## 80) Phase 3: Password Update Flow
+
+### Files added
+
+- `backend/src/app/api/auth/update-password/route.ts`
+- `backend/src/app/api/auth/update-password/route.test.ts`
+- `backend/src/lib/rateLimit/authUpdatePasswordRateLimit.ts`
+
+### Files updated
+
+- `shared/contracts/auth.ts`
+- `backend/src/lib/patients/patientRepository.ts`
+- `frontend/src/components/auth/authService.ts`
+- `frontend/src/App.jsx`
+- `plans/account-settings-and-working-hours-execution-plan.md`
+- `plans/change-log.md`
+
+### What changed
+
+#### Shared contracts
+
+- Added `UpdatePasswordRequest` type and `isUpdatePasswordRequest` type guard to `shared/contracts/auth.ts`.
+
+#### Backend — repository
+
+- Added `updateNursePasswordHash(nurseId, passwordHash)` to `patientRepository.ts`.
+
+#### Backend — rate limiter
+
+- Created `authUpdatePasswordRateLimit.ts`: in-memory rate limiter scoped per nurse ID and client IP.
+- Limits: 5 attempts per 15 minutes; 15-minute lockout on breach.
+- Returns `429` with `Retry-After` header on violation.
+
+#### Backend — endpoint
+
+- Created `POST /api/auth/update-password`:
+  - Requires valid auth token (`requireAuth`).
+  - Enforces HTTPS transport and CORS with `strict` origin policy.
+  - Enforces per-nurse and per-client rate limit before touching the request body.
+  - Validates `currentPassword` (non-blank) and `newPassword` (min 8 chars).
+  - Rejects no-op change (`currentPassword === newPassword`).
+  - Verifies current password against stored bcrypt hash.
+  - Returns `403` on incorrect current password.
+  - Rehashes and persists new password on success.
+  - Returns `{ success: true }` on `200`.
+- Created `OPTIONS /api/auth/update-password` preflight handler.
+
+#### Backend — tests
+
+- Added `route.test.ts` covering:
+  - OPTIONS preflight
+  - HTTPS enforcement (426)
+  - Invalid auth token (401)
+  - Missing/inactive nurse (401)
+  - Rate limit exceeded (429)
+  - Invalid JSON body (400)
+  - Missing required fields (400)
+  - Blank current password (400)
+  - New password too short (400)
+  - No-op password change (400)
+  - Incorrect current password (403)
+  - Success path: verifies hashing and DB update, returns `{ success: true }`
+  - Nurse disappears mid-request (401)
+
+#### Frontend — service
+
+- Added `updatePassword(token, currentPassword, newPassword): Promise<void>` to `authService.ts`.
+- Calls `POST /api/auth/update-password` with Bearer token and surfaces API error messages.
+
+#### Frontend — account settings modal
+
+- Replaced the `Security` placeholder section with a live password update form.
+- Modal now has two independent `<form>` elements (profile and security) separated by a divider.
+- Password form includes: current password, new password, confirm new password.
+- Client-side validation: required fields, min-length (8), confirm match, no-op guard.
+- Clears password inputs and shows success message on successful update.
+- Password state and show-visibility flags are reset when the modal opens.
+
+### Why
+
+- Phase 3 of the account settings execution plan: nurses can now update their password from the account settings modal without contacting support.
+
+---
+
+## 81) Password Field UX: Show/Hide Toggle + Confirm Match Indicator
+
+### Files updated
+
+- `frontend/src/App.jsx`
+- `plans/change-log.md`
+
+### What changed
+
+- Added `EyeIcon` and `EyeOffIcon` inline SVG components.
+- Added per-field `showCurrentPassword`, `showNewPassword`, `showConfirmPassword` state (all default `false`, reset on modal open).
+- Each password field now wraps the `<input>` in a relative container with an eye-toggle button positioned inside the right edge.
+- Clicking the eye icon toggles the field between `type="password"` and `type="text"`, independently per field.
+- The Confirm new password field now shows a dynamic border:
+  - green (`emerald-500`) when the value matches the new password,
+  - red (`red-400`) when it does not match,
+  - default slate when the field is empty.
+
+### Why
+
+- Users need to verify what they are typing, especially on mobile where typos are common.
+- The confirm-field color indicator provides instant feedback without requiring a submit attempt.

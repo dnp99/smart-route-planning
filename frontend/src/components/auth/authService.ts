@@ -102,3 +102,24 @@ export const updateProfileHomeAddress = async (token: string, homeAddress: strin
 
   return parsed;
 };
+
+export const updatePassword = async (
+  token: string,
+  currentPassword: string,
+  newPassword: string,
+): Promise<void> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/api/auth/update-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(extractApiErrorMessage(payload) ?? "Unable to update password.");
+  }
+};

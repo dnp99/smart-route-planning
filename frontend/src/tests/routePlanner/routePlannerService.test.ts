@@ -320,6 +320,27 @@ describe("requestOptimizedRoute", () => {
     ).rejects.toThrow("Unexpected API response format.");
   });
 
+  it("throws when payload includes non-finite coordinates on ok response", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        ...buildValidResponse(),
+        start: {
+          ...buildValidResponse().start,
+          coords: { lat: Number.NaN, lon: -79.1 },
+        },
+      }),
+    } as Response);
+
+    await expect(
+      requestOptimizedRoute({
+        startAddress: "Start",
+        endAddress: "End",
+        destinations: [],
+      }),
+    ).rejects.toThrow("Unexpected API response format.");
+  });
+
   it("enriches unscheduled tasks with visit details from request destinations", async () => {
     fetchMock.mockResolvedValue({
       ok: true,
