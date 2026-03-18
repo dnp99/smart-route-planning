@@ -9,12 +9,32 @@ vi.mock("../routing", () => ({
   buildDrivingRoute: vi.fn(),
 }));
 
+vi.mock("./travelMatrix", () => ({
+  buildPlanningTravelDurationMatrix: vi.fn(),
+}));
+
 import { geocodeTargetsSequentially } from "../geocoding";
 import { buildDrivingRoute } from "../routing";
+import { buildPlanningTravelDurationMatrix } from "./travelMatrix";
 import { optimizeRouteV2 } from "./optimizeRouteService";
 
 const mockedGeocodeTargetsSequentially = vi.mocked(geocodeTargetsSequentially);
 const mockedBuildDrivingRoute = vi.mocked(buildDrivingRoute);
+const mockedBuildPlanningTravelDurationMatrix = vi.mocked(buildPlanningTravelDurationMatrix);
+
+const buildTravelMatrix = (
+  entries: Array<[fromKey: string, toKey: string, durationSeconds: number]>,
+) => {
+  const matrix = new Map<string, Map<string, number>>();
+
+  entries.forEach(([from, to, duration]) => {
+    const existing = matrix.get(from) ?? new Map<string, number>();
+    existing.set(to, duration);
+    matrix.set(from, existing);
+  });
+
+  return matrix;
+};
 
 const buildDrivingRouteResult = (addresses: string[]) => ({
   orderedStops: addresses.map((address, index) => ({
@@ -40,6 +60,8 @@ describe("optimizeRouteV2 service", () => {
   beforeEach(() => {
     mockedGeocodeTargetsSequentially.mockReset();
     mockedBuildDrivingRoute.mockReset();
+    mockedBuildPlanningTravelDurationMatrix.mockReset();
+    mockedBuildPlanningTravelDurationMatrix.mockRejectedValue(new Error("matrix unavailable"));
   });
 
   it("prefers the next available visit before far-future windows when no fixed risk is introduced", async () => {
@@ -120,6 +142,132 @@ describe("optimizeRouteV2 service", () => {
       "Address A",
       "Address C",
       "Address D",
+      "End",
+    ]);
+  });
+
+  it("uses planning travel matrix durations for ranking when matrix acquisition succeeds", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Address A", coords: { lat: 43.6001, lon: -79.6001 } },
+      { address: "Address B", coords: { lat: 43.71, lon: -79.71 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrix([
+        ["address:start", "address:address a", 1600],
+        ["address:start", "address:address b", 300],
+        ["address:address a", "address:address b", 300],
+        ["address:address b", "address:address a", 300],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-a",
+            patientId: "patient-a",
+            patientName: "Patient A",
+            address: "Address A",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "visit-b",
+            patientId: "patient-b",
+            patientName: "Patient B",
+            address: "Address B",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const passedOrderedStops = call?.[1] ?? [];
+    expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
+      "Address B",
+      "Address A",
+      "End",
+    ]);
+  });
+
+  it("falls back to estimated travel ranking when planning matrix acquisition fails", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Near Address", coords: { lat: 43.6003, lon: -79.6003 } },
+      { address: "Far Address", coords: { lat: 43.75, lon: -79.75 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildPlanningTravelDurationMatrix.mockRejectedValue(new Error("matrix unavailable"));
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-near",
+            patientId: "patient-near",
+            patientName: "Near Patient",
+            address: "Near Address",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "visit-far",
+            patientId: "patient-far",
+            patientName: "Far Patient",
+            address: "Far Address",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const passedOrderedStops = call?.[1] ?? [];
+    expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
+      "Near Address",
+      "Far Address",
       "End",
     ]);
   });
@@ -543,7 +691,7 @@ describe("optimizeRouteV2 service", () => {
       "google-key",
     );
 
-    expect(result.algorithmVersion).toBe("v2.2.4-no-preferred-window-autoscheduling");
+    expect(result.algorithmVersion).toBe("v2.3.0-matrix-lookahead-unscheduled");
     expect(result.orderedStops).toHaveLength(2);
     expect(result.orderedStops[0].tasks).toHaveLength(2);
     expect(result.orderedStops[0].tasks[0].visitId).toBe("fixed-am");
@@ -610,6 +758,68 @@ describe("optimizeRouteV2 service", () => {
     expect(result.metrics.fixedWindowViolations).toBe(1);
     expect(result.orderedStops[0].tasks.map((task) => task.visitId)).toEqual(["fixed-impossible"]);
     expect(result.orderedStops[1].tasks.map((task) => task.visitId)).toEqual(["flex-ok"]);
+  });
+
+  it("emits unscheduledTasks for flexible visits that exceed day capacity", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Fixed Address", coords: { lat: 43.61, lon: -79.61 } },
+      { address: "Flexible Address", coords: { lat: 43.62, lon: -79.62 } },
+      { address: "End", coords: { lat: 43.63, lon: -79.63 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T23:40:00.000Z",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "fixed-late",
+            patientId: "patient-fixed",
+            patientName: "Fixed Patient",
+            address: "Fixed Address",
+            windowStart: "22:00",
+            windowEnd: "23:45",
+            windowType: "fixed",
+            serviceDurationMinutes: 10,
+          },
+          {
+            visitId: "flex-overflow",
+            patientId: "patient-flex",
+            patientName: "Flexible Overflow",
+            address: "Flexible Address",
+            windowStart: "20:00",
+            windowEnd: "23:59",
+            windowType: "flexible",
+            serviceDurationMinutes: 45,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(result.unscheduledTasks).toEqual([
+      {
+        visitId: "flex-overflow",
+        patientId: "patient-flex",
+        reason: "insufficient_day_capacity",
+      },
+    ]);
+    expect(result.orderedStops.flatMap((stop) => stop.tasks.map((task) => task.visitId))).toEqual([
+      "fixed-late",
+    ]);
+    expect(result.metrics.fixedWindowViolations).toBe(1);
   });
 
   it("does not append a duplicate ending stop when last visit location matches end location", async () => {
@@ -750,6 +960,83 @@ describe("optimizeRouteV2 service", () => {
       onTime: true,
       serviceStartTime: "2026-03-13T08:10:00.000Z",
     });
+  });
+
+  it("does not count sub-minute fixed lateness as a violation", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Fixed Visit", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockResolvedValue({
+      orderedStops: [
+        {
+          address: "Fixed Visit",
+          coords: { lat: 43.7, lon: -79.7 },
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 601,
+        },
+        {
+          address: "End",
+          coords: { lat: 43.8, lon: -79.8 },
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 600,
+          isEndingPoint: true,
+        },
+      ],
+      routeLegs: [
+        {
+          fromAddress: "Start",
+          toAddress: "Fixed Visit",
+          distanceMeters: 2000,
+          durationSeconds: 601,
+          encodedPolyline: "abc",
+        },
+        {
+          fromAddress: "Fixed Visit",
+          toAddress: "End",
+          distanceMeters: 2000,
+          durationSeconds: 600,
+          encodedPolyline: "def",
+        },
+      ],
+      totalDistanceMeters: 4000,
+      totalDistanceKm: 4,
+      totalDurationSeconds: 1201,
+    });
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:50:00.000Z",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "fixed-sub-minute",
+            patientId: "patient-fixed",
+            patientName: "Fixed Sub Minute",
+            address: "Fixed Visit",
+            windowStart: "07:00",
+            windowEnd: "08:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 10,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const task = result.orderedStops[0]?.tasks[0];
+    expect(task?.lateBySeconds).toBe(0);
+    expect(task?.onTime).toBe(true);
+    expect(result.metrics.fixedWindowViolations).toBe(0);
   });
 
   it("defaults dynamic departure to planning-date midnight when there are no visits", async () => {

@@ -2019,3 +2019,49 @@ An Oracle review was performed and its recommendations were incorporated, includ
   - `src/lib/patients/patientRepository.ts` branches: `63.15% -> 89.47%`
   - `src/app/api/optimize-route/geocoding.ts` branches: `80.00% -> 90.00%`
   - `src/lib/patients/patientValidation.ts` branches: `85.48% -> 90.32%`
+
+---
+
+## 66) Optimize-Route V2 Gap Closure Rollout (v2.3.0)
+
+### Files added
+- `backend/src/app/api/optimize-route/v2/travelMatrix.ts`
+- `backend/src/app/api/optimize-route/v2/travelMatrix.test.ts`
+
+### Files updated
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `backend/src/app/api/optimize-route/v2/validation.ts`
+- `backend/src/app/api/optimize-route/v2/validation.test.ts`
+- `plans/optimize-route-v2-gap-closure-execution-plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Added planning-time Google Routes matrix support for v2 scheduling candidate scoring:
+  - new matrix utility at `v2/travelMatrix.ts`
+  - matrix parsing handles both JSON array and newline-delimited element payloads
+  - matrix failures degrade gracefully to existing haversine-based travel estimates
+- Upgraded stop-selection scoring from one-step heuristics to bounded multi-step lookahead:
+  - depth-2 lookahead with bounded beam width
+  - lexicographic score priority:
+    1) fixed late count
+    2) fixed late seconds
+    3) total late seconds
+    4) total wait seconds
+    5) travel seconds
+  - deterministic tie-breaking retained
+- Implemented explicit unscheduled policy behavior:
+  - fixed visits remain scheduled even when late
+  - flexible visits are emitted to `unscheduledTasks` with `insufficient_day_capacity` when they no longer fit in-day
+  - removed ambiguous state where a visit can be silently dropped
+- Finalized validation consistency for flexible preferred windows:
+  - flexible visits with provided preferred windows are now rejected when window duration is shorter than `serviceDurationMinutes`
+- Bumped v2 algorithm version tag to `v2.3.0-matrix-lookahead-unscheduled`.
+
+### Verification
+- Backend targeted tests:
+  - `npm run test -- src/app/api/optimize-route/v2/optimizeRouteService.test.ts src/app/api/optimize-route/v2/validation.test.ts src/app/api/optimize-route/v2/travelMatrix.test.ts`
+- Backend build:
+  - `npm run build`
+- Frontend build regression:
+  - `npm run build`
