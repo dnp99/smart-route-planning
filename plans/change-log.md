@@ -2065,3 +2065,97 @@ An Oracle review was performed and its recommendations were incorporated, includ
   - `npm run build`
 - Frontend build regression:
   - `npm run build`
+
+---
+
+## 67) Login Flow Hardening Controls
+
+### Commit
+- `9d5b3df` - `feat(auth): implement login flow hardening controls`
+
+### Files added
+- `backend/src/lib/auth/auditLogger.ts`
+- `backend/src/lib/auth/auditLogger.test.ts`
+- `backend/src/lib/rateLimit/authLoginRateLimit.ts`
+- `backend/src/lib/rateLimit/authLoginRateLimit.test.ts`
+
+### Files updated
+- `backend/src/lib/http.ts`
+- `backend/src/lib/http.test.ts`
+- `backend/src/app/api/auth/requestGuards.ts`
+- `backend/src/app/api/auth/requestGuards.test.ts`
+- `backend/src/app/api/auth/login/route.ts`
+- `backend/src/app/api/auth/login/route.test.ts`
+- `backend/src/app/api/auth/signup/route.ts`
+- `backend/src/app/api/auth/signup/route.test.ts`
+- `backend/src/app/api/auth/me/route.ts`
+- `backend/src/app/api/auth/me/route.test.ts`
+- `backend/README.md`
+- `plan.md`
+- `plans/login-flow-hardening-execution-plan.md`
+
+### What changed
+- Hardened auth transport and response policy for login/signup/me:
+  - HTTPS enforcement for auth endpoints in production (or with `AUTH_ENFORCE_HTTPS=true`)
+  - strict CORS policy for auth routes
+  - security headers on auth responses (including HSTS on HTTPS requests)
+- Introduced shared auth login/signup rate limiting:
+  - per-client and per-account buckets
+  - lockout with `Retry-After`
+  - optional centralized Upstash Redis backend with in-memory fallback
+- Added redaction-safe structured auth audit logs for login outcomes.
+- Updated HTTP helper error-response header merging to preserve `Retry-After` and related response headers.
+- Updated backend docs and execution-plan status to reflect completed auth hardening scope.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/auth/requestGuards.test.ts src/app/api/auth/login/route.test.ts src/app/api/auth/signup/route.test.ts src/app/api/auth/me/route.test.ts src/lib/http.test.ts src/lib/rateLimit/authLoginRateLimit.test.ts src/lib/auth/auditLogger.test.ts` ✅
+  - `npm run lint` ✅
+  - `npm run build` ✅
+
+---
+
+## 68) Remove Completed Plan Artifacts
+
+### Commit
+- `4739966` - `docs(plans): remove completed plan artifacts`
+
+### Files deleted
+- `plans/jwt-authentication-execution-plan.md`
+- `plans/jwt-authentication-remediation-release-note.md`
+- `plans/login-flow-hardening-execution-plan.md`
+- `plans/nurse-patient-management-follow-ups.md`
+- `plans/optimize-route-v2-gap-closure-execution-plan.md`
+
+### Files updated
+- `plan.md`
+
+### What changed
+- Removed completed execution/rollout plan documents from `plans/` to keep the folder focused on active planning artifacts.
+- Updated the root plan index and latest change addendum to reflect deletions.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
+
+---
+
+## 69) Remove Remaining Legacy Execution Plans
+
+### Commit
+- `bb42d62` - `docs(plans): remove remaining legacy execution plans`
+
+### Files deleted
+- `plans/nurse-patient-management-execution-plan.md`
+- `plans/optimize-route-v2-time-first-execution-plan.md`
+
+### Files updated
+- `plan.md`
+
+### What changed
+- Removed the last legacy execution-plan documents from `plans/`.
+- Updated the root plan index/history to match the cleanup.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅

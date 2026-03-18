@@ -76,6 +76,29 @@ describe("http helpers", () => {
     ).toThrowError("Origin is not allowed.");
   });
 
+  it("adds security headers when requested", () => {
+    process.env.ALLOWED_ORIGINS = "https://allowed.example.com";
+
+    const headers = buildCorsHeaders(
+      new Request("https://api.example.com/api/test", {
+        headers: { origin: "https://allowed.example.com" },
+      }),
+      {
+        methods: "POST, OPTIONS",
+        originPolicy: "strict",
+        includeSecurityHeaders: true,
+      },
+    );
+
+    expect(headers["X-Content-Type-Options"]).toBe("nosniff");
+    expect(headers["X-Frame-Options"]).toBe("DENY");
+    expect(headers["Referrer-Policy"]).toBe("no-referrer");
+    expect(headers["Permissions-Policy"]).toBe(
+      "camera=(), microphone=(), geolocation=()",
+    );
+    expect(headers["Strict-Transport-Security"]).toContain("max-age=");
+  });
+
   it("maps HttpError to JSON response with same status", async () => {
     const response = toErrorResponse(
       new HttpError(418, "Teapot."),
@@ -86,6 +109,21 @@ describe("http helpers", () => {
     expect(response.status).toBe(418);
     expect(response.headers.get("x-test")).toBe("1");
     await expect(response.json()).resolves.toEqual({ error: "Teapot." });
+  });
+
+  it("merges HttpError headers with response headers", async () => {
+    const response = toErrorResponse(
+      new HttpError(429, "Too many attempts.", {
+        headers: { "Retry-After": "30" },
+      }),
+      "Fallback",
+      { "x-test": "1" },
+    );
+
+    expect(response.status).toBe(429);
+    expect(response.headers.get("x-test")).toBe("1");
+    expect(response.headers.get("Retry-After")).toBe("30");
+    await expect(response.json()).resolves.toEqual({ error: "Too many attempts." });
   });
 
   it("maps unknown error to fallback 500 response", async () => {

@@ -38,11 +38,13 @@ describe("/api/auth/signup route", () => {
   const originalAllowedOrigins = process.env.ALLOWED_ORIGINS;
   const originalRateLimitWindow = process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS;
   const originalRateLimitMax = process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS;
+  const originalAuthEnforceHttps = process.env.AUTH_ENFORCE_HTTPS;
 
   beforeEach(() => {
     process.env.ALLOWED_ORIGINS = "http://localhost:5173";
     process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS = "60000";
     process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS = "5";
+    delete process.env.AUTH_ENFORCE_HTTPS;
     __resetLoginRateLimitForTests();
     findNurseByEmailMock.mockReset();
     createNurseAccountMock.mockReset();
@@ -69,6 +71,12 @@ describe("/api/auth/signup route", () => {
     } else {
       process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS = originalRateLimitMax;
     }
+
+    if (originalAuthEnforceHttps === undefined) {
+      delete process.env.AUTH_ENFORCE_HTTPS;
+    } else {
+      process.env.AUTH_ENFORCE_HTTPS = originalAuthEnforceHttps;
+    }
   });
 
   it("handles OPTIONS preflight", async () => {
@@ -81,6 +89,28 @@ describe("/api/auth/signup route", () => {
 
     expect(response.status).toBe(204);
     expect(response.headers.get("Access-Control-Allow-Methods")).toBe("POST, OPTIONS");
+    expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
+  });
+
+  it("returns 426 for insecure transport when auth HTTPS enforcement is enabled", async () => {
+    process.env.AUTH_ENFORCE_HTTPS = "true";
+
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/signup", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({
+          displayName: "Nurse One",
+          email: "nurse@example.com",
+          password: "secret123",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(426);
+    await expect(response.json()).resolves.toEqual({
+      error: "HTTPS is required for authentication endpoints.",
+    });
   });
 
   it("returns 400 for malformed payload", async () => {

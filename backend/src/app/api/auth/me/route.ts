@@ -3,6 +3,7 @@ import { type AuthUser } from "../../../../../../shared/contracts";
 import { requireAuth } from "../../../../lib/auth/requireAuth";
 import { buildCorsHeaders, toErrorResponse } from "../../../../lib/http";
 import { findNurseById } from "../../../../lib/patients/patientRepository";
+import { requireSecureAuthTransport } from "../requestGuards";
 
 const toAuthUser = (value: {
   id: string;
@@ -15,19 +16,23 @@ const toAuthUser = (value: {
 });
 
 export async function OPTIONS(request: Request) {
+  let corsHeaders: Record<string, string> | undefined;
+
   try {
-    const corsHeaders = buildCorsHeaders(request, {
+    corsHeaders = buildCorsHeaders(request, {
       methods: "GET, OPTIONS",
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
+      includeSecurityHeaders: true,
     });
+    requireSecureAuthTransport(request);
 
     return new NextResponse(null, {
       status: 204,
       headers: corsHeaders,
     });
   } catch (error) {
-    return toErrorResponse(error, "Failed to process preflight request.");
+    return toErrorResponse(error, "Failed to process preflight request.", corsHeaders);
   }
 }
 
@@ -39,7 +44,9 @@ export async function GET(request: Request) {
       methods: "GET, OPTIONS",
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
+      includeSecurityHeaders: true,
     });
+    requireSecureAuthTransport(request);
 
     const auth = await requireAuth(request);
     const nurse = await findNurseById(auth.nurseId);

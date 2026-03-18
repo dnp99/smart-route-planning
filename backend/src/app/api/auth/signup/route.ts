@@ -6,7 +6,7 @@ import {
 import { signAccessToken } from "../../../../lib/auth/jwt";
 import { hashPassword } from "../../../../lib/auth/password";
 import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
-import { enforceLoginRateLimit } from "../requestGuards";
+import { enforceLoginRateLimit, requireSecureAuthTransport } from "../requestGuards";
 import {
   createNurseAccount,
   findNurseByEmail,
@@ -53,19 +53,23 @@ const validateSignupPayload = (body: unknown) => {
 };
 
 export const OPTIONS = async (request: Request) => {
+  let corsHeaders: Record<string, string> | undefined;
+
   try {
-    const corsHeaders = buildCorsHeaders(request, {
+    corsHeaders = buildCorsHeaders(request, {
       methods: "POST, OPTIONS",
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
+      includeSecurityHeaders: true,
     });
+    requireSecureAuthTransport(request);
 
     return new NextResponse(null, {
       status: 204,
       headers: corsHeaders,
     });
   } catch (error) {
-    return toErrorResponse(error, "Failed to process preflight request.");
+    return toErrorResponse(error, "Failed to process preflight request.", corsHeaders);
   }
 };
 
@@ -77,19 +81,29 @@ export const POST = async (request: Request) => {
       methods: "POST, OPTIONS",
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
+      includeSecurityHeaders: true,
     });
-
-    enforceLoginRateLimit(request);
+    requireSecureAuthTransport(request);
 
     let body: unknown;
     try {
       body = await request.json();
     } catch {
+      await enforceLoginRateLimit(request);
       return NextResponse.json(
         { error: "Request body must be valid JSON." },
         { status: 400, headers: corsHeaders },
       );
     }
+
+    const attemptedEmail =
+      typeof body === "object" &&
+      body !== null &&
+      "email" in body &&
+      typeof (body as { email?: unknown }).email === "string"
+        ? (body as { email: string }).email.trim().toLowerCase()
+        : undefined;
+    await enforceLoginRateLimit(request, attemptedEmail);
 
     const payload = validateSignupPayload(body);
     const existingNurse = await findNurseByEmail(payload.email);
