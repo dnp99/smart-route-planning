@@ -68,6 +68,18 @@ describe("/api/auth/me route", () => {
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
 
+  it("rejects OPTIONS preflight for disallowed origins", async () => {
+    const response = await OPTIONS(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "OPTIONS",
+        headers: { origin: "http://malicious.example.com" },
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "Origin is not allowed." });
+  });
+
   it("returns 426 for insecure transport when auth HTTPS enforcement is enabled", async () => {
     process.env.AUTH_ENFORCE_HTTPS = "true";
 
@@ -286,5 +298,48 @@ describe("/api/auth/me route", () => {
     await expect(response.json()).resolves.toEqual({
       error: "Home address must be 200 characters or fewer.",
     });
+  });
+
+  it("returns 401 when PATCH is called for an inactive/missing nurse", async () => {
+    findNurseByIdMock.mockResolvedValue(null);
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: {
+          origin: "http://localhost:5173",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ homeAddress: "1 Main Street, Toronto, ON" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized." });
+  });
+
+  it("returns 401 when home-address update target no longer exists", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+      homeAddress: null,
+    });
+    updateNurseHomeAddressMock.mockResolvedValue(null);
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: {
+          origin: "http://localhost:5173",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ homeAddress: "1 Main Street, Toronto, ON" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized." });
   });
 });

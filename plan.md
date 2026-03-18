@@ -14,6 +14,53 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Lowered backend coverage thresholds from `90` to `80` in the Vitest coverage config.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/vitest.config.ts`
+  - `plan.md`
+
+### Why
+- Requested baseline for backend coverage gating is now 80%.
+- This aligns CI/local coverage threshold checks with the current target while coverage-improvement work continues.
+
+### Verification
+- Backend:
+  - `npm run test:coverage` ✅
+  - Resulting coverage: statements `93.72%`, branches `86.37%`, functions `97.76%`, lines `93.69%`
+
+### Change
+Increased backend test coverage with targeted branch-path tests across auth routes, auth audit logging, rate limiting, and optimize-route v2 travel matrix parsing/error handling.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/src/app/api/auth/me/route.test.ts`
+  - `backend/src/app/api/auth/signup/route.test.ts`
+  - `backend/src/app/api/optimize-route/v2/travelMatrix.test.ts`
+  - `backend/src/lib/auth/auditLogger.test.ts`
+  - `backend/src/lib/rateLimit/authLoginRateLimit.test.ts`
+  - `plan.md`
+
+### Why
+- Backend coverage gaps were concentrated in untested error/edge branches (especially in rate limiting and matrix parsing).
+- Added focused tests for:
+  - disallowed CORS preflight origins on auth routes
+  - blank/invalid auth payload branches
+  - unexpected auth runtime failures
+  - upstash lock/rate-limit/fallback paths
+  - additional audit redaction/masking branches
+  - matrix response parsing formats and failure modes
+
+### Verification
+- Backend:
+  - `npm test` ✅ (26 files, 312 tests)
+  - `npm test -- --run src/lib/rateLimit/authLoginRateLimit.test.ts src/lib/auth/auditLogger.test.ts src/app/api/optimize-route/v2/travelMatrix.test.ts src/app/api/auth/login/route.test.ts src/app/api/auth/signup/route.test.ts src/app/api/auth/me/route.test.ts` ✅ (6 files, 65 tests)
+  - `npm run test:coverage` ⚠️ improved but threshold still failing
+    - Branch coverage improved from `80.82%` to `86.37%`
+
+### Change
 Implemented Phase 1 and Phase 2 of the account settings plan: account options menu + account settings modal, persisted nurse home-address profile support, and Route Planner default start/end prefill from saved home address.
 
 ### Files added/updated/deleted

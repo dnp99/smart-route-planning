@@ -88,6 +88,18 @@ describe("/api/auth/login route", () => {
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
 
+  it("rejects OPTIONS preflight for disallowed origins", async () => {
+    const response = await OPTIONS(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "OPTIONS",
+        headers: { origin: "http://malicious.example.com" },
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "Origin is not allowed." });
+  });
+
   it("returns 426 for insecure transport when auth HTTPS enforcement is enabled", async () => {
     process.env.AUTH_ENFORCE_HTTPS = "true";
 
@@ -124,6 +136,21 @@ describe("/api/auth/login route", () => {
         method: "POST",
         headers: { origin: "http://localhost:5173", "content-type": "application/json" },
         body: JSON.stringify({ email: "nurse@example.com" }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Login payload must include email and password.",
+    });
+  });
+
+  it("returns 400 when login payload has blank email or password", async () => {
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ email: "  ", password: "" }),
       }),
     );
 
@@ -221,6 +248,31 @@ describe("/api/auth/login route", () => {
       },
     });
     expect(updateNurseLastLoginAtMock).toHaveBeenCalledWith("nurse-1");
+  });
+
+  it("returns 500 when token signing fails unexpectedly", async () => {
+    findNurseByEmailMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      passwordHash: "hash",
+      isActive: true,
+    });
+    verifyPasswordMock.mockResolvedValue(true);
+    signAccessTokenMock.mockRejectedValue(new Error("signing failure"));
+
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/login", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ email: "nurse@example.com", password: "secret" }),
+      }),
+    );
+
+    expect(response.status).toBe(500);
+    await expect(response.json()).resolves.toEqual({
+      error: "Failed to login.",
+    });
   });
 
   it("returns 429 when login rate limit is exceeded", async () => {
