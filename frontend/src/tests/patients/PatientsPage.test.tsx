@@ -148,7 +148,8 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(screen.getAllByRole("button", { name: /Delete patient Jane Doe/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Jane Doe/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /Delete patient Jane Doe/i }));
 
     await waitFor(() => {
       expect(mockedDeletePatient).toHaveBeenCalledWith("patient-1");
