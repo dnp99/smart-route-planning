@@ -2348,3 +2348,26 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 22 tests)
   - `npm run lint` ✅
+
+---
+
+## 76) Route Planner Trip Setup Simplification: Remove End Mode + Home-Address Warning CTA
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/App.jsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Removed `End mode` controls and the entire patient-end-address selection flow from Route Planner.
+- Route Planner now always uses a single editable `Ending point` address field (autocomplete/manual).
+- Added a non-blocking warning banner in Trip setup when nurse home address is missing.
+- Added `Open account settings` CTA button in the warning banner, wired through `App` to open the account settings modal.
+- Kept manual route planning unblocked even without a saved home address.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 30 tests)
+  - `npm run lint` ✅

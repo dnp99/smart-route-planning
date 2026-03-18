@@ -14,6 +14,27 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Removed Route Planner `End mode` (manual vs patient) and standardized trip setup to a single editable ending-point address, with a home-address warning banner when profile home address is missing.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/App.jsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- End-mode selection added complexity without improving primary workflow.
+- Start/end should default automatically from account home address, with manual override always available.
+- When home address is not set, nurses need a clear prompt and direct action to open Account settings.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 30 tests)
+  - `npm run lint` ✅
+
+### Change
 Updated optimize-route ending-stop rendering to a clickable card that labels the last stop as `Home` when it matches nurse home address, otherwise shows the ending address.
 
 ### Files added/updated/deleted

@@ -434,15 +434,19 @@ describe("RoutePlanner patient selection integration", () => {
     });
   });
 
-  it("promotes selected destination patient to end patient and removes from destinations", () => {
-    render(<RoutePlanner />);
+  it("shows home-address warning banner and supports account settings action when home address is missing", () => {
+    const openAccountSettingsMock = vi.fn();
+    render(<RoutePlanner onOpenAccountSettings={openAccountSettingsMock} />);
 
-    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
-    fireEvent.click(screen.getByLabelText("Patient end address"));
-    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+    expect(screen.getByText("Home address not set")).toBeTruthy();
+    expect(
+      screen.getByText(
+        /Set your home address in Account settings to auto-fill starting and ending points\./i,
+      ),
+    ).toBeTruthy();
 
-    expect(screen.getByText("End patient: Jane Doe")).toBeTruthy();
-    expect(screen.getByText("0 destination(s) detected")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Open account settings" }));
+    expect(openAccountSettingsMock).toHaveBeenCalledTimes(1);
   });
 
   it("submits optimize payload with patient-linked destinations", () => {
@@ -511,19 +515,11 @@ describe("RoutePlanner patient selection integration", () => {
     });
   });
 
-  it("uses selected end patient only as the route end and excludes it from destinations", () => {
-    render(<RoutePlanner />);
+  it("hides home-address warning banner when home address exists", () => {
+    render(<RoutePlanner nurseHomeAddress="1 Home Way, Mississauga, ON" />);
 
-    fireEvent.click(screen.getByLabelText("Patient end address"));
-    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
-
-    expect(optimizeRouteMock).toHaveBeenCalledWith({
-      startAddress: "3361 Ingram Road, Mississauga, ON",
-      endAddress: "123 Main St",
-      destinations: [],
-      canOptimize: true,
-    });
+    expect(screen.queryByText("Home address not set")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Open account settings" })).toBeNull();
   });
 
   it("submits manual start and end place ids picked from autocomplete", () => {

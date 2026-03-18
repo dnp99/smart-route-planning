@@ -362,7 +362,12 @@ function App() {
         <Route path="/patients" element={renderProtectedRoute(<PatientsPage />)} />
         <Route
           path="/route-planner"
-          element={renderProtectedRoute(<RoutePlanner nurseHomeAddress={authUser?.homeAddress ?? null} />)}
+          element={renderProtectedRoute(
+            <RoutePlanner
+              nurseHomeAddress={authUser?.homeAddress ?? null}
+              onOpenAccountSettings={openAccountSettingsModal}
+            />,
+          )}
         />
         <Route
           path="/"
