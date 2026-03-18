@@ -543,7 +543,7 @@ describe("optimizeRouteV2 service", () => {
       "google-key",
     );
 
-    expect(result.algorithmVersion).toBe("v2.2.3-dynamic-departure-buffer");
+    expect(result.algorithmVersion).toBe("v2.2.4-no-preferred-window-autoscheduling");
     expect(result.orderedStops).toHaveLength(2);
     expect(result.orderedStops[0].tasks).toHaveLength(2);
     expect(result.orderedStops[0].tasks[0].visitId).toBe("fixed-am");
@@ -702,6 +702,54 @@ describe("optimizeRouteV2 service", () => {
 
     expect(mockedBuildDrivingRoute).toHaveBeenCalledTimes(2);
     expect(result.start.departureTime).not.toBe("2026-03-13T00:00:00.000Z");
+  });
+
+  it("auto-schedules flexible visits without preferred windows and defaults unanchored departure to 08:00 local", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Flexible Visit", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-flex-no-window",
+            patientId: "patient-flex-no-window",
+            patientName: "Flexible No Window",
+            address: "Flexible Visit",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(result.start.departureTime).toBe("2026-03-13T08:00:00.000Z");
+    expect(result.orderedStops[0]?.tasks[0]).toMatchObject({
+      visitId: "visit-flex-no-window",
+      windowStart: "",
+      windowEnd: "",
+      lateBySeconds: 0,
+      onTime: true,
+      serviceStartTime: "2026-03-13T08:10:00.000Z",
+    });
   });
 
   it("defaults dynamic departure to planning-date midnight when there are no visits", async () => {

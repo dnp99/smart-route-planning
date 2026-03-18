@@ -64,6 +64,9 @@ const timeToMinutes = (value: string) => {
 const hasCompleteWindow = (destination: SelectedPatientDestination) =>
   HH_MM_PATTERN.test(destination.windowStart) && HH_MM_PATTERN.test(destination.windowEnd);
 
+const hasAnyWindowBoundary = (destination: SelectedPatientDestination) =>
+  destination.windowStart.trim().length > 0 || destination.windowEnd.trim().length > 0;
+
 const windowsOverlap = (
   left: Pick<SelectedPatientDestination, "windowStart" | "windowEnd">,
   right: Pick<SelectedPatientDestination, "windowStart" | "windowEnd">,
@@ -828,23 +831,47 @@ function RoutePlanner() {
     event.preventDefault();
     setLocalValidationError("");
 
-    const destinationsMissingWindow = requestDestinations.filter(
-      (destination) => !hasCompleteWindow(destination),
+    const fixedDestinationsMissingWindow = requestDestinations.filter(
+      (destination) => destination.windowType === "fixed" && !hasCompleteWindow(destination),
     );
-    if (destinationsMissingWindow.length > 0) {
+    if (fixedDestinationsMissingWindow.length > 0) {
       setLocalValidationError(
-        `Set start and end time before optimizing for: ${formatPatientListLabel(destinationsMissingWindow)}.`,
+        `Set start and end time before optimizing for fixed visits: ${formatPatientListLabel(fixedDestinationsMissingWindow)}.`,
+      );
+      return;
+    }
+
+    const flexibleDestinationsWithPartialWindow = requestDestinations.filter(
+      (destination) =>
+        destination.windowType === "flexible" &&
+        hasAnyWindowBoundary(destination) &&
+        !hasCompleteWindow(destination),
+    );
+    if (flexibleDestinationsWithPartialWindow.length > 0) {
+      setLocalValidationError(
+        `Set both start and end time (or clear both) before optimizing for: ${formatPatientListLabel(flexibleDestinationsWithPartialWindow)}.`,
       );
       return;
     }
 
     const destinationsWithInvalidWindowOrder = requestDestinations.filter(
       (destination) =>
+        hasCompleteWindow(destination) &&
         timeToMinutes(destination.windowEnd) <= timeToMinutes(destination.windowStart),
     );
     if (destinationsWithInvalidWindowOrder.length > 0) {
       setLocalValidationError(
         `Visit end time must be later than start time for: ${formatPatientListLabel(destinationsWithInvalidWindowOrder)}.`,
+      );
+      return;
+    }
+
+    const destinationsMissingPersistWindow = requestDestinations.filter(
+      (destination) => destination.persistPlanningWindow && !hasCompleteWindow(destination),
+    );
+    if (destinationsMissingPersistWindow.length > 0) {
+      setLocalValidationError(
+        `Set start and end time before saving to patient record for: ${formatPatientListLabel(destinationsMissingPersistWindow)}.`,
       );
       return;
     }
@@ -862,7 +889,7 @@ function RoutePlanner() {
     );
 
     const planningWindowsToPersist = requestDestinations
-      .filter((destination) => destination.persistPlanningWindow)
+      .filter((destination) => destination.persistPlanningWindow && hasCompleteWindow(destination))
       .map((destination) => ({
         patientId: destination.patientId,
         sourceWindowId: destination.sourceWindowId,
@@ -1162,7 +1189,7 @@ function RoutePlanner() {
                           <div className="grid gap-2">
                             <p className="m-0 text-xs text-emerald-800 dark:text-emerald-300">
                               {destination.requiresPlanningWindow
-                                ? "Set planning window"
+                                ? "Set planning window (optional)"
                                 : "Adjust planning window (plan-only unless saved)"}
                             </p>
                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -1396,7 +1423,7 @@ function RoutePlanner() {
                           <div className="mt-2">
                             <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
                               {destination.requiresPlanningWindow
-                                ? "Flexible with no preferred window. Pick a planning time:"
+                                ? "No preferred window. Optimizer will auto-schedule unless you set one:"
                                 : "Adjust planning window (plan-only unless saved):"}
                             </p>
                             <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -1657,13 +1684,16 @@ function RoutePlanner() {
                             key={task.visitId}
                             className="block text-xs font-medium text-blue-600 dark:text-blue-300"
                           >
-                            Patient: {formatNameWords(task.patientName)} • {task.windowStart} -{" "}
-                            {task.windowEnd} • {task.windowType} •{" "}
+                            Patient: {formatNameWords(task.patientName)} •{" "}
+                            {task.windowStart && task.windowEnd
+                              ? `${task.windowStart} - ${task.windowEnd}`
+                              : "No preferred window"}{" "}
+                            • {task.windowType} •{" "}
                             {formatVisitDurationMinutes(task.serviceDurationMinutes)}
                             {formatExpectedStartTimeText(task.serviceStartTime)
                               ? ` • ${formatExpectedStartTimeText(task.serviceStartTime)}`
                               : ""}
-                            {task.lateBySeconds > 0 && (
+                            {task.windowStart && task.windowEnd && task.lateBySeconds > 0 && (
                               <span className="text-red-600 dark:text-red-400">
                                 {" "}
                                 • Outside preferred window by{" "}

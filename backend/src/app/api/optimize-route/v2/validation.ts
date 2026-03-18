@@ -148,6 +148,27 @@ const parseTime = (value: unknown, fieldName: string) => {
   return parsed;
 };
 
+const parseOptionalTime = (value: unknown, fieldName: string) => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (typeof value !== "string") {
+    throw new HttpError(400, `${fieldName} must be a string when provided.`);
+  }
+
+  const parsed = value.trim();
+  if (!parsed) {
+    return undefined;
+  }
+
+  if (!HH_MM_PATTERN.test(parsed)) {
+    throw new HttpError(400, `${fieldName} must use HH:MM 24-hour format.`);
+  }
+
+  return parsed;
+};
+
 const timeToMinutes = (value: string) => {
   const [hoursString, minutesString] = value.split(":");
   return Number(hoursString) * 60 + Number(minutesString);
@@ -184,14 +205,57 @@ const parseVisit = (value: unknown, index: number): VisitV2 => {
   const patientName = trimRequiredString(candidate.patientName, `visits[${index}].patientName`);
   const address = parseAddress(candidate.address, `visits[${index}].address`);
   const googlePlaceId = parseOptionalStringOrNull(candidate.googlePlaceId, `visits[${index}].googlePlaceId`);
-  const windowStart = parseTime(candidate.windowStart, `visits[${index}].windowStart`);
-  const windowEnd = parseTime(candidate.windowEnd, `visits[${index}].windowEnd`);
   const windowType = parseWindowType(candidate.windowType, `visits[${index}].windowType`);
   const serviceDurationMinutes = parsePositiveInteger(
     candidate.serviceDurationMinutes,
     `visits[${index}].serviceDurationMinutes`,
   );
   const priority = parsePriority(candidate.priority, `visits[${index}].priority`);
+
+  const windowStartFieldName = `visits[${index}].windowStart`;
+  const windowEndFieldName = `visits[${index}].windowEnd`;
+  let windowStart = "";
+  let windowEnd = "";
+
+  if (windowType === "fixed") {
+    windowStart = parseTime(candidate.windowStart, windowStartFieldName);
+    windowEnd = parseTime(candidate.windowEnd, windowEndFieldName);
+  } else {
+    const parsedWindowStart = parseOptionalTime(candidate.windowStart, windowStartFieldName);
+    const parsedWindowEnd = parseOptionalTime(candidate.windowEnd, windowEndFieldName);
+
+    if (
+      (parsedWindowStart !== undefined && parsedWindowEnd === undefined) ||
+      (parsedWindowStart === undefined && parsedWindowEnd !== undefined)
+    ) {
+      throw new HttpError(
+        400,
+        `${patientName} flexible visit window must include both start and end time when one value is provided.`,
+      );
+    }
+
+    windowStart = parsedWindowStart ?? "";
+    windowEnd = parsedWindowEnd ?? "";
+  }
+
+  if (windowType === "fixed" && (!windowStart || !windowEnd)) {
+    throw new HttpError(400, `${patientName} fixed visits must include start and end time.`);
+  }
+
+  if (!windowStart && !windowEnd) {
+    return {
+      visitId,
+      patientId,
+      patientName,
+      address,
+      ...(googlePlaceId !== undefined ? { googlePlaceId } : {}),
+      windowStart: "",
+      windowEnd: "",
+      windowType,
+      serviceDurationMinutes,
+      ...(priority !== undefined ? { priority } : {}),
+    };
+  }
 
   const windowStartMinutes = timeToMinutes(windowStart);
   const windowEndMinutes = timeToMinutes(windowEnd);

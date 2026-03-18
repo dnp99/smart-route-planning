@@ -11,13 +11,16 @@ import type {
 } from "./types";
 import type { ValidatedOptimizeRouteV2Request } from "./validation";
 
-const ALGORITHM_VERSION = "v2.2.3-dynamic-departure-buffer";
+const ALGORITHM_VERSION = "v2.2.4-no-preferred-window-autoscheduling";
 const ESTIMATED_DRIVE_SPEED_KM_PER_HOUR = 40;
 const IDLE_GAP_FILL_THRESHOLD_SECONDS = 30 * 60;
 const IDLE_GAP_RETURN_BUFFER_SECONDS = 5 * 60;
 const IDLE_GAP_FILLER_MAX_WAIT_SECONDS = 10 * 60;
 const IDLE_GAP_MIN_UTILIZATION_SECONDS = 15 * 60;
 const DEPARTURE_BUFFER_SECONDS = 10 * 60;
+const DEFAULT_UNANCHORED_DEPARTURE_LOCAL_SECONDS = 8 * 3600;
+const SYNTHETIC_WINDOW_START_SECONDS = 0;
+const SYNTHETIC_WINDOW_END_SECONDS = 23 * 3600 + 59 * 60;
 
 type GeocodeTarget = {
   address: string;
@@ -27,6 +30,7 @@ type GeocodeTarget = {
 type VisitWithCoords = VisitV2 & {
   coords: LatLng;
   locationKey: string;
+  hasPreferredWindow: boolean;
   windowStartSeconds: number;
   windowEndSeconds: number;
 };
@@ -304,11 +308,12 @@ const compareDepartureAnchors = (left: VisitWithCoords, right: VisitWithCoords, 
 };
 
 const resolveFirstDepartureAnchor = (visits: VisitWithCoords[], startCoords: LatLng) => {
-  if (visits.length === 0) {
+  const anchoredVisits = visits.filter((visit) => visit.hasPreferredWindow);
+  if (anchoredVisits.length === 0) {
     return null;
   }
 
-  const sortedVisits = [...visits];
+  const sortedVisits = [...anchoredVisits];
   sortedVisits.sort((left, right) => compareDepartureAnchors(left, right, startCoords));
 
   return sortedVisits[0] ?? null;
@@ -376,7 +381,9 @@ const resolveDepartureContext = async (
           (await resolveTravelSecondsFromStartToVisit(request, startCoords, firstAnchor, googleMapsApiKey)) -
           DEPARTURE_BUFFER_SECONDS,
       )
-    : 0;
+    : visits.length > 0
+      ? DEFAULT_UNANCHORED_DEPARTURE_LOCAL_SECONDS
+      : 0;
 
   const departureTime = toIsoFromPlanningDateAndLocalSeconds(
     request.planningDate,
@@ -664,9 +671,13 @@ const buildTaskResult = (
   departureLocalSeconds: number,
   departureTimestampMs: number,
 ): { taskResult: TaskResultV2; serviceEndSeconds: number } => {
-  const waitSeconds = Math.max(0, task.windowStartSeconds - arrivalLocalSeconds);
+  const waitSeconds = task.hasPreferredWindow
+    ? Math.max(0, task.windowStartSeconds - arrivalLocalSeconds)
+    : 0;
   const serviceStartSeconds = arrivalLocalSeconds + waitSeconds;
-  const lateBySeconds = Math.max(0, serviceStartSeconds - task.windowEndSeconds);
+  const lateBySeconds = task.hasPreferredWindow
+    ? Math.max(0, serviceStartSeconds - task.windowEndSeconds)
+    : 0;
   const serviceEndSeconds = serviceStartSeconds + task.serviceDurationMinutes * 60;
 
   return {
@@ -676,8 +687,8 @@ const buildTaskResult = (
       patientName: task.patientName,
       address: task.address,
       ...(task.googlePlaceId !== undefined ? { googlePlaceId: task.googlePlaceId } : {}),
-      windowStart: task.windowStart,
-      windowEnd: task.windowEnd,
+      windowStart: task.hasPreferredWindow ? task.windowStart : "",
+      windowEnd: task.hasPreferredWindow ? task.windowEnd : "",
       windowType: task.windowType,
       serviceDurationMinutes: task.serviceDurationMinutes,
       arrivalTime: toIsoFromLocalSeconds(arrivalLocalSeconds, departureLocalSeconds, departureTimestampMs),
@@ -685,7 +696,7 @@ const buildTaskResult = (
       serviceEndTime: toIsoFromLocalSeconds(serviceEndSeconds, departureLocalSeconds, departureTimestampMs),
       waitSeconds,
       lateBySeconds,
-      onTime: lateBySeconds === 0,
+      onTime: !task.hasPreferredWindow || lateBySeconds === 0,
     },
     serviceEndSeconds,
   };
@@ -699,13 +710,23 @@ export const optimizeRouteV2 = async (
   const startCoords = resolveCoordsOrThrow(coordsByLocationKey, request.start);
   const endCoords = resolveCoordsOrThrow(coordsByLocationKey, request.end);
 
-  const visitsWithCoords: VisitWithCoords[] = request.visits.map((visit) => ({
-    ...visit,
-    coords: resolveCoordsOrThrow(coordsByLocationKey, visit),
-    locationKey: resolveLocationKey(visit),
-    windowStartSeconds: parseTimeToSeconds(visit.windowStart),
-    windowEndSeconds: parseTimeToSeconds(visit.windowEnd),
-  }));
+  const visitsWithCoords: VisitWithCoords[] = request.visits.map((visit) => {
+    const hasPreferredWindow =
+      visit.windowStart.trim().length > 0 && visit.windowEnd.trim().length > 0;
+
+    return {
+      ...visit,
+      coords: resolveCoordsOrThrow(coordsByLocationKey, visit),
+      locationKey: resolveLocationKey(visit),
+      hasPreferredWindow,
+      windowStartSeconds: hasPreferredWindow
+        ? parseTimeToSeconds(visit.windowStart)
+        : SYNTHETIC_WINDOW_START_SECONDS,
+      windowEndSeconds: hasPreferredWindow
+        ? parseTimeToSeconds(visit.windowEnd)
+        : SYNTHETIC_WINDOW_END_SECONDS,
+    };
+  });
 
   const departureContext = await resolveDepartureContext(
     request,
