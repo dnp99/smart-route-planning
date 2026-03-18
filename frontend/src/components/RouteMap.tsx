@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { divIcon } from 'leaflet';
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
 import { responsiveStyles } from './responsiveStyles';
+import { emitRouteMapUnavailable } from './routePlanner/routePlannerTelemetry';
 import type { GeocodedStop, OrderedStop, RouteLeg } from './types';
 
 type RouteMapProps = {
@@ -303,6 +304,7 @@ function RouteMapCanvas({
 
 function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const lastMapUnavailableEventKey = useRef<string | null>(null);
 
   const routePoints = useMemo<RoutePoint[]>(() => {
     const points: RoutePoint[] = [];
@@ -374,7 +376,34 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
     return routePoints.map((point) => [point.lat, point.lon]);
   }, [routeLegs, routePoints]);
 
-  if (polylinePoints.length === 0) {
+  const hasStartCoords =
+    isFiniteNumber(start?.coords?.lat) && isFiniteNumber(start?.coords?.lon);
+  const hasStopCoords = orderedStops.some(
+    (stop) => isFiniteNumber(stop?.coords?.lat) && isFiniteNumber(stop?.coords?.lon),
+  );
+  const isMapRenderable = polylinePoints.length > 0;
+
+  useEffect(() => {
+    if (isMapRenderable) {
+      lastMapUnavailableEventKey.current = null;
+      return;
+    }
+
+    const eventKey = `${orderedStops.length}:${routeLegs.length}:${hasStartCoords ? 1 : 0}:${hasStopCoords ? 1 : 0}`;
+    if (lastMapUnavailableEventKey.current === eventKey) {
+      return;
+    }
+
+    emitRouteMapUnavailable({
+      orderedStopCount: orderedStops.length,
+      routeLegCount: routeLegs.length,
+      hasStartCoords,
+      hasStopCoords,
+    });
+    lastMapUnavailableEventKey.current = eventKey;
+  }, [hasStartCoords, hasStopCoords, isMapRenderable, orderedStops.length, routeLegs.length]);
+
+  if (!isMapRenderable) {
     return (
       <div className="mb-3 mt-3 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200">
         <p className="m-0 font-semibold">Map unavailable for this route.</p>
