@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { login, signUp } from "../../components/auth/authService";
+import {
+  fetchMe,
+  login,
+  signUp,
+  updateProfileHomeAddress,
+} from "../../components/auth/authService";
 
 vi.mock("../../components/apiBaseUrl", () => ({
   resolveApiBaseUrl: () => "http://api.example.com",
@@ -26,6 +31,7 @@ describe("authService", () => {
           id: "nurse-1",
           email: "nurse@example.com",
           displayName: "Nurse One",
+          homeAddress: null,
         },
       }),
     } as Response);
@@ -54,6 +60,7 @@ describe("authService", () => {
           id: "nurse-2",
           email: "nurse@example.com",
           displayName: "Nurse Two",
+          homeAddress: null,
         },
       }),
     } as Response);
@@ -72,5 +79,57 @@ describe("authService", () => {
       }),
     });
     expect(result.user.displayName).toBe("Nurse Two");
+  });
+
+  it("loads current authenticated user profile", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        user: {
+          id: "nurse-1",
+          email: "nurse@example.com",
+          displayName: "Nurse One",
+          homeAddress: "3361 Ingram Road, Mississauga, ON",
+        },
+      }),
+    } as Response);
+
+    const result = await fetchMe("jwt-token");
+
+    expect(fetchMock).toHaveBeenCalledWith("http://api.example.com/api/auth/me", {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer jwt-token",
+      },
+    });
+    expect(result.user.homeAddress).toBe("3361 Ingram Road, Mississauga, ON");
+  });
+
+  it("updates profile home address", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        user: {
+          id: "nurse-1",
+          email: "nurse@example.com",
+          displayName: "Nurse One",
+          homeAddress: "1 Main Street, Toronto, ON",
+        },
+      }),
+    } as Response);
+
+    const result = await updateProfileHomeAddress("jwt-token", "1 Main Street, Toronto, ON");
+
+    expect(fetchMock).toHaveBeenCalledWith("http://api.example.com/api/auth/me", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer jwt-token",
+      },
+      body: JSON.stringify({
+        homeAddress: "1 Main Street, Toronto, ON",
+      }),
+    });
+    expect(result.user.homeAddress).toBe("1 Main Street, Toronto, ON");
   });
 });

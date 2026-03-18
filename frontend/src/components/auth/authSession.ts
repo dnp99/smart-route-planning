@@ -34,16 +34,24 @@ export const getAuthUser = (): AuthUser | null => {
   }
 
   try {
-    const parsed = JSON.parse(raw) as AuthUser;
+    const parsed = JSON.parse(raw) as Partial<AuthUser>;
     if (
       typeof parsed.id !== "string" ||
       typeof parsed.email !== "string" ||
-      typeof parsed.displayName !== "string"
+      typeof parsed.displayName !== "string" ||
+      (parsed.homeAddress !== undefined &&
+        parsed.homeAddress !== null &&
+        typeof parsed.homeAddress !== "string")
     ) {
       return null;
     }
 
-    return parsed;
+    return {
+      id: parsed.id,
+      email: parsed.email,
+      displayName: parsed.displayName,
+      homeAddress: parsed.homeAddress ?? null,
+    };
   } catch {
     return null;
   }
@@ -57,6 +65,14 @@ export const setAuthSession = (token: string, user: AuthUser) => {
   window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
   window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
   emitAuthChanged();
+};
+
+export const setStoredAuthUser = (user: AuthUser) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
 };
 
 export const clearAuthSession = () => {

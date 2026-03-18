@@ -5,6 +5,7 @@ export type AuthUser = {
   id: string;
   email: string;
   displayName: string;
+  homeAddress: string | null;
 };
 
 export type LoginRequest = {
@@ -29,6 +30,10 @@ export type MeResponse = {
   user: AuthUser;
 };
 
+export type UpdateMeRequest = {
+  homeAddress: string;
+};
+
 export const isAuthUser = (value: unknown): value is AuthUser => {
   if (!isObject(value)) {
     return false;
@@ -37,7 +42,8 @@ export const isAuthUser = (value: unknown): value is AuthUser => {
   return (
     typeof value.id === "string" &&
     typeof value.email === "string" &&
-    typeof value.displayName === "string"
+    typeof value.displayName === "string" &&
+    (typeof value.homeAddress === "string" || value.homeAddress === null)
   );
 };
 
@@ -59,6 +65,14 @@ export const isSignupRequest = (value: unknown): value is SignupRequest => {
     typeof value.email === "string" &&
     typeof value.password === "string"
   );
+};
+
+export const isUpdateMeRequest = (value: unknown): value is UpdateMeRequest => {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  return typeof value.homeAddress === "string";
 };
 
 export const parseLoginResponse = (value: unknown): LoginResponse | null => {

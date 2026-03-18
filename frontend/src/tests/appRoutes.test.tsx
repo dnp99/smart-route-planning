@@ -1,26 +1,38 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { setAuthSession } from "../components/auth/authSession";
 
-const { fetchMeMock } = vi.hoisted(() => ({
+const { fetchMeMock, updateProfileHomeAddressMock } = vi.hoisted(() => ({
   fetchMeMock: vi.fn(),
+  updateProfileHomeAddressMock: vi.fn(),
 }));
 
 vi.mock("../components/auth/authService", () => ({
   fetchMe: fetchMeMock,
+  updateProfileHomeAddress: updateProfileHomeAddressMock,
   login: vi.fn(),
   signUp: vi.fn(),
 }));
 
 beforeEach(() => {
   fetchMeMock.mockReset();
+  updateProfileHomeAddressMock.mockReset();
   fetchMeMock.mockResolvedValue({
     user: {
       id: "nurse-1",
       email: "nurse@example.com",
       displayName: "Nurse One",
+      homeAddress: null,
+    },
+  });
+  updateProfileHomeAddressMock.mockResolvedValue({
+    user: {
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      homeAddress: "1 Main Street, Toronto, ON",
     },
   });
 });
@@ -30,11 +42,12 @@ afterEach(() => {
   cleanup();
 });
 
-const seedAuthenticatedSession = (displayName = "Nurse One") => {
+const seedAuthenticatedSession = (displayName = "Nurse One", homeAddress: string | null = null) => {
   setAuthSession("test-token", {
     id: "nurse-1",
     email: "nurse@example.com",
     displayName,
+    homeAddress,
   });
 };
 
@@ -55,12 +68,41 @@ describe("App routing", () => {
     );
   });
 
+  it("prefills route planner start and end from saved home address", async () => {
+    fetchMeMock.mockResolvedValue({
+      user: {
+        id: "nurse-1",
+        email: "nurse@example.com",
+        displayName: "Nurse One",
+        homeAddress: "3361 Ingram Road, Mississauga, ON",
+      },
+    });
+    seedAuthenticatedSession("Nurse One", "3361 Ingram Road, Mississauga, ON");
+
+    render(
+      <MemoryRouter initialEntries={["/route-planner"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Smart Route Planner" })).toBeTruthy();
+    expect(screen.getByRole("textbox", { name: /starting point/i })).toHaveProperty(
+      "value",
+      "3361 Ingram Road, Mississauga, ON",
+    );
+    expect(screen.getByRole("textbox", { name: /ending point/i })).toHaveProperty(
+      "value",
+      "3361 Ingram Road, Mississauga, ON",
+    );
+  });
+
   it("capitalizes nurse display name in the workspace subtitle", async () => {
     fetchMeMock.mockResolvedValue({
       user: {
         id: "nurse-1",
         email: "nurse@example.com",
         displayName: "nUrSe oNe",
+        homeAddress: null,
       },
     });
     seedAuthenticatedSession("nUrSe oNe");
@@ -90,7 +132,7 @@ describe("App routing", () => {
     );
   });
 
-  it("shows logout option when logout icon menu is opened", async () => {
+  it("shows account options menu items", async () => {
     seedAuthenticatedSession();
 
     render(
@@ -102,9 +144,39 @@ describe("App routing", () => {
     expect(await screen.findByRole("heading", { name: "Patients" })).toBeTruthy();
     expect(screen.queryByRole("menuitem", { name: "Logout" })).toBeNull();
 
-    fireEvent.click(screen.getByRole("button", { name: "Open logout menu" }));
+    fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
 
+    expect(screen.getByRole("menuitem", { name: "Account settings" })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "Logout" })).toBeTruthy();
+  });
+
+  it("opens account settings modal and saves home address", async () => {
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/patients"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Patients" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Account settings" }));
+
+    expect(screen.getByRole("heading", { name: "Account settings" })).toBeTruthy();
+    fireEvent.change(screen.getByRole("textbox", { name: /home address/i }), {
+      target: { value: "1 Main Street, Toronto, ON" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await waitFor(() => {
+      expect(updateProfileHomeAddressMock).toHaveBeenCalledWith(
+        "test-token",
+        "1 Main Street, Toronto, ON",
+      );
+    });
+    expect(await screen.findByText("Account settings saved.")).toBeTruthy();
   });
 
   it("redirects unauthenticated users to login", () => {

@@ -217,6 +217,7 @@ describe("/api/auth/login route", () => {
         id: "nurse-1",
         email: "nurse@example.com",
         displayName: "Nurse One",
+        homeAddress: null,
       },
     });
     expect(updateNurseLastLoginAtMock).toHaveBeenCalledWith("nurse-1");

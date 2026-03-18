@@ -14,6 +14,57 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Implemented Phase 1 and Phase 2 of the account settings plan: account options menu + account settings modal, persisted nurse home-address profile support, and Route Planner default start/end prefill from saved home address.
+
+### Files added/updated/deleted
+- Added:
+  - `backend/drizzle/0005_last_eternals.sql`
+  - `backend/drizzle/meta/0005_snapshot.json`
+- Updated:
+  - `shared/contracts/auth.ts`
+  - `backend/src/db/schema.ts`
+  - `backend/drizzle/meta/_journal.json`
+  - `backend/src/lib/patients/patientRepository.ts`
+  - `backend/src/lib/patients/patientRepository.test.ts`
+  - `backend/src/app/api/auth/me/route.ts`
+  - `backend/src/app/api/auth/me/route.test.ts`
+  - `backend/src/app/api/auth/login/route.ts`
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/src/app/api/auth/signup/route.ts`
+  - `backend/src/app/api/auth/signup/route.test.ts`
+  - `frontend/src/components/auth/authService.ts`
+  - `frontend/src/components/auth/authSession.ts`
+  - `frontend/src/App.jsx`
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/auth/authService.test.ts`
+  - `frontend/src/tests/auth/LoginPage.test.tsx`
+  - `frontend/src/tests/appRoutes.test.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+  - `frontend/src/tests/patients/patientService.test.ts`
+  - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+  - `plans/account-settings-and-working-hours-execution-plan.md`
+  - `plan.md`
+
+### Why
+- Product requirements needed account-level options in the header, not a logout-only menu.
+- Nurses need a reusable home base that defaults Route Planner start and ending points.
+- Home address must be persisted in profile APIs so defaults survive sessions/devices.
+- Existing route draft behavior had to remain authoritative to prevent accidental overwrites.
+
+### Verification
+- Backend tests:
+  - `npm test -- --run src/app/api/auth/login/route.test.ts src/app/api/auth/me/route.test.ts src/app/api/auth/signup/route.test.ts src/lib/patients/patientRepository.test.ts` ✅ (4 files, 51 tests)
+- Frontend tests:
+  - `npm test -- --run src/tests/appRoutes.test.tsx src/tests/auth/authService.test.ts src/tests/auth/LoginPage.test.tsx src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/routePlanner/routePlannerService.test.ts src/tests/patients/patientService.test.ts src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (7 files, 53 tests)
+- Lint:
+  - `backend: npm run lint` ✅
+  - `frontend: npm run lint` ✅
+- Build:
+  - `backend: npm run build` ✅
+  - `frontend: npm run build` ✅
+
+### Change
 Updated the account settings execution plan to include nurse home-address management and Route Planner defaulting of both start/end points from saved home address, with this scope prioritized before weekly schedule work.
 
 ### Files added/updated/deleted

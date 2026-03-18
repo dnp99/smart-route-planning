@@ -44,6 +44,7 @@ describe("requestOptimizedRoute", () => {
       id: "nurse-1",
       email: "nurse@example.com",
       displayName: "Nurse One",
+      homeAddress: null,
     });
   });
 

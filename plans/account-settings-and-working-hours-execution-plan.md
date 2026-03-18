@@ -1,7 +1,11 @@
 # Account Settings + Home Address + Working Hours Execution Plan
 
 ## Status
-- Proposed
+- In progress
+- Phase 1: Implemented
+- Phase 2: Implemented
+- Phase 3: Pending
+- Phase 4: Pending
 - Last updated: 2026-03-18
 
 ## Objective
@@ -25,7 +29,6 @@ Future scope:
 - Add account settings modal accessible from the menu.
 - Add nurse home-address management in account settings.
 - Use saved home address as default Route Planner start and end point.
-- Add password update flow with frontend and backend validation.
 - Preserve existing logout behavior via menu item.
 
 ### In scope (Future Phase 2)
@@ -50,16 +53,35 @@ Future scope:
 - Fields:
   - Email (read-only)
   - Home address (editable)
-  - Current password
-  - New password
-  - Confirm new password
 - Actions:
   - `Cancel`
   - `Save`
 - Error messaging:
-  - Inline and specific (incorrect current password, weak password, mismatch, server failure).
+  - Inline and specific for profile validation failures.
 - Success messaging:
   - Clear confirmation and modal close or reset behavior.
+- Security section:
+  - Show password-update follow-up status (`planned next`).
+
+## Implementation Update (2026-03-18)
+
+### Completed
+1. Account options menu is live in header with `Account settings` and `Logout`.
+2. Account settings modal is implemented with:
+   - nurse email (read-only)
+   - editable home address
+   - validation + save feedback
+3. Auth profile API now supports:
+   - `GET /api/auth/me` returning `homeAddress`
+   - `PATCH /api/auth/me` for home-address updates
+4. Route Planner now defaults both start/end from saved home address when:
+   - no trip draft overrides exist
+   - fields are empty/default
+5. Draft precedence and manual override behavior are preserved.
+
+### Remaining
+1. Phase 3: password update flow (`POST /api/auth/update-password` + UI wiring).
+2. Phase 4: weekly working-hours schedule + optimize-route-v2 integration.
 
 ### Home address + planner default behavior
 1. Nurse can save a single home address from account settings.

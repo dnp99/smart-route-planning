@@ -16,6 +16,7 @@ type MobilePlannerStep = "trip" | "patients" | "review";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 const ROUTE_PLANNER_DRAFT_STORAGE_KEY = "careflow.route-planner.draft.v1";
+const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
 
 type SelectedPatientDestination = {
   visitKey: string;
@@ -373,8 +374,13 @@ const clearRoutePlannerDraft = () => {
   window.localStorage.removeItem(ROUTE_PLANNER_DRAFT_STORAGE_KEY);
 };
 
-function RoutePlanner() {
+type RoutePlannerProps = {
+  nurseHomeAddress?: string | null;
+};
+
+function RoutePlanner({ nurseHomeAddress = null }: RoutePlannerProps) {
   const initialDraft = useMemo(() => readRoutePlannerDraft(), []);
+  const normalizedHomeAddress = nurseHomeAddress?.trim() ?? "";
   const [isMobileViewport, setIsMobileViewport] = useState(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return false;
@@ -385,10 +391,11 @@ function RoutePlanner() {
   const [activeMobileStep, setActiveMobileStep] =
     useState<MobilePlannerStep>(initialDraft?.activeMobileStep ?? "trip");
   const [startAddress, setStartAddress] = useState(
-    initialDraft?.startAddress ?? "3361 Ingram Road, Mississauga, ON",
+    initialDraft?.startAddress ??
+      (normalizedHomeAddress.length > 0 ? normalizedHomeAddress : DEFAULT_START_ADDRESS),
   );
   const [manualEndAddress, setManualEndAddress] = useState(
-    initialDraft?.manualEndAddress ?? "",
+    initialDraft?.manualEndAddress ?? normalizedHomeAddress,
   );
   const [startGooglePlaceId, setStartGooglePlaceId] = useState<string | null>(
     initialDraft?.startGooglePlaceId ?? null,
@@ -474,6 +481,31 @@ function RoutePlanner() {
       mediaQueryList.removeListener(handleMediaQueryChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (initialDraft) {
+      return;
+    }
+
+    if (normalizedHomeAddress.length === 0) {
+      return;
+    }
+
+    if (startAddress.trim().length === 0 || startAddress === DEFAULT_START_ADDRESS) {
+      setStartAddress(normalizedHomeAddress);
+      setStartGooglePlaceId(null);
+    }
+
+    if (manualEndAddress.trim().length === 0) {
+      setManualEndAddress(normalizedHomeAddress);
+      setManualEndGooglePlaceId(null);
+    }
+  }, [
+    initialDraft,
+    manualEndAddress,
+    normalizedHomeAddress,
+    startAddress,
+  ]);
 
   useEffect(() => {
     setExpandedDestinationVisitKeys((current) => {

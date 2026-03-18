@@ -78,3 +78,27 @@ export const fetchMe = async (token: string) => {
 
   return parsed;
 };
+
+export const updateProfileHomeAddress = async (token: string, homeAddress: string) => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ homeAddress }),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(extractApiErrorMessage(payload) ?? "Unable to update profile.");
+  }
+
+  const parsed = parseMeResponse(payload);
+  if (!parsed) {
+    throw new Error("Unexpected profile-update response format.");
+  }
+
+  return parsed;
+};
