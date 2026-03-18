@@ -399,7 +399,7 @@ describe("RoutePlanner patient selection integration", () => {
     });
   });
 
-  it("includes the selected end patient in optimize destinations", () => {
+  it("uses selected end patient only as the route end and excludes it from destinations", () => {
     render(<RoutePlanner />);
 
     fireEvent.click(screen.getByLabelText("Patient end address"));
@@ -409,18 +409,7 @@ describe("RoutePlanner patient selection integration", () => {
     expect(optimizeRouteMock).toHaveBeenCalledWith({
       startAddress: "3361 Ingram Road, Mississauga, ON",
       endAddress: "123 Main St",
-      destinations: [
-        {
-          patientId: "patient-1",
-          patientName: "Jane Doe",
-          address: "123 Main St",
-          googlePlaceId: "place-1",
-          windowStart: "09:00",
-          windowEnd: "11:00",
-          windowType: "fixed",
-          serviceDurationMinutes: 30,
-        },
-      ],
+      destinations: [],
       canOptimize: true,
     });
   });

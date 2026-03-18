@@ -20,6 +20,27 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Closed nurse patient-management follow-up gaps by updating patient-end request behavior in Route Planner and marking the follow-up tracker as completed.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plans/nurse-patient-management-follow-ups.md`
+  - `plan.md`
+
+### Why
+- In patient-end mode, the selected end patient should define the final endpoint only and should not be auto-added as an intermediate optimize destination.
+- The follow-up tracker needed to reflect current behavior and close stale contract-follow-up language now that the planner flow is standardized on v2 contracts.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
 Clarified Login Flow Hardening plan status as open/pending so it no longer reads like an implied completed implementation.
 
 ### Files added/updated/deleted

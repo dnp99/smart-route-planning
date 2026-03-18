@@ -38,7 +38,6 @@ type SelectedEndPatient = {
   patientName: string;
   address: string;
   googlePlaceId: string | null;
-  visitDestinations: SelectedPatientDestination[];
 };
 
 type RoutePlannerDraft = {
@@ -281,17 +280,8 @@ const parseSelectedEndPatient = (value: unknown): SelectedEndPatient | null => {
     typeof value.patientId !== "string" ||
     typeof value.patientName !== "string" ||
     typeof value.address !== "string" ||
-    (value.googlePlaceId !== null && typeof value.googlePlaceId !== "string") ||
-    !Array.isArray(value.visitDestinations)
+    (value.googlePlaceId !== null && typeof value.googlePlaceId !== "string")
   ) {
-    return null;
-  }
-
-  const parsedVisitDestinations = value.visitDestinations
-    .map(parseSelectedPatientDestination)
-    .filter((destination): destination is SelectedPatientDestination => destination !== null);
-
-  if (parsedVisitDestinations.length !== value.visitDestinations.length) {
     return null;
   }
 
@@ -300,7 +290,6 @@ const parseSelectedEndPatient = (value: unknown): SelectedEndPatient | null => {
     patientName: value.patientName,
     address: value.address,
     googlePlaceId: value.googlePlaceId,
-    visitDestinations: parsedVisitDestinations,
   };
 };
 
@@ -656,19 +645,8 @@ function RoutePlanner() {
   }, [result]);
 
   const requestDestinations = useMemo(() => {
-    const includedDestinationVisits = selectedDestinations.filter(
-      (destination) => destination.isIncluded,
-    );
-
-    if (endMode !== "patient" || !selectedEndPatient) {
-      return includedDestinationVisits;
-    }
-
-    return [
-      ...includedDestinationVisits,
-      ...selectedEndPatient.visitDestinations.filter((destination) => destination.isIncluded),
-    ];
-  }, [endMode, selectedDestinations, selectedEndPatient]);
+    return selectedDestinations.filter((destination) => destination.isIncluded);
+  }, [selectedDestinations]);
 
   const overlappingVisitPairCount = useMemo(() => {
     let pairCount = 0;
@@ -758,73 +736,6 @@ function RoutePlanner() {
           : destination,
       ),
     );
-  };
-
-  const updateEndPatientPlanningWindow = (
-    visitKey: string,
-    field: "windowStart" | "windowEnd",
-    value: string,
-  ) => {
-    setSelectedEndPatient((current) => {
-      if (!current) {
-        return current;
-      }
-
-      return {
-        ...current,
-        visitDestinations: current.visitDestinations.map((destination) =>
-          destination.visitKey === visitKey
-            ? {
-                ...destination,
-                [field]: value,
-              }
-            : destination,
-        ),
-      };
-    });
-  };
-
-  const setEndPatientVisitIncluded = (visitKey: string, isIncluded: boolean) => {
-    setSelectedEndPatient((current) => {
-      if (!current) {
-        return current;
-      }
-
-      return {
-        ...current,
-        visitDestinations: current.visitDestinations.map((destination) =>
-          destination.visitKey === visitKey
-            ? {
-                ...destination,
-                isIncluded,
-              }
-            : destination,
-        ),
-      };
-    });
-  };
-
-  const setEndPatientPersistPlanningWindow = (
-    visitKey: string,
-    persistPlanningWindow: boolean,
-  ) => {
-    setSelectedEndPatient((current) => {
-      if (!current) {
-        return current;
-      }
-
-      return {
-        ...current,
-        visitDestinations: current.visitDestinations.map((destination) =>
-          destination.visitKey === visitKey
-            ? {
-                ...destination,
-                persistPlanningWindow,
-              }
-            : destination,
-        ),
-      };
-    });
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -969,13 +880,11 @@ function RoutePlanner() {
   };
 
   const selectEndPatient = (patient: Patient) => {
-    const visitDestinations = toSelectedPatientDestinations(patient);
     setSelectedEndPatient({
       patientId: patient.id,
       patientName: formatPatientNameFromParts(patient.firstName, patient.lastName),
       address: patient.address,
       googlePlaceId: patient.googlePlaceId,
-      visitDestinations,
     });
     setSelectedDestinations((current) =>
       current.filter((entry) => entry.patientId !== patient.id),
@@ -1161,83 +1070,6 @@ function RoutePlanner() {
                   <p className="m-0 text-sm text-emerald-700 dark:text-emerald-300">
                     {selectedEndPatient.address}
                   </p>
-                  <p className="m-0 text-xs text-emerald-700 dark:text-emerald-300">
-                    {
-                      selectedEndPatient.visitDestinations.filter((destination) => destination.isIncluded)
-                        .length
-                    }{" "}
-                    visit window(s) selected
-                  </p>
-                  <div className="mt-2 grid gap-2">
-                    {selectedEndPatient.visitDestinations.map((destination, index) => {
-                      return (
-                        <div
-                          key={destination.visitKey}
-                          className="grid gap-2 rounded-lg border border-emerald-300/70 p-2 dark:border-emerald-800"
-                        >
-                          <label className="inline-flex items-start gap-2 text-xs font-semibold leading-snug text-emerald-900 dark:text-emerald-200">
-                            <input
-                              type="checkbox"
-                              checked={destination.isIncluded}
-                              onChange={(event) =>
-                                setEndPatientVisitIncluded(destination.visitKey, event.target.checked)
-                              }
-                            />
-                            Include visit window {index + 1}
-                          </label>
-
-                          <div className="grid gap-2">
-                            <p className="m-0 text-xs text-emerald-800 dark:text-emerald-300">
-                              {destination.requiresPlanningWindow
-                                ? "Set planning window (optional)"
-                                : "Adjust planning window (plan-only unless saved)"}
-                            </p>
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                              <input
-                                type="time"
-                                aria-label={`End patient ${destination.patientName} start`}
-                                value={destination.windowStart}
-                                onChange={(event) =>
-                                  updateEndPatientPlanningWindow(
-                                    destination.visitKey,
-                                    "windowStart",
-                                    event.target.value,
-                                  )
-                                }
-                                className="w-full rounded-lg border border-emerald-300 px-2 py-1 text-xs text-emerald-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-100"
-                              />
-                              <input
-                                type="time"
-                                aria-label={`End patient ${destination.patientName} end`}
-                                value={destination.windowEnd}
-                                onChange={(event) =>
-                                  updateEndPatientPlanningWindow(
-                                    destination.visitKey,
-                                    "windowEnd",
-                                    event.target.value,
-                                  )
-                                }
-                                className="w-full rounded-lg border border-emerald-300 px-2 py-1 text-xs text-emerald-900 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-100"
-                              />
-                            </div>
-                            <label className="inline-flex items-start gap-2 text-xs leading-snug text-emerald-800 dark:text-emerald-300">
-                              <input
-                                type="checkbox"
-                                checked={destination.persistPlanningWindow}
-                                onChange={(event) =>
-                                  setEndPatientPersistPlanningWindow(
-                                    destination.visitKey,
-                                    event.target.checked,
-                                  )
-                                }
-                              />
-                              Save this window to patient record
-                            </label>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
                   <button
                     type="button"
                     onClick={clearEndPatient}

@@ -1,47 +1,36 @@
 # Nurse Patient Management Follow-ups
 
 Date noted: 2026-03-12
+Last updated: 2026-03-17
 
-This file tracks the remaining gaps and intentional deviations relative to
+## Status
+
+Completed.
+
+This file tracked the follow-up gaps and intentional deviations relative to
 `plans/nurse-patient-management-execution-plan.md` so they can be addressed in a later pass.
 
-## Remaining gaps
+## Resolved follow-ups
 
 ### 1. Route-planner request behavior mismatch
 
-The execution plan says that in patient-end mode:
+Resolution:
 
-- `endAddress` should come from the selected end patient
-- `destinations[]` should contain intermediate selected patients only
-- the final end patient should not be automatically included in `destinations[]`
+- in patient-end mode, `endAddress` is derived from the selected end patient
+- `destinations[]` includes only intermediate selected patients
+- the final end patient is no longer automatically injected into optimize destinations
 
-Current implementation:
+Implementation notes:
 
-- `frontend/src/components/RoutePlanner.tsx` appends `selectedEndPatient` to the optimize-route request destinations
-
-Future fix:
-
-- keep `endAddress` derived from the end patient
-- submit only intermediate patients in `destinations[]`
-- preserve end-patient identity in the optimize response through a separate response-shaping strategy
+- this was implemented in `frontend/src/components/RoutePlanner.tsx`
 
 ### 2. Shared optimize-route response contract mismatch
 
-The execution plan locks a stricter shared response shape:
+Resolution:
 
-- ordered stops should expose `latitude` and `longitude`
-- patient-linked ordered stops should carry required `patientId` and `patientName`
-- final-end handling should follow the locked patient-end representation rules
-
-Current implementation:
-
-- `shared/contracts/optimizeRoute.ts` still uses nested `coords`
-- patient metadata on route stops is still optional in the shared response contract
-
-Future fix:
-
-- align shared request/response types with the locked execution-plan contract
-- update backend shaping and frontend parsing together in one atomic change
+- route planner optimization is standardized on v2 shared contracts (`shared/contracts/optimizeRouteV2.ts`)
+- the legacy v1 shared optimize-route contract remains unchanged by design and is no longer the nurse route-planner contract source
+- no additional follow-up work is tracked here for the v1 contract shape
 
 ## Intentional UX deviation from plan
 
