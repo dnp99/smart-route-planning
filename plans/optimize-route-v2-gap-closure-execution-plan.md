@@ -5,7 +5,7 @@ Last updated: 2026-03-17
 
 ## Objective
 
-Complete the remaining quality gaps in `POST /api/optimize-route/v2` so stop ordering is more consistent with real drive time, fixed-window risk is evaluated beyond one hop, and unscheduled semantics are explicit and testable.
+This plan is completed. It is retained as the execution record for the `v2.3.0-matrix-lookahead-unscheduled` rollout of `POST /api/optimize-route/v2`.
 
 ## Current Status Snapshot
 
@@ -16,12 +16,12 @@ Complete the remaining quality gaps in `POST /api/optimize-route/v2` so stop ord
 - Flexible visits now enforce partial-window validation (both start/end or neither).
 - Fixed-window duration validation now returns patient-specific actionable messaging.
 
-### Remaining gaps
+### Gap-closure outcomes (v2.3.0)
 
-1. Ordering/scoring still uses estimated travel (`haversine + constant speed`) while final route metrics come from Google legs.
-2. Downstream risk scoring is still bounded to one-step future simulation.
-3. `unscheduledTasks` is still not actively produced by scheduler policy.
-4. Duration/window consistency policy is still incomplete for flexible visits that provide a preferred window shorter than service duration.
+1. Ordering/scoring uses planning-time travel matrix durations when available, with fallback to estimated travel on matrix failure.
+2. Candidate evaluation uses bounded multi-step lookahead with deterministic tie-break behavior.
+3. `unscheduledTasks` is actively produced using explicit policy (`insufficient_day_capacity` for flexible visits that cannot fit in-day).
+4. Validation rejects flexible preferred windows that are shorter than `serviceDurationMinutes` when both window bounds are provided.
 
 ## Scope
 
@@ -40,7 +40,7 @@ Complete the remaining quality gaps in `POST /api/optimize-route/v2` so stop ord
 
 ## Target Outcome
 
-After this plan:
+Achieved outcomes:
 
 - chosen stop order uses travel-time estimates that better match final Google routing legs
 - scheduler avoids myopic choices that create avoidable downstream fixed-window lateness
@@ -184,12 +184,12 @@ Restore user visibility of overlap conflicts without preventing optimization.
 
 ## Rollout Strategy
 
-1. Introduce remaining backend improvements behind algorithm version bump (`v2.3.x`) with clear response tagging.
-2. Deploy with log-only telemetry first for comparative analysis:
+1. Rolled out behind algorithm version bump `v2.3.0-matrix-lookahead-unscheduled`.
+2. Continue comparative telemetry as needed:
    - selected order
    - projected vs actual leg duration deltas
    - fixed-window violation counts
-3. Promote tuned algorithm as default after telemetry confirms no regression.
+3. Keep this plan as the reference record for the v2.3.0 rollout.
 
 ## Risks and Mitigations
 

@@ -1,6 +1,16 @@
 # JWT Authentication Execution Plan
 
 Date created: 2026-03-12
+Last updated: 2026-03-17
+
+## Status
+
+Completed.
+
+This file is retained as the original execution plan record.
+For rollout completion and remediation details, see:
+
+- `plans/jwt-authentication-remediation-release-note.md`
 
 ## Objective
 
@@ -10,7 +20,7 @@ Add user login and JWT authentication so:
 2. all backend business endpoints require a valid JWT,
 3. data access is scoped to the authenticated user identity.
 
-This document is planning-only. No implementation changes are included in this step.
+The plan in this document has been executed.
 
 ## User Requirements (locked)
 

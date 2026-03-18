@@ -5,10 +5,13 @@ The repository planning documents are stored under `plans/`.
 Files:
 
 - `plans/change-log.md` - implementation history and completed change log
-- `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
 - `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
 - `plans/jwt-authentication-remediation-release-note.md` - short release note for the completed JWT remediation rollout
-- `plans/optimize-route-v2-no-preferred-window-autoscheduling-execution-plan.md` - execution plan for auto-scheduling flexible visits without preferred windows
+- `plans/login-flow-hardening-execution-plan.md` - login transport, hardening, and rollout checklist plan
+- `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
+- `plans/nurse-patient-management-follow-ups.md` - remaining nurse/patient follow-up items and intentional deviations
+- `plans/optimize-route-v2-time-first-execution-plan.md` - original v2 time-first endpoint design plan
+- `plans/optimize-route-v2-gap-closure-execution-plan.md` - v2.3 gap-closure rollout execution record
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
