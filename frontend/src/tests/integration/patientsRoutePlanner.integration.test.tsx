@@ -369,7 +369,8 @@ describe("patients and route planner integration", () => {
       expect(screen.getAllByText("Janet Doe").length).toBeGreaterThan(0);
     });
 
-    fireEvent.click(screen.getAllByRole("button", { name: /Delete patient Janet Doe/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Janet Doe/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: /Delete patient Janet Doe/i }));
 
     await waitFor(() => {
       expect(deletePatientMock).toHaveBeenCalledTimes(1);
