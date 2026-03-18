@@ -1,12 +1,19 @@
 # Login Flow Hardening Execution Plan
 
 Date created: 2026-03-14
+Last updated: 2026-03-17
+
+## Status
+
+Open.
+
+This remains a planning/backlog document. It has not been marked completed in the repository change log yet.
 
 ## Objective
 
 Harden the login flow with clear security controls and remove ambiguity around password transmission behavior between frontend and backend.
 
-This is a planning-only document. No implementation changes are included here.
+This is a planning-only document and should be treated as pending until explicitly closed out.
 
 ## Context
 

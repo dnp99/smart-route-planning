@@ -20,6 +20,24 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Clarified Login Flow Hardening plan status as open/pending so it no longer reads like an implied completed implementation.
+
+### Files added/updated/deleted
+- Updated:
+  - `plans/login-flow-hardening-execution-plan.md`
+  - `plan.md`
+
+### Why
+- Plan review identified ambiguity: the login hardening document looked like an execution artifact even though there was no explicit completion marker.
+- Adding an explicit status keeps planning docs and rollout records consistent.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
+
+## Latest change addendum
+
+### Change
 Implemented Optimize Route V2 no-preferred-window autoscheduling so flexible visits can be optimized without manually entering planning window times.
 
 ### Files added/updated/deleted
