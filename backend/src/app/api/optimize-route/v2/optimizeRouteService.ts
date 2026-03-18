@@ -16,7 +16,7 @@ import {
   type TravelMatrixNode,
 } from "./travelMatrix";
 
-const ALGORITHM_VERSION = "v2.3.0-matrix-lookahead-unscheduled";
+const ALGORITHM_VERSION = "v2.4.0-fixed-first";
 const ESTIMATED_DRIVE_SPEED_KM_PER_HOUR = 40;
 const IDLE_GAP_FILL_THRESHOLD_SECONDS = 30 * 60;
 const IDLE_GAP_RETURN_BUFFER_SECONDS = 5 * 60;
@@ -810,8 +810,12 @@ const orderVisitsByWindowDistanceAndDuration = (
       };
     });
 
-    projections.sort(compareVisitProjections);
-    const firstProjection = projections[0];
+    const hasFixedRemaining = projections.some((p) => p.visit.windowType === "fixed");
+    const primaryProjections = hasFixedRemaining
+      ? projections.filter((p) => p.visit.windowType === "fixed")
+      : projections;
+    primaryProjections.sort(compareVisitProjections);
+    const firstProjection = primaryProjections[0];
     if (!firstProjection) {
       throw new HttpError(500, "Unable to evaluate route candidates.");
     }

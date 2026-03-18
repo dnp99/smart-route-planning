@@ -13,6 +13,7 @@ Upcoming or not-yet-implemented work should be stored as separate planning docum
 Current planning documents:
 
 - `plans/account-settings-and-working-hours-execution-plan.md` - account settings, home address defaults, and future weekly schedule execution plan
+- `plans/scheduling-priority-execution-plan.md` - fixed-patient priority ordering, lateness tolerances, and pre-optimization conflict detection
 
 ---
 
@@ -2552,3 +2553,29 @@ An Oracle review was performed and its recommendations were incorporated, includ
 
 - Users need to verify what they are typing, especially on mobile where typos are common.
 - The confirm-field color indicator provides instant feedback without requiring a submit attempt.
+
+---
+
+## 82) Scheduling Priority Phase 1: Fixed-First Ordering
+
+### 82 — Files updated
+
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `plans/scheduling-priority-execution-plan.md`
+
+### 82 — Changes
+
+- In `orderVisitsByWindowDistanceAndDuration`, after computing projections for all remaining visits, the main candidate selection is now restricted to fixed-window patients whenever any remain.
+- Non-fixed patients (flexible, no-window) are excluded from the primary selection pool but remain eligible as gap-fillers via `maybeSelectGapFiller`, which still receives the full projections list.
+- When no fixed patients remain, all patients compete equally (existing behavior preserved).
+- Bumped `ALGORITHM_VERSION` to `v2.4.0-fixed-first`.
+- Added three new tests:
+  - Fixed patient is scheduled before a closer no-window patient.
+  - Both fixed patients with the same window go before a closer no-window patient.
+  - Gap-filler still inserts a no-window patient into a large idle gap before a fixed anchor.
+- Updated the algorithm version assertion in the existing grouped-stop metrics test.
+
+### 82 — Motivation
+
+Phase 1 of the scheduling-priority execution plan: the greedy nearest-neighbor algorithm was picking no-window patients first because they are geographically closest, even when fixed-window patients needed to depart immediately to arrive on time. This change ensures fixed patients are always the primary scheduling candidates, reducing worst-case lateness from two patients both being late to only one.
