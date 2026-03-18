@@ -250,6 +250,7 @@ vi.mock("../../components/routePlanner/routePlannerService", () => ({
 
 vi.mock("../../components/auth/authService", () => ({
   fetchMe: fetchMeMock,
+  updateProfileHomeAddress: vi.fn(),
   login: vi.fn(),
   signUp: vi.fn(),
 }));
@@ -294,6 +295,7 @@ describe("patients and route planner integration", () => {
         id: "nurse-1",
         email: "nurse@example.com",
         displayName: "Nurse One",
+        homeAddress: null,
       },
     });
     window.localStorage.clear();
@@ -301,6 +303,7 @@ describe("patients and route planner integration", () => {
       id: "nurse-1",
       email: "nurse@example.com",
       displayName: "Nurse One",
+      homeAddress: null,
     });
 
     patientStore = [];

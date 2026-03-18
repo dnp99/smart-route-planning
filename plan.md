@@ -5,12 +5,146 @@ The repository planning documents are stored under `plans/`.
 Files:
 
 - `plans/change-log.md` - implementation history and completed change log
+- `plans/account-settings-and-working-hours-execution-plan.md` - execution plan for account menu/settings and future weekly schedule-aware route constraints
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
 ## Latest change record
 
 ## Latest change addendum
+
+### Change
+Lowered backend coverage thresholds from `90` to `80` in the Vitest coverage config.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/vitest.config.ts`
+  - `plan.md`
+
+### Why
+- Requested baseline for backend coverage gating is now 80%.
+- This aligns CI/local coverage threshold checks with the current target while coverage-improvement work continues.
+
+### Verification
+- Backend:
+  - `npm run test:coverage` ✅
+  - Resulting coverage: statements `93.72%`, branches `86.37%`, functions `97.76%`, lines `93.69%`
+
+### Change
+Increased backend test coverage with targeted branch-path tests across auth routes, auth audit logging, rate limiting, and optimize-route v2 travel matrix parsing/error handling.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/src/app/api/auth/me/route.test.ts`
+  - `backend/src/app/api/auth/signup/route.test.ts`
+  - `backend/src/app/api/optimize-route/v2/travelMatrix.test.ts`
+  - `backend/src/lib/auth/auditLogger.test.ts`
+  - `backend/src/lib/rateLimit/authLoginRateLimit.test.ts`
+  - `plan.md`
+
+### Why
+- Backend coverage gaps were concentrated in untested error/edge branches (especially in rate limiting and matrix parsing).
+- Added focused tests for:
+  - disallowed CORS preflight origins on auth routes
+  - blank/invalid auth payload branches
+  - unexpected auth runtime failures
+  - upstash lock/rate-limit/fallback paths
+  - additional audit redaction/masking branches
+  - matrix response parsing formats and failure modes
+
+### Verification
+- Backend:
+  - `npm test` ✅ (26 files, 312 tests)
+  - `npm test -- --run src/lib/rateLimit/authLoginRateLimit.test.ts src/lib/auth/auditLogger.test.ts src/app/api/optimize-route/v2/travelMatrix.test.ts src/app/api/auth/login/route.test.ts src/app/api/auth/signup/route.test.ts src/app/api/auth/me/route.test.ts` ✅ (6 files, 65 tests)
+  - `npm run test:coverage` ⚠️ improved but threshold still failing
+    - Branch coverage improved from `80.82%` to `86.37%`
+
+### Change
+Implemented Phase 1 and Phase 2 of the account settings plan: account options menu + account settings modal, persisted nurse home-address profile support, and Route Planner default start/end prefill from saved home address.
+
+### Files added/updated/deleted
+- Added:
+  - `backend/drizzle/0005_last_eternals.sql`
+  - `backend/drizzle/meta/0005_snapshot.json`
+- Updated:
+  - `shared/contracts/auth.ts`
+  - `backend/src/db/schema.ts`
+  - `backend/drizzle/meta/_journal.json`
+  - `backend/src/lib/patients/patientRepository.ts`
+  - `backend/src/lib/patients/patientRepository.test.ts`
+  - `backend/src/app/api/auth/me/route.ts`
+  - `backend/src/app/api/auth/me/route.test.ts`
+  - `backend/src/app/api/auth/login/route.ts`
+  - `backend/src/app/api/auth/login/route.test.ts`
+  - `backend/src/app/api/auth/signup/route.ts`
+  - `backend/src/app/api/auth/signup/route.test.ts`
+  - `frontend/src/components/auth/authService.ts`
+  - `frontend/src/components/auth/authSession.ts`
+  - `frontend/src/App.jsx`
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/auth/authService.test.ts`
+  - `frontend/src/tests/auth/LoginPage.test.tsx`
+  - `frontend/src/tests/appRoutes.test.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+  - `frontend/src/tests/patients/patientService.test.ts`
+  - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+  - `plans/account-settings-and-working-hours-execution-plan.md`
+  - `plan.md`
+
+### Why
+- Product requirements needed account-level options in the header, not a logout-only menu.
+- Nurses need a reusable home base that defaults Route Planner start and ending points.
+- Home address must be persisted in profile APIs so defaults survive sessions/devices.
+- Existing route draft behavior had to remain authoritative to prevent accidental overwrites.
+
+### Verification
+- Backend tests:
+  - `npm test -- --run src/app/api/auth/login/route.test.ts src/app/api/auth/me/route.test.ts src/app/api/auth/signup/route.test.ts src/lib/patients/patientRepository.test.ts` ✅ (4 files, 51 tests)
+- Frontend tests:
+  - `npm test -- --run src/tests/appRoutes.test.tsx src/tests/auth/authService.test.ts src/tests/auth/LoginPage.test.tsx src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/routePlanner/routePlannerService.test.ts src/tests/patients/patientService.test.ts src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (7 files, 53 tests)
+- Lint:
+  - `backend: npm run lint` ✅
+  - `frontend: npm run lint` ✅
+- Build:
+  - `backend: npm run build` ✅
+  - `frontend: npm run build` ✅
+
+### Change
+Updated the account settings execution plan to include nurse home-address management and Route Planner defaulting of both start/end points from saved home address, with this scope prioritized before weekly schedule work.
+
+### Files added/updated/deleted
+- Updated:
+  - `plans/account-settings-and-working-hours-execution-plan.md`
+  - `plan.md`
+
+### Why
+- Product scope now requires an account-level home address that can be reused as default trip start and end points.
+- Weekly schedule remains future work, but home-address integration is now the next priority and should be delivered first.
+- The execution plan needed explicit phase ordering, API contract updates, and acceptance criteria for this behavior.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
+
+### Change
+Added a new execution plan under `plans/` for account options menu, account settings password update flow, and future nurse weekly working-hours integration with optimize-route-v2.
+
+### Files added/updated/deleted
+- Added:
+  - `plans/account-settings-and-working-hours-execution-plan.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- Product direction now requires account settings from the header menu and a clear password-update flow for nurses.
+- Route-planning future scope needs a concrete design path for weekly working-hours constraints when patients are flexible/no-window.
+- Capturing this as an execution plan keeps implementation scope, API contract, and acceptance criteria explicit before coding begins.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
 
 ### Change
 Changed Route Planner destination cards to default to collapsed window details (`Edit window`) when a patient is added.

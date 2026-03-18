@@ -16,6 +16,7 @@ export const nurses = pgTable("nurses", {
   externalKey: text("external_key").notNull().unique(),
   displayName: text("display_name").notNull(),
   email: text("email").notNull().unique(),
+  homeAddress: text("home_address"),
   passwordHash: text("password_hash").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),

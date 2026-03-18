@@ -2,12 +2,13 @@ import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import RoutePlanner from "./components/RoutePlanner";
 import LoginPage from "./components/auth/LoginPage";
-import { fetchMe } from "./components/auth/authService";
+import { fetchMe, updateProfileHomeAddress } from "./components/auth/authService";
 import {
   clearAuthSession,
   getAuthChangedEventName,
   getAuthToken,
   getAuthUser,
+  setStoredAuthUser,
 } from "./components/auth/authSession";
 import { formatNameWords } from "./components/patients/patientName";
 import PatientsPage from "./components/patients/PatientsPage";
@@ -20,7 +21,7 @@ const resolveTabCardClassName = ({ isActive }) =>
       : "border-slate-200 bg-slate-100 hover:bg-slate-200",
   ].join(" ");
 
-const LogoutIcon = ({ className }) => (
+const OptionsIcon = ({ className }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
     viewBox="0 0 24 24"
@@ -32,18 +33,26 @@ const LogoutIcon = ({ className }) => (
     aria-hidden="true"
     className={className}
   >
-    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-    <polyline points="16 17 21 12 16 7" />
-    <line x1="21" y1="12" x2="9" y2="12" />
+    <circle cx="12" cy="5" r="1.5" />
+    <circle cx="12" cy="12" r="1.5" />
+    <circle cx="12" cy="19" r="1.5" />
   </svg>
 );
+
+const MAX_HOME_ADDRESS_LENGTH = 200;
+const PROFILE_MODAL_HOME_ADDRESS_ID = "account-settings-home-address";
 
 function App() {
   const [authToken, setAuthToken] = useState(() => getAuthToken());
   const [authUser, setAuthUser] = useState(() => getAuthUser());
   const [isAuthResolved, setIsAuthResolved] = useState(() => !getAuthToken());
-  const [isLogoutMenuOpen, setIsLogoutMenuOpen] = useState(false);
-  const logoutMenuRef = useRef(null);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
+  const [homeAddressInput, setHomeAddressInput] = useState("");
+  const [accountSettingsError, setAccountSettingsError] = useState("");
+  const [accountSettingsSuccess, setAccountSettingsSuccess] = useState("");
+  const [isSavingAccountSettings, setIsSavingAccountSettings] = useState(false);
+  const accountMenuRef = useRef(null);
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -52,7 +61,8 @@ function App() {
       setAuthUser(getAuthUser());
       setIsAuthResolved(!nextToken);
       if (!nextToken) {
-        setIsLogoutMenuOpen(false);
+        setIsAccountMenuOpen(false);
+        setIsAccountSettingsOpen(false);
       }
     };
 
@@ -95,23 +105,23 @@ function App() {
   }, [authToken]);
 
   useEffect(() => {
-    if (!isLogoutMenuOpen) {
+    if (!isAccountMenuOpen) {
       return;
     }
 
     const handlePointerDown = (event) => {
-      if (!logoutMenuRef.current) {
+      if (!accountMenuRef.current) {
         return;
       }
 
-      if (!logoutMenuRef.current.contains(event.target)) {
-        setIsLogoutMenuOpen(false);
+      if (!accountMenuRef.current.contains(event.target)) {
+        setIsAccountMenuOpen(false);
       }
     };
 
     const handleKeyDown = (event) => {
       if (event.key === "Escape") {
-        setIsLogoutMenuOpen(false);
+        setIsAccountMenuOpen(false);
       }
     };
 
@@ -122,7 +132,7 @@ function App() {
       document.removeEventListener("pointerdown", handlePointerDown);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [isLogoutMenuOpen]);
+  }, [isAccountMenuOpen]);
 
   const isAuthenticated = Boolean(authToken);
   const defaultProtectedPath = "/patients";
@@ -133,6 +143,82 @@ function App() {
   const workspaceSubtitle = formattedDisplayName
     ? `Nurse operations workspace for ${formattedDisplayName}`
     : "Nurse operations workspace";
+  const normalizedProfileHomeAddress = authUser?.homeAddress ?? "";
+
+  useEffect(() => {
+    if (!isAccountSettingsOpen) {
+      return;
+    }
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setIsAccountSettingsOpen(false);
+        setAccountSettingsError("");
+        setAccountSettingsSuccess("");
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isAccountSettingsOpen]);
+
+  const openAccountSettingsModal = () => {
+    setHomeAddressInput(normalizedProfileHomeAddress);
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+    setIsAccountMenuOpen(false);
+    setIsAccountSettingsOpen(true);
+  };
+
+  const closeAccountSettingsModal = () => {
+    if (isSavingAccountSettings) {
+      return;
+    }
+
+    setIsAccountSettingsOpen(false);
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+  };
+
+  const handleAccountSettingsSubmit = async (event) => {
+    event.preventDefault();
+    setAccountSettingsError("");
+    setAccountSettingsSuccess("");
+
+    const normalizedHomeAddress = homeAddressInput.trim();
+    if (!normalizedHomeAddress) {
+      setAccountSettingsError("Home address is required.");
+      return;
+    }
+
+    if (normalizedHomeAddress.length > MAX_HOME_ADDRESS_LENGTH) {
+      setAccountSettingsError("Home address must be 200 characters or fewer.");
+      return;
+    }
+
+    if (!authToken || !authUser) {
+      clearAuthSession();
+      return;
+    }
+
+    setIsSavingAccountSettings(true);
+    try {
+      const updated = await updateProfileHomeAddress(authToken, normalizedHomeAddress);
+      setAuthUser(updated.user);
+      setStoredAuthUser(updated.user);
+      setAccountSettingsSuccess("Account settings saved.");
+    } catch (saveError) {
+      setAccountSettingsError(
+        saveError instanceof Error
+          ? saveError.message
+          : "Unable to update account settings.",
+      );
+    } finally {
+      setIsSavingAccountSettings(false);
+    }
+  };
 
   const renderProtectedRoute = (element) =>
     isAuthenticated ? element : <Navigate to="/login" replace />;
@@ -162,30 +248,38 @@ function App() {
             </div>
 
             {isAuthenticated ? (
-              <div ref={logoutMenuRef} className="relative">
+              <div ref={accountMenuRef} className="relative">
                 <button
                   type="button"
-                  onClick={() => setIsLogoutMenuOpen((current) => !current)}
-                  aria-label="Open logout menu"
+                  onClick={() => setIsAccountMenuOpen((current) => !current)}
+                  aria-label="Open account options menu"
                   aria-haspopup="menu"
-                  aria-expanded={isLogoutMenuOpen}
-                  title="Open logout menu"
+                  aria-expanded={isAccountMenuOpen}
+                  title="Open account options menu"
                   className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
-                  <LogoutIcon className="h-4 w-4" />
+                  <OptionsIcon className="h-4 w-4" />
                 </button>
 
-                {isLogoutMenuOpen && (
+                {isAccountMenuOpen && (
                   <div
                     role="menu"
-                    aria-label="Logout menu"
+                    aria-label="Account options menu"
                     className="absolute right-0 z-20 mt-2 min-w-36 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900"
                   >
                     <button
                       type="button"
                       role="menuitem"
+                      onClick={openAccountSettingsModal}
+                      className="w-full rounded-lg px-2.5 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      Account settings
+                    </button>
+                    <button
+                      type="button"
+                      role="menuitem"
                       onClick={() => {
-                        setIsLogoutMenuOpen(false);
+                        setIsAccountMenuOpen(false);
                         clearAuthSession();
                       }}
                       className="w-full rounded-lg px-2.5 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
@@ -265,7 +359,10 @@ function App() {
           element={isAuthenticated ? <Navigate to={defaultProtectedPath} replace /> : <LoginPage />}
         />
         <Route path="/patients" element={renderProtectedRoute(<PatientsPage />)} />
-        <Route path="/route-planner" element={renderProtectedRoute(<RoutePlanner />)} />
+        <Route
+          path="/route-planner"
+          element={renderProtectedRoute(<RoutePlanner nurseHomeAddress={authUser?.homeAddress ?? null} />)}
+        />
         <Route
           path="/"
           element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
@@ -275,6 +372,103 @@ function App() {
           element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
         />
       </Routes>
+
+      {isAccountSettingsOpen && (
+        <div
+          className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-3"
+          onPointerDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeAccountSettingsModal();
+            }
+          }}
+        >
+          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:p-5">
+            <div className="mb-4">
+              <h2 className="m-0 text-lg font-semibold text-slate-900 dark:text-slate-100">
+                Account settings
+              </h2>
+              <p className="m-0 mt-1 text-sm text-slate-600 dark:text-slate-300">
+                Manage account profile details for route-planning defaults.
+              </p>
+            </div>
+
+            <form className="grid gap-4" onSubmit={handleAccountSettingsSubmit}>
+              <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
+                <span className="font-semibold">Email</span>
+                <input
+                  type="email"
+                  value={authUser?.email ?? ""}
+                  readOnly
+                  disabled
+                  className="rounded-xl border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                />
+              </label>
+
+              <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
+                <span className="font-semibold">Home address</span>
+                <input
+                  id={PROFILE_MODAL_HOME_ADDRESS_ID}
+                  type="text"
+                  value={homeAddressInput}
+                  onChange={(event) => {
+                    setHomeAddressInput(event.target.value);
+                    if (accountSettingsError) {
+                      setAccountSettingsError("");
+                    }
+                    if (accountSettingsSuccess) {
+                      setAccountSettingsSuccess("");
+                    }
+                  }}
+                  maxLength={MAX_HOME_ADDRESS_LENGTH}
+                  placeholder="e.g. 3361 Ingram Road, Mississauga, ON"
+                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                />
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  Used to prefill default start and ending points in Route Planner.
+                </span>
+              </label>
+
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
+                <p className="m-0 text-sm font-semibold text-slate-800 dark:text-slate-200">
+                  Security
+                </p>
+                <p className="m-0 mt-1 text-xs text-slate-600 dark:text-slate-300">
+                  Password update support is planned next.
+                </p>
+              </div>
+
+              {accountSettingsError && (
+                <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+                  {accountSettingsError}
+                </p>
+              )}
+              {accountSettingsSuccess && (
+                <p className="m-0 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+                  {accountSettingsSuccess}
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={closeAccountSettingsModal}
+                  disabled={isSavingAccountSettings}
+                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingAccountSettings}
+                  className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {isSavingAccountSettings ? "Saving..." : "Save"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

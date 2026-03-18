@@ -92,6 +92,18 @@ describe("/api/auth/signup route", () => {
     expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
   });
 
+  it("rejects OPTIONS preflight for disallowed origins", async () => {
+    const response = await OPTIONS(
+      new Request("http://localhost:3000/api/auth/signup", {
+        method: "OPTIONS",
+        headers: { origin: "http://malicious.example.com" },
+      }),
+    );
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({ error: "Origin is not allowed." });
+  });
+
   it("returns 426 for insecure transport when auth HTTPS enforcement is enabled", async () => {
     process.env.AUTH_ENFORCE_HTTPS = "true";
 
@@ -125,6 +137,59 @@ describe("/api/auth/signup route", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "Signup payload must include displayName, email, and password.",
+    });
+  });
+
+  it("returns 400 when signup payload includes blank required fields", async () => {
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/signup", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({
+          displayName: " ",
+          email: " ",
+          password: "secret123",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Signup payload must include displayName, email, and password.",
+    });
+  });
+
+  it("returns 400 for display names longer than 120 characters", async () => {
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/signup", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({
+          displayName: "A".repeat(121),
+          email: "nurse@example.com",
+          password: "secret123",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Display name must be 120 characters or fewer.",
+    });
+  });
+
+  it("returns 400 for invalid json body", async () => {
+    const response = await POST(
+      new Request("http://localhost:3000/api/auth/signup", {
+        method: "POST",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: "{bad-json",
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Request body must be valid JSON.",
     });
   });
 
@@ -234,6 +299,7 @@ describe("/api/auth/signup route", () => {
         id: "nurse-2",
         email: "nurse@example.com",
         displayName: "Nurse One",
+        homeAddress: null,
       },
     });
     expect(updateNurseLastLoginAtMock).toHaveBeenCalledWith("nurse-2");

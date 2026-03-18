@@ -221,6 +221,41 @@ describe("RoutePlanner patient selection integration", () => {
     cleanup();
   });
 
+  it("prefills start and end addresses from nurse home address", () => {
+    render(<RoutePlanner nurseHomeAddress="1 Home Way, Mississauga, ON" />);
+
+    expect(screen.getByLabelText("Starting point")).toHaveProperty(
+      "value",
+      "1 Home Way, Mississauga, ON",
+    );
+    expect(screen.getByLabelText("Ending point")).toHaveProperty(
+      "value",
+      "1 Home Way, Mississauga, ON",
+    );
+  });
+
+  it("keeps draft trip values over nurse home address defaults", () => {
+    window.localStorage.setItem(
+      "careflow.route-planner.draft.v1",
+      JSON.stringify({
+        version: 1,
+        startAddress: "Draft Start",
+        manualEndAddress: "Draft End",
+        startGooglePlaceId: null,
+        manualEndGooglePlaceId: null,
+        endMode: "manual",
+        activeMobileStep: "trip",
+        selectedDestinations: [],
+        selectedEndPatient: null,
+      }),
+    );
+
+    render(<RoutePlanner nurseHomeAddress="1 Home Way, Mississauga, ON" />);
+
+    expect(screen.getByLabelText("Starting point")).toHaveProperty("value", "Draft Start");
+    expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "Draft End");
+  });
+
   it("adds destination patients and prevents duplicate selection", () => {
     render(<RoutePlanner />);
 

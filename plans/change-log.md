@@ -12,8 +12,7 @@ Upcoming or not-yet-implemented work should be stored as separate planning docum
 
 Current planning documents:
 
-- `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
-- `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
+- `plans/account-settings-and-working-hours-execution-plan.md` - account settings, home address defaults, and future weekly schedule execution plan
 
 ---
 
@@ -2188,3 +2187,94 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅
   - `npm run lint` ✅
+
+---
+
+## 71) Account Settings Plan + Home-Address Priority
+
+### Commit
+- `660c81d` - `docs(plan): add account settings home-address phase and reprioritize rollout`
+
+### Files added
+- `plans/account-settings-and-working-hours-execution-plan.md`
+
+### Files updated
+- `plan.md`
+
+### What changed
+- Added a dedicated execution plan for:
+  - account options menu in the header
+  - account settings modal
+  - profile home-address support
+  - future weekly working-hours integration with optimize-route-v2
+- Reordered execution phases so home-address profile + Route Planner defaults are delivered before weekly schedule work.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
+
+---
+
+## 72) Account Options Menu + Home Address Profile + Route Planner Defaults (Phase 1/2)
+
+### Commit
+- `7680b90` - `feat(account): implement settings modal and home-address planner defaults`
+
+### Files added
+- `backend/drizzle/0005_last_eternals.sql`
+- `backend/drizzle/meta/0005_snapshot.json`
+
+### Files updated
+- `shared/contracts/auth.ts`
+- `backend/src/db/schema.ts`
+- `backend/drizzle/meta/_journal.json`
+- `backend/src/lib/patients/patientRepository.ts`
+- `backend/src/lib/patients/patientRepository.test.ts`
+- `backend/src/app/api/auth/me/route.ts`
+- `backend/src/app/api/auth/me/route.test.ts`
+- `backend/src/app/api/auth/login/route.ts`
+- `backend/src/app/api/auth/login/route.test.ts`
+- `backend/src/app/api/auth/signup/route.ts`
+- `backend/src/app/api/auth/signup/route.test.ts`
+- `frontend/src/components/auth/authService.ts`
+- `frontend/src/components/auth/authSession.ts`
+- `frontend/src/App.jsx`
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/auth/authService.test.ts`
+- `frontend/src/tests/auth/LoginPage.test.tsx`
+- `frontend/src/tests/appRoutes.test.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+- `frontend/src/tests/patients/patientService.test.ts`
+- `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+- `plans/account-settings-and-working-hours-execution-plan.md`
+- `plan.md`
+
+### What changed
+- Header account control:
+  - replaced logout-only trigger semantics with account options menu
+  - menu now exposes `Account settings` and `Logout`
+- Account settings modal:
+  - nurse email shown read-only
+  - home address editable with inline validation and save feedback
+  - security section retained as follow-up placeholder for password update (Phase 3)
+- Backend auth profile:
+  - added `home_address` to `nurses` schema + migration
+  - `GET /api/auth/me` now includes `homeAddress`
+  - `PATCH /api/auth/me` added to persist home-address updates
+  - login/signup auth user payload now includes `homeAddress`
+- Route Planner defaults:
+  - accepts nurse home address from authenticated profile
+  - defaults both start and ending points from saved home address
+  - preserves existing trip-draft precedence and manual overrides
+- Contracts and tests updated to include `homeAddress` in auth user shape.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/auth/login/route.test.ts src/app/api/auth/me/route.test.ts src/app/api/auth/signup/route.test.ts src/lib/patients/patientRepository.test.ts` ✅ (4 files, 51 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅
+- Frontend:
+  - `npm test -- --run src/tests/appRoutes.test.tsx src/tests/auth/authService.test.ts src/tests/auth/LoginPage.test.tsx src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/routePlanner/routePlannerService.test.ts src/tests/patients/patientService.test.ts src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (7 files, 53 tests)
+  - `npm run lint` ✅
+  - `npm run build` ✅

@@ -1,0 +1,1 @@
+ALTER TABLE "nurses" ADD COLUMN "home_address" text;

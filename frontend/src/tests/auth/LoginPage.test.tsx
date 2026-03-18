@@ -12,6 +12,7 @@ vi.mock("../../components/auth/authService", () => ({
   login: loginMock,
   signUp: signUpMock,
   fetchMe: vi.fn(),
+  updateProfileHomeAddress: vi.fn(),
 }));
 
 describe("LoginPage", () => {
@@ -36,6 +37,7 @@ describe("LoginPage", () => {
         id: "nurse-1",
         email: "nurse@example.com",
         displayName: "Nurse One",
+        homeAddress: null,
       },
     });
 

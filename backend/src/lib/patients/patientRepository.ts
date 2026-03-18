@@ -84,6 +84,19 @@ export const updateNurseLastLoginAt = async (nurseId: string) => {
     .where(eq(nurses.id, nurseId));
 };
 
+export const updateNurseHomeAddress = async (nurseId: string, homeAddress: string) => {
+  const [nurse] = await getDb()
+    .update(nurses)
+    .set({
+      homeAddress,
+      updatedAt: new Date(),
+    })
+    .where(eq(nurses.id, nurseId))
+    .returning();
+
+  return nurse ?? null;
+};
+
 export type PatientWithVisitWindows = typeof patients.$inferSelect & {
   visitWindows: (typeof patientVisitWindows.$inferSelect)[];
 };

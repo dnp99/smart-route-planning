@@ -18,10 +18,12 @@ const toAuthUser = (value: {
   id: string;
   email: string;
   displayName: string;
+  homeAddress?: string | null;
 }): AuthUser => ({
   id: value.id,
   email: value.email,
   displayName: value.displayName,
+  homeAddress: value.homeAddress ?? null,
 });
 
 const validateSignupPayload = (body: unknown) => {
@@ -135,6 +137,7 @@ export const POST = async (request: Request) => {
           id: nurse.id,
           email: nurse.email,
           displayName: nurse.displayName,
+          homeAddress: nurse.homeAddress,
         }),
       },
       { status: 201, headers: corsHeaders },
