@@ -3,7 +3,7 @@
 ## Status
 
 - Phase 1: Implemented
-- Phase 2: Pending
+- Phase 2: Implemented
 - Phase 3: Pending
 - Last updated: 2026-03-18
 
@@ -26,15 +26,17 @@ The current optimizer uses a nearest-neighbor algorithm that picks the geographi
 Given: Ravi R (fixed 09:00–10:00), Deep P (fixed 09:00–10:00), Jing Su (no window).
 
 Current result:
+
 - Jing Su first (nearest from home) → Ravi R 33 min into window (OK) → Deep P 50 min past window close (violation)
 
 Optimal result under priority model:
+
 - Ravi R or Deep P first → one patient on time → other ~17 min past window close → Jing Su anytime
 
 ## Proposed Priority Model
 
 | Patient type | Scheduling priority | Max lateness tolerance |
-|---|---|---|
+| --- | --- | --- |
 | Fixed window | Highest | 15 min past window close |
 | Flexible (has preferred window) | Medium | 60 min past window close |
 | No preferred window | Lowest | Anytime |
@@ -67,7 +69,7 @@ Flexible patients (with a preferred window but not fixed) are scheduled after fi
 
 Two fixed patients conflict if:
 
-```
+```text
 travel_time(A, B) > window_close(A) - window_open(B)
 ```
 

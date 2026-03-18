@@ -8,4 +8,5 @@ export type {
   OptimizeRouteV2UnscheduledTask as UnscheduledTaskV2,
   OptimizeRouteV2Visit as VisitV2,
   OptimizeRouteV2WindowType as WindowTypeV2,
+  OptimizeRouteV2ScheduleWarning as ScheduleWarningV2,
 } from "../../../../../../shared/contracts";

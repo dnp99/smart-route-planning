@@ -406,6 +406,7 @@ function RoutePlanner({
   const [expandedResultEndingStopIds, setExpandedResultEndingStopIds] = useState<
     Record<string, boolean>
   >({});
+  const [warningsDismissed, setWarningsDismissed] = useState(false);
   const selectedCreateVisitType =
     createPatientFormValues.visitWindows[0]?.visitTimeType ?? "flexible";
 
@@ -597,6 +598,10 @@ function RoutePlanner({
     }
 
     return buildGoogleMapsTripUrl(result);
+  }, [result]);
+
+  useEffect(() => {
+    setWarningsDismissed(false);
   }, [result]);
 
   const hasIntermediateStops = useMemo(
@@ -1401,6 +1406,33 @@ function RoutePlanner({
               </div>
             )}
 
+            {result.warnings && result.warnings.length > 0 && !warningsDismissed && (
+              <div className="mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 dark:border-red-900/70 dark:bg-red-950/30">
+                <div className="flex items-start justify-between gap-2">
+                  <p className="m-0 text-sm font-semibold text-red-800 dark:text-red-200">
+                    Scheduling {result.warnings.length === 1 ? "Warning" : "Warnings"}
+                  </p>
+                  <button
+                    type="button"
+                    aria-label="Dismiss warnings"
+                    onClick={() => setWarningsDismissed(true)}
+                    className="shrink-0 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-200"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </button>
+                </div>
+                <ul className="m-0 mt-1 space-y-0.5 pl-4">
+                  {result.warnings.map((warning) => (
+                    <li key={`${warning.type}:${warning.patientId}`} className="text-xs text-red-700 dark:text-red-300">
+                      {warning.message}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
             <RouteMap
               start={result.start}
               orderedStops={result.orderedStops}
@@ -1466,7 +1498,14 @@ function RoutePlanner({
                               )}
 
                               {task.windowStart && task.windowEnd && task.lateBySeconds > 0 && (
-                                <p className="m-0 text-xs font-semibold text-red-600 dark:text-red-400">
+                                <p className={[
+                                  "m-0 text-xs font-semibold",
+                                  task.windowType === "fixed" && task.lateBySeconds > 15 * 60
+                                    ? "text-red-600 dark:text-red-400"
+                                    : task.windowType === "flexible" && task.lateBySeconds > 60 * 60
+                                      ? "text-amber-600 dark:text-amber-400"
+                                      : "text-red-600 dark:text-red-400",
+                                ].join(" ")}>
                                   Outside preferred window by {Math.ceil(task.lateBySeconds / 60)}{" "}
                                   min
                                 </p>

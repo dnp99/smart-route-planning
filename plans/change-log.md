@@ -2579,3 +2579,35 @@ An Oracle review was performed and its recommendations were incorporated, includ
 ### 82 — Motivation
 
 Phase 1 of the scheduling-priority execution plan: the greedy nearest-neighbor algorithm was picking no-window patients first because they are geographically closest, even when fixed-window patients needed to depart immediately to arrive on time. This change ensures fixed patients are always the primary scheduling candidates, reducing worst-case lateness from two patients both being late to only one.
+
+---
+
+## 83) Scheduling Priority Phase 2: Lateness Tolerance Warnings
+
+### 83 — Files updated
+
+- `shared/contracts/optimizeRouteV2.ts`
+- `backend/src/app/api/optimize-route/v2/types.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/scheduling-priority-execution-plan.md`
+
+### 83 — Changes
+
+- Added `OptimizeRouteV2ScheduleWarning` type (`type`, `patientId`, `patientName`, `message`) to shared contracts.
+- Added `isScheduleWarning` runtime guard and optional `warnings?` field to `OptimizeRouteV2Response`.
+- Updated `parseOptimizeRouteV2Response` to validate the optional `warnings` array.
+- Exported `ScheduleWarningV2` alias from backend `types.ts`.
+- After building ordered stops in `optimizeRouteService.ts`, scans all task results and emits:
+  - `fixed_late` — fixed patient more than 15 min past window close.
+  - `flexible_late` — flexible patient with a preferred window more than 60 min past window close.
+- `warnings` is omitted entirely from the response when empty (no breaking change).
+- Frontend: added `warningsDismissed` state (resets on each new result via `useEffect`).
+- Added a dismissible red banner above the route map that lists each warning message when `result.warnings` is present and non-empty.
+- Updated per-stop lateness indicator: fixed > 15 min late uses red, flexible > 60 min late uses amber.
+- Added three backend tests: `fixed_late` emission, `flexible_late` emission, no warnings within tolerance.
+
+### 83 — Motivation
+
+Phase 2 of the scheduling-priority execution plan: surfaces lateness tolerance violations as structured warnings so nurses are alerted before reading the stop-by-stop detail. Fixed patients beyond 15 min and flexible patients beyond 60 min now produce named warnings in the API response and a dismissible banner in the UI.

@@ -1259,6 +1259,199 @@ describe("optimizeRouteV2 service", () => {
     ]);
   });
 
+  it("emits fixed_late warning when fixed patient is more than 15 min past window close", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Fixed Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    // Departure 07:30, window closes 09:00, travel = 7020s → arrive 09:27 → 27 min late
+    mockedBuildDrivingRoute.mockResolvedValue({
+      orderedStops: [
+        {
+          address: "Fixed Address",
+          coords: { lat: 43.7, lon: -79.7 },
+          distanceFromPreviousKm: 10,
+          durationFromPreviousSeconds: 7020,
+        },
+        {
+          address: "End",
+          coords: { lat: 43.8, lon: -79.8 },
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 600,
+          isEndingPoint: true,
+        },
+      ],
+      routeLegs: [
+        { fromAddress: "Start", toAddress: "Fixed Address", distanceMeters: 10000, durationSeconds: 7020, encodedPolyline: "a" },
+        { fromAddress: "Fixed Address", toAddress: "End", distanceMeters: 2000, durationSeconds: 600, encodedPolyline: "b" },
+      ],
+      totalDistanceMeters: 12000,
+      totalDistanceKm: 12,
+      totalDurationSeconds: 7620,
+    });
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00.000Z",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "fixed-late",
+            patientId: "patient-fixed",
+            patientName: "Fixed Patient",
+            address: "Fixed Address",
+            windowStart: "09:00",
+            windowEnd: "09:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 10,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings?.[0]).toMatchObject({
+      type: "fixed_late",
+      patientId: "patient-fixed",
+      patientName: "Fixed Patient",
+    });
+  });
+
+  it("emits flexible_late warning when flexible patient with preferred window is more than 60 min past window close", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Flex Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    // Departure 07:30, window closes 08:00, travel = 7200s → arrive 09:30 → 90 min late
+    mockedBuildDrivingRoute.mockResolvedValue({
+      orderedStops: [
+        {
+          address: "Flex Address",
+          coords: { lat: 43.7, lon: -79.7 },
+          distanceFromPreviousKm: 10,
+          durationFromPreviousSeconds: 7200,
+        },
+        {
+          address: "End",
+          coords: { lat: 43.8, lon: -79.8 },
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 600,
+          isEndingPoint: true,
+        },
+      ],
+      routeLegs: [
+        { fromAddress: "Start", toAddress: "Flex Address", distanceMeters: 10000, durationSeconds: 7200, encodedPolyline: "a" },
+        { fromAddress: "Flex Address", toAddress: "End", distanceMeters: 2000, durationSeconds: 600, encodedPolyline: "b" },
+      ],
+      totalDistanceMeters: 12000,
+      totalDistanceKm: 12,
+      totalDurationSeconds: 7800,
+    });
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00.000Z",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "flex-late",
+            patientId: "patient-flex",
+            patientName: "Flexible Patient",
+            address: "Flex Address",
+            windowStart: "07:00",
+            windowEnd: "08:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 10,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings?.[0]).toMatchObject({
+      type: "flexible_late",
+      patientId: "patient-flex",
+      patientName: "Flexible Patient",
+    });
+  });
+
+  it("emits no warnings when all patients are within tolerance", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Fixed Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    // Departure 07:30, window 09:00-10:00, travel = 5400s → arrive 09:00 exactly → 0 min late
+    mockedBuildDrivingRoute.mockResolvedValue({
+      orderedStops: [
+        {
+          address: "Fixed Address",
+          coords: { lat: 43.7, lon: -79.7 },
+          distanceFromPreviousKm: 10,
+          durationFromPreviousSeconds: 5400,
+        },
+        {
+          address: "End",
+          coords: { lat: 43.8, lon: -79.8 },
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 600,
+          isEndingPoint: true,
+        },
+      ],
+      routeLegs: [
+        { fromAddress: "Start", toAddress: "Fixed Address", distanceMeters: 10000, durationSeconds: 5400, encodedPolyline: "a" },
+        { fromAddress: "Fixed Address", toAddress: "End", distanceMeters: 2000, durationSeconds: 600, encodedPolyline: "b" },
+      ],
+      totalDistanceMeters: 12000,
+      totalDistanceKm: 12,
+      totalDurationSeconds: 6000,
+    });
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00.000Z",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "fixed-ontime",
+            patientId: "patient-fixed",
+            patientName: "Fixed Patient",
+            address: "Fixed Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(result.warnings).toBeUndefined();
+  });
+
   it("throws when dynamic departure planningDate is invalid", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },

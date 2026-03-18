@@ -76,6 +76,13 @@ export type OptimizeRouteV2UnscheduledTask = {
     | "insufficient_day_capacity";
 };
 
+export type OptimizeRouteV2ScheduleWarning = {
+  type: "fixed_late" | "flexible_late";
+  patientId: string;
+  patientName: string;
+  message: string;
+};
+
 export type OptimizeRouteV2RouteLeg = {
   fromStopId: string;
   toStopId: string;
@@ -99,6 +106,7 @@ export type OptimizeRouteV2Response = {
   orderedStops: OptimizeRouteV2OrderedStop[];
   routeLegs: OptimizeRouteV2RouteLeg[];
   unscheduledTasks: OptimizeRouteV2UnscheduledTask[];
+  warnings?: OptimizeRouteV2ScheduleWarning[];
   metrics: {
     fixedWindowViolations: number;
     totalLateSeconds: number;
@@ -221,6 +229,22 @@ const isRouteLeg = (value: unknown): value is OptimizeRouteV2RouteLeg => {
   );
 };
 
+const isScheduleWarning = (value: unknown): value is OptimizeRouteV2ScheduleWarning => {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  if (
+    typeof value.patientId !== "string" ||
+    typeof value.patientName !== "string" ||
+    typeof value.message !== "string"
+  ) {
+    return false;
+  }
+
+  return value.type === "fixed_late" || value.type === "flexible_late";
+};
+
 const isUnscheduledTask = (value: unknown): value is OptimizeRouteV2UnscheduledTask => {
   if (!isObject(value)) {
     return false;
@@ -308,6 +332,14 @@ export const parseOptimizeRouteV2Response = (payload: unknown): OptimizeRouteV2R
     !Array.isArray(payload.unscheduledTasks) ||
     payload.unscheduledTasks.some((task) => !isUnscheduledTask(task)) ||
     typeof payload.algorithmVersion !== "string"
+  ) {
+    return null;
+  }
+
+  if (
+    payload.warnings !== undefined &&
+    (!Array.isArray(payload.warnings) ||
+      payload.warnings.some((warning) => !isScheduleWarning(warning)))
   ) {
     return null;
   }
