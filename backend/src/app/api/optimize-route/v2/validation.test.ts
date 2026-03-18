@@ -256,6 +256,44 @@ describe("optimize-route v2 request validation", () => {
     expect(parsed.visits[1].visitId).toBe("visit-b");
   });
 
+  it("allows flexible visits with no preferred window times", () => {
+    const payload = buildValidPayload();
+    payload.visits[1].windowStart = "";
+    payload.visits[1].windowEnd = "";
+
+    const parsed = parseAndValidateBody(payload);
+    expect(parsed.visits[1]).toMatchObject({
+      visitId: "visit-2",
+      windowType: "flexible",
+      windowStart: "",
+      windowEnd: "",
+    });
+  });
+
+  it("throws when flexible visit provides only one window boundary", () => {
+    const payload = buildValidPayload();
+    payload.visits[1].windowStart = "10:00";
+    payload.visits[1].windowEnd = "";
+
+    expectHttpError(
+      () => parseAndValidateBody(payload),
+      400,
+      "John Doe flexible visit window must include both start and end time when one value is provided.",
+    );
+  });
+
+  it("throws when fixed visit omits preferred window boundaries", () => {
+    const payload = buildValidPayload();
+    payload.visits[0].windowStart = "";
+    payload.visits[0].windowEnd = "";
+
+    expectHttpError(
+      () => parseAndValidateBody(payload),
+      400,
+      "visits[0].windowStart is required.",
+    );
+  });
+
   it("throws for invalid visit window format", () => {
     const payload = buildValidPayload();
     payload.visits[0].windowStart = "8:30";

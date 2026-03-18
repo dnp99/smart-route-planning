@@ -7,13 +7,60 @@ Files:
 - `plans/change-log.md` - implementation history and completed change log
 - `plans/nurse-patient-management-execution-plan.md` - patient management feature execution plan
 - `plans/jwt-authentication-execution-plan.md` - JWT authentication rollout execution plan
-- `plans/jwt-authentication-remediation-plan.md` - safe upgrade and legacy-data preservation plan for the JWT rollout
 - `plans/jwt-authentication-remediation-release-note.md` - short release note for the completed JWT remediation rollout
 - `plans/optimize-route-v2-no-preferred-window-autoscheduling-execution-plan.md` - execution plan for auto-scheduling flexible visits without preferred windows
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
 ## Latest change record
+
+## Latest change addendum
+
+### Change
+Implemented Optimize Route V2 no-preferred-window autoscheduling so flexible visits can be optimized without manually entering planning window times.
+
+### Files added/updated/deleted
+- Updated:
+  - `backend/src/app/api/optimize-route/v2/validation.ts`
+  - `backend/src/app/api/optimize-route/v2/validation.test.ts`
+  - `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+  - `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+
+### Why
+- Route Planner previously blocked optimization for flexible patients without preferred windows, forcing manual time input even when users wanted optimizer-managed placement.
+- Backend now accepts flexible visits with blank `windowStart/windowEnd` and schedules them with synthetic full-day bounds, while preserving strict fixed-window validation.
+- The planner now allows no-window flexible visits, validates only partial-window mistakes, and renders “No preferred window” in results with no preferred-window lateness warning.
+
+### Verification
+- Backend:
+  - `npm test -- --run src/app/api/optimize-route/v2/validation.test.ts src/app/api/optimize-route/v2/optimizeRouteService.test.ts` ✅ (2 files, 36 tests)
+  - `npm test -- --run src/app/api/optimize-route/v2/route.test.ts` ✅ (1 file, 8 tests)
+  - `npm run lint` ✅
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 17 tests)
+  - `npm run lint` ✅
+
+## Latest change addendum
+
+### Change
+Deleted the JWT authentication remediation plan document from `plans/`.
+
+### Files added/updated/deleted
+- Deleted:
+  - `plans/jwt-authentication-remediation-plan.md`
+- Updated:
+  - `plan.md`
+
+### Why
+- You requested removal of the remediation plan document.
+- The root plan index was updated to avoid listing a deleted file.
+
+### Verification
+- Documentation:
+  - `git diff --check` ✅
 
 ## Latest change addendum
 

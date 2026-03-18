@@ -602,6 +602,66 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByText(/Outside preferred window by 20 min/i)).toBeTruthy();
   });
 
+  it("shows no preferred window label and suppresses late warning when route task has no preferred window", () => {
+    routeOptimizationState.result = {
+      start: {
+        address: "3361 Ingram Road, Mississauga, ON",
+        coords: { lat: 43.527, lon: -79.707 },
+        departureTime: "2026-03-14T00:00:00.000Z",
+      },
+      end: {
+        address: "Airport",
+        coords: { lat: 43.6777, lon: -79.6248 },
+      },
+      orderedStops: [
+        {
+          stopId: "stop-flex",
+          address: "789 King St",
+          coords: { lat: 43.61, lon: -79.7 },
+          arrivalTime: "2026-03-14T08:10:00.000Z",
+          departureTime: "2026-03-14T08:35:00.000Z",
+          tasks: [
+            {
+              visitId: "visit-flex-1",
+              patientId: "patient-3",
+              patientName: "Flex Patient",
+              address: "789 King St",
+              googlePlaceId: null,
+              windowStart: "",
+              windowEnd: "",
+              windowType: "flexible",
+              serviceDurationMinutes: 25,
+              arrivalTime: "2026-03-14T08:10:00.000Z",
+              serviceStartTime: "2026-03-14T08:10:00.000Z",
+              serviceEndTime: "2026-03-14T08:35:00.000Z",
+              waitSeconds: 0,
+              lateBySeconds: 0,
+              onTime: true,
+            },
+          ],
+          distanceFromPreviousKm: 3.0,
+          durationFromPreviousSeconds: 600,
+        },
+      ],
+      routeLegs: [],
+      unscheduledTasks: [],
+      metrics: {
+        fixedWindowViolations: 0,
+        totalLateSeconds: 0,
+        totalWaitSeconds: 0,
+        totalDistanceMeters: 3000,
+        totalDistanceKm: 3,
+        totalDurationSeconds: 600,
+      },
+      algorithmVersion: "v2.2.4-no-preferred-window-autoscheduling",
+    };
+
+    render(<RoutePlanner />);
+
+    expect(screen.getByText(/Patient:\s*Flex Patient\s*•\s*No preferred window/i)).toBeTruthy();
+    expect(screen.queryByText(/Outside preferred window by/i)).toBeNull();
+  });
+
   it("removes selected destination patient from planner state", () => {
     render(<RoutePlanner />);
 
@@ -614,28 +674,13 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByText("No destination patients selected yet.")).toBeTruthy();
   });
 
-  it("requires planning window input for flexible patients without preferred windows", () => {
+  it("allows optimizing flexible patients without preferred windows", () => {
     render(<RoutePlanner />);
 
     fireEvent.change(screen.getByLabelText("Ending point"), {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
-
-    expect(optimizeRouteMock).not.toHaveBeenCalled();
-    expect(
-      screen.getByText(
-        "Set start and end time before optimizing for: Flex Patient.",
-      ),
-    ).toBeTruthy();
-
-    fireEvent.change(screen.getByLabelText("Flex Patient start"), {
-      target: { value: "13:00" },
-    });
-    fireEvent.change(screen.getByLabelText("Flex Patient end"), {
-      target: { value: "14:00" },
-    });
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 
     expect(optimizeRouteMock).toHaveBeenCalledWith({
@@ -647,14 +692,34 @@ describe("RoutePlanner patient selection integration", () => {
           patientName: "Flex Patient",
           address: "789 King St",
           googlePlaceId: null,
-          windowStart: "13:00",
-          windowEnd: "14:00",
+          windowStart: "",
+          windowEnd: "",
           windowType: "flexible",
           serviceDurationMinutes: 25,
         },
       ],
       canOptimize: true,
     });
+  });
+
+  it("requires both window boundaries when nurse partially sets a flexible window", () => {
+    render(<RoutePlanner />);
+
+    fireEvent.change(screen.getByLabelText("Ending point"), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);
+    fireEvent.change(screen.getByLabelText("Flex Patient start"), {
+      target: { value: "13:00" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        "Set both start and end time (or clear both) before optimizing for: Flex Patient.",
+      ),
+    ).toBeTruthy();
   });
 
   it("allows excluding individual patient windows from a multi-window patient", () => {
