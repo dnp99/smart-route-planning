@@ -14,6 +14,28 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Refactored Route Planner by extracting selected-destination rendering into a dedicated component and moving shared destination types to route-planner-specific type modules.
+
+### Files added/updated/deleted
+- Added:
+  - `frontend/src/components/routePlanner/SelectedDestinationsSection.tsx`
+  - `frontend/src/components/routePlanner/routePlannerTypes.ts`
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- `RoutePlanner.tsx` had grown too large and hard to reason about.
+- Extracting the selected-destination card tree and its menu state reduces component complexity and makes future UI changes safer.
+- Shared destination types are now centralized for reuse and cleaner boundaries.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 31 tests)
+  - `npm run lint` ✅
+
+### Change
 Refined selected-destination patient card actions with a responsive layout: desktop right-aligned inline actions, and mobile overflow handling for remove.
 
 ### Files added/updated/deleted

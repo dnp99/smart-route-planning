@@ -2419,3 +2419,27 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 31 tests)
   - `npm run lint` ✅
+
+---
+
+## 79) Route Planner Structural Refactor: Extract Selected Destinations Section
+
+### Files added
+- `frontend/src/components/routePlanner/SelectedDestinationsSection.tsx`
+- `frontend/src/components/routePlanner/routePlannerTypes.ts`
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Extracted the selected-destination patient UI block from `RoutePlanner.tsx` into `SelectedDestinationsSection`.
+- Moved selected-destination row rendering, mobile action-menu behavior, and destination-row interaction wiring into the new component.
+- Introduced shared route-planner destination type definitions in `routePlannerTypes.ts`.
+- Kept behavior intact while reducing `RoutePlanner.tsx` complexity and improving separation of concerns.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 31 tests)
+  - `npm run lint` ✅
