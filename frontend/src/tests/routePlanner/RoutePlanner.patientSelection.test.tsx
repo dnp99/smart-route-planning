@@ -13,8 +13,9 @@ const { routeOptimizationState } = vi.hoisted(() => ({
 
 const optimizeRouteMock = vi.fn();
 const persistPlanningWindowsMock = vi.fn();
+const createPatientMock = vi.fn();
 const usePatientSearchMock = vi.fn<
-  (args: { enabled: boolean }) => {
+  (args: { query: string; enabled: boolean }) => {
     patients: unknown[];
     isLoading: boolean;
     error: string;
@@ -42,6 +43,10 @@ vi.mock("../../components/routePlanner/usePatientSearch", () => ({
 
 vi.mock("../../components/routePlanner/routePlannerService", () => ({
   persistPlanningWindows: (...args: unknown[]) => persistPlanningWindowsMock(...args),
+}));
+
+vi.mock("../../components/patients/patientService", () => ({
+  createPatient: (...args: unknown[]) => createPatientMock(...args),
 }));
 
 vi.mock("../../components/AddressAutocompleteInput", () => ({
@@ -276,14 +281,37 @@ describe("RoutePlanner patient selection integration", () => {
     window.localStorage.clear();
     optimizeRouteMock.mockReset();
     persistPlanningWindowsMock.mockReset();
+    createPatientMock.mockReset();
     persistPlanningWindowsMock.mockResolvedValue(undefined);
+    createPatientMock.mockResolvedValue({
+      id: "patient-5",
+      nurseId: "nurse-1",
+      firstName: "New",
+      lastName: "Patient",
+      address: "99 Test Ave",
+      googlePlaceId: null,
+      visitDurationMinutes: 30,
+      preferredVisitStartTime: "09:00:00",
+      preferredVisitEndTime: "10:00:00",
+      visitTimeType: "fixed",
+      visitWindows: [
+        {
+          id: "window-5",
+          startTime: "09:00:00",
+          endTime: "10:00:00",
+          visitTimeType: "fixed",
+        },
+      ],
+      createdAt: "2026-03-12T12:00:00.000Z",
+      updatedAt: "2026-03-12T12:00:00.000Z",
+    });
     routeOptimizationState.result = null;
     routeOptimizationState.error = "";
     routeOptimizationState.isLoading = false;
     routeOptimizationState.showOptimizeSuccess = false;
     routeOptimizationState.hasAttemptedOptimize = false;
     usePatientSearchMock.mockReset();
-    usePatientSearchMock.mockImplementation(({ enabled }: { enabled: boolean }) => ({
+    usePatientSearchMock.mockImplementation(({ enabled }: { query: string; enabled: boolean }) => ({
       patients: enabled ? [janePatient, johnPatient, flexNoWindowPatient, multiWindowPatient] : [],
       isLoading: false,
       error: "",
@@ -520,6 +548,38 @@ describe("RoutePlanner patient selection integration", () => {
 
     expect(screen.queryByText("Home address not set")).toBeNull();
     expect(screen.queryByRole("button", { name: "Open account settings" })).toBeNull();
+  });
+
+  it("creates a new patient from destination card and auto-selects it", async () => {
+    render(<RoutePlanner />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Add New Patient" }));
+    expect(screen.getByRole("heading", { name: "Add New Patient" })).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("First name"), {
+      target: { value: "Olivia" },
+    });
+    fireEvent.change(screen.getByLabelText("Last name"), {
+      target: { value: "Brown" },
+    });
+    fireEvent.change(screen.getByLabelText("Address"), {
+      target: { value: "88 Queen Street, Toronto, ON" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save new patient" }));
+
+    await waitFor(() => {
+      expect(createPatientMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          firstName: "Olivia",
+          lastName: "Brown",
+          address: "88 Queen Street, Toronto, ON",
+        }),
+      );
+    });
+
+    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+    expect(screen.getByText("New Patient")).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Add New Patient" })).toBeNull();
   });
 
   it("submits manual start and end place ids picked from autocomplete", () => {

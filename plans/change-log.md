@@ -2371,3 +2371,28 @@ An Oracle review was performed and its recommendations were incorporated, includ
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 30 tests)
   - `npm run lint` ✅
+
+---
+
+## 77) Route Planner Quick-Add Patient in Destination Search
+
+### Files updated
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `plan.md`
+- `plans/change-log.md`
+
+### What changed
+- Added `Add New Patient` action in Route Planner destination-patient search card.
+- Reused the existing patient form modal/validation workflow directly in Route Planner.
+- Saving a new patient now:
+  - creates the patient record
+  - closes the modal
+  - auto-selects the newly created patient as a route destination
+- Added inline error banner in the destination search card for create-patient failures.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 21 tests)
+  - `npm test -- --run src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (2 files, 10 tests)
+  - `npm run lint` ✅

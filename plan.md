@@ -14,6 +14,26 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Added in-place patient creation to Route Planner destination search so nurses can create and immediately add a missing patient without leaving the planner.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- Nurses were forced to navigate to the Patients page to add missing patients, which interrupted planning flow and risked losing context.
+- Route Planner now supports creating a patient directly from the destination search card and auto-selects the new patient as a route destination.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 21 tests)
+  - `npm test -- --run src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (2 files, 10 tests)
+  - `npm run lint` ✅
+
+### Change
 Removed Route Planner `End mode` (manual vs patient) and standardized trip setup to a single editable ending-point address, with a home-address warning banner when profile home address is missing.
 
 ### Files added/updated/deleted
