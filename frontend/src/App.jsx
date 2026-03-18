@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
+import AddressAutocompleteInput from "./components/AddressAutocompleteInput";
 import RoutePlanner from "./components/RoutePlanner";
 import LoginPage from "./components/auth/LoginPage";
 import { fetchMe, updateProfileHomeAddress } from "./components/auth/authService";
@@ -404,29 +405,23 @@ function App() {
                 />
               </label>
 
-              <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
-                <span className="font-semibold">Home address</span>
-                <input
-                  id={PROFILE_MODAL_HOME_ADDRESS_ID}
-                  type="text"
-                  value={homeAddressInput}
-                  onChange={(event) => {
-                    setHomeAddressInput(event.target.value);
-                    if (accountSettingsError) {
-                      setAccountSettingsError("");
-                    }
-                    if (accountSettingsSuccess) {
-                      setAccountSettingsSuccess("");
-                    }
-                  }}
-                  maxLength={MAX_HOME_ADDRESS_LENGTH}
-                  placeholder="e.g. 3361 Ingram Road, Mississauga, ON"
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
-                />
-                <span className="text-xs text-slate-500 dark:text-slate-400">
-                  Used to prefill default start and ending points in Route Planner.
-                </span>
-              </label>
+              <AddressAutocompleteInput
+                id={PROFILE_MODAL_HOME_ADDRESS_ID}
+                label="Home address"
+                placeholder="Perason Internal Airport"
+                value={homeAddressInput}
+                onChange={(value) => {
+                  setHomeAddressInput(value.slice(0, MAX_HOME_ADDRESS_LENGTH));
+                  if (accountSettingsError) {
+                    setAccountSettingsError("");
+                  }
+                  if (accountSettingsSuccess) {
+                    setAccountSettingsSuccess("");
+                  }
+                }}
+                helperText="Used to prefill default start and ending points in Route Planner."
+                disabled={isSavingAccountSettings}
+              />
 
               <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-950/40">
                 <p className="m-0 text-sm font-semibold text-slate-800 dark:text-slate-200">

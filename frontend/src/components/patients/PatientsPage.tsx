@@ -279,7 +279,7 @@ const PatientsPage = () => {
         <div className={responsiveStyles.sectionHeader}>
           <div className="flex items-start justify-between gap-3">
             <h1 className="m-0 text-2xl font-bold text-slate-900 dark:text-slate-100">
-              Patients
+              {`Patients (${patients.length})`}
             </h1>
             <button
               type="button"

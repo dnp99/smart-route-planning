@@ -14,6 +14,59 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Updated the Patients page header to show the live patient count as `Patients (X)`.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/components/patients/PatientsPage.tsx`
+  - `frontend/src/tests/appRoutes.test.tsx`
+  - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
+  - `plan.md`
+
+### Why
+- Nurses requested the total count directly in the Patients header for faster visibility without scanning the list.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/appRoutes.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 10 tests)
+  - `npm test -- --run src/tests/patients/PatientsPage.test.tsx` ✅ (1 file, 9 tests)
+  - `npm run lint` ✅
+
+### Change
+Updated account-settings home-address placeholder text to `Perason Internal Airport`.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/App.jsx`
+  - `plan.md`
+
+### Why
+- Requested wording update for the account-settings home-address input placeholder.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/appRoutes.test.tsx` ✅
+  - `npm run lint` ✅
+
+### Change
+Enabled Google Maps address autocomplete for the account-settings home-address field.
+
+### Files added/updated/deleted
+- Updated:
+  - `frontend/src/App.jsx`
+  - `frontend/src/tests/appRoutes.test.tsx`
+  - `plan.md`
+
+### Why
+- Nurses should get the same guided address entry experience in account settings as Route Planner and Patients.
+- Reusing shared autocomplete behavior reduces manual address errors and improves default start/end data quality.
+
+### Verification
+- Frontend:
+  - `npm test -- --run src/tests/appRoutes.test.tsx` ✅
+  - `npm run lint` ✅
+
+### Change
 Lowered backend coverage thresholds from `90` to `80` in the Vitest coverage config.
 
 ### Files added/updated/deleted
