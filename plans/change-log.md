@@ -2657,3 +2657,21 @@ Phase 3 of the scheduling-priority execution plan: nurses are now warned about u
 ### 85 — Motivation
 
 After a fixed patient's window closes, the depth-2 lookahead was selecting a far-future fixed patient (fixedLateCount=0 in the immediate+1 step) over the already-late one (fixedLateCount=1). This triggered the gap-filler, which accepted the no-window patient (lateBySeconds=0) and rejected the late fixed patient (lateBySeconds>0), causing the already-late patient to run even later. In the reported case, Ravi R was 49 min late instead of ~13 min. The fix ensures already-late fixed patients are always visited as soon as possible to minimise accumulated lateness.
+
+---
+
+## 86) Route Planner: Home Arrival Time on Ending Stop
+
+### 86 — Files updated
+
+- `frontend/src/components/RoutePlanner.tsx`
+
+### 86 — Changes
+
+- When the ending stop is the nurse's saved home address, a green "You should be home by X" line now appears directly below the "Home" label.
+- Time is derived from `stop.arrivalTime` (ISO string) and formatted with the existing `expectedStartTimeFormatter` (12-hour, hours + minutes).
+- Not shown when the ending address is not the home address.
+
+### 86 — Motivation
+
+Nurses asked for a quick at-a-glance answer to "when will I be done for the day?" without having to expand the stop details or mentally add up travel times.
