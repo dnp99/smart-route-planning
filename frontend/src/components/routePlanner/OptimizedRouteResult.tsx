@@ -63,8 +63,13 @@ export function OptimizedRouteResult({
   const displayedOrderedStops = orderedStops ?? result.orderedStops;
   const displayedRouteLegs = routeLegs ?? result.routeLegs;
   const googleMapsTripUrl = useMemo(
-    () => buildGoogleMapsTripUrl(result),
-    [result],
+    () =>
+      buildGoogleMapsTripUrl({
+        start: result.start,
+        end: result.end,
+        orderedStops: displayedOrderedStops,
+      }),
+    [result.start, result.end, displayedOrderedStops],
   );
   const scheduledStopCount = useMemo(
     () =>

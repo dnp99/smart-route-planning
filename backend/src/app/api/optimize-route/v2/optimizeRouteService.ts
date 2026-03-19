@@ -798,10 +798,27 @@ const orderVisitsByWindowDistanceAndDuration = (
   preserveOrder: boolean,
 ) => {
   if (preserveOrder) {
-    return {
-      orderedVisits: [...visits],
-      unscheduledTasks: [] as UnscheduledTaskV2[],
-    };
+    const orderedVisits: VisitWithCoords[] = [];
+    const unscheduledTasks: UnscheduledTaskV2[] = [];
+    let currentLocation = startLocation;
+    let currentTimeSeconds = departureLocalSeconds;
+
+    for (const visit of visits) {
+      const projection = projectVisit(visit, currentLocation, currentTimeSeconds, resolveTravelSeconds);
+      if (visit.windowType === "flexible" && projection.serviceEndSeconds > PLANNING_DAY_END_SECONDS) {
+        unscheduledTasks.push({
+          visitId: visit.visitId,
+          patientId: visit.patientId,
+          reason: "insufficient_day_capacity",
+        });
+      } else {
+        orderedVisits.push(visit);
+        currentLocation = { coords: visit.coords, locationKey: visit.locationKey };
+        currentTimeSeconds = projection.serviceEndSeconds;
+      }
+    }
+
+    return { orderedVisits, unscheduledTasks };
   }
 
   const remaining = [...visits];
