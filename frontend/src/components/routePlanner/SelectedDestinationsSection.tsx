@@ -41,6 +41,7 @@ type SelectedDestinationsSectionProps = {
     persistPlanningWindow: boolean,
   ) => void;
   onContinueToReview: () => void;
+  onCollapse: () => void;
 };
 
 export const SelectedDestinationsSection = ({
@@ -54,6 +55,7 @@ export const SelectedDestinationsSection = ({
   onUpdateDestinationPlanningWindow,
   onSetDestinationPersistPlanningWindow,
   onContinueToReview,
+  onCollapse,
 }: SelectedDestinationsSectionProps) => {
   const [openDestinationActionsVisitKey, setOpenDestinationActionsVisitKey] = useState<
     string | null
@@ -79,9 +81,23 @@ export const SelectedDestinationsSection = ({
   return (
     <section className={responsiveStyles.panel}>
       <div className={responsiveStyles.cardHeader}>
-        <h2 className={responsiveStyles.cardTitle}>
-          Selected destination patients
-        </h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className={responsiveStyles.cardTitle}>
+            Selected destination patients
+          </h2>
+          {selectedDestinations.length > 0 && (
+            <button
+              type="button"
+              aria-label="Collapse selected patients"
+              onClick={onCollapse}
+              className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <polyline points="18 15 12 9 6 15" />
+              </svg>
+            </button>
+          )}
+        </div>
         <p className={responsiveStyles.cardDescription}>
           Review the patients included in the route before you optimize it.
         </p>

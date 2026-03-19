@@ -73,5 +73,5 @@ export const responsiveStyles = {
     "text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400",
   resultEndpointValue:
     "mt-1 text-sm font-medium leading-6 text-slate-800 dark:text-slate-100",
-  map: "h-48 w-full overflow-hidden rounded-xl border border-slate-300 dark:border-slate-700 sm:h-[min(70vh,600px)] sm:min-h-64",
+  map: "h-72 w-full overflow-hidden rounded-xl border border-slate-300 dark:border-slate-700 sm:h-[min(70vh,600px)] sm:min-h-64",
 };

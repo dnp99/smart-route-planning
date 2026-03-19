@@ -231,6 +231,9 @@ function RoutePlanner({
     useState(false);
   const [isDestinationListExpanded, setIsDestinationListExpanded] =
     useState(true);
+  const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
+    normalizedHomeAddress.length === 0,
+  );
   const selectedCreateVisitType =
     createPatientFormValues.visitWindows[0]?.visitTimeType ?? "flexible";
 
@@ -255,6 +258,7 @@ function RoutePlanner({
   useEffect(() => {
     if (result) {
       setIsDestinationListExpanded(false);
+      setIsTripSetupExpanded(false);
     }
   }, [result]);
 
@@ -880,10 +884,39 @@ function RoutePlanner({
             </nav>
           )}
 
-          {isTripStepVisible && (
+          {isTripStepVisible && !isTripSetupExpanded && (
+            <section className={responsiveStyles.panel}>
+              <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+                {startAddress} → {resolvedEndAddress} —{" "}
+                <button
+                  type="button"
+                  onClick={() => setIsTripSetupExpanded(true)}
+                  className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+                >
+                  Edit
+                </button>
+              </p>
+            </section>
+          )}
+
+          {isTripStepVisible && isTripSetupExpanded && (
             <section className={responsiveStyles.panel}>
               <div className={responsiveStyles.cardHeader}>
-                <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
+                  {startAddress.length > 0 && resolvedEndAddress.length > 0 && (
+                    <button
+                      type="button"
+                      aria-label="Collapse trip setup"
+                      onClick={() => setIsTripSetupExpanded(false)}
+                      className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="18 15 12 9 6 15" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 <p className={responsiveStyles.cardDescription}>
                   Define where the nurse starts and how the route should end.
                 </p>
@@ -1032,7 +1065,7 @@ function RoutePlanner({
             </section>
           )}
 
-          {isPatientsStepVisible && result && !isDestinationListExpanded ? (
+          {isPatientsStepVisible && !isDestinationListExpanded && selectedDestinations.length > 0 ? (
             <section className={responsiveStyles.panel}>
               <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
                 {destinationCount} patient{destinationCount === 1 ? "" : "s"}{" "}
@@ -1062,6 +1095,7 @@ function RoutePlanner({
                 setDestinationPersistPlanningWindow
               }
               onContinueToReview={() => setActiveMobileStep("review")}
+              onCollapse={() => setIsDestinationListExpanded(false)}
             />
           )}
 
