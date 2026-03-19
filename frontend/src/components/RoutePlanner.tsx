@@ -1601,6 +1601,16 @@ function RoutePlanner({
                                   {isHomeEndingPoint ? "Home" : stop.address}
                                 </button>
 
+                                {isHomeEndingPoint && (() => {
+                                  const arrivalDate = new Date(stop.arrivalTime);
+                                  if (arrivalDate.getTime() !== arrivalDate.getTime()) return null;
+                                  return (
+                                    <p className="m-0 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+                                      You should be home by {expectedStartTimeFormatter.format(arrivalDate)}
+                                    </p>
+                                  );
+                                })()}
+
                                 {isEndingDetailsExpanded && (
                                   <div className="mt-1 space-y-0.5 text-xs text-slate-600 dark:text-slate-300">
                                     {isHomeEndingPoint && (
