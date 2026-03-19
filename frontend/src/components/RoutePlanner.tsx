@@ -762,28 +762,19 @@ function RoutePlanner({
     // encodes the local planning timezone, so the date portion is correct as-is.
     const planningDate = result.start.departureTime.slice(0, 10);
 
-    const destByVisitKey = new Map(
-      selectedDestinations.map((d) => [d.visitKey, d]),
-    );
-
     const destinationsInManualOrder = manuallyOrderedStops
       .filter((stop) => !stop.isEndingPoint && stop.tasks.length > 0)
       .flatMap((stop) =>
-        stop.tasks.flatMap((task) => {
-          const dest = destByVisitKey.get(`${task.patientId}:${task.visitId}`);
-          if (!dest || !dest.isIncluded) {
-            return [];
-          }
-          const {
-            visitKey: _visitKey,
-            sourceWindowId: _sourceWindowId,
-            requiresPlanningWindow: _requiresPlanningWindow,
-            isIncluded: _isIncluded,
-            persistPlanningWindow: _persistPlanningWindow,
-            ...destination
-          } = dest;
-          return [destination];
-        }),
+        stop.tasks.map((task) => ({
+          patientId: task.patientId,
+          patientName: task.patientName,
+          address: task.address,
+          googlePlaceId: task.googlePlaceId ?? null,
+          windowStart: task.windowStart,
+          windowEnd: task.windowEnd,
+          windowType: task.windowType,
+          serviceDurationMinutes: task.serviceDurationMinutes,
+        })),
       );
 
     if (destinationsInManualOrder.length === 0) {
