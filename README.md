@@ -92,6 +92,49 @@ Notes:
 - `start.departureTime` is optional and typically omitted by frontend.
 - Backend computes departure dynamically when omitted (earliest first-stop anchor with travel-time + buffer).
 
+## Route optimizer scheduling logic
+
+`POST /api/optimize-route/v2` uses a greedy beam search (depth 2, beam width 8) with priority tiers and EDF urgency scoring.
+
+### Step 1 — Candidate pool selection
+
+At each step, the algorithm selects from a prioritised pool:
+
+```text
+Any FIXED patients remaining?
+├── YES
+│   ├── Any FIXED already late?  → Pool: late fixed patients only
+│   └── None late               → Pool: all fixed patients
+└── NO
+    ├── Any FLEXIBLE (windowed) already late? → Pool: late flexible patients only
+    └── None late                             → Pool: all remaining patients
+```
+
+### Step 2 — Score every candidate (depth-2 lookahead)
+
+Within the pool, each candidate is scored across 6 dimensions (lower = better):
+
+| Priority | Dimension | What it measures |
+| --- | --- | --- |
+| 1 | `fixedLateCount` | Number of fixed patients that end up late |
+| 2 | `fixedLateSeconds` | Total lateness for fixed patients |
+| 3 | `totalLateSeconds` | Total lateness for all patients |
+| 4 | `flexibleUrgencySeconds` | EDF pressure — flexible patients within 90 min of deadline accumulate urgency; deferring them raises this score |
+| 5 | `totalWaitSeconds` | Idle wait time at stops |
+| 6 | `totalTravelSeconds` | Total drive time (distance proxy) |
+
+The beam search evaluates 2 steps ahead across the top 8 candidates, so urgency and lateness from future steps fold back into the current decision.
+
+### Step 3 — Gap filler
+
+After a candidate is selected, if it has > 30 min of idle wait before its window opens, the algorithm checks whether a nearby no-window or flexible patient can be inserted into that gap without delaying the anchor visit.
+
+### Key properties
+
+- Distance is the **last** tiebreaker — it never overrides deadline pressure.
+- The gap filler can only **insert**, never displace a selected candidate.
+- `flexibleUrgencySeconds` propagates forward through the lookahead, so tight-deadline patients are detected and elevated before they actually go late (Earliest Deadline First).
+
 ## Additional docs
 
 - [Backend guide](backend/README.md)
