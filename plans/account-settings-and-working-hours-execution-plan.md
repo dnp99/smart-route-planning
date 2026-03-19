@@ -268,6 +268,8 @@ When the computed route has a gap of more than a configurable threshold (default
 ### Threshold
 
 - Gap threshold: 60 minutes.
+- Current implementation note: break-gap threshold is centralized in frontend route-result utils and should be wired to a nurse-configurable weekly-schedule preference in Phase 4.
+- Default when configurable: 30 minutes (current product behavior as of Mar 19, 2026).
 - Only applied in the frontend render layer — no API change needed.
 - Gap = `serviceStartTime(next stop's first task) - departureTime(prevStop) - durationFromPreviousSeconds(next stop)` (true idle time, excluding travel).
 - Not shown before the ending/home stop.
@@ -323,14 +325,16 @@ When the computed route has a gap of more than a configurable threshold (default
 - Frontend:
   - add weekly schedule editor in account settings modal (day rows with working hours + optional lunch break sub-section)
   - show planner warnings/errors tied to working-hours and lunch break constraints
-  - show route gap indicator card for idle gaps > 2 hours between consecutive stops
+  - show route gap indicator card for idle gaps above configured threshold (default 30 minutes)
+  - allow nurse to configure route break-gap threshold (default 30 minutes) used by break card rendering
 - Acceptance criteria:
   - scheduler uses day-specific working window
   - no-preferred-window patients optimize without manual windows
   - flexible and no-window patients are routed around the lunch break when the schedule allows it
   - fixed patients are never displaced by lunch — lunch is skipped automatically when a fixed patient's window conflicts with it
   - a `lunch_skipped` informational note is surfaced when lunch cannot be taken
-  - route result displays a break card for gaps longer than 2 hours
+  - route result displays a break card for gaps above nurse-configured threshold (default 30 minutes)
+  - nurse-configured break-gap threshold controls when break cards render (default 30 minutes)
   - unsupported plans show clear violation messaging
 
 ## Test Plan
