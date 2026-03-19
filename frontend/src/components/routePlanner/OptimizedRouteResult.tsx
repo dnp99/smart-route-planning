@@ -166,7 +166,7 @@ export function OptimizedRouteResult({
       : null;
 
   return (
-    <section className={`mt-4 ${responsiveStyles.surfaceCard}`}>
+    <section className="mt-4 ">
       <div className="grid gap-2">
         <div className="grid gap-4 rounded-[28px] border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-4 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -266,7 +266,7 @@ export function OptimizedRouteResult({
         </div>
       </div>
 
-      <div className="mt-5 flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,1.1fr)_minmax(22rem,0.9fr)]">
+      <div className="mt-5 flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)]">
         <div className="order-2 min-w-0 sm:order-1">
           <section className="rounded-[28px] bg-slate-50/80 p-4 dark:bg-slate-950/35">
             <div className="flex items-start justify-between gap-3">
