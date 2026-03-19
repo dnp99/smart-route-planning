@@ -27,7 +27,7 @@ export function OptimizedStopList({
   normalizedHomeAddress,
 }: OptimizedStopListProps) {
   return (
-    <ol className="mb-0 mt-2 list-decimal space-y-2 pl-4 sm:pl-5">
+    <ol className="mb-0 mt-3 list-none space-y-3 p-0">
       {orderedStops.map((stop, stopIndex) => {
         const prevStop = stopIndex > 0 ? orderedStops[stopIndex - 1] : null;
         let idleGapMinutes = 0;
@@ -46,8 +46,11 @@ export function OptimizedStopList({
         return (
           <Fragment key={stop.stopId}>
             {showBreakCard && (
-              <div className="flex justify-center py-1">
-                <div className="flex items-center gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 dark:border-amber-800/40 dark:bg-amber-950/30">
+              <div className="flex items-center gap-3 py-1.5">
+                <div className="flex w-10 justify-center">
+                  <span className="h-px w-6 bg-amber-300/80 dark:bg-amber-700/80" />
+                </div>
+                <div className="flex items-center gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 shadow-sm dark:border-amber-800/40 dark:bg-amber-950/30">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -66,10 +69,10 @@ export function OptimizedStopList({
                     <line x1="14" y1="2" x2="14" y2="4" />
                   </svg>
                   <div className="flex flex-col">
-                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
+                    <span className="text-sm font-semibold text-amber-700 dark:text-amber-300">
                       Break · {formatBreakGap(idleGapMinutes)}
                     </span>
-                    <span className="text-[11px] text-amber-600 dark:text-amber-400">
+                    <span className="text-xs text-amber-600 dark:text-amber-400">
                       {expectedStartTimeFormatter.format(new Date(breakStartMs))} –{" "}
                       {expectedStartTimeFormatter.format(new Date(breakEndMs))}
                     </span>
@@ -77,56 +80,76 @@ export function OptimizedStopList({
                 </div>
               </div>
             )}
-            <li className="min-w-0 text-sm text-slate-800 dark:text-slate-200">
-              {stop.tasks.length > 0 ? (
-                <div className="space-y-2">
-                  {stop.tasks.map((task) => {
-                    const detailsKey = `${task.visitId}`;
-                    return (
-                      <OptimizedStopCard
-                        key={task.visitId}
-                        task={task}
-                        stop={stop}
-                        isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
-                        onToggle={() => onToggleResultTask(detailsKey)}
-                      />
-                    );
-                  })}
+            <li className="min-w-0">
+              <div className="flex items-stretch gap-3">
+                <div className="flex w-10 shrink-0 flex-col items-center">
+                  <span
+                    className={[
+                      "inline-flex h-10 w-10 items-center justify-center rounded-2xl border text-sm font-bold shadow-sm",
+                      stop.isEndingPoint
+                        ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300"
+                        : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/30 dark:text-blue-300",
+                    ].join(" ")}
+                  >
+                    {stop.isEndingPoint ? "E" : stopIndex + 1}
+                  </span>
+                  {stopIndex < orderedStops.length - 1 && (
+                    <span className="mt-2 h-full min-h-6 w-px bg-slate-200 dark:bg-slate-700" />
+                  )}
                 </div>
-              ) : (
-                <>
-                  {stop.isEndingPoint ? (
-                    (() => {
-                      const endingDetailsKey = `ending:${stop.stopId}`;
-                      const isHomeEndingPoint = addressesMatch(
-                        stop.address,
-                        normalizedHomeAddress,
-                      );
-                      return (
-                        <EndingStopCard
-                          stop={stop}
-                          isExpanded={Boolean(expandedResultEndingStopIds[endingDetailsKey])}
-                          onToggle={() => onToggleResultEndingStop(endingDetailsKey)}
-                          isHomeEndingPoint={isHomeEndingPoint}
-                        />
-                      );
-                    })()
+
+                <div className="min-w-0 flex-1 text-sm text-slate-800 dark:text-slate-200">
+                  {stop.tasks.length > 0 ? (
+                    <div className="space-y-2">
+                      {stop.tasks.map((task) => {
+                        const detailsKey = `${task.visitId}`;
+                        return (
+                          <OptimizedStopCard
+                            key={task.visitId}
+                            task={task}
+                            stop={stop}
+                            isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
+                            onToggle={() => onToggleResultTask(detailsKey)}
+                          />
+                        );
+                      })}
+                    </div>
                   ) : (
                     <>
-                      <span>{stop.address}</span>
-                      <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
-                        No scheduled visit tasks at this stop.
-                      </small>
+                      {stop.isEndingPoint ? (
+                        (() => {
+                          const endingDetailsKey = `ending:${stop.stopId}`;
+                          const isHomeEndingPoint = addressesMatch(
+                            stop.address,
+                            normalizedHomeAddress,
+                          );
+                          return (
+                            <EndingStopCard
+                              stop={stop}
+                              isExpanded={Boolean(expandedResultEndingStopIds[endingDetailsKey])}
+                              onToggle={() => onToggleResultEndingStop(endingDetailsKey)}
+                              isHomeEndingPoint={isHomeEndingPoint}
+                            />
+                          );
+                        })()
+                      ) : (
+                        <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                          <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                            {stop.address}
+                          </p>
+                          <small className="mt-1 block text-xs font-medium text-blue-600 dark:text-blue-300">
+                            No scheduled visit tasks at this stop.
+                          </small>
+                          <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                            {stop.distanceFromPreviousKm} km •{" "}
+                            {formatDuration(stop.durationFromPreviousSeconds)} from previous stop
+                          </small>
+                        </div>
+                      )}
                     </>
                   )}
-                </>
-              )}
-              {stop.tasks.length === 0 && !stop.isEndingPoint && (
-                <small className="block text-xs text-slate-500 dark:text-slate-400">
-                  {stop.distanceFromPreviousKm} km •{" "}
-                  {formatDuration(stop.durationFromPreviousSeconds)} from previous stop
-                </small>
-              )}
+                </div>
+              </div>
             </li>
           </Fragment>
         );

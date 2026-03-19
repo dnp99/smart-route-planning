@@ -2756,3 +2756,25 @@ After deploying `v2.5.0-flexible-edf`, analysis of a 12-patient Mississauga rout
 ### 90 — Motivation
 
 UX review of the live optimized route output identified eight low-risk, frontend-only polish items. Changes improve scannability of stop cards, reduce jargon visible to nurses, and eliminate competing numbered lists after optimization.
+
+---
+
+## 91) Route Planner Header Polish + Temporary Leave-By Hide
+
+### 91 — Files updated
+
+- `frontend/src/components/routePlanner/OptimizedRouteResult.tsx`
+- `frontend/src/components/responsiveStyles.ts`
+- `frontend/src/tests/routePlanner/OptimizedRouteResult.test.tsx`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+
+### 91 — Changes
+
+- Moved the Google Maps CTA cluster (`Open in Google Maps` + `Live traffic may affect ETAs.`) to the far right of the summary header on desktop breakpoints.
+- Temporarily hid the `Leave By` / `Suggested leave-by` summary card from the route result UI.
+- Kept route-optimization behavior unchanged; only the leave-by display is hidden.
+- Updated route planner tests to assert the leave-by text is not rendered while stop timing details continue to render.
+
+### 91 — Motivation
+
+Product review preferred a tighter route-summary header and less visual noise in the top metrics row. Leave-by is being paused in the UI for now, with intent to re-enable later.

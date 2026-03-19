@@ -1023,24 +1023,24 @@ function RoutePlanner({
                 isMobileViewport ? responsiveStyles.stickyFooter : ""
               }`}
             >
-            <span className={responsiveStyles.countPill}>
-              {destinationCount} destination(s) detected
-            </span>
-            <button
-              type="submit"
-              disabled={isLoading || !canOptimize}
-              className={`${responsiveStyles.optimizeButton} optimize-route-button`}
-              data-loading={isLoading ? "true" : "false"}
-              data-success={showOptimizeSuccess ? "true" : "false"}
-            >
-              {isLoading && (
-                <span
-                  className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white"
-                  aria-hidden="true"
-                />
-              )}
-              {isLoading ? "Optimizing..." : result ? "Re-optimize Route" : "Optimize Route"}
-            </button>
+              <span className="inline-flex items-center rounded-full border border-amber-300 bg-white px-4 py-1.5 text-sm font-semibold text-amber-700 shadow-sm dark:border-amber-900/70 dark:bg-slate-900 dark:text-amber-300">
+                {destinationCount} destination(s) detected
+              </span>
+              <button
+                type="submit"
+                disabled={isLoading || !canOptimize}
+                className="optimize-route-button inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto"
+                data-loading={isLoading ? "true" : "false"}
+                data-success={showOptimizeSuccess ? "true" : "false"}
+              >
+                {isLoading && (
+                  <span
+                    className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white"
+                    aria-hidden="true"
+                  />
+                )}
+                {isLoading ? "Optimizing..." : result ? "Re-optimize Route" : "Optimize Route"}
+              </button>
             </div>
           )}
         </form>

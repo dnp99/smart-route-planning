@@ -80,6 +80,8 @@ the first stop — drop the patient-name reference entirely:
 The `leaveBySuggestion.firstPatientName` value used in the template can be removed.
 `leaveBySuggestion.travelDurationLabel` is already computed and available.
 
+**Current status (Mar 19, 2026):** The leave-by UI block is temporarily hidden from the route summary. The underlying route data and timing logic remain intact for future re-enable.
+
 **Files:** `RoutePlanner.tsx` — the `leaveBySuggestion` banner around line 1411–1415.
 
 ---
@@ -178,6 +180,7 @@ Suggested order: 5 → 4 → 8 → 7 → 2 → 1 → 3 → 6
 - [x] Preferred window visible on every stop card without expanding
 - [x] Stop cards have a green/amber/red left border accent reflecting scheduling status
 - [x] Leave-by banner no longer names the first patient
+- [x] Leave-by summary card is temporarily hidden (feature-flag style product decision)
 - [x] Metric label reads "Driving Time"
 - [x] "Selected destination patients" collapses to a summary line when a result is shown
 - [x] Service duration visible on collapsed stop card

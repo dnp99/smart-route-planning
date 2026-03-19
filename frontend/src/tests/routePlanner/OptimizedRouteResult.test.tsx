@@ -81,7 +81,7 @@ describe("OptimizedRouteResult", () => {
     cleanup();
   });
 
-  it("renders leave-by, warnings, stop list, and unscheduled task details", () => {
+  it("renders warnings, stop list, and unscheduled task details while leave-by is hidden", () => {
     const onDismissConflictWarnings = vi.fn();
     const onDismissLatenessWarnings = vi.fn();
 
@@ -132,7 +132,7 @@ describe("OptimizedRouteResult", () => {
 
     expect(screen.getByRole("heading", { name: "Optimized Route" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Open in Google Maps" })).toBeTruthy();
-    expect(screen.getByText(/Suggested leave-by:/)).toBeTruthy();
+    expect(screen.queryByText(/Suggested leave-by:/)).toBeNull();
     expect(screen.getByText("Scheduling Conflict")).toBeTruthy();
     expect(screen.getByText("Lateness Warnings")).toBeTruthy();
     expect(screen.getByText("Two fixed windows overlap.")).toBeTruthy();

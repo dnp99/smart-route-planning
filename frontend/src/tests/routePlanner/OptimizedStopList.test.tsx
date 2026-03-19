@@ -128,7 +128,7 @@ describe("OptimizedStopList", () => {
     expect(screen.queryByText(/Break ·/)).toBeNull();
     expect(
       screen.getByRole("button", { name: "Toggle details for Ending point" }).textContent,
-    ).toBe("Clinic Exit");
+    ).toContain("Clinic Exit");
     expect(screen.queryByText(/You should be home by/i)).toBeNull();
   });
 });
