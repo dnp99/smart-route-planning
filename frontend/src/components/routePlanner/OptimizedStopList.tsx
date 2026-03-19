@@ -47,9 +47,6 @@ export function OptimizedStopList({
           <Fragment key={stop.stopId}>
             {showBreakCard && (
               <div className="flex items-center gap-3 py-1.5">
-                <div className="flex w-10 justify-center">
-                  <span className="h-px w-6 bg-amber-300/80 dark:bg-amber-700/80" />
-                </div>
                 <div className="flex items-center gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2.5 shadow-sm dark:border-amber-800/40 dark:bg-amber-950/30">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -81,75 +78,57 @@ export function OptimizedStopList({
               </div>
             )}
             <li className="min-w-0">
-              <div className="flex items-stretch gap-3">
-                <div className="flex w-10 shrink-0 flex-col items-center">
-                  <span
-                    className={[
-                      "inline-flex h-10 w-10 items-center justify-center rounded-2xl border text-sm font-bold shadow-sm",
-                      stop.isEndingPoint
-                        ? "border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900/70 dark:bg-rose-950/30 dark:text-rose-300"
-                        : "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/30 dark:text-blue-300",
-                    ].join(" ")}
-                  >
-                    {stop.isEndingPoint ? "E" : stopIndex + 1}
-                  </span>
-                  {stopIndex < orderedStops.length - 1 && (
-                    <span className="mt-2 h-full min-h-6 w-px bg-slate-200 dark:bg-slate-700" />
-                  )}
+              {stop.tasks.length > 0 ? (
+                <div className="space-y-2">
+                  {stop.tasks.map((task) => {
+                    const detailsKey = `${task.visitId}`;
+                    return (
+                      <OptimizedStopCard
+                        key={task.visitId}
+                        task={task}
+                        stop={stop}
+                        stopLabel={String(stopIndex + 1)}
+                        isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
+                        onToggle={() => onToggleResultTask(detailsKey)}
+                      />
+                    );
+                  })}
                 </div>
-
-                <div className="min-w-0 flex-1 text-sm text-slate-800 dark:text-slate-200">
-                  {stop.tasks.length > 0 ? (
-                    <div className="space-y-2">
-                      {stop.tasks.map((task) => {
-                        const detailsKey = `${task.visitId}`;
-                        return (
-                          <OptimizedStopCard
-                            key={task.visitId}
-                            task={task}
-                            stop={stop}
-                            isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
-                            onToggle={() => onToggleResultTask(detailsKey)}
-                          />
-                        );
-                      })}
-                    </div>
+              ) : (
+                <>
+                  {stop.isEndingPoint ? (
+                    (() => {
+                      const endingDetailsKey = `ending:${stop.stopId}`;
+                      const isHomeEndingPoint = addressesMatch(
+                        stop.address,
+                        normalizedHomeAddress,
+                      );
+                      return (
+                        <EndingStopCard
+                          stop={stop}
+                          stopLabel="E"
+                          isExpanded={Boolean(expandedResultEndingStopIds[endingDetailsKey])}
+                          onToggle={() => onToggleResultEndingStop(endingDetailsKey)}
+                          isHomeEndingPoint={isHomeEndingPoint}
+                        />
+                      );
+                    })()
                   ) : (
-                    <>
-                      {stop.isEndingPoint ? (
-                        (() => {
-                          const endingDetailsKey = `ending:${stop.stopId}`;
-                          const isHomeEndingPoint = addressesMatch(
-                            stop.address,
-                            normalizedHomeAddress,
-                          );
-                          return (
-                            <EndingStopCard
-                              stop={stop}
-                              isExpanded={Boolean(expandedResultEndingStopIds[endingDetailsKey])}
-                              onToggle={() => onToggleResultEndingStop(endingDetailsKey)}
-                              isHomeEndingPoint={isHomeEndingPoint}
-                            />
-                          );
-                        })()
-                      ) : (
-                        <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-                          <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                            {stop.address}
-                          </p>
-                          <small className="mt-1 block text-xs font-medium text-blue-600 dark:text-blue-300">
-                            No scheduled visit tasks at this stop.
-                          </small>
-                          <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                            {stop.distanceFromPreviousKm} km •{" "}
-                            {formatDuration(stop.durationFromPreviousSeconds)} from previous stop
-                          </small>
-                        </div>
-                      )}
-                    </>
+                    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-3 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                      <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {stopIndex + 1}. {stop.address}
+                      </p>
+                      <small className="mt-1 block text-xs font-medium text-blue-600 dark:text-blue-300">
+                        No scheduled visit tasks at this stop.
+                      </small>
+                      <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                        {stop.distanceFromPreviousKm} km •{" "}
+                        {formatDuration(stop.durationFromPreviousSeconds)} from previous stop
+                      </small>
+                    </div>
                   )}
-                </div>
-              </div>
+                </>
+              )}
             </li>
           </Fragment>
         );

@@ -9,7 +9,10 @@ import { persistPlanningWindows } from "./routePlanner/routePlannerService";
 import { SelectedDestinationsSection } from "./routePlanner/SelectedDestinationsSection";
 import type { SelectedPatientDestination } from "./routePlanner/routePlannerTypes";
 import type { AddressSuggestion } from "./types";
-import { formatNameWords, formatPatientNameFromParts } from "./patients/patientName";
+import {
+  formatNameWords,
+  formatPatientNameFromParts,
+} from "./patients/patientName";
 import { PatientFormModal } from "./patients/PatientFormModal";
 import {
   EMPTY_FORM,
@@ -36,16 +39,23 @@ const toWindowTime = (value: string) => value.slice(0, 5);
 const HH_MM_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 const hasCompleteWindow = (destination: SelectedPatientDestination) =>
-  HH_MM_PATTERN.test(destination.windowStart) && HH_MM_PATTERN.test(destination.windowEnd);
+  HH_MM_PATTERN.test(destination.windowStart) &&
+  HH_MM_PATTERN.test(destination.windowEnd);
 
 const hasAnyWindowBoundary = (destination: SelectedPatientDestination) =>
-  destination.windowStart.trim().length > 0 || destination.windowEnd.trim().length > 0;
+  destination.windowStart.trim().length > 0 ||
+  destination.windowEnd.trim().length > 0;
 
 const toSelectedPatientDestinations = (
   patient: Patient,
 ): SelectedPatientDestination[] => {
-  const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
-  const patientVisitWindows = Array.isArray(patient.visitWindows) ? patient.visitWindows : [];
+  const patientName = formatPatientNameFromParts(
+    patient.firstName,
+    patient.lastName,
+  );
+  const patientVisitWindows = Array.isArray(patient.visitWindows)
+    ? patient.visitWindows
+    : [];
   if (patientVisitWindows.length > 0) {
     return patientVisitWindows.map((window) => ({
       visitKey: `${patient.id}:${window.id}`,
@@ -104,11 +114,13 @@ const toSelectedPatientDestinations = (
 };
 
 const formatPatientListLabel = (destinations: SelectedPatientDestination[]) => {
-  const names = [...new Set(
-    destinations
-      .map((destination) => formatNameWords(destination.patientName))
-      .filter((name) => name.length > 0),
-  )];
+  const names = [
+    ...new Set(
+      destinations
+        .map((destination) => formatNameWords(destination.patientName))
+        .filter((name) => name.length > 0),
+    ),
+  ];
 
   if (names.length === 0) {
     return "selected patients";
@@ -131,7 +143,10 @@ const patientMatchesSearchQuery = (patient: Patient, query: string) => {
     return true;
   }
 
-  const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName).toLowerCase();
+  const patientName = formatPatientNameFromParts(
+    patient.firstName,
+    patient.lastName,
+  ).toLowerCase();
   const firstName = patient.firstName.toLowerCase();
   const lastName = patient.lastName.toLowerCase();
   const address = patient.address.toLowerCase();
@@ -156,17 +171,23 @@ function RoutePlanner({
   const initialDraft = useMemo(() => readRoutePlannerDraft(), []);
   const normalizedHomeAddress = nurseHomeAddress?.trim() ?? "";
   const [isMobileViewport, setIsMobileViewport] = useState(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
       return false;
     }
 
     return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
   });
-  const [activeMobileStep, setActiveMobileStep] =
-    useState<MobilePlannerStep>(initialDraft?.activeMobileStep ?? "trip");
+  const [activeMobileStep, setActiveMobileStep] = useState<MobilePlannerStep>(
+    initialDraft?.activeMobileStep ?? "trip",
+  );
   const [startAddress, setStartAddress] = useState(
     initialDraft?.startAddress ??
-      (normalizedHomeAddress.length > 0 ? normalizedHomeAddress : DEFAULT_START_ADDRESS),
+      (normalizedHomeAddress.length > 0
+        ? normalizedHomeAddress
+        : DEFAULT_START_ADDRESS),
   );
   const [manualEndAddress, setManualEndAddress] = useState(
     initialDraft?.manualEndAddress ?? normalizedHomeAddress,
@@ -174,19 +195,23 @@ function RoutePlanner({
   const [startGooglePlaceId, setStartGooglePlaceId] = useState<string | null>(
     initialDraft?.startGooglePlaceId ?? null,
   );
-  const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<string | null>(
-    initialDraft?.manualEndGooglePlaceId ?? null,
-  );
+  const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<
+    string | null
+  >(initialDraft?.manualEndGooglePlaceId ?? null);
 
   const [startTouched, setStartTouched] = useState(false);
   const [endTouched, setEndTouched] = useState(false);
 
   const [destinationSearchQuery, setDestinationSearchQuery] = useState("");
-  const [locallyCreatedPatients, setLocallyCreatedPatients] = useState<Patient[]>([]);
-  const [isCreatePatientModalOpen, setIsCreatePatientModalOpen] = useState(false);
+  const [locallyCreatedPatients, setLocallyCreatedPatients] = useState<
+    Patient[]
+  >([]);
+  const [isCreatePatientModalOpen, setIsCreatePatientModalOpen] =
+    useState(false);
   const [createPatientFormValues, setCreatePatientFormValues] =
     useState<PatientFormValues>(EMPTY_FORM);
-  const [createPatientFormErrors, setCreatePatientFormErrors] = useState<FormFieldErrors>({});
+  const [createPatientFormErrors, setCreatePatientFormErrors] =
+    useState<FormFieldErrors>({});
   const [isCreatingPatient, setIsCreatingPatient] = useState(false);
   const [createPatientError, setCreatePatientError] = useState("");
   const [localValidationError, setLocalValidationError] = useState("");
@@ -198,12 +223,17 @@ function RoutePlanner({
   const [expandedResultTaskIds, setExpandedResultTaskIds] = useState<
     Record<string, boolean>
   >({});
-  const [expandedResultEndingStopIds, setExpandedResultEndingStopIds] = useState<
-    Record<string, boolean>
-  >({});
-  const [conflictWarningsDismissed, setConflictWarningsDismissed] = useState(false);
-  const [latenessWarningsDismissed, setLatenessWarningsDismissed] = useState(false);
-  const [isDestinationListExpanded, setIsDestinationListExpanded] = useState(true);
+  const [expandedResultEndingStopIds, setExpandedResultEndingStopIds] =
+    useState<Record<string, boolean>>({});
+  const [conflictWarningsDismissed, setConflictWarningsDismissed] =
+    useState(false);
+  const [latenessWarningsDismissed, setLatenessWarningsDismissed] =
+    useState(false);
+  const [isDestinationListExpanded, setIsDestinationListExpanded] =
+    useState(true);
+  const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
+    normalizedHomeAddress.length === 0,
+  );
   const selectedCreateVisitType =
     createPatientFormValues.visitWindows[0]?.visitTimeType ?? "flexible";
 
@@ -228,11 +258,15 @@ function RoutePlanner({
   useEffect(() => {
     if (result) {
       setIsDestinationListExpanded(false);
+      setIsTripSetupExpanded(false);
     }
   }, [result]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
+    if (
+      typeof window === "undefined" ||
+      typeof window.matchMedia !== "function"
+    ) {
       return;
     }
 
@@ -272,7 +306,10 @@ function RoutePlanner({
       return;
     }
 
-    if (startAddress.trim().length === 0 || startAddress === DEFAULT_START_ADDRESS) {
+    if (
+      startAddress.trim().length === 0 ||
+      startAddress === DEFAULT_START_ADDRESS
+    ) {
       setStartAddress(normalizedHomeAddress);
       setStartGooglePlaceId(null);
     }
@@ -281,12 +318,7 @@ function RoutePlanner({
       setManualEndAddress(normalizedHomeAddress);
       setManualEndGooglePlaceId(null);
     }
-  }, [
-    initialDraft,
-    manualEndAddress,
-    normalizedHomeAddress,
-    startAddress,
-  ]);
+  }, [initialDraft, manualEndAddress, normalizedHomeAddress, startAddress]);
 
   useEffect(() => {
     setExpandedDestinationVisitKeys((current) => {
@@ -304,7 +336,10 @@ function RoutePlanner({
         next[destination.visitKey] = existing;
       });
 
-      if (!changed && Object.keys(current).length !== selectedDestinations.length) {
+      if (
+        !changed &&
+        Object.keys(current).length !== selectedDestinations.length
+      ) {
         changed = true;
       }
 
@@ -337,7 +372,8 @@ function RoutePlanner({
   ]);
 
   const selectedDestinationIdSet = useMemo(
-    () => new Set(selectedDestinations.map((destination) => destination.patientId)),
+    () =>
+      new Set(selectedDestinations.map((destination) => destination.patientId)),
     [selectedDestinations],
   );
 
@@ -449,10 +485,15 @@ function RoutePlanner({
     value: PatientFormValues[K],
   ) => {
     setCreatePatientFormValues((current) => ({ ...current, [field]: value }));
-    setCreatePatientFormErrors((current) => ({ ...current, [field]: undefined }));
+    setCreatePatientFormErrors((current) => ({
+      ...current,
+      [field]: undefined,
+    }));
   };
 
-  const handleCreatePatientVisitWindowChange = <K extends keyof PatientFormVisitWindow>(
+  const handleCreatePatientVisitWindowChange = <
+    K extends keyof PatientFormVisitWindow,
+  >(
     windowId: string,
     field: K,
     value: PatientFormVisitWindow[K],
@@ -491,7 +532,9 @@ function RoutePlanner({
   const handleRemoveCreatePatientVisitWindow = (windowId: string) => {
     setCreatePatientFormValues((current) => ({
       ...current,
-      visitWindows: current.visitWindows.filter((window) => window.id !== windowId),
+      visitWindows: current.visitWindows.filter(
+        (window) => window.id !== windowId,
+      ),
     }));
     setCreatePatientFormErrors((current) => ({
       ...current,
@@ -537,7 +580,10 @@ function RoutePlanner({
       address: value,
       googlePlaceId: null,
     }));
-    setCreatePatientFormErrors((current) => ({ ...current, address: undefined }));
+    setCreatePatientFormErrors((current) => ({
+      ...current,
+      address: undefined,
+    }));
   };
 
   const handleCreatePatientAddressPick = (suggestion: AddressSuggestion) => {
@@ -565,7 +611,10 @@ function RoutePlanner({
     );
   };
 
-  const setDestinationVisitIncluded = (visitKey: string, isIncluded: boolean) => {
+  const setDestinationVisitIncluded = (
+    visitKey: string,
+    isIncluded: boolean,
+  ) => {
     setSelectedDestinations((current) =>
       current.map((destination) =>
         destination.visitKey === visitKey
@@ -599,7 +648,8 @@ function RoutePlanner({
     setLocalValidationError("");
 
     const fixedDestinationsMissingWindow = requestDestinations.filter(
-      (destination) => destination.windowType === "fixed" && !hasCompleteWindow(destination),
+      (destination) =>
+        destination.windowType === "fixed" && !hasCompleteWindow(destination),
     );
     if (fixedDestinationsMissingWindow.length > 0) {
       setLocalValidationError(
@@ -624,7 +674,8 @@ function RoutePlanner({
     const destinationsWithInvalidWindowOrder = requestDestinations.filter(
       (destination) =>
         hasCompleteWindow(destination) &&
-        timeToMinutes(destination.windowEnd) <= timeToMinutes(destination.windowStart),
+        timeToMinutes(destination.windowEnd) <=
+          timeToMinutes(destination.windowStart),
     );
     if (destinationsWithInvalidWindowOrder.length > 0) {
       setLocalValidationError(
@@ -634,7 +685,8 @@ function RoutePlanner({
     }
 
     const destinationsMissingPersistWindow = requestDestinations.filter(
-      (destination) => destination.persistPlanningWindow && !hasCompleteWindow(destination),
+      (destination) =>
+        destination.persistPlanningWindow && !hasCompleteWindow(destination),
     );
     if (destinationsMissingPersistWindow.length > 0) {
       setLocalValidationError(
@@ -651,12 +703,14 @@ function RoutePlanner({
         isIncluded: _isIncluded,
         persistPlanningWindow: _persistPlanningWindow,
         ...destination
-      }) =>
-        destination,
+      }) => destination,
     );
 
     const planningWindowsToPersist = requestDestinations
-      .filter((destination) => destination.persistPlanningWindow && hasCompleteWindow(destination))
+      .filter(
+        (destination) =>
+          destination.persistPlanningWindow && hasCompleteWindow(destination),
+      )
       .map((destination) => ({
         patientId: destination.patientId,
         sourceWindowId: destination.sourceWindowId,
@@ -670,7 +724,9 @@ function RoutePlanner({
         await persistPlanningWindows(planningWindowsToPersist);
       } catch (error) {
         setLocalValidationError(
-          error instanceof Error ? error.message : "Unable to save planning windows.",
+          error instanceof Error
+            ? error.message
+            : "Unable to save planning windows.",
         );
         return;
       }
@@ -680,7 +736,9 @@ function RoutePlanner({
       startAddress,
       ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
       endAddress: resolvedEndAddress,
-      ...(resolvedEndGooglePlaceId ? { endGooglePlaceId: resolvedEndGooglePlaceId } : {}),
+      ...(resolvedEndGooglePlaceId
+        ? { endGooglePlaceId: resolvedEndGooglePlaceId }
+        : {}),
       destinations: optimizeDestinations,
       canOptimize,
     });
@@ -709,7 +767,9 @@ function RoutePlanner({
     setDestinationSearchQuery("");
   };
 
-  const handleCreatePatientSubmit = async (event: FormEvent<HTMLFormElement>) => {
+  const handleCreatePatientSubmit = async (
+    event: FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     setCreatePatientError("");
 
@@ -722,17 +782,23 @@ function RoutePlanner({
 
     setIsCreatingPatient(true);
     try {
-      const createdPatient = await createPatient(toCreateRequest(createPatientFormValues));
+      const createdPatient = await createPatient(
+        toCreateRequest(createPatientFormValues),
+      );
 
       setLocallyCreatedPatients((current) => {
-        const next = current.filter((patient) => patient.id !== createdPatient.id);
+        const next = current.filter(
+          (patient) => patient.id !== createdPatient.id,
+        );
         return [createdPatient, ...next];
       });
       addDestinationPatient(createdPatient);
       setIsCreatePatientModalOpen(false);
       resetCreatePatientFormState();
     } catch (error) {
-      setCreatePatientError(error instanceof Error ? error.message : "Unable to create patient.");
+      setCreatePatientError(
+        error instanceof Error ? error.message : "Unable to create patient.",
+      );
     } finally {
       setIsCreatingPatient(false);
     }
@@ -764,8 +830,10 @@ function RoutePlanner({
     (destination) => destination.isIncluded,
   ).length;
   const isTripStepVisible = !isMobileViewport || activeMobileStep === "trip";
-  const isPatientsStepVisible = !isMobileViewport || activeMobileStep === "patients";
-  const isReviewStepVisible = !isMobileViewport || activeMobileStep === "review";
+  const isPatientsStepVisible =
+    !isMobileViewport || activeMobileStep === "patients";
+  const isReviewStepVisible =
+    !isMobileViewport || activeMobileStep === "review";
 
   return (
     <main className={responsiveStyles.page}>
@@ -777,9 +845,9 @@ function RoutePlanner({
             </h1>
           </div>
           <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
-            Enter your starting point, ending point, and destination
-            addresses. The planner prioritizes time-window feasibility first,
-            then distance, with the ending point as the final stop.
+            Enter your starting point, ending point, and destination addresses.
+            The planner prioritizes time-window feasibility first, then
+            distance, with the ending point as the final stop.
           </p>
         </div>
 
@@ -800,7 +868,9 @@ function RoutePlanner({
                     key={step.key}
                     type="button"
                     aria-pressed={isActive}
-                    onClick={() => setActiveMobileStep(step.key as MobilePlannerStep)}
+                    onClick={() =>
+                      setActiveMobileStep(step.key as MobilePlannerStep)
+                    }
                     className={`${responsiveStyles.mobileStepButton} ${
                       isActive
                         ? responsiveStyles.mobileStepButtonActive
@@ -814,10 +884,39 @@ function RoutePlanner({
             </nav>
           )}
 
-          {isTripStepVisible && (
+          {isTripStepVisible && !isTripSetupExpanded && (
+            <section className={responsiveStyles.panel}>
+              <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+                {startAddress} → {resolvedEndAddress} —{" "}
+                <button
+                  type="button"
+                  onClick={() => setIsTripSetupExpanded(true)}
+                  className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+                >
+                  Edit
+                </button>
+              </p>
+            </section>
+          )}
+
+          {isTripStepVisible && isTripSetupExpanded && (
             <section className={responsiveStyles.panel}>
               <div className={responsiveStyles.cardHeader}>
-                <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
+                  {startAddress.length > 0 && resolvedEndAddress.length > 0 && (
+                    <button
+                      type="button"
+                      aria-label="Collapse trip setup"
+                      onClick={() => setIsTripSetupExpanded(false)}
+                      className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                        <polyline points="18 15 12 9 6 15" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
                 <p className={responsiveStyles.cardDescription}>
                   Define where the nurse starts and how the route should end.
                 </p>
@@ -831,8 +930,9 @@ function RoutePlanner({
                         Home address not set
                       </p>
                       <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
-                        Set your home address in Account settings to auto-fill starting and ending
-                        points. You can still enter addresses manually.
+                        Set your home address in Account settings to auto-fill
+                        starting and ending points. You can still enter
+                        addresses manually.
                       </p>
                     </div>
                     {onOpenAccountSettings && (
@@ -888,81 +988,88 @@ function RoutePlanner({
 
           {isPatientsStepVisible && (
             <section className={responsiveStyles.panel}>
-            <div className={responsiveStyles.cardHeader}>
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <h2 className={responsiveStyles.cardTitle}>
-                  Destination patient search
-                </h2>
-                <button
-                  type="button"
-                  onClick={openCreatePatientModal}
-                  className="rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  Add New Patient
-                </button>
+              <div className={responsiveStyles.cardHeader}>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <h2 className={responsiveStyles.cardTitle}>
+                    Destination patient search
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={openCreatePatientModal}
+                    className="rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  >
+                    Add New Patient
+                  </button>
+                </div>
+                <p className={responsiveStyles.cardDescription}>
+                  Add saved patients as route stops before optimizing the visit
+                  order.
+                </p>
               </div>
-              <p className={responsiveStyles.cardDescription}>
-                Add saved patients as route stops before optimizing the visit order.
-              </p>
-            </div>
-            {createPatientError && (
-              <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
-                {createPatientError}
-              </p>
-            )}
-            <input
-              id="destination-patient-search"
-              type="search"
-              aria-label="Destination patient search"
-              value={destinationSearchQuery}
-              onChange={(event) => setDestinationSearchQuery(event.target.value)}
-              placeholder="Search saved patients by first or last name"
-              className={responsiveStyles.searchInput}
-            />
+              {createPatientError && (
+                <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+                  {createPatientError}
+                </p>
+              )}
+              <input
+                id="destination-patient-search"
+                type="search"
+                aria-label="Destination patient search"
+                value={destinationSearchQuery}
+                onChange={(event) =>
+                  setDestinationSearchQuery(event.target.value)
+                }
+                placeholder="Search saved patients by first or last name"
+                className={responsiveStyles.searchInput}
+              />
 
-            {isDestinationSearchLoading && (
-              <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
-                Loading patients…
-              </p>
-            )}
+              {isDestinationSearchLoading && (
+                <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                  Loading patients…
+                </p>
+              )}
 
-            {destinationSearchError && (
-              <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
-                {destinationSearchError}
-              </p>
-            )}
+              {destinationSearchError && (
+                <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
+                  {destinationSearchError}
+                </p>
+              )}
 
-            {destinationSearchResults.length > 0 && (
-              <ul className={responsiveStyles.selectableList}>
-                {destinationSearchResults.map((patient) => {
-                  const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
+              {destinationSearchResults.length > 0 && (
+                <ul className={responsiveStyles.selectableList}>
+                  {destinationSearchResults.map((patient) => {
+                    const patientName = formatPatientNameFromParts(
+                      patient.firstName,
+                      patient.lastName,
+                    );
 
-                  return (
-                    <li key={patient.id}>
-                      <button
-                        type="button"
-                        onClick={() => addDestinationPatient(patient)}
-                        className={responsiveStyles.selectableItemButton}
-                      >
-                        <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
-                          {patientName}
-                        </p>
-                        <p className="m-0 text-slate-600 dark:text-slate-300">
-                          {patient.address}
-                        </p>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
+                    return (
+                      <li key={patient.id}>
+                        <button
+                          type="button"
+                          onClick={() => addDestinationPatient(patient)}
+                          className={responsiveStyles.selectableItemButton}
+                        >
+                          <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
+                            {patientName}
+                          </p>
+                          <p className="m-0 text-slate-600 dark:text-slate-300">
+                            {patient.address}
+                          </p>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
             </section>
           )}
 
-          {isPatientsStepVisible && result && !isDestinationListExpanded ? (
+          {isPatientsStepVisible && !isDestinationListExpanded && selectedDestinations.length > 0 ? (
             <section className={responsiveStyles.panel}>
               <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
-                {destinationCount} patient{destinationCount === 1 ? "" : "s"} selected —{" "}
+                {destinationCount} patient{destinationCount === 1 ? "" : "s"}{" "}
+                selected —{" "}
                 <button
                   type="button"
                   onClick={() => setIsDestinationListExpanded(true)}
@@ -981,9 +1088,14 @@ function RoutePlanner({
               onToggleDestinationDetails={toggleDestinationDetails}
               onRemoveDestinationVisit={removeDestinationVisit}
               onSetDestinationVisitIncluded={setDestinationVisitIncluded}
-              onUpdateDestinationPlanningWindow={updateDestinationPlanningWindow}
-              onSetDestinationPersistPlanningWindow={setDestinationPersistPlanningWindow}
+              onUpdateDestinationPlanningWindow={
+                updateDestinationPlanningWindow
+              }
+              onSetDestinationPersistPlanningWindow={
+                setDestinationPersistPlanningWindow
+              }
               onContinueToReview={() => setActiveMobileStep("review")}
+              onCollapse={() => setIsDestinationListExpanded(false)}
             />
           )}
 
@@ -1039,7 +1151,11 @@ function RoutePlanner({
                     aria-hidden="true"
                   />
                 )}
-                {isLoading ? "Optimizing..." : result ? "Re-optimize Route" : "Optimize Route"}
+                {isLoading
+                  ? "Optimizing..."
+                  : result
+                    ? "Re-optimize Route"
+                    : "Optimize Route"}
               </button>
             </div>
           )}
@@ -1071,9 +1187,19 @@ function RoutePlanner({
             latenessWarningsDismissed={latenessWarningsDismissed}
             onDismissLatenessWarnings={() => setLatenessWarningsDismissed(true)}
             expandedResultTaskIds={expandedResultTaskIds}
-            onToggleResultTask={(taskId) => setExpandedResultTaskIds((current) => ({ ...current, [taskId]: !current[taskId] }))}
+            onToggleResultTask={(taskId) =>
+              setExpandedResultTaskIds((current) => ({
+                ...current,
+                [taskId]: !current[taskId],
+              }))
+            }
             expandedResultEndingStopIds={expandedResultEndingStopIds}
-            onToggleResultEndingStop={(stopId) => setExpandedResultEndingStopIds((current) => ({ ...current, [stopId]: !current[stopId] }))}
+            onToggleResultEndingStop={(stopId) =>
+              setExpandedResultEndingStopIds((current) => ({
+                ...current,
+                [stopId]: !current[stopId],
+              }))
+            }
             normalizedHomeAddress={normalizedHomeAddress}
           />
         )}

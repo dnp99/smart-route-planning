@@ -13,6 +13,7 @@ type TaskResult = OrderedStop["tasks"][number];
 type OptimizedStopCardProps = {
   task: TaskResult;
   stop: OrderedStop;
+  stopLabel: string;
   isExpanded: boolean;
   onToggle: () => void;
 };
@@ -20,6 +21,7 @@ type OptimizedStopCardProps = {
 export function OptimizedStopCard({
   task,
   stop,
+  stopLabel,
   isExpanded,
   onToggle,
 }: OptimizedStopCardProps) {
@@ -82,7 +84,7 @@ export function OptimizedStopCard({
           className="block min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-base font-semibold text-slate-900 dark:text-slate-100"
           title={formattedPatientName}
         >
-          {formattedPatientName}
+          {stopLabel}. {formattedPatientName}
         </span>
         <span
           className={`inline-flex shrink-0 items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] ${status.chipClass}`}
@@ -141,6 +143,7 @@ export function OptimizedStopCard({
 
 type EndingStopCardProps = {
   stop: OrderedStop;
+  stopLabel: string;
   isExpanded: boolean;
   onToggle: () => void;
   isHomeEndingPoint: boolean;
@@ -148,6 +151,7 @@ type EndingStopCardProps = {
 
 export function EndingStopCard({
   stop,
+  stopLabel: _stopLabel,
   isExpanded,
   onToggle,
   isHomeEndingPoint,
@@ -167,9 +171,11 @@ export function EndingStopCard({
         >
           {isHomeEndingPoint ? "Home" : stop.address}
         </span>
-        <span className="inline-flex shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-          {isHomeEndingPoint ? "Home stop" : "End"}
-        </span>
+        {!isHomeEndingPoint && (
+          <span className="inline-flex shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            End
+          </span>
+        )}
       </button>
 
       {isHomeEndingPoint && (() => {

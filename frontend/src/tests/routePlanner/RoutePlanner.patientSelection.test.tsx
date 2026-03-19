@@ -326,6 +326,8 @@ describe("RoutePlanner patient selection integration", () => {
   it("prefills start and end addresses from nurse home address", () => {
     render(<RoutePlanner nurseHomeAddress="1 Home Way, Mississauga, ON" />);
 
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
     expect(screen.getByLabelText("Starting point")).toHaveProperty(
       "value",
       "1 Home Way, Mississauga, ON",
@@ -353,6 +355,8 @@ describe("RoutePlanner patient selection integration", () => {
     );
 
     render(<RoutePlanner nurseHomeAddress="1 Home Way, Mississauga, ON" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
     expect(screen.getByLabelText("Starting point")).toHaveProperty("value", "Draft Start");
     expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "Draft End");
