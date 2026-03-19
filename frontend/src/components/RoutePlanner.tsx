@@ -757,19 +757,32 @@ function RoutePlanner({
       return;
     }
 
+    // Extract the planning date from the result's departure time. The ISO string
+    // encodes the local planning timezone, so the date portion is correct as-is.
+    const planningDate = result.start.departureTime.slice(0, 10);
+
+    const destByVisitKey = new Map(
+      selectedDestinations.map((d) => [d.visitKey, d]),
+    );
+
     const destinationsInManualOrder = manuallyOrderedStops
       .filter((stop) => !stop.isEndingPoint && stop.tasks.length > 0)
       .flatMap((stop) =>
-        stop.tasks.map((task) => ({
-          patientId: task.patientId,
-          patientName: task.patientName,
-          address: task.address,
-          googlePlaceId: task.googlePlaceId ?? null,
-          windowStart: task.windowStart,
-          windowEnd: task.windowEnd,
-          windowType: task.windowType,
-          serviceDurationMinutes: task.serviceDurationMinutes,
-        })),
+        stop.tasks.flatMap((task) => {
+          const dest = destByVisitKey.get(`${task.patientId}:${task.visitId}`);
+          if (!dest || !dest.isIncluded) {
+            return [];
+          }
+          const {
+            visitKey: _visitKey,
+            sourceWindowId: _sourceWindowId,
+            requiresPlanningWindow: _requiresPlanningWindow,
+            isIncluded: _isIncluded,
+            persistPlanningWindow: _persistPlanningWindow,
+            ...destination
+          } = dest;
+          return [destination];
+        }),
       );
 
     if (destinationsInManualOrder.length === 0) {
@@ -785,6 +798,7 @@ function RoutePlanner({
         : {}),
       destinations: destinationsInManualOrder,
       canOptimize,
+      planningDate,
       preserveOrder: true,
     });
   };
@@ -1228,7 +1242,7 @@ function RoutePlanner({
           <OptimizedRouteResult
             result={result}
             orderedStops={manuallyOrderedStops}
-            routeLegs={isManualOrderStale ? [] : result.routeLegs}
+            routeLegs={result.routeLegs}
             isManualOrderStale={isManualOrderStale}
             onMoveStop={moveStop}
             canMoveStop={canMoveStop}

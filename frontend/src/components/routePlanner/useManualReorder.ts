@@ -47,7 +47,21 @@ const haversineDistanceKm = (from: Coords, to: Coords) => {
 
 const roundDistanceKm = (value: number) => Number(value.toFixed(2));
 
-const formatWindowStartMs = (referenceMs: number, windowStart: string) => {
+const extractUtcOffset = (isoString: string): string => {
+  const match = /([+-]\d{2}:\d{2})$/.exec(isoString);
+  return match ? match[1] : "+00:00";
+};
+
+const parseUtcOffsetMs = (offset: string): number => {
+  const match = /^([+-])(\d{2}):(\d{2})$/.exec(offset);
+  if (!match) return 0;
+  const sign = match[1] === "+" ? 1 : -1;
+  const h = Number(match[2]);
+  const m = Number(match[3]);
+  return sign * (h * 60 + m) * 60_000;
+};
+
+const formatWindowStartMs = (referenceMs: number, windowStart: string, utcOffset: string) => {
   const [hoursPart, minutesPart] = windowStart.split(":");
   const hours = Number(hoursPart);
   const minutes = Number(minutesPart);
@@ -55,10 +69,17 @@ const formatWindowStartMs = (referenceMs: number, windowStart: string) => {
     return referenceMs;
   }
 
-  const reference = new Date(referenceMs);
-  const windowStartDate = new Date(reference);
-  windowStartDate.setHours(hours, minutes, 0, 0);
-  const candidate = windowStartDate.getTime();
+  // Reconstruct the window-start time in the planning timezone by building an
+  // ISO string with the same offset as the result timestamps, avoiding any
+  // dependence on the browser's local timezone.
+  const offsetMs = parseUtcOffsetMs(utcOffset);
+  const refInPlanningZone = new Date(referenceMs + offsetMs);
+  const year = refInPlanningZone.getUTCFullYear();
+  const month = String(refInPlanningZone.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(refInPlanningZone.getUTCDate()).padStart(2, "0");
+  const hh = String(hours).padStart(2, "0");
+  const mm = String(minutes).padStart(2, "0");
+  const candidate = new Date(`${year}-${month}-${day}T${hh}:${mm}:00${utcOffset}`).getTime();
 
   return candidate > referenceMs ? candidate : referenceMs;
 };
@@ -112,6 +133,7 @@ const estimateStops = (
     return orderedStops;
   }
 
+  const utcOffset = extractUtcOffset(resultStart.departureTime);
   let cursorMs = departureMs;
   let previousCoords: Coords = startCoords;
 
@@ -132,7 +154,7 @@ const estimateStops = (
       const arrivalTimeMs = stopCursorMs;
       const serviceStartMs =
         task.windowStart && task.windowStart.length > 0
-          ? formatWindowStartMs(arrivalTimeMs, task.windowStart)
+          ? formatWindowStartMs(arrivalTimeMs, task.windowStart, utcOffset)
           : arrivalTimeMs;
       const serviceDurationMs = Math.max(
         0,
