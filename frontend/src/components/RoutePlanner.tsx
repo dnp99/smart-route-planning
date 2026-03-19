@@ -1,13 +1,11 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import AddressAutocompleteInput from "./AddressAutocompleteInput";
-import RouteMap from "./RouteMap";
 import { responsiveStyles } from "./responsiveStyles";
 import type { Patient, VisitTimeType } from "../../../shared/contracts";
 import { usePatientSearch } from "./routePlanner/usePatientSearch";
 import { useRouteOptimization } from "./routePlanner/useRouteOptimization";
 import { persistPlanningWindows } from "./routePlanner/routePlannerService";
-import { formatDuration, buildGoogleMapsTripUrl } from "./routePlanner/routePlannerUtils";
 import { SelectedDestinationsSection } from "./routePlanner/SelectedDestinationsSection";
 import type { SelectedPatientDestination } from "./routePlanner/routePlannerTypes";
 import type { AddressSuggestion } from "./types";
@@ -23,52 +21,25 @@ import {
   validateForm,
 } from "./patients/patientForm";
 import { createPatient } from "./patients/patientService";
-
-type MobilePlannerStep = "trip" | "patients" | "review";
+import {
+  type MobilePlannerStep,
+  readRoutePlannerDraft,
+  persistRoutePlannerDraft,
+} from "./routePlanner/routePlannerDraft";
+import { timeToMinutes } from "./routePlanner/routePlannerResultUtils";
+import { OptimizedRouteResult } from "./routePlanner/OptimizedRouteResult";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
-const ROUTE_PLANNER_DRAFT_STORAGE_KEY = "careflow.route-planner.draft.v1";
 const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
-
-type RoutePlannerDraft = {
-  version: 1;
-  startAddress: string;
-  manualEndAddress: string;
-  startGooglePlaceId: string | null;
-  manualEndGooglePlaceId: string | null;
-  activeMobileStep: MobilePlannerStep;
-  selectedDestinations: SelectedPatientDestination[];
-};
 
 const toWindowTime = (value: string) => value.slice(0, 5);
 const HH_MM_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
-const timeToMinutes = (value: string) => {
-  const [hoursString, minutesString] = value.split(":");
-  return Number(hoursString) * 60 + Number(minutesString);
-};
-
-const normalizeAddressForComparison = (value: string) =>
-  value.trim().toLowerCase().replace(/\s+/g, " ");
-
-const addressesMatch = (leftAddress: string, rightAddress: string) => {
-  const normalizedLeft = normalizeAddressForComparison(leftAddress);
-  const normalizedRight = normalizeAddressForComparison(rightAddress);
-  return normalizedLeft.length > 0 && normalizedLeft === normalizedRight;
-};
 
 const hasCompleteWindow = (destination: SelectedPatientDestination) =>
   HH_MM_PATTERN.test(destination.windowStart) && HH_MM_PATTERN.test(destination.windowEnd);
 
 const hasAnyWindowBoundary = (destination: SelectedPatientDestination) =>
   destination.windowStart.trim().length > 0 || destination.windowEnd.trim().length > 0;
-
-const windowsOverlap = (
-  left: Pick<SelectedPatientDestination, "windowStart" | "windowEnd">,
-  right: Pick<SelectedPatientDestination, "windowStart" | "windowEnd">,
-) =>
-  timeToMinutes(left.windowStart) < timeToMinutes(right.windowEnd) &&
-  timeToMinutes(right.windowStart) < timeToMinutes(left.windowEnd);
 
 const toSelectedPatientDestinations = (
   patient: Patient,
@@ -132,66 +103,6 @@ const toSelectedPatientDestinations = (
   ];
 };
 
-const unscheduledReasonLabels = {
-  fixed_window_unreachable: "Cannot be reached before the fixed window ends.",
-  invalid_window: "The visit window is invalid.",
-  duration_exceeds_window: "Service duration is longer than the window.",
-  insufficient_day_capacity: "Not enough day capacity for this visit.",
-} as const;
-
-const formatVisitDurationMinutes = (minutes: number) => {
-  if (
-    typeof minutes !== "number" ||
-    minutes !== minutes ||
-    minutes === Infinity ||
-    minutes === -Infinity ||
-    minutes <= 0
-  ) {
-    return "";
-  }
-
-  const wholeMinutes = Math.round(minutes);
-  const hours = Math.floor(wholeMinutes / 60);
-  const remainingMinutes = wholeMinutes % 60;
-
-  if (hours === 0) {
-    return `${wholeMinutes} min`;
-  }
-
-  if (remainingMinutes === 0) {
-    return hours === 1 ? "1 hr" : `${hours} hrs`;
-  }
-
-  const hourLabel = hours === 1 ? "1 hr" : `${hours} hrs`;
-  return `${hourLabel} ${remainingMinutes} min`;
-};
-
-const expectedStartTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: true,
-});
-
-const formatExpectedStartTimeText = (serviceStartTime: string) => {
-  const parsedDate = new Date(serviceStartTime);
-  const parsedTimeMs = parsedDate.getTime();
-  if (parsedTimeMs !== parsedTimeMs) {
-    return "";
-  }
-
-  return `Expected start time ${expectedStartTimeFormatter.format(parsedDate)}`;
-};
-
-const BREAK_GAP_THRESHOLD_MINUTES = 60;
-
-const formatBreakGap = (minutes: number): string => {
-  const h = Math.floor(minutes / 60);
-  const m = Math.round(minutes % 60);
-  if (h === 0) return `${m}m`;
-  if (m === 0) return `${h}h`;
-  return `${h}h ${m}m`;
-};
-
 const formatPatientListLabel = (destinations: SelectedPatientDestination[]) => {
   const names = [...new Set(
     destinations
@@ -231,132 +142,6 @@ const patientMatchesSearchQuery = (patient: Patient, query: string) => {
     lastName.indexOf(normalizedQuery) !== -1 ||
     address.indexOf(normalizedQuery) !== -1
   );
-};
-
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null;
-
-const isWindowType = (value: unknown): value is "fixed" | "flexible" =>
-  value === "fixed" || value === "flexible";
-
-const isMobilePlannerStep = (value: unknown): value is MobilePlannerStep =>
-  value === "trip" || value === "patients" || value === "review";
-
-const parseSelectedPatientDestination = (
-  value: unknown,
-): SelectedPatientDestination | null => {
-  if (!isRecord(value)) {
-    return null;
-  }
-
-  if (
-    typeof value.visitKey !== "string" ||
-    (value.sourceWindowId !== null && typeof value.sourceWindowId !== "string") ||
-    typeof value.patientId !== "string" ||
-    typeof value.patientName !== "string" ||
-    typeof value.address !== "string" ||
-    (value.googlePlaceId !== null && typeof value.googlePlaceId !== "string") ||
-    typeof value.windowStart !== "string" ||
-    typeof value.windowEnd !== "string" ||
-    !isWindowType(value.windowType) ||
-    typeof value.serviceDurationMinutes !== "number" ||
-    value.serviceDurationMinutes !== value.serviceDurationMinutes ||
-    value.serviceDurationMinutes === Infinity ||
-    value.serviceDurationMinutes === -Infinity ||
-    typeof value.requiresPlanningWindow !== "boolean" ||
-    typeof value.isIncluded !== "boolean" ||
-    typeof value.persistPlanningWindow !== "boolean"
-  ) {
-    return null;
-  }
-
-  return {
-    visitKey: value.visitKey,
-    sourceWindowId: value.sourceWindowId,
-    patientId: value.patientId,
-    patientName: value.patientName,
-    address: value.address,
-    googlePlaceId: value.googlePlaceId,
-    windowStart: value.windowStart,
-    windowEnd: value.windowEnd,
-    windowType: value.windowType,
-    serviceDurationMinutes: value.serviceDurationMinutes,
-    requiresPlanningWindow: value.requiresPlanningWindow,
-    isIncluded: value.isIncluded,
-    persistPlanningWindow: value.persistPlanningWindow,
-  };
-};
-
-const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const rawValue = window.localStorage.getItem(ROUTE_PLANNER_DRAFT_STORAGE_KEY);
-    if (!rawValue) {
-      return null;
-    }
-
-    const parsed = JSON.parse(rawValue) as unknown;
-    if (!isRecord(parsed) || parsed.version !== 1) {
-      return null;
-    }
-
-    if (
-      typeof parsed.startAddress !== "string" ||
-      typeof parsed.manualEndAddress !== "string" ||
-      (parsed.startGooglePlaceId !== null &&
-        typeof parsed.startGooglePlaceId !== "string") ||
-      (parsed.manualEndGooglePlaceId !== null &&
-        typeof parsed.manualEndGooglePlaceId !== "string") ||
-      !isMobilePlannerStep(parsed.activeMobileStep) ||
-      !Array.isArray(parsed.selectedDestinations)
-    ) {
-      return null;
-    }
-
-    const selectedDestinations = parsed.selectedDestinations
-      .map(parseSelectedPatientDestination)
-      .filter(
-        (destination): destination is SelectedPatientDestination => destination !== null,
-      );
-
-    if (selectedDestinations.length !== parsed.selectedDestinations.length) {
-      return null;
-    }
-
-    return {
-      version: 1,
-      startAddress: parsed.startAddress,
-      manualEndAddress: parsed.manualEndAddress,
-      startGooglePlaceId: parsed.startGooglePlaceId,
-      manualEndGooglePlaceId: parsed.manualEndGooglePlaceId,
-      activeMobileStep: parsed.activeMobileStep,
-      selectedDestinations,
-    };
-  } catch {
-    return null;
-  }
-};
-
-const persistRoutePlannerDraft = (draft: RoutePlannerDraft) => {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.setItem(
-    ROUTE_PLANNER_DRAFT_STORAGE_KEY,
-    JSON.stringify(draft),
-  );
-};
-
-const clearRoutePlannerDraft = () => {
-  if (typeof window === "undefined") {
-    return;
-  }
-
-  window.localStorage.removeItem(ROUTE_PLANNER_DRAFT_STORAGE_KEY);
 };
 
 type RoutePlannerProps = {
@@ -416,7 +201,9 @@ function RoutePlanner({
   const [expandedResultEndingStopIds, setExpandedResultEndingStopIds] = useState<
     Record<string, boolean>
   >({});
-  const [warningsDismissed, setWarningsDismissed] = useState(false);
+  const [conflictWarningsDismissed, setConflictWarningsDismissed] = useState(false);
+  const [latenessWarningsDismissed, setLatenessWarningsDismissed] = useState(false);
+  const [isDestinationListExpanded, setIsDestinationListExpanded] = useState(true);
   const selectedCreateVisitType =
     createPatientFormValues.visitWindows[0]?.visitTimeType ?? "flexible";
 
@@ -437,6 +224,12 @@ function RoutePlanner({
     hasAttemptedOptimize,
     optimizeRoute,
   } = useRouteOptimization();
+
+  useEffect(() => {
+    if (result) {
+      setIsDestinationListExpanded(false);
+    }
+  }, [result]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -602,96 +395,14 @@ function RoutePlanner({
 
   const isHomeAddressMissing = normalizedHomeAddress.length === 0;
 
-  const googleMapsTripUrl = useMemo(() => {
-    if (!result) {
-      return null;
-    }
-
-    return buildGoogleMapsTripUrl(result);
-  }, [result]);
-
   useEffect(() => {
-    setWarningsDismissed(false);
-  }, [result]);
-
-  const hasIntermediateStops = useMemo(
-    () => Boolean(result?.orderedStops.some((stop) => !stop.isEndingPoint)),
-    [result],
-  );
-
-  const leaveBySuggestion = useMemo(() => {
-    if (!result) {
-      return null;
-    }
-
-    const firstScheduledStop = result.orderedStops.find(
-      (stop) => !stop.isEndingPoint && stop.tasks.length > 0,
-    );
-    if (!firstScheduledStop) {
-      return null;
-    }
-
-    const [firstTask] = firstScheduledStop.tasks;
-    if (!firstTask) {
-      return null;
-    }
-
-    const firstTaskStartMs = new Date(firstTask.serviceStartTime).getTime();
-    if (firstTaskStartMs !== firstTaskStartMs) {
-      return null;
-    }
-
-    const startLeg = result.routeLegs.find(
-      (leg) => leg.fromStopId === "start" && leg.toStopId === firstScheduledStop.stopId,
-    );
-    const travelSecondsFromStart =
-      startLeg?.durationSeconds ?? firstScheduledStop.durationFromPreviousSeconds;
-    const leaveByMs = firstTaskStartMs - Math.max(0, travelSecondsFromStart) * 1000;
-    if (leaveByMs !== leaveByMs) {
-      return null;
-    }
-
-    const leaveByDate = new Date(leaveByMs);
-    return {
-      label: new Intl.DateTimeFormat(undefined, {
-        weekday: "short",
-        month: "short",
-        day: "2-digit",
-        hour: "numeric",
-        minute: "2-digit",
-      }).format(leaveByDate),
-      travelDurationLabel: formatDuration(Math.max(0, travelSecondsFromStart)),
-      firstPatientName: formatNameWords(firstTask.patientName),
-    };
+    setConflictWarningsDismissed(false);
+    setLatenessWarningsDismissed(false);
   }, [result]);
 
   const requestDestinations = useMemo(() => {
     return selectedDestinations.filter((destination) => destination.isIncluded);
   }, [selectedDestinations]);
-
-  const overlappingVisitPairCount = useMemo(() => {
-    let pairCount = 0;
-
-    for (let leftIndex = 0; leftIndex < requestDestinations.length; leftIndex += 1) {
-      const left = requestDestinations[leftIndex];
-      if (!left || !hasCompleteWindow(left)) {
-        continue;
-      }
-
-      for (let rightIndex = leftIndex + 1; rightIndex < requestDestinations.length; rightIndex += 1) {
-        const right = requestDestinations[rightIndex];
-        if (!right || !hasCompleteWindow(right)) {
-          continue;
-        }
-
-        if (windowsOverlap(left, right)) {
-          pairCount += 1;
-        }
-      }
-    }
-
-    return pairCount;
-  }, [requestDestinations]);
 
   const handleStartAddressChange = (value: string) => {
     setStartAddress(value);
@@ -1248,18 +959,33 @@ function RoutePlanner({
             </section>
           )}
 
-          <SelectedDestinationsSection
-            isVisible={isPatientsStepVisible}
-            isMobileViewport={isMobileViewport}
-            selectedDestinations={selectedDestinations}
-            expandedDestinationVisitKeys={expandedDestinationVisitKeys}
-            onToggleDestinationDetails={toggleDestinationDetails}
-            onRemoveDestinationVisit={removeDestinationVisit}
-            onSetDestinationVisitIncluded={setDestinationVisitIncluded}
-            onUpdateDestinationPlanningWindow={updateDestinationPlanningWindow}
-            onSetDestinationPersistPlanningWindow={setDestinationPersistPlanningWindow}
-            onContinueToReview={() => setActiveMobileStep("review")}
-          />
+          {isPatientsStepVisible && result && !isDestinationListExpanded ? (
+            <section className={responsiveStyles.panel}>
+              <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+                {destinationCount} patient{destinationCount === 1 ? "" : "s"} selected —{" "}
+                <button
+                  type="button"
+                  onClick={() => setIsDestinationListExpanded(true)}
+                  className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+                >
+                  Edit
+                </button>
+              </p>
+            </section>
+          ) : (
+            <SelectedDestinationsSection
+              isVisible={isPatientsStepVisible}
+              isMobileViewport={isMobileViewport}
+              selectedDestinations={selectedDestinations}
+              expandedDestinationVisitKeys={expandedDestinationVisitKeys}
+              onToggleDestinationDetails={toggleDestinationDetails}
+              onRemoveDestinationVisit={removeDestinationVisit}
+              onSetDestinationVisitIncluded={setDestinationVisitIncluded}
+              onUpdateDestinationPlanningWindow={updateDestinationPlanningWindow}
+              onSetDestinationPersistPlanningWindow={setDestinationPersistPlanningWindow}
+              onContinueToReview={() => setActiveMobileStep("review")}
+            />
+          )}
 
           {isReviewStepVisible && isMobileViewport && (
             <section className={responsiveStyles.mobileReviewCard}>
@@ -1272,11 +998,6 @@ function RoutePlanner({
                   ? " • ending point missing"
                   : ""}
               </p>
-              {overlappingVisitPairCount > 0 && (
-                <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
-                  {overlappingVisitPairCount} overlap pair(s) detected.
-                </p>
-              )}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -1302,11 +1023,6 @@ function RoutePlanner({
                 isMobileViewport ? responsiveStyles.stickyFooter : ""
               }`}
             >
-            {!isMobileViewport && overlappingVisitPairCount > 0 && (
-              <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
-                {overlappingVisitPairCount} overlap pair(s) detected.
-              </p>
-            )}
             <span className={responsiveStyles.countPill}>
               {destinationCount} destination(s) detected
             </span>
@@ -1323,7 +1039,7 @@ function RoutePlanner({
                   aria-hidden="true"
                 />
               )}
-              {isLoading ? "Optimizing..." : "Optimize Route"}
+              {isLoading ? "Optimizing..." : result ? "Re-optimize Route" : "Optimize Route"}
             </button>
             </div>
           )}
@@ -1348,402 +1064,18 @@ function RoutePlanner({
         )}
 
         {result && (
-          <section className={`mt-4 ${responsiveStyles.surfaceCard}`}>
-            <div className={responsiveStyles.resultHeader}>
-              <h2 className="m-0 text-lg font-semibold text-slate-900 dark:text-slate-100">
-                Optimized Route
-              </h2>
-              <p className="m-0 text-sm text-slate-500 dark:text-slate-400">
-                Review the route summary below, or open it in Google Maps for
-                live navigation.
-              </p>
-            </div>
-
-            {googleMapsTripUrl && (
-              <div className={responsiveStyles.resultCtaStack}>
-                <a
-                  href={googleMapsTripUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className={responsiveStyles.googleMapsButton}
-                >
-                  Open Planned Trip in Google Maps
-                </a>
-                <div className={responsiveStyles.resultInfoNote}>
-                  <span
-                    aria-hidden="true"
-                    className="mt-0.5 inline-flex h-4 w-4 flex-none items-center justify-center rounded-full border border-slate-300 text-[10px] font-bold text-slate-500 dark:border-slate-600 dark:text-slate-400"
-                  >
-                    i
-                  </span>
-                  <p className="m-0">
-                    Google Maps may show a different ETA based on live traffic.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            <div className={responsiveStyles.resultStatsGrid}>
-              <div className={responsiveStyles.resultStatCard}>
-                <p className={responsiveStyles.resultStatLabel}>Distance</p>
-                <p className={responsiveStyles.resultStatValue}>
-                  {result.metrics.totalDistanceKm} km
-                </p>
-                <p className={responsiveStyles.resultStatMeta}>
-                  Total planned driving distance
-                </p>
-              </div>
-              <div className={responsiveStyles.resultStatCard}>
-                <p className={responsiveStyles.resultStatLabel}>
-                  Estimated Time
-                </p>
-                <p className={responsiveStyles.resultStatValue}>
-                  {formatDuration(result.metrics.totalDurationSeconds)}
-                </p>
-                <p className={responsiveStyles.resultStatMeta}>
-                  Excludes live traffic adjustments
-                </p>
-              </div>
-            </div>
-
-            {leaveBySuggestion && (
-              <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-200">
-                <p className="m-0 font-semibold">Suggested leave-by: {leaveBySuggestion.label}</p>
-                <p className="m-0 text-xs text-emerald-700 dark:text-emerald-300">
-                  Based on the first planned visit ({leaveBySuggestion.firstPatientName}) and a{" "}
-                  {leaveBySuggestion.travelDurationLabel} drive from the starting point.
-                </p>
-              </div>
-            )}
-
-            {result.warnings && result.warnings.length > 0 && !warningsDismissed && (() => {
-              const conflictWarnings = result.warnings.filter((w) => w.type === "window_conflict");
-              const latenessWarnings = result.warnings.filter((w) => w.type !== "window_conflict");
-              const dismissButton = (
-                <button
-                  type="button"
-                  aria-label="Dismiss warnings"
-                  onClick={() => setWarningsDismissed(true)}
-                  className="shrink-0 text-current opacity-60 hover:opacity-100"
-                >
-                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                  </svg>
-                </button>
-              );
-              return (
-                <div className="mt-3 space-y-2">
-                  {conflictWarnings.length > 0 && (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/70 dark:bg-amber-950/30">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="m-0 text-sm font-semibold text-amber-800 dark:text-amber-200">
-                          Scheduling {conflictWarnings.length === 1 ? "Conflict" : "Conflicts"}
-                        </p>
-                        {latenessWarnings.length === 0 && dismissButton}
-                      </div>
-                      <ul className="m-0 mt-1 space-y-0.5 pl-4">
-                        {conflictWarnings.map((warning) => (
-                          <li
-                            key={warning.type === "window_conflict" ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}` : `${warning.type}:${warning.patientId}`}
-                            className="text-xs text-amber-700 dark:text-amber-300"
-                          >
-                            {warning.message}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  {latenessWarnings.length > 0 && (
-                    <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 dark:border-red-900/70 dark:bg-red-950/30">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="m-0 text-sm font-semibold text-red-800 dark:text-red-200">
-                          Lateness {latenessWarnings.length === 1 ? "Warning" : "Warnings"}
-                        </p>
-                        {dismissButton}
-                      </div>
-                      <ul className="m-0 mt-1 space-y-0.5 pl-4">
-                        {latenessWarnings.map((warning) => (
-                          <li
-                            key={warning.type === "window_conflict" ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}` : `${warning.type}:${warning.patientId}`}
-                            className="text-xs text-red-700 dark:text-red-300"
-                          >
-                            {warning.message}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            <RouteMap
-              start={result.start}
-              orderedStops={result.orderedStops}
-              routeLegs={result.routeLegs}
-            />
-
-            <div className={responsiveStyles.resultEndpoints}>
-              <div className={responsiveStyles.resultEndpointCard}>
-                <p className={responsiveStyles.resultEndpointLabel}>Start</p>
-                <p className={responsiveStyles.resultEndpointValue}>
-                  {result.start.address}
-                </p>
-              </div>
-              <div className={responsiveStyles.resultEndpointCard}>
-                <p className={responsiveStyles.resultEndpointLabel}>End</p>
-                <p className={responsiveStyles.resultEndpointValue}>
-                  {result.end.address}
-                </p>
-              </div>
-            </div>
-
-            {hasIntermediateStops && (
-              <ol className="mb-0 mt-2 list-decimal space-y-2 pl-4 sm:pl-5">
-                {result.orderedStops.map((stop, stopIndex) => {
-                  const prevStop = stopIndex > 0 ? result.orderedStops[stopIndex - 1] : null;
-                  let idleGapMinutes = 0;
-                  let breakStartMs = 0;
-                  let breakEndMs = 0;
-                  if (prevStop && !stop.isEndingPoint && stop.tasks.length > 0) {
-                    const prevDepartureMs = new Date(prevStop.departureTime).getTime();
-                    const nextServiceStartMs = new Date(stop.tasks[0].serviceStartTime).getTime();
-                    const travelMs = stop.durationFromPreviousSeconds * 1000;
-                    idleGapMinutes = (nextServiceStartMs - prevDepartureMs - travelMs) / 60000;
-                    breakStartMs = prevDepartureMs;
-                    breakEndMs = nextServiceStartMs - travelMs;
-                  }
-                  const showBreakCard = idleGapMinutes >= BREAK_GAP_THRESHOLD_MINUTES;
-
-                  return (
-                  <Fragment key={stop.stopId}>
-                  {showBreakCard && (
-                    <div className="flex justify-center py-1">
-                      <div className="flex items-center gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 dark:border-amber-800/40 dark:bg-amber-950/30">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400"
-                          aria-hidden="true"
-                        >
-                          <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
-                          <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
-                          <line x1="6" y1="2" x2="6" y2="4" />
-                          <line x1="10" y1="2" x2="10" y2="4" />
-                          <line x1="14" y1="2" x2="14" y2="4" />
-                        </svg>
-                        <div className="flex flex-col">
-                          <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-                            ~ {formatBreakGap(idleGapMinutes)} break
-                          </span>
-                          <span className="text-[11px] text-amber-600 dark:text-amber-400">
-                            {expectedStartTimeFormatter.format(new Date(breakStartMs))} – {expectedStartTimeFormatter.format(new Date(breakEndMs))}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <li
-                    className="text-sm text-slate-800 dark:text-slate-200"
-                  >
-                    {stop.tasks.length > 0 ? (
-                      <div className="space-y-2">
-                        {stop.tasks.map((task) => {
-                          const formattedPatientName = formatNameWords(task.patientName);
-                          const expectedStartLabel = formatExpectedStartTimeText(
-                            task.serviceStartTime,
-                          );
-                          const detailsKey = `${task.visitId}`;
-                          const isDetailsExpanded = Boolean(expandedResultTaskIds[detailsKey]);
-
-                          return (
-                            <div
-                              key={task.visitId}
-                              className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40"
-                            >
-                              <button
-                                type="button"
-                                aria-label={`Toggle details for ${formattedPatientName}`}
-                                aria-expanded={isDetailsExpanded}
-                                onClick={() => {
-                                  setExpandedResultTaskIds((current) => ({
-                                    ...current,
-                                    [detailsKey]: !current[detailsKey],
-                                  }));
-                                }}
-                                className="m-0 bg-transparent p-0 text-sm font-semibold text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
-                              >
-                                {formattedPatientName}
-                              </button>
-
-                              {expectedStartLabel && (
-                                <p className="m-0 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                                  {expectedStartLabel}
-                                </p>
-                              )}
-
-                              {task.windowStart && task.windowEnd && task.lateBySeconds > 0 && (
-                                <p className={[
-                                  "m-0 text-xs font-semibold",
-                                  task.windowType === "fixed" && task.lateBySeconds > 15 * 60
-                                    ? "text-red-600 dark:text-red-400"
-                                    : task.windowType === "flexible" && task.lateBySeconds > 60 * 60
-                                      ? "text-amber-600 dark:text-amber-400"
-                                      : "text-red-600 dark:text-red-400",
-                                ].join(" ")}>
-                                  Outside preferred window by {Math.ceil(task.lateBySeconds / 60)}{" "}
-                                  min
-                                </p>
-                              )}
-
-                              {isDetailsExpanded && (
-                                <div className="mt-1 space-y-0.5 text-xs text-slate-600 dark:text-slate-300">
-                                  <p className="m-0">Address: {task.address}</p>
-                                  <p className="m-0">
-                                    Preferred window:{" "}
-                                    {task.windowStart && task.windowEnd
-                                      ? `${task.windowStart} - ${task.windowEnd}`
-                                      : "No preferred window"}
-                                  </p>
-                                  <p className="m-0">Visit type: {task.windowType}</p>
-                                  <p className="m-0">
-                                    Duration:{" "}
-                                    {formatVisitDurationMinutes(task.serviceDurationMinutes)}
-                                  </p>
-                                </div>
-                              )}
-
-                              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                {stop.distanceFromPreviousKm} km •{" "}
-                                {formatDuration(stop.durationFromPreviousSeconds)} from previous
-                                stop
-                              </p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <>
-                        {stop.isEndingPoint ? (
-                          (() => {
-                            const endingDetailsKey = `ending:${stop.stopId}`;
-                            const isEndingDetailsExpanded = Boolean(
-                              expandedResultEndingStopIds[endingDetailsKey],
-                            );
-                            const isHomeEndingPoint = addressesMatch(
-                              stop.address,
-                              normalizedHomeAddress,
-                            );
-
-                            return (
-                              <div className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40">
-                                <button
-                                  type="button"
-                                  aria-label={`Toggle details for ${isHomeEndingPoint ? "Home ending point" : "Ending point"}`}
-                                  aria-expanded={isEndingDetailsExpanded}
-                                  onClick={() => {
-                                    setExpandedResultEndingStopIds((current) => ({
-                                      ...current,
-                                      [endingDetailsKey]: !current[endingDetailsKey],
-                                    }));
-                                  }}
-                                  className="m-0 bg-transparent p-0 text-sm font-semibold text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
-                                >
-                                  {isHomeEndingPoint ? "Home" : stop.address}
-                                </button>
-
-                                {isHomeEndingPoint && (() => {
-                                  const arrivalDate = new Date(stop.arrivalTime);
-                                  if (arrivalDate.getTime() !== arrivalDate.getTime()) return null;
-                                  return (
-                                    <p className="m-0 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-                                      You should be home by {expectedStartTimeFormatter.format(arrivalDate)}
-                                    </p>
-                                  );
-                                })()}
-
-                                {isEndingDetailsExpanded && (
-                                  <div className="mt-1 space-y-0.5 text-xs text-slate-600 dark:text-slate-300">
-                                    {isHomeEndingPoint && (
-                                      <p className="m-0">Address: {stop.address}</p>
-                                    )}
-                                    <p className="m-0">Ending Point.</p>
-                                  </div>
-                                )}
-
-                                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                                  {stop.distanceFromPreviousKm} km •{" "}
-                                  {formatDuration(stop.durationFromPreviousSeconds)} from previous
-                                  stop
-                                </p>
-                              </div>
-                            );
-                          })()
-                        ) : (
-                          <>
-                            <span>{stop.address}</span>
-                            <small className="block text-xs font-medium text-blue-600 dark:text-blue-300">
-                              No scheduled visit tasks at this stop.
-                            </small>
-                          </>
-                        )}
-                      </>
-                    )}
-                    {stop.tasks.length === 0 && !stop.isEndingPoint && (
-                      <small className="block text-xs text-slate-500 dark:text-slate-400">
-                        {stop.distanceFromPreviousKm} km •{" "}
-                        {formatDuration(stop.durationFromPreviousSeconds)} from previous stop
-                      </small>
-                    )}
-                  </li>
-                  </Fragment>
-                  );
-                })}
-              </ol>
-            )}
-
-            {result.unscheduledTasks.length > 0 && (
-              <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900/60 dark:bg-amber-950/20">
-                <h3 className="m-0 text-sm font-semibold text-amber-900 dark:text-amber-200">
-                  Unscheduled Visits ({result.unscheduledTasks.length})
-                </h3>
-                <p className="mb-2 mt-1 text-xs text-amber-800 dark:text-amber-300">
-                  These visits could not be placed in the optimized route.
-                </p>
-                <ul className="m-0 space-y-2 pl-4 sm:pl-5">
-                  {result.unscheduledTasks.map((task) => (
-                    <li
-                      key={task.visitId}
-                      className="text-sm text-amber-900 dark:text-amber-200"
-                    >
-                      <p className="m-0 font-medium">
-                        {task.patientName ? formatNameWords(task.patientName) : task.patientId}
-                      </p>
-                      {task.address && (
-                        <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
-                          {task.address}
-                        </p>
-                      )}
-                      {task.windowStart && task.windowEnd && (
-                        <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
-                          {task.windowStart} - {task.windowEnd}
-                          {task.windowType ? ` • ${task.windowType}` : ""}
-                        </p>
-                      )}
-                      <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
-                        Reason: {unscheduledReasonLabels[task.reason]}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
-          </section>
+          <OptimizedRouteResult
+            result={result}
+            conflictWarningsDismissed={conflictWarningsDismissed}
+            onDismissConflictWarnings={() => setConflictWarningsDismissed(true)}
+            latenessWarningsDismissed={latenessWarningsDismissed}
+            onDismissLatenessWarnings={() => setLatenessWarningsDismissed(true)}
+            expandedResultTaskIds={expandedResultTaskIds}
+            onToggleResultTask={(taskId) => setExpandedResultTaskIds((current) => ({ ...current, [taskId]: !current[taskId] }))}
+            expandedResultEndingStopIds={expandedResultEndingStopIds}
+            onToggleResultEndingStop={(stopId) => setExpandedResultEndingStopIds((current) => ({ ...current, [stopId]: !current[stopId] }))}
+            normalizedHomeAddress={normalizedHomeAddress}
+          />
         )}
       </section>
 
