@@ -7,7 +7,7 @@
 - Phase 2: Implemented
 - Phase 3: Implemented
 - Phase 4: Pending
-- Last updated: 2026-03-18
+- Last updated: 2026-03-18 (lunch break + gap indicator added to Phase 4)
 
 ## Objective
 
@@ -189,14 +189,25 @@ Future scope:
 ### Data shape (proposed)
 
 ```ts
+type DaySchedule = {
+  enabled: boolean;
+  start: string; // HH:mm
+  end: string;   // HH:mm
+  lunchBreak?: {
+    enabled: boolean;
+    start: string; // HH:mm
+    end: string;   // HH:mm
+  };
+};
+
 type WeeklyWorkingHours = {
-  monday?: { enabled: boolean; start: string; end: string };
-  tuesday?: { enabled: boolean; start: string; end: string };
-  wednesday?: { enabled: boolean; start: string; end: string };
-  thursday?: { enabled: boolean; start: string; end: string };
-  friday?: { enabled: boolean; start: string; end: string };
-  saturday?: { enabled: boolean; start: string; end: string };
-  sunday?: { enabled: boolean; start: string; end: string };
+  monday?: DaySchedule;
+  tuesday?: DaySchedule;
+  wednesday?: DaySchedule;
+  thursday?: DaySchedule;
+  friday?: DaySchedule;
+  saturday?: DaySchedule;
+  sunday?: DaySchedule;
 };
 ```
 
@@ -208,8 +219,11 @@ Time format: `HH:mm` in nurse timezone.
   - enabled toggle
   - start time
   - end time
+  - optional lunch break sub-section (toggle + start/end times)
 - Validation:
   - end must be after start
+  - lunch start must be after working start, lunch end must be before working end
+  - lunch end must be after lunch start
   - at least one day enabled
 
 ## Optimize Route Integration (Future Phase 4)
@@ -226,12 +240,37 @@ Time format: `HH:mm` in nurse timezone.
 5. If route spills past working hours:
    - keep result if optimizer can still produce sequence.
    - show warning such as `Outside working hours by X min`.
+6. If a lunch break is configured for the day:
+   - The lunch window is a **soft preference**, not a hard block.
+   - Fixed-window patients are never displaced by lunch — if a fixed patient's window falls inside the lunch window, the visit is served and lunch is skipped or shifted automatically.
+   - Flexible and no-window patients are slotted around the lunch window when the schedule permits.
+   - Lunch is only taken if the gap in the schedule is large enough to accommodate it without delaying any remaining patients beyond their tolerance.
+   - No `lunch_conflict` warning is emitted for fixed patients — the optimizer simply skips lunch that day. A soft informational note (`lunch_skipped`) may be surfaced so the nurse is aware.
 
 ### Priority order
 
 1. Hard constraints (fixed windows, explicit visit constraints)
 2. Nurse working-hours bounds
-3. Distance/travel efficiency
+3. Lunch break preference (yields to patient schedule when unavoidable)
+4. Distance/travel efficiency
+
+## Route Gap Indicator (Future)
+
+When the computed route has a gap of more than a configurable threshold (default: 2 hours) between any two consecutive stops, display a visual break card in the stop list between those stops.
+
+### Display
+
+- Shown inline between the two stops in the route result list.
+- Format: `~ Xh Ym break` (e.g. `~ 4h 32m break`).
+- Neutral/muted style — not a warning, just informational.
+- No action required from the nurse.
+
+### Threshold
+
+- Gap threshold: 60 minutes.
+- Only applied in the frontend render layer — no API change needed.
+- Gap = `serviceStartTime(next stop's first task) - departureTime(prevStop) - durationFromPreviousSeconds(next stop)` (true idle time, excluding travel).
+- Not shown before the ending/home stop.
 
 ## Implementation Phases
 
@@ -276,15 +315,22 @@ Time format: `HH:mm` in nurse timezone.
 ### Phase 4: Weekly working-hours schedule + route integration
 
 - Backend:
-  - persist weekly working-hours on nurse profile
+  - persist weekly working-hours (including optional lunch break per day) on nurse profile
   - expose profile schedule read/write API
   - integrate schedule in optimize-route-v2 constraints
+  - block visits during configured lunch break window
+  - emit `lunch_conflict` warning when a fixed patient's window overlaps the lunch break
 - Frontend:
-  - add weekly schedule editor in account settings modal
-  - show planner warnings/errors tied to working-hours constraints
+  - add weekly schedule editor in account settings modal (day rows with working hours + optional lunch break sub-section)
+  - show planner warnings/errors tied to working-hours and lunch break constraints
+  - show route gap indicator card for idle gaps > 2 hours between consecutive stops
 - Acceptance criteria:
   - scheduler uses day-specific working window
   - no-preferred-window patients optimize without manual windows
+  - flexible and no-window patients are routed around the lunch break when the schedule allows it
+  - fixed patients are never displaced by lunch — lunch is skipped automatically when a fixed patient's window conflicts with it
+  - a `lunch_skipped` informational note is surfaced when lunch cannot be taken
+  - route result displays a break card for gaps longer than 2 hours
   - unsupported plans show clear violation messaging
 
 ## Test Plan
@@ -323,6 +369,9 @@ Time format: `HH:mm` in nurse timezone.
   - all flexible/no preferred windows
   - mixed fixed + flexible visits
   - route exceeding working hours
+  - flexible/no-window patients route around lunch break when schedule permits
+  - fixed patient window overlapping lunch break: visit is served, lunch is skipped, `lunch_skipped` note emitted
+  - no lunch taken when it would delay any remaining patient beyond tolerance
 
 ## Rollout Notes
 

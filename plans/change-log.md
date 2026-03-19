@@ -2675,3 +2675,44 @@ After a fixed patient's window closes, the depth-2 lookahead was selecting a far
 ### 86 — Motivation
 
 Nurses asked for a quick at-a-glance answer to "when will I be done for the day?" without having to expand the stop details or mentally add up travel times.
+
+## 87) Route Planner: Break Gap Indicator Between Patient Cards
+
+### 87 — Files updated
+
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/account-settings-and-working-hours-execution-plan.md`
+
+### 87 — Changes
+
+- When the idle gap between consecutive patient stops exceeds 60 minutes, a break indicator card is rendered between the two stop entries in the route list.
+- Gap is computed as `serviceStartTime(next stop's first task) - departureTime(prevStop) - travelSeconds` — true idle time, excluding drive time.
+- Displayed as `~ Xh Ym break` with a horizontal rule style (slate divider lines on both sides of the text).
+- Not shown before the ending/home stop.
+- Threshold constant `BREAK_GAP_THRESHOLD_MINUTES = 60` defined at module level.
+- Plan threshold updated from 2 hours to 60 minutes in `account-settings-and-working-hours-execution-plan.md`.
+
+### 87 — Motivation
+
+Large scheduling gaps (e.g. 4–5 hours between a morning patient and an afternoon patient) are not visually obvious from the stop list alone. The break indicator makes it immediately clear to the nurse that she has free time and can go home to rest before her next visit.
+
+## 88) Optimizer: Earliest Deadline First (EDF) for Flexible Patients
+
+### 88 — Files updated
+
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+
+### 88 — Changes
+
+- Added `FLEXIBLE_URGENCY_THRESHOLD_SECONDS = 90 * 60` (90 minutes).
+- Added `flexibleUrgencySeconds` dimension to `ProjectionScore`. For each flexible-windowed patient, urgency = `max(0, min(THRESHOLD, THRESHOLD - slackSeconds))`. Patients with > 90 min slack contribute 0; patients near their deadline contribute up to `THRESHOLD`. Already-late patients (negative slack) contribute the full `THRESHOLD`.
+- `addScores`, `ZERO_SCORE`, and `compareScores` updated to include `flexibleUrgencySeconds` ranked after `totalLateSeconds` but before `totalWaitSeconds`.
+- `scoreProjection` computes `flexibleUrgencySeconds` from `slackSeconds`.
+- Added `lateFlexibleProjections` primary-selection tier (mirrors `lateFixedProjections`): when no fixed patients remain and some flexible patients are already late, they are elevated to the primary candidate pool, sorted by `compareVisitProjections`.
+- Algorithm version bumped to `v2.5.0-flexible-edf`.
+- Added test: tight-window flexible patient (Shirley, 09:30–10:00) scheduled before closer wide-window patient (Wide, 09:00–17:00).
+
+### 88 — Motivation
+
+All-flexible routes with tight early windows fell back to pure nearest-neighbor, causing deadline-sensitive patients to be visited last. Root case: Shirley Trudeau (08:30–11:00 window) was scheduled 10th out of 12, arriving 130 min late, because her address was geographically off-route and the depth-2 lookahead couldn't see the lateness accumulating 8+ steps away. The EDF urgency score propagates deadline pressure into the beam search so tight-window patients are selected before their slack runs out.
