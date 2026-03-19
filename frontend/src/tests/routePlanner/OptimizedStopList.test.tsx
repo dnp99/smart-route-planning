@@ -97,7 +97,7 @@ describe("OptimizedStopList", () => {
     expect(onToggleEnding).toHaveBeenCalledWith("ending:stop-4");
   });
 
-  it("renders non-home ending points and omits break cards below threshold", () => {
+  it("renders non-home ending points and omits break cards before ending-point stops", () => {
     const stops: OrderedStop[] = [
       buildStop({
         stopId: "stop-a",
@@ -130,6 +130,45 @@ describe("OptimizedStopList", () => {
       screen.getByRole("button", { name: "Toggle details for Ending point" }).textContent,
     ).toContain("Clinic Exit");
     expect(screen.queryByText(/You should be home by/i)).toBeNull();
+  });
+
+  it("omits break card when idle gap is below threshold on a regular patient stop", () => {
+    // gap = serviceStartTime(09:44) - departureTime(09:00) - travel(15min) = 29 min — below threshold
+    const stops: OrderedStop[] = [
+      buildStop({
+        stopId: "stop-below-a",
+        departureTime: "2026-03-20T09:00:00-04:00",
+      }),
+      buildStop({
+        stopId: "stop-below-b",
+        address: "50 Fifth Avenue",
+        arrivalTime: "2026-03-20T09:44:00-04:00",
+        departureTime: "2026-03-20T10:14:00-04:00",
+        durationFromPreviousSeconds: 900,
+        tasks: [
+          buildTask({
+            visitId: "visit-below",
+            patientName: "river stone",
+            address: "50 Fifth Avenue",
+            serviceStartTime: "2026-03-20T09:44:00-04:00",
+            serviceEndTime: "2026-03-20T10:14:00-04:00",
+          }),
+        ],
+      }),
+    ];
+
+    render(
+      <OptimizedStopList
+        orderedStops={stops}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+      />,
+    );
+
+    expect(screen.queryByText(/Break ·/)).toBeNull();
   });
 
   it("renders a break card when idle gap is exactly 30 minutes", () => {

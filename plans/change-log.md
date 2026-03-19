@@ -2778,3 +2778,25 @@ UX review of the live optimized route output identified eight low-risk, frontend
 ### 91 — Motivation
 
 Product review preferred a tighter route-summary header and less visual noise in the top metrics row. Leave-by is being paused in the UI for now, with intent to re-enable later.
+
+---
+
+## 92) Route Planner: Lower Break Gap Threshold from 60 → 30 Minutes
+
+### 92 — Files updated
+
+- `frontend/src/components/routePlanner/routePlannerResultUtils.ts`
+- `frontend/src/tests/routePlanner/OptimizedStopList.test.tsx`
+- `plans/account-settings-and-working-hours-execution-plan.md`
+
+### 92 — Changes
+
+- Lowered `BREAK_GAP_THRESHOLD_MINUTES` from `60` to `30` in `routePlannerResultUtils.ts`.
+- Break cards now render when the idle gap between consecutive patient stops is at or above 30 minutes (previously 60 minutes).
+- Added a clarifying comment on the constant explaining its role and future nurse-configurability (Phase 4).
+- Added a boundary test asserting a break card renders when idle gap equals exactly 30 minutes.
+- Updated plan doc threshold from 60 → 30 minutes and corrected acceptance criteria wording from "above" to "at or above" to match the `>=` implementation.
+
+### 92 — Motivation
+
+Product feedback indicated 60 minutes was too long a gap to go without alerting the nurse — shorter idle periods still benefit from a visual indicator. 30 minutes aligns with the intended default for the upcoming nurse-configurable threshold (Phase 4).
