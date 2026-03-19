@@ -2733,3 +2733,26 @@ All-flexible routes with tight early windows fell back to pure nearest-neighbor,
 ### 89 — Motivation
 
 After deploying `v2.5.0-flexible-edf`, analysis of a 12-patient Mississauga route showed Gary Frauts (17 min late), Nasim Akhter (19 min late), Shirley Trudeau (43 min late), and Jeseph D'souza (5 min late) all violating their windows. Root cause: at step 2 the algorithm chose Ernst Vonarburg (urgency=0, wide window) over Gary Frauts (urgency=1140, tight window) because lower score wins and Gary's high urgency made him appear expensive. The fix moves urgency out of the score entirely and into a selection tier, so urgent patients are chosen first rather than penalised.
+
+---
+
+## 90) Route Planner UI Improvements
+
+### 90 — Files updated
+
+- `frontend/src/components/RoutePlanner.tsx`
+
+### 90 — Changes
+
+- **Driving Time label**: Renamed metric card "Estimated Time" → "Driving Time"; sublabel updated to "Total driving time, excludes traffic".
+- **Leave-by copy**: Removed patient name from the suggested leave-by banner. Now reads "Based on a {X} drive to your first visit." instead of naming the first scheduled patient.
+- **Re-optimize button**: Button now reads "Re-optimize Route" when a result already exists; "Optimize Route" on first run; "Optimizing…" during loading (unchanged).
+- **Service duration on collapsed card**: Added `· X min visit` (or `X hr Y min visit`) to the travel details line on each collapsed stop card.
+- **Preferred window on collapsed card**: Added `Window: HH:MM – HH:MM` line below the expected start time on every collapsed stop card that has a window.
+- **Overlap pair copy**: Replaced "X overlap pair(s) detected." (red/technical) with "X patients share overlapping preferred windows — the optimizer will do its best to keep everyone on time." in amber styling, at both render sites (mobile review card and desktop footer row).
+- **Stop card color coding**: Added a 2 px left border accent to each stop card — green (`border-l-emerald-500`) when on time, amber (`border-l-amber-400`) when on time but within 30 min of window close, red (`border-l-red-500`) when late, no border when no preferred window.
+- **Collapse patient list after optimization**: When a result is shown, the "Selected destination patients" section collapses to a single summary line ("N patients selected — Edit"). Clicking "Edit" re-expands the full list. List auto-collapses on each new optimization result.
+
+### 90 — Motivation
+
+UX review of the live optimized route output identified eight low-risk, frontend-only polish items. Changes improve scannability of stop cards, reduce jargon visible to nurses, and eliminate competing numbered lists after optimization.

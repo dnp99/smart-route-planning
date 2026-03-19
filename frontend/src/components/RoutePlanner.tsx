@@ -417,6 +417,7 @@ function RoutePlanner({
     Record<string, boolean>
   >({});
   const [warningsDismissed, setWarningsDismissed] = useState(false);
+  const [isDestinationListExpanded, setIsDestinationListExpanded] = useState(true);
   const selectedCreateVisitType =
     createPatientFormValues.visitWindows[0]?.visitTimeType ?? "flexible";
 
@@ -437,6 +438,12 @@ function RoutePlanner({
     hasAttemptedOptimize,
     optimizeRoute,
   } = useRouteOptimization();
+
+  useEffect(() => {
+    if (result) {
+      setIsDestinationListExpanded(false);
+    }
+  }, [result]);
 
   useEffect(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
@@ -1248,18 +1255,33 @@ function RoutePlanner({
             </section>
           )}
 
-          <SelectedDestinationsSection
-            isVisible={isPatientsStepVisible}
-            isMobileViewport={isMobileViewport}
-            selectedDestinations={selectedDestinations}
-            expandedDestinationVisitKeys={expandedDestinationVisitKeys}
-            onToggleDestinationDetails={toggleDestinationDetails}
-            onRemoveDestinationVisit={removeDestinationVisit}
-            onSetDestinationVisitIncluded={setDestinationVisitIncluded}
-            onUpdateDestinationPlanningWindow={updateDestinationPlanningWindow}
-            onSetDestinationPersistPlanningWindow={setDestinationPersistPlanningWindow}
-            onContinueToReview={() => setActiveMobileStep("review")}
-          />
+          {isPatientsStepVisible && result && !isDestinationListExpanded ? (
+            <section className={responsiveStyles.panel}>
+              <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+                {destinationCount} patient{destinationCount === 1 ? "" : "s"} selected —{" "}
+                <button
+                  type="button"
+                  onClick={() => setIsDestinationListExpanded(true)}
+                  className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+                >
+                  Edit
+                </button>
+              </p>
+            </section>
+          ) : (
+            <SelectedDestinationsSection
+              isVisible={isPatientsStepVisible}
+              isMobileViewport={isMobileViewport}
+              selectedDestinations={selectedDestinations}
+              expandedDestinationVisitKeys={expandedDestinationVisitKeys}
+              onToggleDestinationDetails={toggleDestinationDetails}
+              onRemoveDestinationVisit={removeDestinationVisit}
+              onSetDestinationVisitIncluded={setDestinationVisitIncluded}
+              onUpdateDestinationPlanningWindow={updateDestinationPlanningWindow}
+              onSetDestinationPersistPlanningWindow={setDestinationPersistPlanningWindow}
+              onContinueToReview={() => setActiveMobileStep("review")}
+            />
+          )}
 
           {isReviewStepVisible && isMobileViewport && (
             <section className={responsiveStyles.mobileReviewCard}>
@@ -1274,7 +1296,7 @@ function RoutePlanner({
               </p>
               {overlappingVisitPairCount > 0 && (
                 <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
-                  {overlappingVisitPairCount} overlap pair(s) detected.
+                  {overlappingVisitPairCount} patient{overlappingVisitPairCount === 1 ? "" : "s"} share overlapping preferred windows — the optimizer will do its best to keep everyone on time.
                 </p>
               )}
               <div className="grid grid-cols-2 gap-2">
@@ -1304,7 +1326,7 @@ function RoutePlanner({
             >
             {!isMobileViewport && overlappingVisitPairCount > 0 && (
               <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
-                {overlappingVisitPairCount} overlap pair(s) detected.
+                {overlappingVisitPairCount} patient{overlappingVisitPairCount === 1 ? "" : "s"} share overlapping preferred windows — the optimizer will do its best to keep everyone on time.
               </p>
             )}
             <span className={responsiveStyles.countPill}>
@@ -1323,7 +1345,7 @@ function RoutePlanner({
                   aria-hidden="true"
                 />
               )}
-              {isLoading ? "Optimizing..." : "Optimize Route"}
+              {isLoading ? "Optimizing..." : result ? "Re-optimize Route" : "Optimize Route"}
             </button>
             </div>
           )}
@@ -1395,13 +1417,13 @@ function RoutePlanner({
               </div>
               <div className={responsiveStyles.resultStatCard}>
                 <p className={responsiveStyles.resultStatLabel}>
-                  Estimated Time
+                  Driving Time
                 </p>
                 <p className={responsiveStyles.resultStatValue}>
                   {formatDuration(result.metrics.totalDurationSeconds)}
                 </p>
                 <p className={responsiveStyles.resultStatMeta}>
-                  Excludes live traffic adjustments
+                  Total driving time, excludes traffic
                 </p>
               </div>
             </div>
@@ -1410,8 +1432,7 @@ function RoutePlanner({
               <div className="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-800 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-200">
                 <p className="m-0 font-semibold">Suggested leave-by: {leaveBySuggestion.label}</p>
                 <p className="m-0 text-xs text-emerald-700 dark:text-emerald-300">
-                  Based on the first planned visit ({leaveBySuggestion.firstPatientName}) and a{" "}
-                  {leaveBySuggestion.travelDurationLabel} drive from the starting point.
+                  Based on a {leaveBySuggestion.travelDurationLabel} drive to your first visit.
                 </p>
               </div>
             )}
@@ -1561,10 +1582,27 @@ function RoutePlanner({
                           const detailsKey = `${task.visitId}`;
                           const isDetailsExpanded = Boolean(expandedResultTaskIds[detailsKey]);
 
+                          const stopBorderClass = (() => {
+                            if (!task.windowStart) return "";
+                            if (task.lateBySeconds > 0) return "border-l-2 border-l-red-500";
+                            if (task.onTime && task.windowEnd) {
+                              const serviceStartDate = new Date(task.serviceStartTime);
+                              const serviceEndMinutes =
+                                serviceStartDate.getHours() * 60 +
+                                serviceStartDate.getMinutes() +
+                                task.serviceDurationMinutes;
+                              const windowEndMinutes = timeToMinutes(task.windowEnd);
+                              if (windowEndMinutes - serviceEndMinutes < 30) {
+                                return "border-l-2 border-l-amber-400";
+                              }
+                            }
+                            return "border-l-2 border-l-emerald-500";
+                          })();
+
                           return (
                             <div
                               key={task.visitId}
-                              className="rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40"
+                              className={`rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40${stopBorderClass ? ` ${stopBorderClass}` : ""}`}
                             >
                               <button
                                 type="button"
@@ -1584,6 +1622,12 @@ function RoutePlanner({
                               {expectedStartLabel && (
                                 <p className="m-0 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
                                   {expectedStartLabel}
+                                </p>
+                              )}
+
+                              {task.windowStart && task.windowEnd && (
+                                <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                                  Window: {task.windowStart} – {task.windowEnd}
                                 </p>
                               )}
 
@@ -1621,7 +1665,7 @@ function RoutePlanner({
                               <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
                                 {stop.distanceFromPreviousKm} km •{" "}
                                 {formatDuration(stop.durationFromPreviousSeconds)} from previous
-                                stop
+                                stop{formatVisitDurationMinutes(task.serviceDurationMinutes) ? ` • ${formatVisitDurationMinutes(task.serviceDurationMinutes)} visit` : ""}
                               </p>
                             </div>
                           );
