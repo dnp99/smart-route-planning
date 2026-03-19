@@ -31,12 +31,10 @@ export function OptimizedStopCard({
     if (task.lateBySeconds > 0) return "border-l-2 border-l-red-500";
     if (task.onTime && task.windowEnd) {
       const serviceStartDate = new Date(task.serviceStartTime);
-      const serviceEndMinutes =
-        serviceStartDate.getHours() * 60 +
-        serviceStartDate.getMinutes() +
-        task.serviceDurationMinutes;
+      const serviceStartMinutes =
+        serviceStartDate.getHours() * 60 + serviceStartDate.getMinutes();
       const windowEndMinutes = timeToMinutes(task.windowEnd);
-      if (windowEndMinutes - serviceEndMinutes < 30) {
+      if (windowEndMinutes - serviceStartMinutes < 30) {
         return "border-l-2 border-l-amber-400";
       }
     }
@@ -59,42 +57,45 @@ export function OptimizedStopCard({
         {formattedPatientName}
       </button>
 
-      {expectedStartLabel && (
-        <p className="m-0 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
-          {expectedStartLabel}
-        </p>
-      )}
-
-      {task.windowStart && task.windowEnd && (
-        <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
-          Window: {task.windowStart} – {task.windowEnd}
-        </p>
-      )}
-
-      {task.windowStart && task.windowEnd && task.lateBySeconds > 0 && (
-        <p
-          className={[
-            "m-0 text-xs font-semibold",
-            task.windowType === "fixed" && task.lateBySeconds > 15 * 60
-              ? "text-red-600 dark:text-red-400"
-              : task.windowType === "flexible" && task.lateBySeconds > 60 * 60
-                ? "text-amber-600 dark:text-amber-400"
-                : "text-red-600 dark:text-red-400",
-          ].join(" ")}
-        >
-          Outside preferred window by {Math.ceil(task.lateBySeconds / 60)} min
-        </p>
-      )}
+      <p className="m-0 flex flex-wrap items-baseline gap-x-0 text-xs">
+        {task.windowStart && task.windowEnd && (
+          <>
+            <span className="font-normal text-slate-500 dark:text-slate-400">
+              Window: {task.windowStart} – {task.windowEnd}
+            </span>
+            {expectedStartLabel && (
+              <span className="mx-2 font-normal text-slate-300 dark:text-slate-600">|</span>
+            )}
+          </>
+        )}
+        {expectedStartLabel && (
+          <span className="font-semibold text-emerald-700 dark:text-emerald-300">
+            {expectedStartLabel}
+          </span>
+        )}
+        {task.windowStart && task.windowEnd && task.lateBySeconds > 0 && (
+          <>
+            <span className="mx-2 font-normal text-slate-300 dark:text-slate-600">|</span>
+            <span
+              className={[
+                "font-semibold",
+                task.windowType === "fixed" && task.lateBySeconds > 15 * 60
+                  ? "text-red-600 dark:text-red-400"
+                  : task.windowType === "flexible" && task.lateBySeconds > 60 * 60
+                    ? "text-amber-600 dark:text-amber-400"
+                    : "text-red-600 dark:text-red-400",
+              ].join(" ")}
+            >
+              Outside preferred window by {Math.ceil(task.lateBySeconds / 60)} min
+            </span>
+          </>
+        )}
+      </p>
 
       {isExpanded && (
         <div className="mt-1 space-y-0.5 text-xs text-slate-600 dark:text-slate-300">
           <p className="m-0">Address: {task.address}</p>
-          <p className="m-0">
-            Preferred window:{" "}
-            {task.windowStart && task.windowEnd
-              ? `${task.windowStart} - ${task.windowEnd}`
-              : "No preferred window"}
-          </p>
+
           <p className="m-0">Visit type: {task.windowType}</p>
           <p className="m-0">
             Duration: {formatVisitDurationMinutes(task.serviceDurationMinutes)}
