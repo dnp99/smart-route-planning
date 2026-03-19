@@ -41,13 +41,6 @@ const hasCompleteWindow = (destination: SelectedPatientDestination) =>
 const hasAnyWindowBoundary = (destination: SelectedPatientDestination) =>
   destination.windowStart.trim().length > 0 || destination.windowEnd.trim().length > 0;
 
-const windowsOverlap = (
-  left: Pick<SelectedPatientDestination, "windowStart" | "windowEnd">,
-  right: Pick<SelectedPatientDestination, "windowStart" | "windowEnd">,
-) =>
-  timeToMinutes(left.windowStart) < timeToMinutes(right.windowEnd) &&
-  timeToMinutes(right.windowStart) < timeToMinutes(left.windowEnd);
-
 const toSelectedPatientDestinations = (
   patient: Patient,
 ): SelectedPatientDestination[] => {
@@ -408,30 +401,6 @@ function RoutePlanner({
   const requestDestinations = useMemo(() => {
     return selectedDestinations.filter((destination) => destination.isIncluded);
   }, [selectedDestinations]);
-
-  const overlappingVisitPairCount = useMemo(() => {
-    let pairCount = 0;
-
-    for (let leftIndex = 0; leftIndex < requestDestinations.length; leftIndex += 1) {
-      const left = requestDestinations[leftIndex];
-      if (!left || !hasCompleteWindow(left)) {
-        continue;
-      }
-
-      for (let rightIndex = leftIndex + 1; rightIndex < requestDestinations.length; rightIndex += 1) {
-        const right = requestDestinations[rightIndex];
-        if (!right || !hasCompleteWindow(right)) {
-          continue;
-        }
-
-        if (windowsOverlap(left, right)) {
-          pairCount += 1;
-        }
-      }
-    }
-
-    return pairCount;
-  }, [requestDestinations]);
 
   const handleStartAddressChange = (value: string) => {
     setStartAddress(value);
@@ -1027,11 +996,6 @@ function RoutePlanner({
                   ? " • ending point missing"
                   : ""}
               </p>
-              {overlappingVisitPairCount > 0 && (
-                <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
-                  {overlappingVisitPairCount} patient{overlappingVisitPairCount === 1 ? "" : "s"} share overlapping preferred windows — the optimizer will do its best to keep everyone on time.
-                </p>
-              )}
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
@@ -1057,11 +1021,6 @@ function RoutePlanner({
                 isMobileViewport ? responsiveStyles.stickyFooter : ""
               }`}
             >
-            {!isMobileViewport && overlappingVisitPairCount > 0 && (
-              <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
-                {overlappingVisitPairCount} patient{overlappingVisitPairCount === 1 ? "" : "s"} share overlapping preferred windows — the optimizer will do its best to keep everyone on time.
-              </p>
-            )}
             <span className={responsiveStyles.countPill}>
               {destinationCount} destination(s) detected
             </span>
