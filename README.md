@@ -94,7 +94,7 @@ Notes:
 
 ## Route optimizer scheduling logic
 
-`POST /api/optimize-route/v2` uses a greedy beam search (depth 2, beam width 8) with priority tiers and EDF urgency scoring.
+`POST /api/optimize-route/v2` uses a greedy beam search (depth 2, beam width 8) with priority tiers and EDF candidate selection.
 
 ### Step 1 — Candidate pool selection
 
@@ -106,24 +106,24 @@ Any FIXED patients remaining?
 │   ├── Any FIXED already late?  → Pool: late fixed patients only
 │   └── None late               → Pool: all fixed patients
 └── NO
-    ├── Any FLEXIBLE (windowed) already late? → Pool: late flexible patients only
-    └── None late                             → Pool: all remaining patients
+    ├── Any FLEXIBLE (windowed) already late?   → Pool: late flexible patients only
+    ├── Any FLEXIBLE within 90 min of deadline? → Pool: urgent flexible patients, sorted tightest deadline first (EDF)
+    └── None urgent                             → Pool: all remaining patients
 ```
 
 ### Step 2 — Score every candidate (depth-2 lookahead)
 
-Within the pool, each candidate is scored across 6 dimensions (lower = better):
+Within the pool, each candidate is scored across 5 dimensions (lower = better):
 
 | Priority | Dimension | What it measures |
 | --- | --- | --- |
 | 1 | `fixedLateCount` | Number of fixed patients that end up late |
 | 2 | `fixedLateSeconds` | Total lateness for fixed patients |
 | 3 | `totalLateSeconds` | Total lateness for all patients |
-| 4 | `flexibleUrgencySeconds` | EDF pressure — flexible patients within 90 min of deadline accumulate urgency; deferring them raises this score |
-| 5 | `totalWaitSeconds` | Idle wait time at stops |
-| 6 | `totalTravelSeconds` | Total drive time (distance proxy) |
+| 4 | `totalWaitSeconds` | Idle wait time at stops |
+| 5 | `totalTravelSeconds` | Total drive time (distance proxy) |
 
-The beam search evaluates 2 steps ahead across the top 8 candidates, so urgency and lateness from future steps fold back into the current decision.
+The beam search evaluates 2 steps ahead across the top 8 candidates, so lateness from future steps folds back into the current decision.
 
 ### Step 3 — Gap filler
 
@@ -133,7 +133,7 @@ After a candidate is selected, if it has > 30 min of idle wait before its window
 
 - Distance is the **last** tiebreaker — it never overrides deadline pressure.
 - The gap filler can only **insert**, never displace a selected candidate.
-- `flexibleUrgencySeconds` propagates forward through the lookahead, so tight-deadline patients are detected and elevated before they actually go late (Earliest Deadline First).
+- Flexible patients within 90 min of their deadline are elevated to a priority pool and sorted by tightest deadline first (EDF), so they are picked before going late rather than after.
 
 ## Additional docs
 

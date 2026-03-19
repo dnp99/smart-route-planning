@@ -2705,13 +2705,31 @@ Large scheduling gaps (e.g. 4–5 hours between a morning patient and an afterno
 ### 88 — Changes
 
 - Added `FLEXIBLE_URGENCY_THRESHOLD_SECONDS = 90 * 60` (90 minutes).
-- Added `flexibleUrgencySeconds` dimension to `ProjectionScore`. For each flexible-windowed patient, urgency = `max(0, min(THRESHOLD, THRESHOLD - slackSeconds))`. Patients with > 90 min slack contribute 0; patients near their deadline contribute up to `THRESHOLD`. Already-late patients (negative slack) contribute the full `THRESHOLD`.
-- `addScores`, `ZERO_SCORE`, and `compareScores` updated to include `flexibleUrgencySeconds` ranked after `totalLateSeconds` but before `totalWaitSeconds`.
-- `scoreProjection` computes `flexibleUrgencySeconds` from `slackSeconds`.
 - Added `lateFlexibleProjections` primary-selection tier (mirrors `lateFixedProjections`): when no fixed patients remain and some flexible patients are already late, they are elevated to the primary candidate pool, sorted by `compareVisitProjections`.
-- Algorithm version bumped to `v2.5.0-flexible-edf`.
+- Added `urgentFlexibleProjections` primary-selection tier: when no fixed patients remain, none are already late, but some flexible patients have `0 ≤ slackSeconds < 90 min`, those patients form a priority pool sorted by `slackSeconds` ascending (tightest deadline first / EDF), tiebroken by `travelSeconds`. This is the core EDF mechanism — tight-deadline patients are elevated before they go late rather than after.
+- Algorithm version bumped to `v2.5.1-edf-tier`.
 - Added test: tight-window flexible patient (Shirley, 09:30–10:00) scheduled before closer wide-window patient (Wide, 09:00–17:00).
+
+**Note:** An earlier iteration (`v2.5.0-flexible-edf`) attempted to encode urgency as a `flexibleUrgencySeconds` score dimension. This was flawed — higher urgency = higher cost = the beam search *avoided* urgent patients. It was removed in favour of the selection-tier approach, which mirrors how `lateFixedProjections` works.
 
 ### 88 — Motivation
 
-All-flexible routes with tight early windows fell back to pure nearest-neighbor, causing deadline-sensitive patients to be visited last. Root case: Shirley Trudeau (08:30–11:00 window) was scheduled 10th out of 12, arriving 130 min late, because her address was geographically off-route and the depth-2 lookahead couldn't see the lateness accumulating 8+ steps away. The EDF urgency score propagates deadline pressure into the beam search so tight-window patients are selected before their slack runs out.
+All-flexible routes with tight early windows fell back to pure nearest-neighbor, causing deadline-sensitive patients to be visited last. Root case: Shirley Trudeau (08:30–11:00 window) was scheduled 10th out of 12, arriving 130 min late, because her address was geographically off-route and the depth-2 lookahead couldn't see the lateness accumulating 8+ steps away. The EDF tier elevates patients within 90 min of their deadline before they go late, mirroring the fixed-patient late-elevation pattern already in use.
+
+## 89) Optimizer: Remove flexibleUrgencySeconds score (EDF tier correctness fix)
+
+### 89 — Files updated
+
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+
+### 89 — Changes
+
+- Removed `flexibleUrgencySeconds` from `ProjectionScore` type, `ZERO_SCORE`, `addScores`, `compareScores`, and `scoreProjection`. The field was backwards: a high urgency value (close to deadline) increased cost, so the beam search actively avoided urgent patients.
+- Replaced with `urgentFlexibleProjections` selection tier as described in entry 88.
+- Algorithm version bumped to `v2.5.1-edf-tier`.
+- All 335 tests pass.
+
+### 89 — Motivation
+
+After deploying `v2.5.0-flexible-edf`, analysis of a 12-patient Mississauga route showed Gary Frauts (17 min late), Nasim Akhter (19 min late), Shirley Trudeau (43 min late), and Jeseph D'souza (5 min late) all violating their windows. Root cause: at step 2 the algorithm chose Ernst Vonarburg (urgency=0, wide window) over Gary Frauts (urgency=1140, tight window) because lower score wins and Gary's high urgency made him appear expensive. The fix moves urgency out of the score entirely and into a selection tier, so urgent patients are chosen first rather than penalised.
