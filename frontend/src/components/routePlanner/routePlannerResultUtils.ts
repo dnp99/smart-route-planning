@@ -1,4 +1,6 @@
-export const BREAK_GAP_THRESHOLD_MINUTES = 60;
+// Centralized break threshold for route timeline gaps.
+// Later this can be replaced by a nurse-configured preference.
+export const BREAK_GAP_THRESHOLD_MINUTES = 30;
 
 export const expectedStartTimeFormatter = new Intl.DateTimeFormat(undefined, {
   hour: "2-digit",

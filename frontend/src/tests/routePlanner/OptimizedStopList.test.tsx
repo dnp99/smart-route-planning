@@ -131,4 +131,42 @@ describe("OptimizedStopList", () => {
     ).toContain("Clinic Exit");
     expect(screen.queryByText(/You should be home by/i)).toBeNull();
   });
+
+  it("renders a break card when idle gap is exactly 30 minutes", () => {
+    const stops: OrderedStop[] = [
+      buildStop({
+        stopId: "stop-early",
+        departureTime: "2026-03-20T09:00:00-04:00",
+      }),
+      buildStop({
+        stopId: "stop-threshold",
+        address: "40 Fourth Avenue",
+        arrivalTime: "2026-03-20T09:45:00-04:00",
+        departureTime: "2026-03-20T10:15:00-04:00",
+        durationFromPreviousSeconds: 900,
+        tasks: [
+          buildTask({
+            visitId: "visit-threshold",
+            patientName: "morgan lane",
+            address: "40 Fourth Avenue",
+            serviceStartTime: "2026-03-20T09:45:00-04:00",
+            serviceEndTime: "2026-03-20T10:15:00-04:00",
+          }),
+        ],
+      }),
+    ];
+
+    render(
+      <OptimizedStopList
+        orderedStops={stops}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+      />,
+    );
+
+    expect(screen.getByText(/Break · 30m/)).toBeTruthy();
+  });
 });
