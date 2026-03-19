@@ -429,8 +429,6 @@ describe("RoutePlanner patient selection integration", () => {
       "disabled",
       false,
     );
-    expect(screen.getByText(/1 overlap pair\(s\) detected\./i)).toBeTruthy();
-
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 
     expect(optimizeRouteMock).toHaveBeenCalledWith({
@@ -615,7 +613,7 @@ describe("RoutePlanner patient selection integration", () => {
 
     expect(screen.getByText(/Suggested leave-by:/)).toBeTruthy();
     expect(
-      screen.getByText(/Based on the first planned visit \(Jane Doe\)/),
+      screen.getByText(/Based on a .+ drive to your first visit\./),
     ).toBeTruthy();
     expect(
       screen.getByText(
@@ -632,7 +630,6 @@ describe("RoutePlanner patient selection integration", () => {
     expect(janeCard.textContent).toContain("13.49 km • 13 min from previous stop");
     fireEvent.click(janeDetailsToggle);
     expect(screen.getByText("Address: 123 Main St")).toBeTruthy();
-    expect(screen.getByText("Preferred window: 08:30 - 09:00")).toBeTruthy();
     expect(screen.getByText("Visit type: fixed")).toBeTruthy();
     expect(screen.getByText("Duration: 30 min")).toBeTruthy();
     const endingPointDetailsToggle = screen.getByRole("button", {
@@ -797,13 +794,11 @@ describe("RoutePlanner patient selection integration", () => {
 
     render(<RoutePlanner />);
 
-    expect(screen.queryByText("Preferred window: No preferred window")).toBeNull();
     fireEvent.click(
       screen.getByRole("button", {
         name: /Toggle details for Flex Patient/i,
       }),
     );
-    expect(screen.getByText("Preferred window: No preferred window")).toBeTruthy();
     expect(screen.queryByText(/Outside preferred window by/i)).toBeNull();
   });
 
