@@ -17,7 +17,7 @@ import {
   type TravelMatrixNode,
 } from "./travelMatrix";
 
-const ALGORITHM_VERSION = "v2.5.0-flexible-edf";
+const ALGORITHM_VERSION = "v2.5.1-edf-tier";
 const FIXED_LATE_TOLERANCE_SECONDS = 15 * 60;
 const FLEXIBLE_LATE_TOLERANCE_SECONDS = 60 * 60;
 const FLEXIBLE_URGENCY_THRESHOLD_SECONDS = 90 * 60;
@@ -302,7 +302,6 @@ type ProjectionScore = {
   fixedLateCount: number;
   fixedLateSeconds: number;
   totalLateSeconds: number;
-  flexibleUrgencySeconds: number;
   totalWaitSeconds: number;
   totalTravelSeconds: number;
 };
@@ -355,7 +354,6 @@ const ZERO_SCORE: ProjectionScore = {
   fixedLateCount: 0,
   fixedLateSeconds: 0,
   totalLateSeconds: 0,
-  flexibleUrgencySeconds: 0,
   totalWaitSeconds: 0,
   totalTravelSeconds: 0,
 };
@@ -364,7 +362,6 @@ const addScores = (left: ProjectionScore, right: ProjectionScore): ProjectionSco
   fixedLateCount: left.fixedLateCount + right.fixedLateCount,
   fixedLateSeconds: left.fixedLateSeconds + right.fixedLateSeconds,
   totalLateSeconds: left.totalLateSeconds + right.totalLateSeconds,
-  flexibleUrgencySeconds: left.flexibleUrgencySeconds + right.flexibleUrgencySeconds,
   totalWaitSeconds: left.totalWaitSeconds + right.totalWaitSeconds,
   totalTravelSeconds: left.totalTravelSeconds + right.totalTravelSeconds,
 });
@@ -382,10 +379,6 @@ const compareScores = (left: ProjectionScore, right: ProjectionScore) => {
     return left.totalLateSeconds - right.totalLateSeconds;
   }
 
-  if (left.flexibleUrgencySeconds !== right.flexibleUrgencySeconds) {
-    return left.flexibleUrgencySeconds - right.flexibleUrgencySeconds;
-  }
-
   if (left.totalWaitSeconds !== right.totalWaitSeconds) {
     return left.totalWaitSeconds - right.totalWaitSeconds;
   }
@@ -399,22 +392,10 @@ const scoreProjection = (
   const fixedLateSeconds =
     projection.visit.windowType === "fixed" ? projection.lateBySeconds : 0;
 
-  const flexibleUrgencySeconds =
-    projection.visit.hasPreferredWindow && projection.visit.windowType !== "fixed"
-      ? Math.max(
-          0,
-          Math.min(
-            FLEXIBLE_URGENCY_THRESHOLD_SECONDS,
-            FLEXIBLE_URGENCY_THRESHOLD_SECONDS - projection.slackSeconds,
-          ),
-        )
-      : 0;
-
   return {
     fixedLateCount: fixedLateSeconds > 0 ? 1 : 0,
     fixedLateSeconds,
     totalLateSeconds: projection.lateBySeconds,
-    flexibleUrgencySeconds,
     totalWaitSeconds: projection.waitSeconds,
     totalTravelSeconds: projection.travelSeconds,
   };
@@ -877,6 +858,15 @@ const orderVisitsByWindowDistanceAndDuration = (
       !hasFixedRemaining
         ? projections.filter((p) => p.visit.hasPreferredWindow && p.lateBySeconds > 0)
         : [];
+    const urgentFlexibleProjections =
+      !hasFixedRemaining && lateFlexibleProjections.length === 0
+        ? projections.filter(
+            (p) =>
+              p.visit.hasPreferredWindow &&
+              p.slackSeconds >= 0 &&
+              p.slackSeconds < FLEXIBLE_URGENCY_THRESHOLD_SECONDS,
+          )
+        : [];
     const primaryProjections =
       lateFixedProjections.length > 0
         ? lateFixedProjections
@@ -884,8 +874,18 @@ const orderVisitsByWindowDistanceAndDuration = (
           ? projections.filter((p) => p.visit.windowType === "fixed")
           : lateFlexibleProjections.length > 0
             ? lateFlexibleProjections
-            : projections;
-    primaryProjections.sort(compareVisitProjections);
+            : urgentFlexibleProjections.length > 0
+              ? urgentFlexibleProjections
+              : projections;
+    if (primaryProjections === urgentFlexibleProjections) {
+      primaryProjections.sort((a, b) =>
+        a.slackSeconds !== b.slackSeconds
+          ? a.slackSeconds - b.slackSeconds
+          : a.travelSeconds - b.travelSeconds,
+      );
+    } else {
+      primaryProjections.sort(compareVisitProjections);
+    }
     const firstProjection = primaryProjections[0];
     if (!firstProjection) {
       throw new HttpError(500, "Unable to evaluate route candidates.");
