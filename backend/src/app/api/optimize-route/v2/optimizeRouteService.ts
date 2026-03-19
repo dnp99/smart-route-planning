@@ -17,9 +17,10 @@ import {
   type TravelMatrixNode,
 } from "./travelMatrix";
 
-const ALGORITHM_VERSION = "v2.4.1-late-fixed-priority";
+const ALGORITHM_VERSION = "v2.5.0-flexible-edf";
 const FIXED_LATE_TOLERANCE_SECONDS = 15 * 60;
 const FLEXIBLE_LATE_TOLERANCE_SECONDS = 60 * 60;
+const FLEXIBLE_URGENCY_THRESHOLD_SECONDS = 90 * 60;
 const ESTIMATED_DRIVE_SPEED_KM_PER_HOUR = 40;
 const IDLE_GAP_FILL_THRESHOLD_SECONDS = 30 * 60;
 const IDLE_GAP_RETURN_BUFFER_SECONDS = 5 * 60;
@@ -301,6 +302,7 @@ type ProjectionScore = {
   fixedLateCount: number;
   fixedLateSeconds: number;
   totalLateSeconds: number;
+  flexibleUrgencySeconds: number;
   totalWaitSeconds: number;
   totalTravelSeconds: number;
 };
@@ -353,6 +355,7 @@ const ZERO_SCORE: ProjectionScore = {
   fixedLateCount: 0,
   fixedLateSeconds: 0,
   totalLateSeconds: 0,
+  flexibleUrgencySeconds: 0,
   totalWaitSeconds: 0,
   totalTravelSeconds: 0,
 };
@@ -361,6 +364,7 @@ const addScores = (left: ProjectionScore, right: ProjectionScore): ProjectionSco
   fixedLateCount: left.fixedLateCount + right.fixedLateCount,
   fixedLateSeconds: left.fixedLateSeconds + right.fixedLateSeconds,
   totalLateSeconds: left.totalLateSeconds + right.totalLateSeconds,
+  flexibleUrgencySeconds: left.flexibleUrgencySeconds + right.flexibleUrgencySeconds,
   totalWaitSeconds: left.totalWaitSeconds + right.totalWaitSeconds,
   totalTravelSeconds: left.totalTravelSeconds + right.totalTravelSeconds,
 });
@@ -378,6 +382,10 @@ const compareScores = (left: ProjectionScore, right: ProjectionScore) => {
     return left.totalLateSeconds - right.totalLateSeconds;
   }
 
+  if (left.flexibleUrgencySeconds !== right.flexibleUrgencySeconds) {
+    return left.flexibleUrgencySeconds - right.flexibleUrgencySeconds;
+  }
+
   if (left.totalWaitSeconds !== right.totalWaitSeconds) {
     return left.totalWaitSeconds - right.totalWaitSeconds;
   }
@@ -391,10 +399,22 @@ const scoreProjection = (
   const fixedLateSeconds =
     projection.visit.windowType === "fixed" ? projection.lateBySeconds : 0;
 
+  const flexibleUrgencySeconds =
+    projection.visit.hasPreferredWindow && projection.visit.windowType !== "fixed"
+      ? Math.max(
+          0,
+          Math.min(
+            FLEXIBLE_URGENCY_THRESHOLD_SECONDS,
+            FLEXIBLE_URGENCY_THRESHOLD_SECONDS - projection.slackSeconds,
+          ),
+        )
+      : 0;
+
   return {
     fixedLateCount: fixedLateSeconds > 0 ? 1 : 0,
     fixedLateSeconds,
     totalLateSeconds: projection.lateBySeconds,
+    flexibleUrgencySeconds,
     totalWaitSeconds: projection.waitSeconds,
     totalTravelSeconds: projection.travelSeconds,
   };
@@ -853,12 +873,18 @@ const orderVisitsByWindowDistanceAndDuration = (
     const lateFixedProjections = hasFixedRemaining
       ? projections.filter((p) => p.visit.windowType === "fixed" && p.lateBySeconds > 0)
       : [];
+    const lateFlexibleProjections =
+      !hasFixedRemaining
+        ? projections.filter((p) => p.visit.hasPreferredWindow && p.lateBySeconds > 0)
+        : [];
     const primaryProjections =
       lateFixedProjections.length > 0
         ? lateFixedProjections
         : hasFixedRemaining
           ? projections.filter((p) => p.visit.windowType === "fixed")
-          : projections;
+          : lateFlexibleProjections.length > 0
+            ? lateFlexibleProjections
+            : projections;
     primaryProjections.sort(compareVisitProjections);
     const firstProjection = primaryProjections[0];
     if (!firstProjection) {

@@ -691,7 +691,7 @@ describe("optimizeRouteV2 service", () => {
       "google-key",
     );
 
-    expect(result.algorithmVersion).toBe("v2.4.1-late-fixed-priority");
+    expect(result.algorithmVersion).toBe("v2.5.0-flexible-edf");
     expect(result.orderedStops).toHaveLength(2);
     expect(result.orderedStops[0].tasks).toHaveLength(2);
     expect(result.orderedStops[0].tasks[0].visitId).toBe("fixed-am");
@@ -1520,6 +1520,81 @@ describe("optimizeRouteV2 service", () => {
       patientId: "patient-flex",
       patientName: "Flexible Patient",
     });
+  });
+
+  it("schedules a tight-window flexible patient before a closer wide-window patient to avoid missing the deadline (EDF)", async () => {
+    // Shirley: flexible 09:30-10:00 window, 15 min service, 45 min from start
+    // Wide:    flexible 09:00-17:00 window, 15 min service, 2 min from start
+    // Without EDF: Wide goes first (nearest), then Shirley arrives 10:37 → 37 min late
+    // With EDF:    Shirley goes first (urgency detected), arrives 09:45 → on time
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Shirley Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Wide Address", coords: { lat: 43.6002, lon: -79.6002 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrix([
+        ["address:start", "address:shirley address", 2700],   // 45 min
+        ["address:start", "address:wide address", 120],        // 2 min
+        ["address:shirley address", "address:wide address", 4800], // 80 min
+        ["address:wide address", "address:shirley address", 4800], // 80 min
+        ["address:shirley address", "address:end", 600],
+        ["address:wide address", "address:end", 600],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T09:00:00.000Z",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "visit-shirley",
+            patientId: "patient-shirley",
+            patientName: "Shirley",
+            address: "Shirley Address",
+            windowStart: "09:30",
+            windowEnd: "10:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 15,
+          },
+          {
+            visitId: "visit-wide",
+            patientId: "patient-wide",
+            patientName: "Wide",
+            address: "Wide Address",
+            windowStart: "09:00",
+            windowEnd: "17:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 15,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const passedAddresses = (call?.[1] ?? []).map((s) => s.address);
+    // Shirley should be scheduled before Wide
+    expect(passedAddresses.indexOf("Shirley Address")).toBeLessThan(
+      passedAddresses.indexOf("Wide Address"),
+    );
+    // Shirley should be on time
+    const shirleyTask = result.orderedStops
+      .flatMap((s) => s.tasks)
+      .find((t) => t.visitId === "visit-shirley");
+    expect(shirleyTask?.lateBySeconds).toBe(0);
   });
 
   it("emits no warnings when all patients are within tolerance", async () => {
