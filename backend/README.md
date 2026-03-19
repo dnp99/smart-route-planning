@@ -4,11 +4,11 @@ This folder contains the Next.js backend for CareFlow.
 
 ## Responsibilities
 
-- Expose `POST /api/optimize-route` for route optimization.
+- Expose `POST /api/optimize-route/v2` for route optimization.
 - Expose `GET /api/address-autocomplete` for address suggestions.
-- Expose auth endpoints for signup, login, and current-user identity.
-- Geocode addresses through OpenStreetMap Nominatim.
-- Fetch address suggestions through Google Places API.
+- Expose auth endpoints for signup, login, current-user identity, and password updates.
+- Geocode addresses through Google Places API.
+- Fetch address suggestions through Google Places autocomplete.
 - Enforce JWT authentication on all business endpoints, plus validation, timeouts, CORS, and lightweight rate limiting.
 
 ## Local development
@@ -69,10 +69,6 @@ The backend runs on `http://localhost:3000`.
   - Production (`NODE_ENV=production`) enforces HTTPS automatically.
 - `GOOGLE_MAPS_API_KEY`
   - Required for Google driving route distance, duration, route geometry, and address suggestions.
-- `OPTIMIZE_ROUTE_API_KEY`
-  - Optional.
-  - If set, `POST /api/optimize-route` requires this value in the `x-optimize-route-key` header.
-  - For browser-based frontend usage, leave this unset unless you can securely inject/request it from a trusted backend proxy.
 - `OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS`
   - Optional.
   - Max optimize-route requests per client within the rate-limit window.
@@ -81,8 +77,6 @@ The backend runs on `http://localhost:3000`.
   - Optional.
   - Optimize-route rate-limit window in milliseconds.
   - Default: `60000`.
-- `NOMINATIM_CONTACT_EMAIL`
-  - Recommended for production or shared environments to identify requests to the upstream geocoding provider.
 
 Example local file:
 
@@ -100,14 +94,20 @@ AUTH_LOGIN_RATE_LIMIT_LOCKOUT_SECONDS=30
 # AUTH_ENFORCE_HTTPS=true
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
 ALLOWED_ORIGINS=http://localhost:5173
-OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
 OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS=30
 OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS=60000
-NOMINATIM_CONTACT_EMAIL=you@example.com
 ```
 
 ## API endpoints
 
+### Auth
+
+- `POST /api/auth/signup`
+  - Accepts `{ displayName, email, password }`
+  - Creates a nurse account and returns `{ token, user }`
+  - Rejects duplicate emails with `409`
+  - Enforces shared auth rate limiting by client IP and normalized account email
+  - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
 - `POST /api/auth/login`
   - Accepts `{ email, password }`
   - Returns `{ token, user }` when credentials are valid
@@ -115,27 +115,28 @@ NOMINATIM_CONTACT_EMAIL=you@example.com
   - Uses optional centralized Upstash Redis limiter when configured, otherwise in-memory fallback
   - Returns `429` with `Retry-After` header while lockout is active
   - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
-- `POST /api/auth/signup`
-  - Accepts `{ displayName, email, password }`
-  - Creates a nurse account and returns `{ token, user }`
-  - Rejects duplicate emails with `409`
-  - Enforces shared auth rate limiting by client IP and normalized account email
-  - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
 - `GET /api/auth/me`
   - Requires `Authorization: Bearer <token>`
-  - Returns current authenticated user
-  - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
-- `POST /api/optimize-route`
+  - Returns current authenticated user including `homeAddress`
+- `PATCH /api/auth/me`
   - Requires `Authorization: Bearer <token>`
-  - Accepts `startAddress`, `endAddress`, and `destinations[]`
-  - Each destination must include `patientId`, `patientName`, `address`, and optional `googlePlaceId`
-  - Returns geocoded stops in greedy nearest-neighbor order plus Google driving route legs, total distance, and total duration
-  - Enforces per-client in-memory rate limiting
-  - If `OPTIMIZE_ROUTE_API_KEY` is configured, requires `x-optimize-route-key` request header
-- `GET /api/address-autocomplete?query=...`
+  - Accepts `{ homeAddress }` to update the nurse's saved home address
+  - Returns updated profile
+- `POST /api/auth/update-password`
   - Requires `Authorization: Bearer <token>`
-  - Returns up to 5 suggestions
-  - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
+  - Accepts `{ currentPassword, newPassword }`
+  - Verifies current password before updating
+  - Rejects no-op changes and weak passwords
+  - Rate limited; returns `429` when exceeded
+
+Authentication behavior:
+
+- Missing/invalid/malformed bearer token returns `401`.
+- Missing `JWT_SECRET` returns `500` configuration error.
+- Auth endpoints include baseline security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and emit HSTS on HTTPS requests.
+
+### Patients
+
 - `GET /api/patients?query=...`
   - Requires `Authorization: Bearer <token>`
   - Lists patients for the authenticated nurse (`JWT sub`)
@@ -147,29 +148,86 @@ NOMINATIM_CONTACT_EMAIL=you@example.com
 - `PATCH /api/patients/:id`
   - Requires `Authorization: Bearer <token>`
   - Partially updates a patient owned by the authenticated nurse (`JWT sub`)
+  - If `address` changes and `googlePlaceId` is omitted, clears `googlePlaceId` to prevent stale mismatches
   - Returns updated patient JSON
 - `DELETE /api/patients/:id`
   - Requires `Authorization: Bearer <token>`
   - Hard deletes a patient owned by the authenticated nurse (`JWT sub`)
   - Returns `{ "deleted": true, "id": "..." }`
 
-Authentication behavior:
+### Route planning
 
-- Missing/invalid/malformed bearer token returns `401`.
-- Missing `JWT_SECRET` returns `500` configuration error.
-- Auth endpoints include baseline security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and emit HSTS on HTTPS requests.
-- Authentication assumes nurse accounts already exist in the database; no default bootstrap nurse is created automatically.
-- The finalized auth schema requires every nurse account to have non-null `email` and `password_hash` values.
+- `POST /api/optimize-route/v2`
+  - Requires `Authorization: Bearer <token>`
+  - See request/response shape below
+  - Enforces per-client in-memory rate limiting
 
-Patient update behavior note:
+### Address autocomplete
 
-- When updating a patient address:
-  - sending `googlePlaceId` explicitly sets that value (including explicit `null` to clear);
-  - if `address` changes and `googlePlaceId` is omitted, backend clears `googlePlaceId` to avoid stale place-id/address mismatches.
+- `GET /api/address-autocomplete?query=...`
+  - Requires `Authorization: Bearer <token>`
+  - Returns up to 5 suggestions
+  - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
+
+## Route optimizer — v2 scheduling logic
+
+`POST /api/optimize-route/v2` uses a greedy beam search (depth 2, beam width 8) with priority tiers and EDF candidate selection.
+
+### Step 1 — Candidate pool selection
+
+At each step, the algorithm selects from a prioritised pool:
+
+```text
+Any FIXED patients remaining?
+├── YES
+│   ├── Any FIXED already late?  → Pool: late fixed patients only
+│   └── None late               → Pool: all fixed patients
+└── NO
+    ├── Any FLEXIBLE (windowed) already late?   → Pool: late flexible patients only
+    ├── Any FLEXIBLE within 90 min of deadline? → Pool: urgent flexible patients, sorted tightest deadline first (EDF)
+    └── None urgent                             → Pool: all remaining patients
+```
+
+### Step 2 — Score every candidate (depth-2 lookahead)
+
+Within the pool, each candidate is scored across 5 dimensions (lower = better):
+
+| Priority | Dimension | What it measures |
+| --- | --- | --- |
+| 1 | `fixedLateCount` | Number of fixed patients that end up late |
+| 2 | `fixedLateSeconds` | Total lateness for fixed patients |
+| 3 | `totalLateSeconds` | Total lateness for all patients |
+| 4 | `totalWaitSeconds` | Idle wait time at stops |
+| 5 | `totalTravelSeconds` | Total drive time (distance proxy) |
+
+The beam search evaluates 2 steps ahead across the top 8 candidates, so lateness from future steps folds back into the current decision.
+
+### Step 3 — Gap filler
+
+After a candidate is selected, if it has > 30 min of idle wait before its window opens, the algorithm checks whether a nearby no-window or flexible patient can be inserted into that gap without delaying the anchor visit.
+
+### Key properties
+
+- Distance is the **last** tiebreaker — it never overrides deadline pressure.
+- The gap filler can only **insert**, never displace a selected candidate.
+- Flexible patients within 90 min of their deadline are elevated to a priority pool and sorted by tightest deadline first (EDF), so they are picked before going late rather than after.
+
+### Warnings in response
+
+The optimizer returns an optional `warnings[]` array:
+
+| Type | Meaning |
+| --- | --- |
+| `window_conflict` | Two fixed patients whose windows cannot both be satisfied given travel time between them |
+| `fixed_late` | Fixed patient will be served more than 15 min past their window close |
+| `flexible_late` | Flexible patient will be served more than 60 min past their window close |
 
 ## Key files
 
-- `src/app/api/optimize-route/route.ts`
+- `src/app/api/optimize-route/v2/optimizeRouteService.ts` — core scheduling algorithm
+- `src/app/api/optimize-route/v2/travelMatrix.ts` — Google Routes travel duration matrix
+- `src/app/api/optimize-route/v2/validation.ts` — request validation
+- `src/app/api/optimize-route/v2/types.ts` — internal types
 - `src/app/api/address-autocomplete/route.ts`
 - `src/app/api/patients/route.ts`
 - `src/app/api/patients/[id]/route.ts`

@@ -92,6 +92,49 @@ Notes:
 - `start.departureTime` is optional and typically omitted by frontend.
 - Backend computes departure dynamically when omitted (earliest first-stop anchor with travel-time + buffer).
 
+## Route optimizer scheduling logic
+
+`POST /api/optimize-route/v2` uses a greedy beam search (depth 2, beam width 8) with priority tiers and EDF candidate selection.
+
+### Step 1 — Candidate pool selection
+
+At each step, the algorithm selects from a prioritised pool:
+
+```text
+Any FIXED patients remaining?
+├── YES
+│   ├── Any FIXED already late?  → Pool: late fixed patients only
+│   └── None late               → Pool: all fixed patients
+└── NO
+    ├── Any FLEXIBLE (windowed) already late?   → Pool: late flexible patients only
+    ├── Any FLEXIBLE within 90 min of deadline? → Pool: urgent flexible patients, sorted tightest deadline first (EDF)
+    └── None urgent                             → Pool: all remaining patients
+```
+
+### Step 2 — Score every candidate (depth-2 lookahead)
+
+Within the pool, each candidate is scored across 5 dimensions (lower = better):
+
+| Priority | Dimension | What it measures |
+| --- | --- | --- |
+| 1 | `fixedLateCount` | Number of fixed patients that end up late |
+| 2 | `fixedLateSeconds` | Total lateness for fixed patients |
+| 3 | `totalLateSeconds` | Total lateness for all patients |
+| 4 | `totalWaitSeconds` | Idle wait time at stops |
+| 5 | `totalTravelSeconds` | Total drive time (distance proxy) |
+
+The beam search evaluates 2 steps ahead across the top 8 candidates, so lateness from future steps folds back into the current decision.
+
+### Step 3 — Gap filler
+
+After a candidate is selected, if it has > 30 min of idle wait before its window opens, the algorithm checks whether a nearby no-window or flexible patient can be inserted into that gap without delaying the anchor visit.
+
+### Key properties
+
+- Distance is the **last** tiebreaker — it never overrides deadline pressure.
+- The gap filler can only **insert**, never displace a selected candidate.
+- Flexible patients within 90 min of their deadline are elevated to a priority pool and sorted by tightest deadline first (EDF), so they are picked before going late rather than after.
+
 ## Additional docs
 
 - [Backend guide](backend/README.md)

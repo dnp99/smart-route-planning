@@ -35,6 +35,7 @@ lerna-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+.claude/
 
 # TypeScript / framework artifacts
 *.tsbuildinfo
