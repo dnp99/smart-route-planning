@@ -117,6 +117,9 @@ describe("App routing", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Smart Route Planner" })).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
     expect(screen.getByRole("textbox", { name: /starting point/i })).toHaveProperty(
       "value",
       "3361 Ingram Road, Mississauga, ON",
