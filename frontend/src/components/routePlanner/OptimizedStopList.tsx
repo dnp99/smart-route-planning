@@ -67,7 +67,7 @@ export function OptimizedStopList({
                   </svg>
                   <div className="flex flex-col">
                     <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-                      ~ {formatBreakGap(idleGapMinutes)} break
+                      Break · {formatBreakGap(idleGapMinutes)}
                     </span>
                     <span className="text-[11px] text-amber-600 dark:text-amber-400">
                       {expectedStartTimeFormatter.format(new Date(breakStartMs))} –{" "}
@@ -77,7 +77,7 @@ export function OptimizedStopList({
                 </div>
               </div>
             )}
-            <li className="text-sm text-slate-800 dark:text-slate-200">
+            <li className="min-w-0 text-sm text-slate-800 dark:text-slate-200">
               {stop.tasks.length > 0 ? (
                 <div className="space-y-2">
                   {stop.tasks.map((task) => {

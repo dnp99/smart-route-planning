@@ -45,14 +45,14 @@ export function OptimizedStopCard({
 
   return (
     <div
-      className={`rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40${stopBorderClass ? ` ${stopBorderClass}` : ""}`}
+      className={`min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 px-2 py-2 dark:border-slate-700 dark:bg-slate-900/40${stopBorderClass ? ` ${stopBorderClass}` : ""}`}
     >
       <button
         type="button"
         aria-label={`Toggle details for ${formattedPatientName}`}
         aria-expanded={isExpanded}
         onClick={onToggle}
-        className="m-0 bg-transparent p-0 text-sm font-semibold text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+        className="m-0 block w-full truncate bg-transparent p-0 text-left text-sm font-semibold text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
       >
         {formattedPatientName}
       </button>
@@ -73,24 +73,22 @@ export function OptimizedStopCard({
             {expectedStartLabel}
           </span>
         )}
-        {task.windowStart && task.windowEnd && task.lateBySeconds > 0 && (
-          <>
-            <span className="mx-2 font-normal text-slate-300 dark:text-slate-600">|</span>
-            <span
-              className={[
-                "font-semibold",
-                task.windowType === "fixed" && task.lateBySeconds > 15 * 60
-                  ? "text-red-600 dark:text-red-400"
-                  : task.windowType === "flexible" && task.lateBySeconds > 60 * 60
-                    ? "text-amber-600 dark:text-amber-400"
-                    : "text-red-600 dark:text-red-400",
-              ].join(" ")}
-            >
-              Outside preferred window by {Math.ceil(task.lateBySeconds / 60)} min
-            </span>
-          </>
-        )}
       </p>
+
+      {task.windowStart && task.windowEnd && task.lateBySeconds > 0 && (
+        <p
+          className={[
+            "m-0 text-xs font-semibold",
+            task.windowType === "fixed" && task.lateBySeconds > 15 * 60
+              ? "text-red-600 dark:text-red-400"
+              : task.windowType === "flexible" && task.lateBySeconds > 60 * 60
+                ? "text-amber-600 dark:text-amber-400"
+                : "text-red-600 dark:text-red-400",
+          ].join(" ")}
+        >
+          Outside preferred window by {Math.ceil(task.lateBySeconds / 60)} min
+        </p>
+      )}
 
       {isExpanded && (
         <div className="mt-1 space-y-0.5 text-xs text-slate-600 dark:text-slate-300">

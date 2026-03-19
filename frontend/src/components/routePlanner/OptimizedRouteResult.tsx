@@ -15,8 +15,10 @@ const unscheduledReasonLabels = {
 
 type OptimizedRouteResultProps = {
   result: OptimizeRouteResponse;
-  warningsDismissed: boolean;
-  onDismissWarnings: () => void;
+  conflictWarningsDismissed: boolean;
+  onDismissConflictWarnings: () => void;
+  latenessWarningsDismissed: boolean;
+  onDismissLatenessWarnings: () => void;
   expandedResultTaskIds: Record<string, boolean>;
   onToggleResultTask: (taskId: string) => void;
   expandedResultEndingStopIds: Record<string, boolean>;
@@ -26,8 +28,10 @@ type OptimizedRouteResultProps = {
 
 export function OptimizedRouteResult({
   result,
-  warningsDismissed,
-  onDismissWarnings,
+  conflictWarningsDismissed,
+  onDismissConflictWarnings,
+  latenessWarningsDismissed,
+  onDismissLatenessWarnings,
   expandedResultTaskIds,
   onToggleResultTask,
   expandedResultEndingStopIds,
@@ -74,11 +78,11 @@ export function OptimizedRouteResult({
     };
   }, [result]);
 
-  const dismissButton = (
+  const makeDismissButton = (onDismiss: () => void) => (
     <button
       type="button"
-      aria-label="Dismiss warnings"
-      onClick={onDismissWarnings}
+      aria-label="Dismiss warning"
+      onClick={onDismiss}
       className="shrink-0 text-current opacity-60 hover:opacity-100"
     >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
@@ -94,7 +98,7 @@ export function OptimizedRouteResult({
           Optimized Route
         </h2>
         <p className="m-0 text-sm text-slate-500 dark:text-slate-400">
-          Review the route summary below, or open it in Google Maps for live navigation.
+          Your optimized stops and estimated times are shown below.
         </p>
       </div>
 
@@ -106,19 +110,19 @@ export function OptimizedRouteResult({
             rel="noreferrer"
             className={responsiveStyles.googleMapsButton}
           >
-            Open Planned Trip in Google Maps
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polygon points="3 11 22 2 13 21 11 13 3 11" />
+            </svg>
+            Open in Google Maps
           </a>
-          <div className={responsiveStyles.resultInfoNote}>
-            <span
-              aria-hidden="true"
-              className="mt-0.5 inline-flex h-4 w-4 flex-none items-center justify-center rounded-full border border-slate-300 text-[10px] font-bold text-slate-500 dark:border-slate-600 dark:text-slate-400"
-            >
-              i
-            </span>
-            <p className="m-0">
-              Google Maps may show a different ETA based on live traffic.
-            </p>
-          </div>
+          <p className="m-0 flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+              <line x1="12" y1="9" x2="12" y2="13" />
+              <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            Live traffic may affect ETAs.
+          </p>
         </div>
       )}
 
@@ -152,18 +156,18 @@ export function OptimizedRouteResult({
         </div>
       )}
 
-      {result.warnings && result.warnings.length > 0 && !warningsDismissed && (() => {
+      {result.warnings && result.warnings.length > 0 && (() => {
         const conflictWarnings = result.warnings.filter((w) => w.type === "window_conflict");
         const latenessWarnings = result.warnings.filter((w) => w.type !== "window_conflict");
         return (
           <div className="mt-3 space-y-2">
-            {conflictWarnings.length > 0 && (
+            {conflictWarnings.length > 0 && !conflictWarningsDismissed && (
               <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/70 dark:bg-amber-950/30">
                 <div className="flex items-start justify-between gap-2">
                   <p className="m-0 text-sm font-semibold text-amber-800 dark:text-amber-200">
                     Scheduling {conflictWarnings.length === 1 ? "Conflict" : "Conflicts"}
                   </p>
-                  {latenessWarnings.length === 0 && dismissButton}
+                  {makeDismissButton(onDismissConflictWarnings)}
                 </div>
                 <ul className="m-0 mt-1 space-y-0.5 pl-4">
                   {conflictWarnings.map((warning) => (
@@ -177,13 +181,13 @@ export function OptimizedRouteResult({
                 </ul>
               </div>
             )}
-            {latenessWarnings.length > 0 && (
+            {latenessWarnings.length > 0 && !latenessWarningsDismissed && (
               <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 dark:border-red-900/70 dark:bg-red-950/30">
                 <div className="flex items-start justify-between gap-2">
                   <p className="m-0 text-sm font-semibold text-red-800 dark:text-red-200">
                     Lateness {latenessWarnings.length === 1 ? "Warning" : "Warnings"}
                   </p>
-                  {dismissButton}
+                  {makeDismissButton(onDismissLatenessWarnings)}
                 </div>
                 <ul className="m-0 mt-1 space-y-0.5 pl-4">
                   {latenessWarnings.map((warning) => (
@@ -201,33 +205,30 @@ export function OptimizedRouteResult({
         );
       })()}
 
-      <RouteMap
-        start={result.start}
-        orderedStops={result.orderedStops}
-        routeLegs={result.routeLegs}
-      />
+      <hr className="my-4 border-slate-300 dark:border-slate-600" />
 
-      <div className={responsiveStyles.resultEndpoints}>
-        <div className={responsiveStyles.resultEndpointCard}>
-          <p className={responsiveStyles.resultEndpointLabel}>Start</p>
-          <p className={responsiveStyles.resultEndpointValue}>{result.start.address}</p>
+      <div className="flex flex-col gap-4 sm:grid sm:grid-cols-[2fr_3fr]">
+        <div className="order-2 min-w-0 sm:order-1">
+          {hasIntermediateStops && (
+            <OptimizedStopList
+              orderedStops={result.orderedStops}
+              expandedResultTaskIds={expandedResultTaskIds}
+              onToggleResultTask={onToggleResultTask}
+              expandedResultEndingStopIds={expandedResultEndingStopIds}
+              onToggleResultEndingStop={onToggleResultEndingStop}
+              normalizedHomeAddress={normalizedHomeAddress}
+            />
+          )}
         </div>
-        <div className={responsiveStyles.resultEndpointCard}>
-          <p className={responsiveStyles.resultEndpointLabel}>End</p>
-          <p className={responsiveStyles.resultEndpointValue}>{result.end.address}</p>
+
+        <div className="order-1 sm:order-2 sm:sticky sm:top-4 sm:self-start">
+          <RouteMap
+            start={result.start}
+            orderedStops={result.orderedStops}
+            routeLegs={result.routeLegs}
+          />
         </div>
       </div>
-
-      {hasIntermediateStops && (
-        <OptimizedStopList
-          orderedStops={result.orderedStops}
-          expandedResultTaskIds={expandedResultTaskIds}
-          onToggleResultTask={onToggleResultTask}
-          expandedResultEndingStopIds={expandedResultEndingStopIds}
-          onToggleResultEndingStop={onToggleResultEndingStop}
-          normalizedHomeAddress={normalizedHomeAddress}
-        />
-      )}
 
       {result.unscheduledTasks.length > 0 && (
         <section className="mt-4 rounded-xl border border-amber-200 bg-amber-50/70 p-3 dark:border-amber-900/60 dark:bg-amber-950/20">

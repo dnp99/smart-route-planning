@@ -201,7 +201,8 @@ function RoutePlanner({
   const [expandedResultEndingStopIds, setExpandedResultEndingStopIds] = useState<
     Record<string, boolean>
   >({});
-  const [warningsDismissed, setWarningsDismissed] = useState(false);
+  const [conflictWarningsDismissed, setConflictWarningsDismissed] = useState(false);
+  const [latenessWarningsDismissed, setLatenessWarningsDismissed] = useState(false);
   const [isDestinationListExpanded, setIsDestinationListExpanded] = useState(true);
   const selectedCreateVisitType =
     createPatientFormValues.visitWindows[0]?.visitTimeType ?? "flexible";
@@ -395,7 +396,8 @@ function RoutePlanner({
   const isHomeAddressMissing = normalizedHomeAddress.length === 0;
 
   useEffect(() => {
-    setWarningsDismissed(false);
+    setConflictWarningsDismissed(false);
+    setLatenessWarningsDismissed(false);
   }, [result]);
 
   const requestDestinations = useMemo(() => {
@@ -1064,8 +1066,10 @@ function RoutePlanner({
         {result && (
           <OptimizedRouteResult
             result={result}
-            warningsDismissed={warningsDismissed}
-            onDismissWarnings={() => setWarningsDismissed(true)}
+            conflictWarningsDismissed={conflictWarningsDismissed}
+            onDismissConflictWarnings={() => setConflictWarningsDismissed(true)}
+            latenessWarningsDismissed={latenessWarningsDismissed}
+            onDismissLatenessWarnings={() => setLatenessWarningsDismissed(true)}
             expandedResultTaskIds={expandedResultTaskIds}
             onToggleResultTask={(taskId) => setExpandedResultTaskIds((current) => ({ ...current, [taskId]: !current[taskId] }))}
             expandedResultEndingStopIds={expandedResultEndingStopIds}
