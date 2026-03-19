@@ -691,7 +691,7 @@ describe("optimizeRouteV2 service", () => {
       "google-key",
     );
 
-    expect(result.algorithmVersion).toBe("v2.3.0-matrix-lookahead-unscheduled");
+    expect(result.algorithmVersion).toBe("v2.4.1-late-fixed-priority");
     expect(result.orderedStops).toHaveLength(2);
     expect(result.orderedStops[0].tasks).toHaveLength(2);
     expect(result.orderedStops[0].tasks[0].visitId).toBe("fixed-am");
@@ -1071,6 +1071,598 @@ describe("optimizeRouteV2 service", () => {
       isEndingPoint: true,
       tasks: [],
     });
+  });
+
+  it("schedules a fixed-window patient before a closer no-window patient", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Ravi Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Jing Address", coords: { lat: 43.601, lon: -79.601 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T08:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-ravi",
+            patientId: "patient-ravi",
+            patientName: "Ravi R",
+            address: "Ravi Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-jing",
+            patientId: "patient-jing",
+            patientName: "Jing Su",
+            address: "Jing Address",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const passedOrderedStops = call?.[1] ?? [];
+    expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
+      "Ravi Address",
+      "Jing Address",
+      "End",
+    ]);
+  });
+
+  it("schedules all fixed-window patients before a closer no-window patient when two share the same window", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Ravi Address", coords: { lat: 43.65, lon: -79.65 } },
+      { address: "Deep Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Jing Address", coords: { lat: 43.601, lon: -79.601 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T08:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-ravi",
+            patientId: "patient-ravi",
+            patientName: "Ravi R",
+            address: "Ravi Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-deep",
+            patientId: "patient-deep",
+            patientName: "Deep P",
+            address: "Deep Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-jing",
+            patientId: "patient-jing",
+            patientName: "Jing Su",
+            address: "Jing Address",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const passedOrderedStops = call?.[1] ?? [];
+    const stopAddresses = passedOrderedStops.map((stop) => stop.address);
+    const jingIndex = stopAddresses.indexOf("Jing Address");
+    const raviIndex = stopAddresses.indexOf("Ravi Address");
+    const deepIndex = stopAddresses.indexOf("Deep Address");
+    expect(jingIndex).toBeGreaterThan(raviIndex);
+    expect(jingIndex).toBeGreaterThan(deepIndex);
+  });
+
+  it("gap-filler still inserts a no-window patient into a large idle gap before a fixed anchor", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Fixed PM Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Nearby No-Window", coords: { lat: 43.705, lon: -79.705 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "fixed-pm",
+            patientId: "patient-fixed",
+            patientName: "Fixed PM",
+            address: "Fixed PM Address",
+            windowStart: "11:00",
+            windowEnd: "12:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "no-window",
+            patientId: "patient-no-window",
+            patientName: "No Window Patient",
+            address: "Nearby No-Window",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const passedOrderedStops = call?.[1] ?? [];
+    expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
+      "Nearby No-Window",
+      "Fixed PM Address",
+      "End",
+    ]);
+  });
+
+  it("emits window_conflict warning for two fixed patients whose windows cannot both be satisfied", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Ravi Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Deep Address", coords: { lat: 43.8, lon: -79.8 } },
+      { address: "End", coords: { lat: 43.9, lon: -79.9 } },
+    ]);
+
+    // Travel matrix: ~7200s (2h) between patients — cannot serve both within 09:00-10:00 window
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrix([
+        ["address:start", "address:ravi address", 600],
+        ["address:start", "address:deep address", 600],
+        ["address:ravi address", "address:deep address", 7200],
+        ["address:deep address", "address:ravi address", 7200],
+        ["address:ravi address", "address:end", 600],
+        ["address:deep address", "address:end", 600],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T08:30:00-04:00",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "visit-ravi",
+            patientId: "patient-ravi",
+            patientName: "Ravi R",
+            address: "Ravi Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-deep",
+            patientId: "patient-deep",
+            patientName: "Deep P",
+            address: "Deep Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const conflictWarning = result.warnings?.find((w) => w.type === "window_conflict");
+    expect(conflictWarning).toBeDefined();
+    expect(conflictWarning?.type).toBe("window_conflict");
+    if (conflictWarning?.type === "window_conflict") {
+      expect(conflictWarning.patientIds).toContain("patient-ravi");
+      expect(conflictWarning.patientIds).toContain("patient-deep");
+    }
+  });
+
+  it("does not emit window_conflict when two fixed patients can be served in sequence", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "First Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Second Address", coords: { lat: 43.8, lon: -79.8 } },
+      { address: "End", coords: { lat: 43.9, lon: -79.9 } },
+    ]);
+
+    // Travel matrix: 600s (10 min) between patients — can serve first at 08:30, finish at 09:00, travel 10 min, serve second by 09:10
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrix([
+        ["address:start", "address:first address", 600],
+        ["address:start", "address:second address", 600],
+        ["address:first address", "address:second address", 600],
+        ["address:second address", "address:first address", 600],
+        ["address:first address", "address:end", 600],
+        ["address:second address", "address:end", 600],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "visit-first",
+            patientId: "patient-first",
+            patientName: "First Patient",
+            address: "First Address",
+            windowStart: "08:00",
+            windowEnd: "09:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-second",
+            patientId: "patient-second",
+            patientName: "Second Patient",
+            address: "Second Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const conflictWarning = result.warnings?.find((w) => w.type === "window_conflict");
+    expect(conflictWarning).toBeUndefined();
+  });
+
+  it("emits fixed_late warning when fixed patient is more than 15 min past window close", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Fixed Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    // Departure 07:30, window closes 09:00, travel = 7020s → arrive 09:27 → 27 min late
+    mockedBuildDrivingRoute.mockResolvedValue({
+      orderedStops: [
+        {
+          address: "Fixed Address",
+          coords: { lat: 43.7, lon: -79.7 },
+          distanceFromPreviousKm: 10,
+          durationFromPreviousSeconds: 7020,
+        },
+        {
+          address: "End",
+          coords: { lat: 43.8, lon: -79.8 },
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 600,
+          isEndingPoint: true,
+        },
+      ],
+      routeLegs: [
+        { fromAddress: "Start", toAddress: "Fixed Address", distanceMeters: 10000, durationSeconds: 7020, encodedPolyline: "a" },
+        { fromAddress: "Fixed Address", toAddress: "End", distanceMeters: 2000, durationSeconds: 600, encodedPolyline: "b" },
+      ],
+      totalDistanceMeters: 12000,
+      totalDistanceKm: 12,
+      totalDurationSeconds: 7620,
+    });
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00.000Z",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "fixed-late",
+            patientId: "patient-fixed",
+            patientName: "Fixed Patient",
+            address: "Fixed Address",
+            windowStart: "09:00",
+            windowEnd: "09:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 10,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings?.[0]).toMatchObject({
+      type: "fixed_late",
+      patientId: "patient-fixed",
+      patientName: "Fixed Patient",
+    });
+  });
+
+  it("emits flexible_late warning when flexible patient with preferred window is more than 60 min past window close", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Flex Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    // Departure 07:30, window closes 08:00, travel = 7200s → arrive 09:30 → 90 min late
+    mockedBuildDrivingRoute.mockResolvedValue({
+      orderedStops: [
+        {
+          address: "Flex Address",
+          coords: { lat: 43.7, lon: -79.7 },
+          distanceFromPreviousKm: 10,
+          durationFromPreviousSeconds: 7200,
+        },
+        {
+          address: "End",
+          coords: { lat: 43.8, lon: -79.8 },
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 600,
+          isEndingPoint: true,
+        },
+      ],
+      routeLegs: [
+        { fromAddress: "Start", toAddress: "Flex Address", distanceMeters: 10000, durationSeconds: 7200, encodedPolyline: "a" },
+        { fromAddress: "Flex Address", toAddress: "End", distanceMeters: 2000, durationSeconds: 600, encodedPolyline: "b" },
+      ],
+      totalDistanceMeters: 12000,
+      totalDistanceKm: 12,
+      totalDurationSeconds: 7800,
+    });
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00.000Z",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "flex-late",
+            patientId: "patient-flex",
+            patientName: "Flexible Patient",
+            address: "Flex Address",
+            windowStart: "07:00",
+            windowEnd: "08:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 10,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings?.[0]).toMatchObject({
+      type: "flexible_late",
+      patientId: "patient-flex",
+      patientName: "Flexible Patient",
+    });
+  });
+
+  it("emits no warnings when all patients are within tolerance", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Fixed Address", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    // Departure 07:30, window 09:00-10:00, travel = 5400s → arrive 09:00 exactly → 0 min late
+    mockedBuildDrivingRoute.mockResolvedValue({
+      orderedStops: [
+        {
+          address: "Fixed Address",
+          coords: { lat: 43.7, lon: -79.7 },
+          distanceFromPreviousKm: 10,
+          durationFromPreviousSeconds: 5400,
+        },
+        {
+          address: "End",
+          coords: { lat: 43.8, lon: -79.8 },
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 600,
+          isEndingPoint: true,
+        },
+      ],
+      routeLegs: [
+        { fromAddress: "Start", toAddress: "Fixed Address", distanceMeters: 10000, durationSeconds: 5400, encodedPolyline: "a" },
+        { fromAddress: "Fixed Address", toAddress: "End", distanceMeters: 2000, durationSeconds: 600, encodedPolyline: "b" },
+      ],
+      totalDistanceMeters: 12000,
+      totalDistanceKm: 12,
+      totalDurationSeconds: 6000,
+    });
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00.000Z",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "fixed-ontime",
+            patientId: "patient-fixed",
+            patientName: "Fixed Patient",
+            address: "Fixed Address",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(result.warnings).toBeUndefined();
+  });
+
+  it("schedules an already-late fixed patient before a no-window patient rather than letting the no-window fill the gap", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "First Fixed", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Second Fixed", coords: { lat: 43.705, lon: -79.705 } },
+      { address: "Far Future Fixed", coords: { lat: 43.8, lon: -79.8 } },
+      { address: "No Window", coords: { lat: 43.701, lon: -79.701 } },
+      { address: "End", coords: { lat: 43.9, lon: -79.9 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T08:30:00-04:00",
+        },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "first-fixed",
+            patientId: "patient-first",
+            patientName: "First Fixed",
+            address: "First Fixed",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 60,
+          },
+          {
+            visitId: "second-fixed",
+            patientId: "patient-second",
+            patientName: "Second Fixed",
+            address: "Second Fixed",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "far-future-fixed",
+            patientId: "patient-future",
+            patientName: "Far Future Fixed",
+            address: "Far Future Fixed",
+            windowStart: "17:00",
+            windowEnd: "18:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "no-window",
+            patientId: "patient-no-window",
+            patientName: "No Window",
+            address: "No Window",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    const call = mockedBuildDrivingRoute.mock.calls[0];
+    const stopAddresses = (call?.[1] ?? []).map((stop) => stop.address);
+
+    // No-window patient must NOT appear before both same-window fixed patients
+    const firstFixedIndex = stopAddresses.indexOf("First Fixed");
+    const secondFixedIndex = stopAddresses.indexOf("Second Fixed");
+    const noWindowIndex = stopAddresses.indexOf("No Window");
+
+    // Both same-window fixed patients should appear before the no-window patient
+    expect(noWindowIndex).toBeGreaterThan(firstFixedIndex);
+    expect(noWindowIndex).toBeGreaterThan(secondFixedIndex);
   });
 
   it("throws when dynamic departure planningDate is invalid", async () => {

@@ -5,6 +5,7 @@ import type { GeocodedStop as LegacyGeocodedStop, OrderedStop as LegacyOrderedSt
 import type {
   LatLng,
   OptimizeRouteResultV2,
+  ScheduleWarningV2,
   TaskResultV2,
   UnscheduledTaskV2,
   VisitV2,
@@ -16,7 +17,9 @@ import {
   type TravelMatrixNode,
 } from "./travelMatrix";
 
-const ALGORITHM_VERSION = "v2.3.0-matrix-lookahead-unscheduled";
+const ALGORITHM_VERSION = "v2.4.1-late-fixed-priority";
+const FIXED_LATE_TOLERANCE_SECONDS = 15 * 60;
+const FLEXIBLE_LATE_TOLERANCE_SECONDS = 60 * 60;
 const ESTIMATED_DRIVE_SPEED_KM_PER_HOUR = 40;
 const IDLE_GAP_FILL_THRESHOLD_SECONDS = 30 * 60;
 const IDLE_GAP_RETURN_BUFFER_SECONDS = 5 * 60;
@@ -750,6 +753,42 @@ const maybeSelectGapFiller = (
   return fillers[0]?.projection ?? selectedProjection;
 };
 
+const detectWindowConflicts = (
+  fixedVisits: VisitWithCoords[],
+  resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+): ScheduleWarningV2[] => {
+  const warnings: ScheduleWarningV2[] = [];
+
+  for (let i = 0; i < fixedVisits.length; i++) {
+    for (let j = i + 1; j < fixedVisits.length; j++) {
+      const a = fixedVisits[i];
+      const b = fixedVisits[j];
+      if (!a || !b) {
+        continue;
+      }
+
+      const travelAtoB = resolveTravelSeconds(a, b);
+      const aBeforeBFeasible =
+        a.windowStartSeconds + a.serviceDurationMinutes * 60 + travelAtoB <= b.windowEndSeconds;
+
+      const travelBtoA = resolveTravelSeconds(b, a);
+      const bBeforeAFeasible =
+        b.windowStartSeconds + b.serviceDurationMinutes * 60 + travelBtoA <= a.windowEndSeconds;
+
+      if (!aBeforeBFeasible && !bBeforeAFeasible) {
+        warnings.push({
+          type: "window_conflict",
+          patientIds: [a.patientId, b.patientId],
+          patientNames: [a.patientName, b.patientName],
+          message: `${a.patientName} and ${b.patientName} have overlapping fixed windows. Only one can be served on time.`,
+        });
+      }
+    }
+  }
+
+  return warnings;
+};
+
 const orderVisitsByWindowDistanceAndDuration = (
   visits: VisitWithCoords[],
   startLocation: LocationRef,
@@ -810,8 +849,18 @@ const orderVisitsByWindowDistanceAndDuration = (
       };
     });
 
-    projections.sort(compareVisitProjections);
-    const firstProjection = projections[0];
+    const hasFixedRemaining = projections.some((p) => p.visit.windowType === "fixed");
+    const lateFixedProjections = hasFixedRemaining
+      ? projections.filter((p) => p.visit.windowType === "fixed" && p.lateBySeconds > 0)
+      : [];
+    const primaryProjections =
+      lateFixedProjections.length > 0
+        ? lateFixedProjections
+        : hasFixedRemaining
+          ? projections.filter((p) => p.visit.windowType === "fixed")
+          : projections;
+    primaryProjections.sort(compareVisitProjections);
+    const firstProjection = primaryProjections[0];
     if (!firstProjection) {
       throw new HttpError(500, "Unable to evaluate route candidates.");
     }
@@ -960,6 +1009,11 @@ export const optimizeRouteV2 = async (
 
   const resolveTravelSeconds = buildTravelSecondsResolver(planningTravelMatrix);
 
+  const fixedVisitsWithWindow = visitsWithCoords.filter(
+    (visit) => visit.windowType === "fixed" && visit.hasPreferredWindow,
+  );
+  const conflictWarnings = detectWindowConflicts(fixedVisitsWithWindow, resolveTravelSeconds);
+
   const departureContext = await resolveDepartureContext(
     request,
     visitsWithCoords,
@@ -1058,6 +1112,34 @@ export const optimizeRouteV2 = async (
     (task) => task.reason === "fixed_window_unreachable",
   ).length;
 
+  const warnings: ScheduleWarningV2[] = [...conflictWarnings];
+  for (const stop of orderedStops) {
+    for (const task of stop.tasks) {
+      if (task.windowType === "fixed" && task.lateBySeconds > FIXED_LATE_TOLERANCE_SECONDS) {
+        const lateMinutes = Math.ceil(task.lateBySeconds / 60);
+        warnings.push({
+          type: "fixed_late",
+          patientId: task.patientId,
+          patientName: task.patientName,
+          message: `${task.patientName} has a fixed window and will be served ${lateMinutes} min late.`,
+        });
+      } else if (
+        task.windowType === "flexible" &&
+        task.windowStart &&
+        task.windowEnd &&
+        task.lateBySeconds > FLEXIBLE_LATE_TOLERANCE_SECONDS
+      ) {
+        const lateMinutes = Math.ceil(task.lateBySeconds / 60);
+        warnings.push({
+          type: "flexible_late",
+          patientId: task.patientId,
+          patientName: task.patientName,
+          message: `${task.patientName} has a preferred window and will be served ${lateMinutes} min late.`,
+        });
+      }
+    }
+  }
+
   return {
     start: {
       address: request.start.address,
@@ -1071,6 +1153,7 @@ export const optimizeRouteV2 = async (
     orderedStops,
     routeLegs,
     unscheduledTasks,
+    ...(warnings.length > 0 ? { warnings } : {}),
     metrics: {
       fixedWindowViolations: fixedWindowViolations + unscheduledFixedWindowViolations,
       totalLateSeconds,

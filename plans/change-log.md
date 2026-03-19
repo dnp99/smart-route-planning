@@ -13,6 +13,7 @@ Upcoming or not-yet-implemented work should be stored as separate planning docum
 Current planning documents:
 
 - `plans/account-settings-and-working-hours-execution-plan.md` - account settings, home address defaults, and future weekly schedule execution plan
+- `plans/scheduling-priority-execution-plan.md` - fixed-patient priority ordering, lateness tolerances, and pre-optimization conflict detection
 
 ---
 
@@ -2552,3 +2553,125 @@ An Oracle review was performed and its recommendations were incorporated, includ
 
 - Users need to verify what they are typing, especially on mobile where typos are common.
 - The confirm-field color indicator provides instant feedback without requiring a submit attempt.
+
+---
+
+## 82) Scheduling Priority Phase 1: Fixed-First Ordering
+
+### 82 — Files updated
+
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `plans/scheduling-priority-execution-plan.md`
+
+### 82 — Changes
+
+- In `orderVisitsByWindowDistanceAndDuration`, after computing projections for all remaining visits, the main candidate selection is now restricted to fixed-window patients whenever any remain.
+- Non-fixed patients (flexible, no-window) are excluded from the primary selection pool but remain eligible as gap-fillers via `maybeSelectGapFiller`, which still receives the full projections list.
+- When no fixed patients remain, all patients compete equally (existing behavior preserved).
+- Bumped `ALGORITHM_VERSION` to `v2.4.0-fixed-first`.
+- Added three new tests:
+  - Fixed patient is scheduled before a closer no-window patient.
+  - Both fixed patients with the same window go before a closer no-window patient.
+  - Gap-filler still inserts a no-window patient into a large idle gap before a fixed anchor.
+- Updated the algorithm version assertion in the existing grouped-stop metrics test.
+
+### 82 — Motivation
+
+Phase 1 of the scheduling-priority execution plan: the greedy nearest-neighbor algorithm was picking no-window patients first because they are geographically closest, even when fixed-window patients needed to depart immediately to arrive on time. This change ensures fixed patients are always the primary scheduling candidates, reducing worst-case lateness from two patients both being late to only one.
+
+---
+
+## 83) Scheduling Priority Phase 2: Lateness Tolerance Warnings
+
+### 83 — Files updated
+
+- `shared/contracts/optimizeRouteV2.ts`
+- `backend/src/app/api/optimize-route/v2/types.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/scheduling-priority-execution-plan.md`
+
+### 83 — Changes
+
+- Added `OptimizeRouteV2ScheduleWarning` type (`type`, `patientId`, `patientName`, `message`) to shared contracts.
+- Added `isScheduleWarning` runtime guard and optional `warnings?` field to `OptimizeRouteV2Response`.
+- Updated `parseOptimizeRouteV2Response` to validate the optional `warnings` array.
+- Exported `ScheduleWarningV2` alias from backend `types.ts`.
+- After building ordered stops in `optimizeRouteService.ts`, scans all task results and emits:
+  - `fixed_late` — fixed patient more than 15 min past window close.
+  - `flexible_late` — flexible patient with a preferred window more than 60 min past window close.
+- `warnings` is omitted entirely from the response when empty (no breaking change).
+- Frontend: added `warningsDismissed` state (resets on each new result via `useEffect`).
+- Added a dismissible red banner above the route map that lists each warning message when `result.warnings` is present and non-empty.
+- Updated per-stop lateness indicator: fixed > 15 min late uses red, flexible > 60 min late uses amber.
+- Added three backend tests: `fixed_late` emission, `flexible_late` emission, no warnings within tolerance.
+
+### 83 — Motivation
+
+Phase 2 of the scheduling-priority execution plan: surfaces lateness tolerance violations as structured warnings so nurses are alerted before reading the stop-by-stop detail. Fixed patients beyond 15 min and flexible patients beyond 60 min now produce named warnings in the API response and a dismissible banner in the UI.
+
+---
+
+## 84) Scheduling Priority Phase 3: Pre-Optimization Conflict Detection
+
+### 84 — Files updated
+
+- `shared/contracts/optimizeRouteV2.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `frontend/src/components/RoutePlanner.tsx`
+- `plans/scheduling-priority-execution-plan.md`
+
+### 84 — Changes
+
+- Extended `OptimizeRouteV2ScheduleWarning` to a discriminated union: existing `fixed_late`/`flexible_late` shape unchanged; new `window_conflict` shape carries `patientIds: [string, string]` and `patientNames: [string, string]`.
+- Updated `isScheduleWarning` runtime guard to validate both union branches.
+- Added `detectWindowConflicts(fixedVisits, resolveTravelSeconds)` in the service: for every pair of fixed patients, checks both orderings (A→B and B→A) using `windowStart + serviceDuration + travel > windowEnd`; if both fail, emits a `window_conflict` warning.
+- Conflict detection runs after the travel matrix is resolved (so matrix durations are used when available) but before optimization, so the nurse sees the warning before reading stop-by-stop results.
+- Conflict warnings are prepended to the warnings array before lateness warnings.
+- Frontend: split the single warning banner into two styled sections — amber for `window_conflict` (pre-route conflicts) and red for `fixed_late`/`flexible_late` (post-route lateness). Dismiss button hides both sections.
+- Added two backend tests: `window_conflict` emitted for unresolvable overlapping windows (2h travel between same-window patients), no conflict when sequential ordering is feasible.
+
+### 84 — Motivation
+
+Phase 3 of the scheduling-priority execution plan: nurses are now warned about unresolvable window clashes before they read the stop list. When two fixed patients share a window and the travel between them makes it impossible to serve both on time, a conflict notice appears at the top of the result so the nurse can contact one patient before departing.
+
+---
+
+## 85) Fix: Already-Late Fixed Patients Scheduled Before Far-Future Fixed Patients
+
+### 85 — Files updated
+
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+
+### 85 — Changes
+
+- In the primary candidate selection loop, added a late-fixed sub-group: when any fixed projection has `lateBySeconds > 0`, those patients form the highest-priority candidates (above non-late fixed patients).
+- Non-late fixed patients remain primary when no late fixed patients exist (existing behavior preserved).
+- Bumped `ALGORITHM_VERSION` to `v2.4.1-late-fixed-priority`.
+- Added a test covering the scenario: two same-window fixed patients finish, one is already late — the late fixed patient goes before the no-window patient rather than letting the no-window patient fill the gap.
+
+### 85 — Motivation
+
+After a fixed patient's window closes, the depth-2 lookahead was selecting a far-future fixed patient (fixedLateCount=0 in the immediate+1 step) over the already-late one (fixedLateCount=1). This triggered the gap-filler, which accepted the no-window patient (lateBySeconds=0) and rejected the late fixed patient (lateBySeconds>0), causing the already-late patient to run even later. In the reported case, Ravi R was 49 min late instead of ~13 min. The fix ensures already-late fixed patients are always visited as soon as possible to minimise accumulated lateness.
+
+---
+
+## 86) Route Planner: Home Arrival Time on Ending Stop
+
+### 86 — Files updated
+
+- `frontend/src/components/RoutePlanner.tsx`
+
+### 86 — Changes
+
+- When the ending stop is the nurse's saved home address, a green "You should be home by X" line now appears directly below the "Home" label.
+- Time is derived from `stop.arrivalTime` (ISO string) and formatted with the existing `expectedStartTimeFormatter` (12-hour, hours + minutes).
+- Not shown when the ending address is not the home address.
+
+### 86 — Motivation
+
+Nurses asked for a quick at-a-glance answer to "when will I be done for the day?" without having to expand the stop details or mentally add up travel times.
