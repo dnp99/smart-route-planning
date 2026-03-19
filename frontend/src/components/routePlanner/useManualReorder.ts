@@ -140,6 +140,9 @@ const estimateStops = (
   return orderedStops.map((stop) => {
     const stopCoords = getStopCoords(stop);
     if (!stopCoords) {
+      // Can't compute haversine without coords — advance the cursor by the
+      // original leg duration so subsequent stops aren't anchored to the wrong time.
+      cursorMs += stop.durationFromPreviousSeconds * 1000;
       return stop;
     }
 

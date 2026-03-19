@@ -21,6 +21,7 @@ export const useRouteOptimization = () => {
   const [result, setResult] = useState<OptimizeRouteResponse | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const [showOptimizeSuccess, setShowOptimizeSuccess] = useState(false);
   const [hasAttemptedOptimize, setHasAttemptedOptimize] = useState(false);
 
@@ -58,6 +59,9 @@ export const useRouteOptimization = () => {
     }
 
     setIsLoading(true);
+    if (preserveOrder === true) {
+      setIsRecalculating(true);
+    }
 
     try {
       const optimizedResult = await requestOptimizedRoute({
@@ -81,6 +85,7 @@ export const useRouteOptimization = () => {
       );
     } finally {
       setIsLoading(false);
+      setIsRecalculating(false);
     }
   };
 
@@ -88,6 +93,7 @@ export const useRouteOptimization = () => {
     result,
     error,
     isLoading,
+    isRecalculating,
     showOptimizeSuccess,
     hasAttemptedOptimize,
     optimizeRoute,

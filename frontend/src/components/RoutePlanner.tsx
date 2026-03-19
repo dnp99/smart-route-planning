@@ -251,6 +251,7 @@ function RoutePlanner({
     result,
     error,
     isLoading,
+    isRecalculating,
     showOptimizeSuccess,
     hasAttemptedOptimize,
     optimizeRoute,
@@ -1248,7 +1249,7 @@ function RoutePlanner({
             canMoveStop={canMoveStop}
             onResetManualOrder={resetOrder}
             onRecalculateManualOrder={handleRecalculateManualOrder}
-            isRecalculatingManualOrder={isLoading}
+            isRecalculatingManualOrder={isRecalculating}
             conflictWarningsDismissed={conflictWarningsDismissed}
             onDismissConflictWarnings={() => setConflictWarningsDismissed(true)}
             latenessWarningsDismissed={latenessWarningsDismissed}
