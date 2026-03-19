@@ -13,7 +13,6 @@ Upcoming or not-yet-implemented work should be stored as separate planning docum
 Current planning documents:
 
 - `plans/account-settings-and-working-hours-execution-plan.md` - account settings, home address defaults, and future weekly schedule execution plan
-- `plans/scheduling-priority-execution-plan.md` - fixed-patient priority ordering, lateness tolerances, and pre-optimization conflict detection
 
 ---
 
