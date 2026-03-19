@@ -11,6 +11,9 @@ import { formatDuration } from "./routePlannerUtils";
 
 type OptimizedStopListProps = {
   orderedStops: OrderedStop[];
+  isStale?: boolean;
+  onMoveStop?: (stopId: string, direction: "up" | "down") => void;
+  canMoveStop?: (stopId: string, direction: "up" | "down") => boolean;
   expandedResultTaskIds: Record<string, boolean>;
   onToggleResultTask: (taskId: string) => void;
   expandedResultEndingStopIds: Record<string, boolean>;
@@ -20,6 +23,9 @@ type OptimizedStopListProps = {
 
 export function OptimizedStopList({
   orderedStops,
+  isStale = false,
+  onMoveStop,
+  canMoveStop,
   expandedResultTaskIds,
   onToggleResultTask,
   expandedResultEndingStopIds,
@@ -70,6 +76,7 @@ export function OptimizedStopList({
                       Break · {formatBreakGap(idleGapMinutes)}
                     </span>
                     <span className="text-xs text-amber-600 dark:text-amber-400">
+                      {isStale ? "~ " : ""}
                       {expectedStartTimeFormatter.format(new Date(breakStartMs))} –{" "}
                       {expectedStartTimeFormatter.format(new Date(breakEndMs))}
                     </span>
@@ -80,7 +87,7 @@ export function OptimizedStopList({
             <li className="min-w-0">
               {stop.tasks.length > 0 ? (
                 <div className="space-y-2">
-                  {stop.tasks.map((task) => {
+                  {stop.tasks.map((task, taskIndex) => {
                     const detailsKey = `${task.visitId}`;
                     return (
                       <OptimizedStopCard
@@ -88,6 +95,20 @@ export function OptimizedStopList({
                         task={task}
                         stop={stop}
                         stopLabel={String(stopIndex + 1)}
+                        isStale={isStale}
+                        showMoveControls={taskIndex === 0}
+                        canMoveUp={
+                          taskIndex === 0 &&
+                          typeof canMoveStop === "function" &&
+                          canMoveStop(stop.stopId, "up")
+                        }
+                        canMoveDown={
+                          taskIndex === 0 &&
+                          typeof canMoveStop === "function" &&
+                          canMoveStop(stop.stopId, "down")
+                        }
+                        onMoveUp={() => onMoveStop?.(stop.stopId, "up")}
+                        onMoveDown={() => onMoveStop?.(stop.stopId, "down")}
                         isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
                         onToggle={() => onToggleResultTask(detailsKey)}
                       />
@@ -107,6 +128,7 @@ export function OptimizedStopList({
                         <EndingStopCard
                           stop={stop}
                           stopLabel="E"
+                          isStale={isStale}
                           isExpanded={Boolean(expandedResultEndingStopIds[endingDetailsKey])}
                           onToggle={() => onToggleResultEndingStop(endingDetailsKey)}
                           isHomeEndingPoint={isHomeEndingPoint}

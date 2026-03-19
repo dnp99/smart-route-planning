@@ -34,6 +34,7 @@ export type OptimizeRouteV2Request = {
     googlePlaceId?: string | null;
   };
   visits: OptimizeRouteV2Visit[];
+  preserveOrder?: boolean;
 };
 
 export type OptimizeRouteV2TaskResult = {
@@ -308,6 +309,10 @@ export const isOptimizeRouteV2Request = (payload: unknown): payload is OptimizeR
   }
 
   if (!Array.isArray(payload.visits) || payload.visits.some((visit) => !isVisit(visit))) {
+    return false;
+  }
+
+  if (payload.preserveOrder !== undefined && typeof payload.preserveOrder !== "boolean") {
     return false;
   }
 

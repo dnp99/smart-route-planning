@@ -8,14 +8,17 @@ export const expectedStartTimeFormatter = new Intl.DateTimeFormat(undefined, {
   hour12: true,
 });
 
-export const formatExpectedStartTimeText = (serviceStartTime: string): string => {
+export const formatExpectedStartTimeText = (
+  serviceStartTime: string,
+  approximate = false,
+): string => {
   const parsedDate = new Date(serviceStartTime);
   const parsedTimeMs = parsedDate.getTime();
   if (parsedTimeMs !== parsedTimeMs) {
     return "";
   }
 
-  return `Expected start time ${expectedStartTimeFormatter.format(parsedDate)}`;
+  return `Expected start time ${approximate ? "~ " : ""}${expectedStartTimeFormatter.format(parsedDate)}`;
 };
 
 export const formatBreakGap = (minutes: number): string => {

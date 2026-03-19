@@ -125,6 +125,26 @@ describe("optimize-route v2 request validation", () => {
     });
   });
 
+  it("only enables preserveOrder when request explicitly sets true", () => {
+    const withPreserveOrder = parseAndValidateBody({
+      ...buildValidPayload(),
+      preserveOrder: true,
+    });
+    expect(withPreserveOrder.preserveOrder).toBe(true);
+
+    const withFalse = parseAndValidateBody({
+      ...buildValidPayload(),
+      preserveOrder: false,
+    });
+    expect(withFalse.preserveOrder).toBeUndefined();
+
+    const withInvalidType = parseAndValidateBody({
+      ...buildValidPayload(),
+      preserveOrder: "yes",
+    });
+    expect(withInvalidType.preserveOrder).toBeUndefined();
+  });
+
   it("keeps same-address visits when visit ids differ", () => {
     const payload = parseAndValidateBody({
       ...buildValidPayload(),

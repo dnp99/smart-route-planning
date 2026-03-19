@@ -21,6 +21,14 @@ const compactDisplayCopy = (value: string) =>
 
 type OptimizedRouteResultProps = {
   result: OptimizeRouteResponse;
+  orderedStops?: OptimizeRouteResponse["orderedStops"];
+  routeLegs?: OptimizeRouteResponse["routeLegs"];
+  isManualOrderStale?: boolean;
+  onMoveStop?: (stopId: string, direction: "up" | "down") => void;
+  canMoveStop?: (stopId: string, direction: "up" | "down") => boolean;
+  onResetManualOrder?: () => void;
+  onRecalculateManualOrder?: () => void;
+  isRecalculatingManualOrder?: boolean;
   conflictWarningsDismissed: boolean;
   onDismissConflictWarnings: () => void;
   latenessWarningsDismissed: boolean;
@@ -34,6 +42,14 @@ type OptimizedRouteResultProps = {
 
 export function OptimizedRouteResult({
   result,
+  orderedStops,
+  routeLegs,
+  isManualOrderStale = false,
+  onMoveStop,
+  canMoveStop,
+  onResetManualOrder,
+  onRecalculateManualOrder,
+  isRecalculatingManualOrder = false,
   conflictWarningsDismissed,
   onDismissConflictWarnings,
   latenessWarningsDismissed,
@@ -44,21 +60,23 @@ export function OptimizedRouteResult({
   onToggleResultEndingStop,
   normalizedHomeAddress,
 }: OptimizedRouteResultProps) {
+  const displayedOrderedStops = orderedStops ?? result.orderedStops;
+  const displayedRouteLegs = routeLegs ?? result.routeLegs;
   const googleMapsTripUrl = useMemo(
     () => buildGoogleMapsTripUrl(result),
     [result],
   );
   const scheduledStopCount = useMemo(
     () =>
-      result.orderedStops.filter(
+      displayedOrderedStops.filter(
         (stop) => !stop.isEndingPoint && stop.tasks.length > 0,
       ).length,
-    [result],
+    [displayedOrderedStops],
   );
 
   const hasIntermediateStops = useMemo(
-    () => result.orderedStops.some((stop) => !stop.isEndingPoint),
-    [result],
+    () => displayedOrderedStops.some((stop) => !stop.isEndingPoint),
+    [displayedOrderedStops],
   );
 
   const makeDismissButton = (onDismiss: () => void) => (
@@ -284,14 +302,51 @@ export function OptimizedRouteResult({
             </div>
 
             {hasIntermediateStops ? (
-              <OptimizedStopList
-                orderedStops={result.orderedStops}
-                expandedResultTaskIds={expandedResultTaskIds}
-                onToggleResultTask={onToggleResultTask}
-                expandedResultEndingStopIds={expandedResultEndingStopIds}
-                onToggleResultEndingStop={onToggleResultEndingStop}
-                normalizedHomeAddress={normalizedHomeAddress}
-              />
+              <>
+                {isManualOrderStale && (
+                  <div className="mt-3 rounded-2xl border border-blue-200 bg-blue-50/80 px-3 py-2.5 text-sm text-blue-900 dark:border-blue-900/60 dark:bg-blue-950/20 dark:text-blue-100">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                      <span className="m-0">
+                        Route manually adjusted. Times are estimated.
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {onResetManualOrder && (
+                          <button
+                            type="button"
+                            onClick={onResetManualOrder}
+                            className="rounded-lg border border-blue-300 px-2.5 py-1 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                          >
+                            Reset order
+                          </button>
+                        )}
+                        {onRecalculateManualOrder && (
+                          <button
+                            type="button"
+                            onClick={onRecalculateManualOrder}
+                            disabled={isRecalculatingManualOrder}
+                            className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600"
+                          >
+                            {isRecalculatingManualOrder
+                              ? "Recalculating..."
+                              : "Recalculate times"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+                <OptimizedStopList
+                  orderedStops={displayedOrderedStops}
+                  isStale={isManualOrderStale}
+                  onMoveStop={onMoveStop}
+                  canMoveStop={canMoveStop}
+                  expandedResultTaskIds={expandedResultTaskIds}
+                  onToggleResultTask={onToggleResultTask}
+                  expandedResultEndingStopIds={expandedResultEndingStopIds}
+                  onToggleResultEndingStop={onToggleResultEndingStop}
+                  normalizedHomeAddress={normalizedHomeAddress}
+                />
+              </>
             ) : (
               <p className="mt-3 rounded-2xl border border-slate-200 bg-white px-4 py-5 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
                 No scheduled visits are available for the current optimized
@@ -313,8 +368,8 @@ export function OptimizedRouteResult({
             </div>
             <RouteMap
               start={result.start}
-              orderedStops={result.orderedStops}
-              routeLegs={result.routeLegs}
+              orderedStops={displayedOrderedStops}
+              routeLegs={displayedRouteLegs}
             />
           </section>
         </div>

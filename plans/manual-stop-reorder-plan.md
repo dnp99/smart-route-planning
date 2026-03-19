@@ -2,8 +2,12 @@
 
 ## Status
 
-- Pending
-- Last updated: 2026-03-18
+- In progress
+- Phase 1: Mostly complete (refactor foundations landed; `RoutePlanner.tsx` still above 900 lines)
+- Phase 2: Implemented
+- Phase 3: Implemented
+- Phase 4: Partially implemented (arrow controls + stale banner + recalculate; drag-and-drop pending)
+- Last updated: 2026-03-19
 
 ## Objective
 
@@ -123,9 +127,9 @@ type OptimizedStopCardProps = {
 ### Phase 1 acceptance criteria
 
 - [ ] `RoutePlanner.tsx` is under 900 lines
-- [ ] All existing behaviour preserved (no regressions)
-- [ ] `routePlannerResultUtils.ts` and `routePlannerDraft.ts` created
-- [ ] `OptimizedRouteResult`, `OptimizedStopList`, `OptimizedStopCard` components created
+- [x] All existing behaviour preserved (no regressions)
+- [x] `routePlannerResultUtils.ts` and `routePlannerDraft.ts` created
+- [x] `OptimizedRouteResult`, `OptimizedStopList`, `OptimizedStopCard` components created
 
 ---
 
@@ -169,9 +173,9 @@ When `preserveOrder: true` the algorithm version suffix could be
 
 ### Phase 2 acceptance criteria
 
-- [ ] `POST /api/optimize-route/v2` with `preserveOrder: true` returns stops in input order
-- [ ] `preserveOrder: false` (or absent) behaves exactly as before
-- [ ] Existing tests pass; add one test: fixed input order is preserved in output
+- [x] `POST /api/optimize-route/v2` with `preserveOrder: true` returns stops in input order
+- [x] `preserveOrder: false` (or absent) behaves exactly as before
+- [x] Existing tests pass; add one test: fixed input order is preserved in output
 
 ---
 
@@ -225,10 +229,10 @@ cd frontend && npm install @dnd-kit/core @dnd-kit/sortable @dnd-kit/utilities
 
 ### Phase 3 acceptance criteria
 
-- [ ] `useManualReorder` hook returns correct reordered stops and estimated times
-- [ ] Moving a stop up/down updates `manualOrder` and recalculates times
-- [ ] `isStale` is `true` after any move, `false` after reset or new optimization
-- [ ] Hook resets when `result` changes
+- [x] `useManualReorder` hook returns correct reordered stops and estimated times
+- [x] Moving a stop up/down updates `manualOrder` and recalculates times
+- [x] `isStale` is `true` after any move, `false` after reset or new optimization
+- [x] Hook resets when `result` changes
 
 ---
 
@@ -284,13 +288,13 @@ Add `preserveOrder?: boolean` to `OptimizeRouteInput` and pass through to servic
 ### Phase 4 acceptance criteria
 
 - [ ] Drag-and-drop reorders stops on desktop; grip handle visible on hover
-- [ ] Up/Down arrows reorder stops on mobile and desktop
-- [ ] Home stop cannot be moved
-- [ ] Times show `~` prefix when `isStale === true`
-- [ ] Stale banner appears after first manual move
-- [ ] "Reset order" restores original optimizer order and clears stale state
-- [ ] "Recalculate times" hits backend with `preserveOrder: true` in nurse's order
-- [ ] After recalculate, stale banner clears, accurate times are shown, manual order is preserved
+- [x] Up/Down arrows reorder stops on mobile and desktop
+- [x] Home stop cannot be moved
+- [x] Times show `~` prefix when `isStale === true`
+- [x] Stale banner appears after first manual move
+- [x] "Reset order" restores original optimizer order and clears stale state
+- [x] "Recalculate times" hits backend with `preserveOrder: true` in nurse's order
+- [x] After recalculate, stale banner clears, accurate times are shown, manual order is preserved
 
 ---
 
@@ -311,7 +315,7 @@ Add `preserveOrder?: boolean` to `OptimizeRouteInput` and pass through to servic
 
 | File | Change |
 |------|--------|
-| `frontend/src/components/RoutePlanner.tsx` | Shrinks to ~900 lines; delegates to new components |
+| `frontend/src/components/RoutePlanner.tsx` | Delegates optimization result/reorder behaviors to extracted route planner components and hook |
 | `frontend/src/components/routePlanner/routePlannerService.ts` | Add `preserveOrder` to request |
 | `frontend/src/components/routePlanner/useRouteOptimization.ts` | Add `preserveOrder` to input |
 | `shared/contracts/optimizeRouteV2.ts` | Add `preserveOrder?: boolean` to request type |

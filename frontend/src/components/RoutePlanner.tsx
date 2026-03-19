@@ -31,6 +31,7 @@ import {
 } from "./routePlanner/routePlannerDraft";
 import { timeToMinutes } from "./routePlanner/routePlannerResultUtils";
 import { OptimizedRouteResult } from "./routePlanner/OptimizedRouteResult";
+import { useManualReorder } from "./routePlanner/useManualReorder";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
@@ -254,6 +255,13 @@ function RoutePlanner({
     hasAttemptedOptimize,
     optimizeRoute,
   } = useRouteOptimization();
+  const {
+    orderedStops: manuallyOrderedStops,
+    isStale: isManualOrderStale,
+    moveStop,
+    canMoveStop,
+    resetOrder,
+  } = useManualReorder(result);
 
   useEffect(() => {
     if (result) {
@@ -744,6 +752,43 @@ function RoutePlanner({
     });
   };
 
+  const handleRecalculateManualOrder = async () => {
+    if (!result || !isManualOrderStale) {
+      return;
+    }
+
+    const destinationsInManualOrder = manuallyOrderedStops
+      .filter((stop) => !stop.isEndingPoint && stop.tasks.length > 0)
+      .flatMap((stop) =>
+        stop.tasks.map((task) => ({
+          patientId: task.patientId,
+          patientName: task.patientName,
+          address: task.address,
+          googlePlaceId: task.googlePlaceId ?? null,
+          windowStart: task.windowStart,
+          windowEnd: task.windowEnd,
+          windowType: task.windowType,
+          serviceDurationMinutes: task.serviceDurationMinutes,
+        })),
+      );
+
+    if (destinationsInManualOrder.length === 0) {
+      return;
+    }
+
+    await optimizeRoute({
+      startAddress,
+      ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
+      endAddress: resolvedEndAddress,
+      ...(resolvedEndGooglePlaceId
+        ? { endGooglePlaceId: resolvedEndGooglePlaceId }
+        : {}),
+      destinations: destinationsInManualOrder,
+      canOptimize,
+      preserveOrder: true,
+    });
+  };
+
   const addDestinationPatient = (patient: Patient) => {
     const destinations = toSelectedPatientDestinations(patient);
     if (destinations.length === 0) {
@@ -1182,6 +1227,14 @@ function RoutePlanner({
         {result && (
           <OptimizedRouteResult
             result={result}
+            orderedStops={manuallyOrderedStops}
+            routeLegs={isManualOrderStale ? [] : result.routeLegs}
+            isManualOrderStale={isManualOrderStale}
+            onMoveStop={moveStop}
+            canMoveStop={canMoveStop}
+            onResetManualOrder={resetOrder}
+            onRecalculateManualOrder={handleRecalculateManualOrder}
+            isRecalculatingManualOrder={isLoading}
             conflictWarningsDismissed={conflictWarningsDismissed}
             onDismissConflictWarnings={() => setConflictWarningsDismissed(true)}
             latenessWarningsDismissed={latenessWarningsDismissed}

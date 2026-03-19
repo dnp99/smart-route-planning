@@ -320,6 +320,48 @@ describe("optimize-route v2 route handler", () => {
     );
   });
 
+  it("passes preserveOrder=true to optimize service when provided", async () => {
+    process.env.GOOGLE_MAPS_API_KEY = "test-key";
+    mockedOptimizeRouteV2.mockResolvedValue({
+      start: {
+        address: "Start Address",
+        coords: { lat: 43.6, lon: -79.6 },
+        departureTime: "2026-03-13T12:00:00.000Z",
+      },
+      end: {
+        address: "End Address",
+        coords: { lat: 43.8, lon: -79.8 },
+      },
+      orderedStops: [],
+      routeLegs: [],
+      unscheduledTasks: [],
+      metrics: {
+        fixedWindowViolations: 0,
+        totalLateSeconds: 0,
+        totalWaitSeconds: 0,
+        totalDistanceMeters: 0,
+        totalDistanceKm: 0,
+        totalDurationSeconds: 0,
+      },
+      algorithmVersion: "v2.5.1-edf-tier/preserved",
+    });
+
+    const requestWithPreserveOrder = {
+      ...validRequestBody,
+      preserveOrder: true,
+    };
+
+    const response = await POST(buildPostRequest(JSON.stringify(requestWithPreserveOrder)));
+
+    expect(response.status).toBe(200);
+    expect(mockedOptimizeRouteV2).toHaveBeenCalledWith(
+      expect.objectContaining({
+        preserveOrder: true,
+      }),
+      "test-key",
+    );
+  });
+
   it("returns 500 when optimize service returns an invalid response shape", async () => {
     process.env.GOOGLE_MAPS_API_KEY = "test-key";
     mockedOptimizeRouteV2.mockResolvedValue({ invalid: true } as never);

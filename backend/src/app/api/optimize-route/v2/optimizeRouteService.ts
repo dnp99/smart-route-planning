@@ -795,7 +795,15 @@ const orderVisitsByWindowDistanceAndDuration = (
   startLocation: LocationRef,
   departureLocalSeconds: number,
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+  preserveOrder: boolean,
 ) => {
+  if (preserveOrder) {
+    return {
+      orderedVisits: [...visits],
+      unscheduledTasks: [] as UnscheduledTaskV2[],
+    };
+  }
+
   const remaining = [...visits];
   const ordered: VisitWithCoords[] = [];
   const unscheduledTasks: UnscheduledTaskV2[] = [];
@@ -1062,6 +1070,7 @@ export const optimizeRouteV2 = async (
     },
     departureLocalSeconds,
     resolveTravelSeconds,
+    request.preserveOrder === true,
   );
   const plannedStops = groupVisitsIntoStops(orderedVisits, {
     address: request.end.address,
@@ -1188,6 +1197,7 @@ export const optimizeRouteV2 = async (
       totalDistanceKm: drivingRoute.totalDistanceKm,
       totalDurationSeconds: drivingRoute.totalDurationSeconds,
     },
-    algorithmVersion: ALGORITHM_VERSION,
+    algorithmVersion:
+      request.preserveOrder === true ? `${ALGORITHM_VERSION}/preserved` : ALGORITHM_VERSION,
   };
 };
