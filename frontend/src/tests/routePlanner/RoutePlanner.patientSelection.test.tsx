@@ -597,7 +597,7 @@ describe("RoutePlanner patient selection integration", () => {
     });
   });
 
-  it("shows a leave-by suggestion from the first planned stop", () => {
+  it("hides leave-by suggestion while still rendering planned stop timing details", () => {
     routeOptimizationState.result = buildResultWithSingleScheduledStop();
 
     render(<RoutePlanner />);
@@ -611,10 +611,8 @@ describe("RoutePlanner patient selection integration", () => {
       hour12: true,
     }).format(new Date("2026-03-14T08:30:00.000Z"));
 
-    expect(screen.getByText(/Suggested leave-by:/)).toBeTruthy();
-    expect(
-      screen.getByText(/Based on a .+ drive to your first visit\./),
-    ).toBeTruthy();
+    expect(screen.queryByText(/Suggested leave-by:/)).toBeNull();
+    expect(screen.queryByText(/Based on a .+ drive to your first visit\./)).toBeNull();
     expect(
       screen.getByText(
         new RegExp(

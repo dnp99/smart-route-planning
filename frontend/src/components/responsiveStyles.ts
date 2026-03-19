@@ -53,7 +53,8 @@ export const responsiveStyles = {
   optimizeButton:
     "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto",
   resultHeader: "flex flex-col gap-2",
-  resultCtaStack: "mt-3 flex flex-wrap items-center gap-3",
+  resultCtaStack:
+    "mt-3 flex flex-wrap items-center gap-3 lg:ml-auto lg:justify-end lg:text-right",
   googleMapsButton:
     "inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
   resultInfoNote:
