@@ -2,11 +2,11 @@ export const responsiveStyles = {
   page: "mt-2 w-full sm:mt-4 md:mt-6",
   section:
     "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5 md:p-6",
-  surfaceCard:
-    "rounded-3xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+  surfaceCard: "rounded-3xl bg-white p-3 shadow-sm dark:bg-slate-900 sm:p-5",
   sectionHeader: "mb-3 grid gap-2 sm:mb-4 sm:gap-3",
   cardHeader: "mb-2 grid gap-1 sm:mb-3",
-  cardTitle: "m-0 text-base font-semibold text-slate-900 dark:text-slate-100 sm:text-lg",
+  cardTitle:
+    "m-0 text-base font-semibold text-slate-900 dark:text-slate-100 sm:text-lg",
   cardDescription: "m-0 text-sm text-slate-500 dark:text-slate-400",
   form: "grid gap-2.5 sm:gap-3",
   mobileStepNav: "grid grid-cols-3 gap-2",
@@ -26,8 +26,7 @@ export const responsiveStyles = {
     "grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/85 p-3 dark:border-slate-800 dark:bg-slate-950/35 sm:p-4",
   panelMuted:
     "rounded-2xl border border-slate-200 bg-white px-3 py-5 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 sm:px-4 sm:py-6",
-  selectableList:
-    "m-0 max-h-56 list-none space-y-2 overflow-y-auto p-0",
+  selectableList: "m-0 max-h-56 list-none space-y-2 overflow-y-auto p-0",
   selectableItemButton:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900",
   actionRow: "flex justify-end",
@@ -59,12 +58,10 @@ export const responsiveStyles = {
     "inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
   resultInfoNote:
     "inline-flex w-full items-start gap-2 rounded-xl border border-slate-200/90 bg-slate-100/80 px-3 py-2 text-left text-xs text-slate-600 dark:border-slate-700/80 dark:bg-slate-900/50 dark:text-slate-400",
-  resultStatsGrid:
-    "mt-4 grid w-full gap-3 sm:grid-cols-2",
+  resultStatsGrid: "mt-4 grid w-full gap-3 sm:grid-cols-2",
   resultStatCard:
     "rounded-xl border border-slate-200/90 bg-white/85 px-3 py-2 dark:border-slate-700/80 dark:bg-slate-950/60",
-  resultStatLabel:
-    "text-xs font-semibold text-slate-500 dark:text-slate-400",
+  resultStatLabel: "text-xs font-semibold text-slate-500 dark:text-slate-400",
   resultStatValue:
     "mt-0.5 text-base font-bold tracking-tight text-slate-950 dark:text-white sm:text-lg",
   resultStatMeta: "mt-0.5 text-sm text-slate-600 dark:text-slate-300",
