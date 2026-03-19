@@ -78,6 +78,10 @@ const seedAuthenticatedSession = (displayName = "Nurse One", homeAddress: string
   });
 };
 
+const waitForPatientsPage = async () => {
+  await screen.findByRole("button", { name: "Add patient" });
+};
+
 describe("App routing", () => {
   it("renders route planner at /route-planner and marks nav active", async () => {
     seedAuthenticatedSession();
@@ -140,7 +144,8 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
+    await waitForPatientsPage();
+    expect(screen.getByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
     expect(screen.getByText("Nurse operations workspace for Nurse One")).toBeTruthy();
   });
 
@@ -153,7 +158,8 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
+    await waitForPatientsPage();
+    expect(screen.getByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Patients" }).getAttribute("aria-current")).toBe(
       "page",
     );
@@ -168,12 +174,12 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
+    await waitForPatientsPage();
     expect(screen.queryByRole("menuitem", { name: "Logout" })).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
 
-    expect(screen.getByRole("menuitem", { name: "Account settings" })).toBeTruthy();
+    expect(await screen.findByRole("menuitem", { name: "Account settings" })).toBeTruthy();
     expect(screen.getByRole("menuitem", { name: "Logout" })).toBeTruthy();
   });
 
@@ -186,12 +192,12 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
+    await waitForPatientsPage();
 
     fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Account settings" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Account settings" }));
 
-    expect(screen.getByRole("heading", { name: "Account settings" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Account settings" })).toBeTruthy();
     fireEvent.change(screen.getByRole("textbox", { name: /home address/i }), {
       target: { value: "1 Main Street, Toronto, ON" },
     });
@@ -203,7 +209,7 @@ describe("App routing", () => {
         "1 Main Street, Toronto, ON",
       );
     });
-    expect(await screen.findByText("Account settings saved.")).toBeTruthy();
+    expect(await screen.findByText(/Account settings saved\./i)).toBeTruthy();
   });
 
   it("redirects unauthenticated users to login", () => {
