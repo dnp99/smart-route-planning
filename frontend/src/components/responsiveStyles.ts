@@ -1,13 +1,13 @@
 export const responsiveStyles = {
   page: "mt-2 w-full sm:mt-4 md:mt-6",
   section:
-    "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5 md:p-6",
+    "rounded-2xl border border-slate-300 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-5 md:p-6",
   surfaceCard: "rounded-3xl bg-white p-3 shadow-sm dark:bg-slate-900 sm:p-5",
   sectionHeader: "mb-3 grid gap-2 sm:mb-4 sm:gap-3",
   cardHeader: "mb-2 grid gap-1 sm:mb-3",
   cardTitle:
     "m-0 text-base font-semibold text-slate-900 dark:text-slate-100 sm:text-lg",
-  cardDescription: "m-0 text-sm text-slate-500 dark:text-slate-400",
+  cardDescription: "m-0 text-sm text-slate-600 dark:text-slate-300",
   form: "grid gap-2.5 sm:gap-3",
   mobileStepNav: "grid grid-cols-3 gap-2",
   mobileStepButton:
@@ -23,7 +23,7 @@ export const responsiveStyles = {
   searchInput:
     "w-full rounded-2xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:px-4 sm:py-3",
   panel:
-    "grid gap-3 rounded-2xl border border-slate-200 bg-slate-50/85 p-3 dark:border-slate-800 dark:bg-slate-950/35 sm:p-4",
+    "grid gap-3 rounded-2xl border border-slate-300 bg-slate-100/95 p-3 dark:border-slate-800 dark:bg-slate-950/35 sm:p-4",
   panelMuted:
     "rounded-2xl border border-slate-200 bg-white px-3 py-5 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400 sm:px-4 sm:py-6",
   selectableList: "m-0 max-h-56 list-none space-y-2 overflow-y-auto p-0",

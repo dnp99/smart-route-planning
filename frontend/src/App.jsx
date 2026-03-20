@@ -11,15 +11,20 @@ import {
   getAuthUser,
   setStoredAuthUser,
 } from "./components/auth/authSession";
+import LicensePage from "./components/legal/LicensePage";
+import PrivacyPage from "./components/legal/PrivacyPage";
+import TermsPage from "./components/legal/TermsPage";
+import TrademarkPage from "./components/legal/TrademarkPage";
+import nurseQuotes from "./data/nurseQuotes";
 import { formatNameWords } from "./components/patients/patientName";
 import PatientsPage from "./components/patients/PatientsPage";
 
 const resolveTabCardClassName = ({ isActive }) =>
   [
-    "block rounded-xl border p-2.5 transition sm:p-3",
+    "group block rounded-xl border p-2.5 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 sm:p-3",
     isActive
-      ? "border-blue-600 bg-blue-50"
-      : "border-slate-200 bg-slate-100 hover:bg-slate-200",
+      ? "border-blue-400 bg-blue-50/90 shadow-sm"
+      : "border-slate-300 bg-slate-100/90 hover:border-slate-400 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700",
   ].join(" ");
 
 const OptionsIcon = ({ className }) => (
@@ -85,6 +90,7 @@ function App() {
   const [authUser, setAuthUser] = useState(() => getAuthUser());
   const [isAuthResolved, setIsAuthResolved] = useState(() => !getAuthToken());
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [headerQuote, setHeaderQuote] = useState(null);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [homeAddressInput, setHomeAddressInput] = useState("");
   const [accountSettingsError, setAccountSettingsError] = useState("");
@@ -182,6 +188,15 @@ function App() {
   }, [isAccountMenuOpen]);
 
   const isAuthenticated = Boolean(authToken);
+
+  useEffect(() => {
+    if (!isAuthenticated || headerQuote) {
+      return;
+    }
+
+    const picked = nurseQuotes[Math.floor(Math.random() * nurseQuotes.length)];
+    setHeaderQuote(picked);
+  }, [isAuthenticated, headerQuote]);
   const defaultProtectedPath = "/patients";
   const formattedDisplayName =
     typeof authUser?.displayName === "string"
@@ -338,19 +353,53 @@ function App() {
 
   return (
     <div className="mx-auto w-full max-w-4xl p-3 sm:p-4 md:p-6">
-      <header className="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+      <header className="sticky top-0 z-30 w-full rounded-2xl border border-slate-300 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-4">
         <div className="grid gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="m-0 text-base font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 sm:text-lg">
-                CareFlow
-              </p>
-              <p className="m-0 mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {workspaceSubtitle}
-              </p>
+          <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="h-5 w-5 text-blue-600 dark:text-blue-400"
+                >
+                  {/* ECG / pulse line */}
+                  <path d="M1 12 L5 12 L7 5 L9 19 L11 12 L13 12" />
+                  {/* Map pin — route destination */}
+                  <path d="M19 5C16.8 5 15 6.8 15 9C15 11.8 19 17 19 17C19 17 23 11.8 23 9C23 6.8 21.2 5 19 5Z" />
+                  <circle cx="19" cy="9" r="1.8" fill="currentColor" strokeWidth="0" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="m-0 text-base font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 sm:text-lg">
+                  CareFlow
+                </p>
+                <p className="m-0 mt-0.5 truncate text-xs text-slate-500 sm:text-sm dark:text-slate-400">
+                  {workspaceSubtitle}
+                </p>
+              </div>
             </div>
 
-            {isAuthenticated ? (
+            {isAuthenticated && headerQuote && (
+              <p className="m-0 hidden min-w-0 flex-1 truncate text-right text-xs italic text-slate-600 sm:block sm:text-sm dark:text-slate-300">
+                &ldquo;{headerQuote.content}&rdquo;
+              </p>
+            )}
+
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              {!isAuthenticated && (
+                <p className="m-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                </p>
+              )}
+
+              {isAuthenticated ? (
               <div ref={accountMenuRef} className="relative">
                 <button
                   type="button"
@@ -359,7 +408,7 @@ function App() {
                   aria-haspopup="menu"
                   aria-expanded={isAccountMenuOpen}
                   title="Open account options menu"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800"
                 >
                   <OptionsIcon className="h-4 w-4" />
                 </button>
@@ -402,23 +451,21 @@ function App() {
                   </div>
                 )}
               </div>
-            ) : (
-              <p className="m-0 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                Authentication required
-              </p>
-            )}
+              ) : null}
+            </div>
           </div>
+
 
           {isAuthenticated && (
             <div className="border-t border-slate-200 pt-2.5 dark:border-slate-800">
-              <nav className="grid w-full grid-cols-2 gap-1.5">
+              <nav className="grid w-full grid-cols-2 gap-1.5 sm:gap-2">
                 <NavLink to="/patients" aria-label="Patients" className={resolveTabCardClassName}>
                   {({ isActive }) => (
                     <div>
                       <p
                         className={[
                           "m-0 text-left text-sm font-semibold leading-tight sm:text-base",
-                          isActive ? "text-blue-700" : "text-slate-900",
+                          isActive ? "text-blue-800" : "text-slate-700 group-hover:text-slate-800 dark:text-slate-100",
                         ].join(" ")}
                       >
                         Patients
@@ -426,7 +473,7 @@ function App() {
                       <p
                         className={[
                           "m-0 mt-0.5 hidden text-left text-[11px] font-medium leading-tight sm:block sm:text-xs",
-                          isActive ? "text-blue-600" : "text-slate-600",
+                          isActive ? "text-blue-700" : "text-slate-600 group-hover:text-slate-700 dark:text-slate-300",
                         ].join(" ")}
                       >
                         Search, create, and manage patient visits.
@@ -444,7 +491,7 @@ function App() {
                       <p
                         className={[
                           "m-0 text-left text-sm font-semibold leading-tight sm:text-base",
-                          isActive ? "text-blue-700" : "text-slate-900",
+                          isActive ? "text-blue-800" : "text-slate-700 group-hover:text-slate-800 dark:text-slate-100",
                         ].join(" ")}
                       >
                         Route Planner
@@ -452,7 +499,7 @@ function App() {
                       <p
                         className={[
                           "m-0 mt-0.5 hidden text-left text-[11px] font-medium leading-tight sm:block sm:text-xs",
-                          isActive ? "text-blue-600" : "text-slate-600",
+                          isActive ? "text-blue-700" : "text-slate-600 group-hover:text-slate-700 dark:text-slate-300",
                         ].join(" ")}
                       >
                         Build and optimize your daily route plan.
@@ -481,6 +528,10 @@ function App() {
             />,
           )}
         />
+        <Route path="/legal/terms" element={<TermsPage />} />
+        <Route path="/legal/privacy" element={<PrivacyPage />} />
+        <Route path="/legal/license" element={<LicensePage />} />
+        <Route path="/legal/trademark" element={<TrademarkPage />} />
         <Route
           path="/"
           element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
@@ -490,6 +541,51 @@ function App() {
           element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
         />
       </Routes>
+
+      <footer className="mt-4 rounded-2xl border border-slate-300 bg-white p-4 shadow-md dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <nav aria-label="Legal and support links" className="flex flex-wrap gap-x-3 gap-y-0">
+            <a
+              href="mailto:dpatel1995@yahoo.com"
+              className="py-1 text-xs text-slate-600 transition hover:text-slate-800 focus:outline-none focus-visible:underline dark:text-slate-300 dark:hover:text-slate-100"
+            >
+              Contact Us
+            </a>
+            <NavLink
+              to="/legal/terms"
+              className="py-1 text-xs text-slate-600 transition hover:text-slate-800 focus:outline-none focus-visible:underline dark:text-slate-300 dark:hover:text-slate-100"
+            >
+              Terms
+            </NavLink>
+            <NavLink
+              to="/legal/privacy"
+              className="py-1 text-xs text-slate-600 transition hover:text-slate-800 focus:outline-none focus-visible:underline dark:text-slate-300 dark:hover:text-slate-100"
+            >
+              Privacy
+            </NavLink>
+            <NavLink
+              to="/legal/license"
+              className="py-1 text-xs text-slate-600 transition hover:text-slate-800 focus:outline-none focus-visible:underline dark:text-slate-300 dark:hover:text-slate-100"
+            >
+              License
+            </NavLink>
+            <NavLink
+              to="/legal/trademark"
+              className="py-1 text-xs text-slate-600 transition hover:text-slate-800 focus:outline-none focus-visible:underline dark:text-slate-300 dark:hover:text-slate-100"
+            >
+              Trademark
+            </NavLink>
+          </nav>
+          <div className="flex flex-col gap-0.5 sm:text-right">
+            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+              &copy; {new Date().getFullYear()} CareFlow. All rights reserved.
+            </p>
+            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+              CareFlow is a trademark of CareFlow.
+            </p>
+          </div>
+        </div>
+      </footer>
 
       {isAccountSettingsOpen && (
         <div

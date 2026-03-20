@@ -82,6 +82,107 @@ const waitForPatientsPage = async () => {
   await screen.findByRole("button", { name: "Add patient" });
 };
 
+describe("Footer", () => {
+  it("renders footer with Contact Us and all legal links", async () => {
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/patients"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitForPatientsPage();
+
+    expect(screen.getByRole("link", { name: "Contact Us" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Terms" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Privacy" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "License" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Trademark" })).toBeTruthy();
+  });
+
+  it("footer Contact Us links to the support email", async () => {
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/patients"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitForPatientsPage();
+
+    expect(screen.getByRole("link", { name: "Contact Us" }).getAttribute("href")).toBe(
+      "mailto:dpatel1995@yahoo.com",
+    );
+  });
+
+  it("footer legal links point to correct routes", async () => {
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/patients"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitForPatientsPage();
+
+    expect(screen.getByRole("link", { name: "Terms" }).getAttribute("href")).toBe("/legal/terms");
+    expect(screen.getByRole("link", { name: "Privacy" }).getAttribute("href")).toBe(
+      "/legal/privacy",
+    );
+    expect(screen.getByRole("link", { name: "License" }).getAttribute("href")).toBe(
+      "/legal/license",
+    );
+    expect(screen.getByRole("link", { name: "Trademark" }).getAttribute("href")).toBe(
+      "/legal/trademark",
+    );
+  });
+});
+
+describe("Legal pages", () => {
+  it("renders Terms page at /legal/terms", () => {
+    render(
+      <MemoryRouter initialEntries={["/legal/terms"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Terms of Use" })).toBeTruthy();
+  });
+
+  it("renders Privacy page at /legal/privacy", () => {
+    render(
+      <MemoryRouter initialEntries={["/legal/privacy"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Privacy Policy" })).toBeTruthy();
+  });
+
+  it("renders License page at /legal/license", () => {
+    render(
+      <MemoryRouter initialEntries={["/legal/license"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "License" })).toBeTruthy();
+  });
+
+  it("renders Trademark page at /legal/trademark", () => {
+    render(
+      <MemoryRouter initialEntries={["/legal/trademark"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Trademark" })).toBeTruthy();
+  });
+});
+
 describe("App routing", () => {
   it("renders route planner at /route-planner and marks nav active", async () => {
     seedAuthenticatedSession();

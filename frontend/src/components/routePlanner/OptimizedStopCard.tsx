@@ -91,7 +91,7 @@ export function OptimizedStopCard({
               aria-hidden="true"
               data-testid={`details-chevron-${task.visitId}`}
               data-expanded={isExpanded ? "true" : "false"}
-              className={`inline-flex h-4 w-4 shrink-0 items-center justify-center text-slate-500 transition-transform duration-200 dark:text-slate-300 ${isExpanded ? "rotate-90" : "rotate-0"}`}
+              className={`inline-flex h-4 w-4 shrink-0 items-center justify-center text-slate-900 transition-transform duration-200 dark:text-slate-100 ${isExpanded ? "rotate-90" : "rotate-0"}`}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"

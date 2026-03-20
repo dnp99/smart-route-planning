@@ -368,7 +368,7 @@ export function OptimizedRouteResult({
                 Map overview
               </p>
               <h3 className="m-0 mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">
-                Spatial route check
+                Route map overview
               </h3>
             </div>
             <RouteMap
