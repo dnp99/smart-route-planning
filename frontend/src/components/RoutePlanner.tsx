@@ -92,13 +92,9 @@ function RoutePlanner({
   const [latenessWarningsDismissed, setLatenessWarningsDismissed] =
     useState(false);
   const [isDestinationListExpanded, setIsDestinationListExpanded] =
-    useState(true);
-  const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
-    (initialDraft?.selectedDestinations?.length ?? 0) === 0,
-  );
-  const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
-    normalizedHomeAddress.length === 0,
-  );
+    useState(false);
+  const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(false);
+  const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(false);
 
   const addDestinationPatient = (patient: Patient) => {
     const destinations = toSelectedPatientDestinations(patient);
@@ -778,12 +774,14 @@ function RoutePlanner({
             </section>
           )}
 
-          {isPatientsStepVisible && !isPatientSearchExpanded && selectedDestinations.length > 0 && !isMobileViewport && (
+          {isPatientsStepVisible && !isPatientSearchExpanded && !isMobileViewport && (
             <section className={responsiveStyles.panel}>
               <div className="flex items-start justify-between gap-3 sm:items-center">
                 <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
-                  {destinationCount} patient{destinationCount === 1 ? "" : "s"}{" "}
-                  selected —{" "}
+                  {destinationCount === 0
+                    ? "No patients selected"
+                    : `${destinationCount} patient${destinationCount === 1 ? "" : "s"} selected`}{" "}
+                  —{" "}
                   <button
                     type="button"
                     onClick={() => setIsPatientSearchExpanded(true)}
