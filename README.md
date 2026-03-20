@@ -7,10 +7,15 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 - Requires authenticated access for patient and route-planner workflows.
 - Manages patient records and visit windows.
 - Optimizes daily visits with time windows, travel distance/time, and visit duration.
+- Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
-- Provides an authenticated global workspace header with rotating nurse quotes.
+- Persists the optimized route result in sessionStorage so tab switches don't lose the result.
+- Provides an authenticated global workspace header with sticky positioning, app logo, and rotating nurse quotes.
 - Keeps header quote selection stable across browser refresh during a signed-in session.
+- Clears all session-scoped storage (optimization result, draft, header quote) on logout and login.
 - Uses a consistent overflow action menu pattern for patient row actions.
+- Includes legal pages (Terms, Privacy, License, Trademark) accessible from the footer.
+- Mobile-optimized route planner with wizard-style step flow and safe-area-aware sticky footer.
 
 ## Tech stack
 
