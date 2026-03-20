@@ -111,6 +111,7 @@ type OptimizeRouteRequestInput = {
   destinations: OptimizeRouteDestinationInput[];
   planningDate?: string;
   timezone?: string;
+  preserveOrder?: boolean;
 };
 
 export const persistPlanningWindows = async (
@@ -227,6 +228,7 @@ export const requestOptimizedRoute = async ({
   destinations,
   planningDate,
   timezone,
+  preserveOrder,
 }: OptimizeRouteRequestInput): Promise<OptimizeRouteResponse> => {
   const resolvedTimezone = resolveTimezone(timezone);
   const now = new Date();
@@ -284,6 +286,7 @@ export const requestOptimizedRoute = async ({
             : {}),
         },
         visits,
+        ...(preserveOrder === true ? { preserveOrder: true } : {}),
       }),
     },
     "Unable to optimize route.",

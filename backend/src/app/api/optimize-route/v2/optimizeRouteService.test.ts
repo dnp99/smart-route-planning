@@ -705,6 +705,77 @@ describe("optimizeRouteV2 service", () => {
     expect(result.unscheduledTasks).toEqual([]);
   });
 
+  it("preserves input visit order when preserveOrder is true", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Address A", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Address B", coords: { lat: 43.6005, lon: -79.6005 } },
+      { address: "Address C", coords: { lat: 43.601, lon: -79.601 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV2(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        preserveOrder: true,
+        visits: [
+          {
+            visitId: "visit-c",
+            patientId: "patient-c",
+            patientName: "Patient C",
+            address: "Address C",
+            windowStart: "11:00",
+            windowEnd: "12:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-a",
+            patientId: "patient-a",
+            patientName: "Patient A",
+            address: "Address A",
+            windowStart: "09:00",
+            windowEnd: "16:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-b",
+            patientId: "patient-b",
+            patientName: "Patient B",
+            address: "Address B",
+            windowStart: "08:00",
+            windowEnd: "08:30",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+        ],
+      },
+      "google-key",
+    );
+
+    expect(result.unscheduledTasks).toEqual([]);
+    expect(result.algorithmVersion).toBe("v2.5.1-edf-tier/preserved");
+    expect(result.orderedStops.map((stop) => stop.tasks[0]?.visitId)).toEqual([
+      "visit-c",
+      "visit-a",
+      "visit-b",
+      undefined,
+    ]);
+  });
+
   it("keeps fixed-window visits scheduled even when the selected departure makes them late", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },

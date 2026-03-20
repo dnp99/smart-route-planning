@@ -14,12 +14,14 @@ type OptimizeRouteInput = {
   canOptimize: boolean;
   planningDate?: string;
   timezone?: string;
+  preserveOrder?: boolean;
 };
 
 export const useRouteOptimization = () => {
   const [result, setResult] = useState<OptimizeRouteResponse | null>(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const [showOptimizeSuccess, setShowOptimizeSuccess] = useState(false);
   const [hasAttemptedOptimize, setHasAttemptedOptimize] = useState(false);
 
@@ -46,6 +48,7 @@ export const useRouteOptimization = () => {
     canOptimize,
     planningDate,
     timezone,
+    preserveOrder,
   }: OptimizeRouteInput) => {
     setError("");
     setResult(null);
@@ -56,6 +59,9 @@ export const useRouteOptimization = () => {
     }
 
     setIsLoading(true);
+    if (preserveOrder === true) {
+      setIsRecalculating(true);
+    }
 
     try {
       const optimizedResult = await requestOptimizedRoute({
@@ -66,6 +72,7 @@ export const useRouteOptimization = () => {
         destinations,
         ...(planningDate !== undefined ? { planningDate } : {}),
         ...(timezone !== undefined ? { timezone } : {}),
+        ...(preserveOrder === true ? { preserveOrder: true } : {}),
       });
 
       setResult(optimizedResult);
@@ -78,6 +85,7 @@ export const useRouteOptimization = () => {
       );
     } finally {
       setIsLoading(false);
+      setIsRecalculating(false);
     }
   };
 
@@ -85,6 +93,7 @@ export const useRouteOptimization = () => {
     result,
     error,
     isLoading,
+    isRecalculating,
     showOptimizeSuccess,
     hasAttemptedOptimize,
     optimizeRoute,

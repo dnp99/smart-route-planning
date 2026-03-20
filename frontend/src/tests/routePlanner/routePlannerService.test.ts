@@ -170,6 +170,37 @@ describe("requestOptimizedRoute", () => {
     });
   });
 
+  it("includes preserveOrder only when true", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => buildValidResponse(),
+    } as Response);
+
+    await requestOptimizedRoute({
+      startAddress: "Start",
+      endAddress: "End",
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      destinations: [],
+      preserveOrder: true,
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse(String(init.body))).toEqual({
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      start: {
+        address: "Start",
+      },
+      end: {
+        address: "End",
+      },
+      visits: [],
+      preserveOrder: true,
+    });
+  });
+
   it("omits departureTime when it is not provided", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-13T15:45:00.000Z"));

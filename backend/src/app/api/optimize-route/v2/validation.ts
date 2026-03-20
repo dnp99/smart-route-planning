@@ -194,6 +194,8 @@ const parsePriority = (value: unknown, fieldName: string) => {
   return value;
 };
 
+const parsePreserveOrder = (value: unknown) => value === true;
+
 const parseVisit = (value: unknown, index: number): VisitV2 => {
   if (typeof value !== "object" || value === null) {
     throw new HttpError(400, `visits[${index}] must be a JSON object.`);
@@ -363,6 +365,8 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteV2Req
     throw new HttpError(400, `Please provide at most ${MAX_UNIQUE_LOCATIONS} unique locations.`);
   }
 
+  const preserveOrder = parsePreserveOrder(payload.preserveOrder);
+
   return {
     planningDate,
     timezone,
@@ -376,5 +380,6 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteV2Req
       ...(endGooglePlaceId !== undefined ? { googlePlaceId: endGooglePlaceId } : {}),
     },
     visits,
+    ...(preserveOrder ? { preserveOrder: true } : {}),
   };
 };

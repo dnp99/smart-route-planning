@@ -2778,3 +2778,75 @@ UX review of the live optimized route output identified eight low-risk, frontend
 ### 91 — Motivation
 
 Product review preferred a tighter route-summary header and less visual noise in the top metrics row. Leave-by is being paused in the UI for now, with intent to re-enable later.
+
+---
+
+## 92) Route Planner: Lower Break Gap Threshold from 60 → 30 Minutes
+
+### 92 — Files updated
+
+- `frontend/src/components/routePlanner/routePlannerResultUtils.ts`
+- `frontend/src/tests/routePlanner/OptimizedStopList.test.tsx`
+- `plans/account-settings-and-working-hours-execution-plan.md`
+
+### 92 — Changes
+
+- Lowered `BREAK_GAP_THRESHOLD_MINUTES` from `60` to `30` in `routePlannerResultUtils.ts`.
+- Break cards now render when the idle gap between consecutive patient stops is at or above 30 minutes (previously 60 minutes).
+- Added a clarifying comment on the constant explaining its role and future nurse-configurability (Phase 4).
+- Added a boundary test asserting a break card renders when idle gap equals exactly 30 minutes.
+- Updated plan doc threshold from 60 → 30 minutes and corrected acceptance criteria wording from "above" to "at or above" to match the `>=` implementation.
+
+### 92 — Motivation
+
+Product feedback indicated 60 minutes was too long a gap to go without alerting the nurse — shorter idle periods still benefit from a visual indicator. 30 minutes aligns with the intended default for the upcoming nurse-configurable threshold (Phase 4).
+
+---
+
+## 93) Manual Stop Reordering (Phase 2/3 + Partial Phase 4)
+
+### 93 — Files updated
+
+- `shared/contracts/optimizeRouteV2.ts`
+- `backend/src/app/api/optimize-route/v2/validation.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+- `backend/src/app/api/optimize-route/v2/validation.test.ts`
+- `backend/src/app/api/optimize-route/v2/optimizeRouteService.test.ts`
+- `backend/src/app/api/optimize-route/v2/route.test.ts`
+- `frontend/src/components/routePlanner/routePlannerService.ts`
+- `frontend/src/components/routePlanner/useRouteOptimization.ts`
+- `frontend/src/components/routePlanner/useManualReorder.ts`
+- `frontend/src/components/routePlanner/OptimizedRouteResult.tsx`
+- `frontend/src/components/routePlanner/OptimizedStopList.tsx`
+- `frontend/src/components/routePlanner/OptimizedStopCard.tsx`
+- `frontend/src/components/RoutePlanner.tsx`
+- `frontend/src/tests/routePlanner/useManualReorder.test.ts`
+- `frontend/src/tests/routePlanner/useRouteOptimization.test.ts`
+- `frontend/src/tests/routePlanner/routePlannerService.test.ts`
+- `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+- `plans/manual-stop-reorder-plan.md`
+
+### 93 — Changes
+
+- Added optional `preserveOrder?: boolean` to optimize-route-v2 request contract.
+- Backend now accepts `preserveOrder` and bypasses beam-search ordering when set, returning visits in request order.
+- Algorithm version is suffixed with `/preserved` when preserve-order mode is used.
+- Frontend optimize request path now supports passing `preserveOrder: true`.
+- Added `useManualReorder` hook for manual route order state, stale tracking, and Haversine-based time estimation.
+- Added stop-level up/down reordering controls for intermediate stops.
+- Added stale timeline UX:
+  - `~` prefix on estimated start/break/home-arrival timing text
+  - banner with `Reset order` and `Recalculate times`
+- Recalculate action now re-runs optimize-route-v2 with nurse order preserved (`preserveOrder: true`).
+- Updated manual-stop-reorder plan status/checklists to reflect shipped phases.
+
+### 93 — Verification
+
+- Backend targeted suite:
+  - `npm run test -- src/app/api/optimize-route/v2/validation.test.ts src/app/api/optimize-route/v2/optimizeRouteService.test.ts src/app/api/optimize-route/v2/route.test.ts` ✅
+- Frontend targeted suite:
+  - `npm run test -- src/tests/routePlanner/useManualReorder.test.ts src/tests/routePlanner/OptimizedStopList.test.tsx src/tests/routePlanner/OptimizedRouteResult.test.tsx src/tests/routePlanner/useRouteOptimization.test.ts src/tests/routePlanner/routePlannerService.test.ts src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/appRoutes.test.tsx` ✅
+
+### 93 — Remaining
+
+- Desktop drag-and-drop reorder (`@dnd-kit`) is still pending; up/down controls are available now.

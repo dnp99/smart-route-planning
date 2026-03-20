@@ -135,6 +135,29 @@ describe("useRouteOptimization", () => {
     });
   });
 
+  it("forwards preserveOrder when requested", async () => {
+    mockedRequestOptimizedRoute.mockResolvedValue(buildResponse());
+
+    const { result } = renderHook(() => useRouteOptimization());
+
+    await act(async () => {
+      await result.current.optimizeRoute({
+        startAddress: "Start",
+        endAddress: "End",
+        destinations: [],
+        canOptimize: true,
+        preserveOrder: true,
+      });
+    });
+
+    expect(mockedRequestOptimizedRoute).toHaveBeenCalledWith({
+      startAddress: "Start",
+      endAddress: "End",
+      destinations: [],
+      preserveOrder: true,
+    });
+  });
+
   it("stores Error message when optimize request fails with Error", async () => {
     mockedRequestOptimizedRoute.mockRejectedValue(new Error("Backend failed"));
 

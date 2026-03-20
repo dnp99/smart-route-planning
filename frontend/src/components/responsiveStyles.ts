@@ -48,12 +48,12 @@ export const responsiveStyles = {
   footerRow:
     "mt-1 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between",
   countPill:
-    "rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-200 sm:text-sm",
+    "rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/20 dark:text-blue-300 sm:text-sm",
   optimizeButton:
     "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto",
   resultHeader: "flex flex-col gap-2",
   resultCtaStack:
-    "mt-3 flex flex-wrap items-center gap-3 lg:ml-auto lg:justify-end lg:text-right",
+    "mt-3 flex flex-wrap items-center gap-3 lg:ml-auto lg:items-end lg:justify-end lg:text-right",
   googleMapsButton:
     "inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
   resultInfoNote:

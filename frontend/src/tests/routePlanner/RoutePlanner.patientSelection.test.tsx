@@ -367,7 +367,7 @@ describe("RoutePlanner patient selection integration", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
 
-    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+    expect(screen.getByText("1 patient(s) detected")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Edit window" })).toBeTruthy();
     expect(screen.queryByText("Include this visit in route")).toBeNull();
     expect(screen.queryByRole("button", { name: /^Jane Doe$/i })).toBeNull();
@@ -397,7 +397,7 @@ describe("RoutePlanner patient selection integration", () => {
     render(<RoutePlanner />);
 
     expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "Airport");
-    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+    expect(screen.getByText("1 patient(s) detected")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 
@@ -579,7 +579,7 @@ describe("RoutePlanner patient selection integration", () => {
       );
     });
 
-    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+    expect(screen.getByText("1 patient(s) detected")).toBeTruthy();
     expect(screen.getByText("New Patient")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Add New Patient" })).toBeNull();
   });
@@ -629,8 +629,11 @@ describe("RoutePlanner patient selection integration", () => {
     if (!janeCard) {
       throw new Error("Expected Jane Doe result card container");
     }
-    expect(janeCard.textContent).toContain("13.49 km • 13 min from previous stop");
+    expect(screen.queryByText(/13\.49 km • 13 min from previous stop/i)).toBeNull();
     fireEvent.click(janeDetailsToggle);
+    expect(
+      screen.getByText(/Travel from previous stop: 13\.49 km • 13 min/i),
+    ).toBeTruthy();
     expect(screen.getByText("Address: 123 Main St")).toBeTruthy();
     expect(screen.getByText("Visit type: fixed")).toBeTruthy();
     expect(screen.getByText("Duration: 30 min")).toBeTruthy();
@@ -808,12 +811,12 @@ describe("RoutePlanner patient selection integration", () => {
     render(<RoutePlanner />);
 
     fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
-    expect(screen.getByText("1 destination(s) detected")).toBeTruthy();
+    expect(screen.getByText("1 patient(s) detected")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Open actions for John Smith/i }));
     fireEvent.click(screen.getByRole("button", { name: /Remove John Smith/i }));
 
-    expect(screen.getByText("0 destination(s) detected")).toBeTruthy();
+    expect(screen.getByText("0 patient(s) detected")).toBeTruthy();
     expect(screen.getByText("No destination patients selected yet.")).toBeTruthy();
   });
 

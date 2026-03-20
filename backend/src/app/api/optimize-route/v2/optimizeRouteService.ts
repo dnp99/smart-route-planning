@@ -795,7 +795,32 @@ const orderVisitsByWindowDistanceAndDuration = (
   startLocation: LocationRef,
   departureLocalSeconds: number,
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+  preserveOrder: boolean,
 ) => {
+  if (preserveOrder) {
+    const orderedVisits: VisitWithCoords[] = [];
+    const unscheduledTasks: UnscheduledTaskV2[] = [];
+    let currentLocation = startLocation;
+    let currentTimeSeconds = departureLocalSeconds;
+
+    for (const visit of visits) {
+      const projection = projectVisit(visit, currentLocation, currentTimeSeconds, resolveTravelSeconds);
+      if (visit.windowType === "flexible" && projection.serviceEndSeconds > PLANNING_DAY_END_SECONDS) {
+        unscheduledTasks.push({
+          visitId: visit.visitId,
+          patientId: visit.patientId,
+          reason: "insufficient_day_capacity",
+        });
+      } else {
+        orderedVisits.push(visit);
+        currentLocation = { coords: visit.coords, locationKey: visit.locationKey };
+        currentTimeSeconds = projection.serviceEndSeconds;
+      }
+    }
+
+    return { orderedVisits, unscheduledTasks };
+  }
+
   const remaining = [...visits];
   const ordered: VisitWithCoords[] = [];
   const unscheduledTasks: UnscheduledTaskV2[] = [];
@@ -1062,6 +1087,7 @@ export const optimizeRouteV2 = async (
     },
     departureLocalSeconds,
     resolveTravelSeconds,
+    request.preserveOrder === true,
   );
   const plannedStops = groupVisitsIntoStops(orderedVisits, {
     address: request.end.address,
@@ -1188,6 +1214,7 @@ export const optimizeRouteV2 = async (
       totalDistanceKm: drivingRoute.totalDistanceKm,
       totalDurationSeconds: drivingRoute.totalDurationSeconds,
     },
-    algorithmVersion: ALGORITHM_VERSION,
+    algorithmVersion:
+      request.preserveOrder === true ? `${ALGORITHM_VERSION}/preserved` : ALGORITHM_VERSION,
   };
 };

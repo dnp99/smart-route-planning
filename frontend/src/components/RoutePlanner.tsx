@@ -31,6 +31,7 @@ import {
 } from "./routePlanner/routePlannerDraft";
 import { timeToMinutes } from "./routePlanner/routePlannerResultUtils";
 import { OptimizedRouteResult } from "./routePlanner/OptimizedRouteResult";
+import { useManualReorder } from "./routePlanner/useManualReorder";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
@@ -250,10 +251,18 @@ function RoutePlanner({
     result,
     error,
     isLoading,
+    isRecalculating,
     showOptimizeSuccess,
     hasAttemptedOptimize,
     optimizeRoute,
   } = useRouteOptimization();
+  const {
+    orderedStops: manuallyOrderedStops,
+    isStale: isManualOrderStale,
+    moveStop,
+    canMoveStop,
+    resetOrder,
+  } = useManualReorder(result);
 
   useEffect(() => {
     if (result) {
@@ -744,6 +753,48 @@ function RoutePlanner({
     });
   };
 
+  const handleRecalculateManualOrder = async () => {
+    if (!result || !isManualOrderStale) {
+      return;
+    }
+
+    // Extract the planning date from the result's departure time. The ISO string
+    // encodes the local planning timezone, so the date portion is correct as-is.
+    const planningDate = result.start.departureTime.slice(0, 10);
+
+    const destinationsInManualOrder = manuallyOrderedStops
+      .filter((stop) => !stop.isEndingPoint && stop.tasks.length > 0)
+      .flatMap((stop) =>
+        stop.tasks.map((task) => ({
+          patientId: task.patientId,
+          patientName: task.patientName,
+          address: task.address,
+          googlePlaceId: task.googlePlaceId ?? null,
+          windowStart: task.windowStart,
+          windowEnd: task.windowEnd,
+          windowType: task.windowType,
+          serviceDurationMinutes: task.serviceDurationMinutes,
+        })),
+      );
+
+    if (destinationsInManualOrder.length === 0) {
+      return;
+    }
+
+    await optimizeRoute({
+      startAddress,
+      ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
+      endAddress: resolvedEndAddress,
+      ...(resolvedEndGooglePlaceId
+        ? { endGooglePlaceId: resolvedEndGooglePlaceId }
+        : {}),
+      destinations: destinationsInManualOrder,
+      canOptimize,
+      planningDate,
+      preserveOrder: true,
+    });
+  };
+
   const addDestinationPatient = (patient: Patient) => {
     const destinations = toSelectedPatientDestinations(patient);
     if (destinations.length === 0) {
@@ -1135,8 +1186,8 @@ function RoutePlanner({
                 isMobileViewport ? responsiveStyles.stickyFooter : ""
               }`}
             >
-              <span className="inline-flex items-center rounded-full border border-amber-300 bg-white px-4 py-1.5 text-sm font-semibold text-amber-700 shadow-sm dark:border-amber-900/70 dark:bg-slate-900 dark:text-amber-300">
-                {destinationCount} destination(s) detected
+              <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-semibold text-blue-700 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/20 dark:text-blue-300">
+                {destinationCount} patient(s) detected
               </span>
               <button
                 type="submit"
@@ -1182,6 +1233,14 @@ function RoutePlanner({
         {result && (
           <OptimizedRouteResult
             result={result}
+            orderedStops={manuallyOrderedStops}
+            routeLegs={result.routeLegs}
+            isManualOrderStale={isManualOrderStale}
+            onMoveStop={moveStop}
+            canMoveStop={canMoveStop}
+            onResetManualOrder={resetOrder}
+            onRecalculateManualOrder={handleRecalculateManualOrder}
+            isRecalculatingManualOrder={isRecalculating}
             conflictWarningsDismissed={conflictWarningsDismissed}
             onDismissConflictWarnings={() => setConflictWarningsDismissed(true)}
             latenessWarningsDismissed={latenessWarningsDismissed}
