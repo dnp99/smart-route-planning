@@ -4,7 +4,6 @@ import {
   expectedStartTimeFormatter,
   formatExpectedStartTimeText,
   formatVisitDurationMinutes,
-  timeToMinutes,
 } from "./routePlannerResultUtils";
 import { formatNameWords } from "../patients/patientName";
 
@@ -59,20 +58,6 @@ export function OptimizedStopCard({
           "border-red-200 bg-red-50 text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300",
         label: "Late",
       };
-    }
-    if (task.onTime && task.windowEnd) {
-      const serviceStartDate = new Date(task.serviceStartTime);
-      const serviceStartMinutes =
-        serviceStartDate.getHours() * 60 + serviceStartDate.getMinutes();
-      const windowEndMinutes = timeToMinutes(task.windowEnd);
-      if (windowEndMinutes - serviceStartMinutes < 30) {
-        return {
-          borderClass: "border-l-4 border-l-amber-400",
-          chipClass:
-            "border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300",
-          label: "Tight window",
-        };
-      }
     }
     return {
       borderClass: "border-l-4 border-l-emerald-500",

@@ -1186,8 +1186,8 @@ function RoutePlanner({
                 isMobileViewport ? responsiveStyles.stickyFooter : ""
               }`}
             >
-              <span className="inline-flex items-center rounded-full border border-amber-300 bg-white px-4 py-1.5 text-sm font-semibold text-amber-700 shadow-sm dark:border-amber-900/70 dark:bg-slate-900 dark:text-amber-300">
-                {destinationCount} destination(s) detected
+              <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-semibold text-blue-700 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/20 dark:text-blue-300">
+                {destinationCount} patient(s) detected
               </span>
               <button
                 type="submit"
