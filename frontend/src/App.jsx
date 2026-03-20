@@ -705,7 +705,7 @@ function App() {
                 </p>
               )}
 
-              <div className="flex flex-wrap items-center justify-end gap-2">
+              <div className="sticky bottom-0 z-10 -mx-4 -mb-4 flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 bg-white/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
                 <button
                   type="button"
                   onClick={closeAccountSettingsModal}
@@ -839,10 +839,10 @@ function App() {
                 </p>
               )}
 
-              <div className="flex justify-end">
+              <div className="sticky bottom-0 z-10 -mx-4 -mb-4 flex justify-end border-t border-slate-200 bg-white/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
                 <button
                   type="submit"
-                  disabled={isUpdatingPassword}
+                  disabled={isUpdatingPassword || !(currentPasswordInput.length > 0 && newPasswordInput.length > 0 && confirmPasswordInput === newPasswordInput)}
                   className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isUpdatingPassword ? "Updating..." : "Update password"}
