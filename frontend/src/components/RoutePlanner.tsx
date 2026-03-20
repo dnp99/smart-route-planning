@@ -92,9 +92,13 @@ function RoutePlanner({
   const [latenessWarningsDismissed, setLatenessWarningsDismissed] =
     useState(false);
   const [isDestinationListExpanded, setIsDestinationListExpanded] =
-    useState(false);
-  const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(false);
-  const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(false);
+    useState(true);
+  const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
+    (initialDraft?.selectedDestinations?.length ?? 0) === 0,
+  );
+  const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
+    normalizedHomeAddress.length === 0,
+  );
 
   const addDestinationPatient = (patient: Patient) => {
     const destinations = toSelectedPatientDestinations(patient);
