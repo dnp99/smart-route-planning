@@ -429,13 +429,13 @@ function App() {
               </div>
             </div>
 
-            {isAuthenticated && headerQuote && (
-              <p className="m-0 hidden w-0 min-w-0 max-w-[42ch] flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-right text-xs italic text-slate-600 sm:block sm:text-sm dark:text-slate-300">
-                &ldquo;{headerQuote.content}&rdquo;
-              </p>
-            )}
+            <div className="ml-auto flex min-w-0 items-center gap-2">
+              {isAuthenticated && headerQuote && (
+                <p className="m-0 hidden min-w-0 max-w-[42ch] text-right text-xs italic text-slate-600 sm:block sm:line-clamp-2 sm:text-sm dark:text-slate-300">
+                  &ldquo;{headerQuote.content}&rdquo;
+                </p>
+              )}
 
-            <div className="ml-auto flex shrink-0 items-center gap-2">
               {!isAuthenticated && (
                 <p className="m-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}

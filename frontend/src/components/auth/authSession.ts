@@ -2,7 +2,8 @@ import type { AuthUser } from "../../../../shared/contracts";
 
 const TOKEN_STORAGE_KEY = "careflow.auth.token";
 const USER_STORAGE_KEY = "careflow.auth.user";
-const SESSION_SCOPED_KEYS = ["careflow.route-planner.draft.v1"];
+const SESSION_SCOPED_KEYS = ["careflow.route-planner.draft.v1", "careflow.headerQuote"];
+const SESSION_STORAGE_SCOPED_KEYS = ["careflow_route_optimization_result"];
 
 const AUTH_CHANGED_EVENT = "careflow-auth-changed";
 
@@ -64,6 +65,7 @@ export const setAuthSession = (token: string, user: AuthUser) => {
   }
 
   SESSION_SCOPED_KEYS.forEach((key) => window.localStorage.removeItem(key));
+  SESSION_STORAGE_SCOPED_KEYS.forEach((key) => window.sessionStorage.removeItem(key));
   window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
   window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user));
   emitAuthChanged();
@@ -85,5 +87,6 @@ export const clearAuthSession = () => {
   window.localStorage.removeItem(TOKEN_STORAGE_KEY);
   window.localStorage.removeItem(USER_STORAGE_KEY);
   SESSION_SCOPED_KEYS.forEach((key) => window.localStorage.removeItem(key));
+  SESSION_STORAGE_SCOPED_KEYS.forEach((key) => window.sessionStorage.removeItem(key));
   emitAuthChanged();
 };
