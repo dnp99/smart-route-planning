@@ -362,8 +362,11 @@ export function OptimizedRouteResult({
                 Map overview
               </p>
             </div>
+            <h3 className="mb-3 mt-0 text-lg font-semibold text-slate-950 dark:text-slate-50">
+              Route map overview
+            </h3>
             {googleMapsTripUrl && (
-              <div className="mb-3 grid gap-2 pt-2 sm:pt-1">
+              <div className="mb-3 grid gap-2">
                 <a
                   href={googleMapsTripUrl}
                   target="_blank"
@@ -407,9 +410,6 @@ export function OptimizedRouteResult({
                 </p>
               </div>
             )}
-            <h3 className="mb-3 mt-0 text-lg font-semibold text-slate-950 dark:text-slate-50">
-              Route map overview
-            </h3>
             <RouteMap
               start={result.start}
               orderedStops={displayedOrderedStops}

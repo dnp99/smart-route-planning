@@ -16,6 +16,45 @@ Current planning documents:
 
 ---
 
+## UI Polish — Sorting, Scroll, Icons, Route Map (March 2026)
+
+### Patient list sorting & filtering
+
+- Removed standalone sort buttons bar; sort/filter controls are now embedded in desktop table column headers
+- **Name** header: click to sort A→Z / Z→A with directional arrow icon; turns blue when active
+- **Preferred window** header: click to cycle filter All → Fixed → Flexible → All; shows active filter as a blue badge pill; funnel icon shown when inactive
+- **Duration** header: click to sort ascending / descending with directional arrow icon; turns blue when active
+- Only one column active at a time; clicking a new column clears the previous sort
+- Empty-filter state rendered as a table row ("No patients match the current filter") instead of replacing the whole table
+- Sort/filter icon size increased (`h-3` → `h-3.5 w-3.5`) and inactive opacity raised to `opacity-85` for better visibility
+
+### Scroll-to-top button
+
+- Added fixed scroll-to-top button (chevron-up circle) that appears after scrolling 300 px
+- On desktop (`lg`+): positioned just outside the right edge of the `max-w-4xl` content column (`left: calc(50% + 28rem + 0.75rem)`)
+- On mobile: fixed `right-4`, respects `env(safe-area-inset-bottom)`
+
+### Tab icons
+
+- Added stethoscope icon to **Patients** tab and route/fork icon to **Route Planner** tab
+- Icons visible on both mobile and desktop
+
+### Route Planner — card collapse on navigation
+
+- All three planner cards (Trip setup, Add patient(s), Selected patients) now start **collapsed** when navigating to the Route Planner page
+- Patient search collapsed row now shows "No patients selected — Edit" when empty, so the section is always reachable
+
+### Route map section
+
+- "Open in Google Maps" button and "Live traffic may affect ETAs." text moved to below the "Route map overview" heading and above the map
+
+### Mobile sticky footer bottom margin
+
+- Added `viewport-fit=cover` to `frontend/index.html` viewport meta — enables `env(safe-area-inset-bottom)` to return the real safe area on iPhone
+- Bumped base padding in all three sticky footers (`1rem` → `1.5rem`) so Cancel / Update password buttons have visible breathing room above the home indicator
+
+---
+
 ## Patient Card & Form Modal Mobile UX (March 2026)
 
 ### Patient form modal

@@ -1,6 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { Patient } from "../../../../shared/contracts";
 import { getPatientDisplayName, toTimeInput } from "./patientForm";
+
+type SortField = "name" | "duration" | null;
+type SortDir = "asc" | "desc";
+type WindowFilter = "all" | "fixed" | "flexible";
 
 type PatientsTableProps = {
   isLoading: boolean;
@@ -153,6 +157,28 @@ const ChevronIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const SortIcon = ({ field, sortField, sortDir }: { field: "name" | "duration"; sortField: SortField; sortDir: SortDir }) => {
+  if (sortField !== field) {
+    return (
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5 opacity-85">
+        <path d="M7 15l5 5 5-5" />
+        <path d="M7 9l5-5 5 5" />
+      </svg>
+    );
+  }
+  return sortDir === "asc" ? (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5">
+      <path d="M12 19V5" />
+      <path d="M7 10l5-5 5 5" />
+    </svg>
+  ) : (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5">
+      <path d="M12 5v14" />
+      <path d="M17 14l-5 5-5-5" />
+    </svg>
+  );
+};
+
 export const PatientsTable = ({
   isLoading,
   isSubmitting,
@@ -164,6 +190,46 @@ export const PatientsTable = ({
   const [openActionsMenuKey, setOpenActionsMenuKey] = useState<string | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
   const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
+  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortDir, setSortDir] = useState<SortDir>("asc");
+  const [windowFilter, setWindowFilter] = useState<WindowFilter>("all");
+
+  const handleSortClick = (field: "name" | "duration") => {
+    if (sortField === field) {
+      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    } else {
+      setSortField(field);
+      setSortDir("asc");
+    }
+  };
+
+  const cycleWindowFilter = () => {
+    setWindowFilter((f) => (f === "all" ? "fixed" : f === "fixed" ? "flexible" : "all"));
+  };
+
+  const sortedFilteredPatients = useMemo(() => {
+    let result = patients;
+
+    if (windowFilter !== "all") {
+      result = result.filter((p) => resolveVisitTypeLabel(p) === windowFilter);
+    }
+
+    if (sortField === "name") {
+      result = [...result].sort((a, b) => {
+        const nameA = getPatientDisplayName(a).toLowerCase();
+        const nameB = getPatientDisplayName(b).toLowerCase();
+        return sortDir === "asc" ? nameA.localeCompare(nameB) : nameB.localeCompare(nameA);
+      });
+    } else if (sortField === "duration") {
+      result = [...result].sort((a, b) =>
+        sortDir === "asc"
+          ? a.visitDurationMinutes - b.visitDurationMinutes
+          : b.visitDurationMinutes - a.visitDurationMinutes,
+      );
+    }
+
+    return result;
+  }, [patients, sortField, sortDir, windowFilter]);
 
   const toggleExpanded = (id: string) => {
     setExpandedPatients((prev) => {
@@ -230,10 +296,13 @@ export const PatientsTable = ({
     );
   }
 
+  const windowFilterActive = windowFilter !== "all";
+  const windowFilterLabel = windowFilter === "fixed" ? "Fixed" : windowFilter === "flexible" ? "Flexible" : null;
+
   return (
     <>
       <div className="grid gap-3 md:hidden">
-        {patients.map((patient, index) => {
+        {sortedFilteredPatients.map((patient, index) => {
           const windowRows = resolvePatientWindowRows(patient);
           const visitType = resolveVisitTypeLabel(patient);
           const patientDisplayName = getPatientDisplayName(patient);
@@ -362,17 +431,55 @@ export const PatientsTable = ({
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                   No.
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                  Name
+                <th className="px-6 py-4 text-left">
+                  <button
+                    type="button"
+                    onClick={() => handleSortClick("name")}
+                    className={[
+                      "inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.14em] transition hover:text-slate-700 dark:hover:text-slate-200",
+                      sortField === "name" ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400",
+                    ].join(" ")}
+                  >
+                    Name
+                    <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
+                  </button>
                 </th>
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                   Address
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                  Preferred window
+                <th className="px-6 py-4 text-left">
+                  <button
+                    type="button"
+                    onClick={cycleWindowFilter}
+                    className={[
+                      "inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition hover:text-slate-700 dark:hover:text-slate-200",
+                      windowFilterActive ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400",
+                    ].join(" ")}
+                  >
+                    Preferred window
+                    {windowFilterLabel ? (
+                      <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] normal-case tracking-normal text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
+                        {windowFilterLabel}
+                      </span>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5 opacity-85">
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                      </svg>
+                    )}
+                  </button>
                 </th>
-                <th className="px-3 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                  Duration
+                <th className="px-3 py-4 text-left">
+                  <button
+                    type="button"
+                    onClick={() => handleSortClick("duration")}
+                    className={[
+                      "inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.14em] transition hover:text-slate-700 dark:hover:text-slate-200",
+                      sortField === "duration" ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400",
+                    ].join(" ")}
+                  >
+                    Duration
+                    <SortIcon field="duration" sortField={sortField} sortDir={sortDir} />
+                  </button>
                 </th>
                 <th className="px-3 py-4 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                   Actions
@@ -380,7 +487,14 @@ export const PatientsTable = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900">
-              {patients.map((patient, index) => {
+              {sortedFilteredPatients.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                    No patients match the current filter.
+                  </td>
+                </tr>
+              )}
+              {sortedFilteredPatients.map((patient, index) => {
                 const windowRows = resolvePatientWindowRows(patient);
                 const visitType = resolveVisitTypeLabel(patient);
                 const patientDisplayName = getPatientDisplayName(patient);

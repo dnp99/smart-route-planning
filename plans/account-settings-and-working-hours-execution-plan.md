@@ -7,7 +7,7 @@
 - Phase 2: Implemented
 - Phase 3: Implemented
 - Phase 4: Pending
-- Last updated: 2026-03-18 (lunch break + gap indicator added to Phase 4)
+- Last updated: 2026-03-20 (lunch break changed to durationMinutes — nurse enters minutes, optimizer picks slot)
 
 ## Objective
 
@@ -195,8 +195,7 @@ type DaySchedule = {
   end: string;   // HH:mm
   lunchBreak?: {
     enabled: boolean;
-    start: string; // HH:mm
-    end: string;   // HH:mm
+    durationMinutes: number; // e.g. 30 or 45 — optimizer picks the slot
   };
 };
 
@@ -219,11 +218,11 @@ Time format: `HH:mm` in nurse timezone.
   - enabled toggle
   - start time
   - end time
-  - optional lunch break sub-section (toggle + start/end times)
+  - optional lunch break sub-section (toggle + duration in minutes, e.g. 30 or 45)
 - Validation:
   - end must be after start
-  - lunch start must be after working start, lunch end must be before working end
-  - lunch end must be after lunch start
+  - lunch duration must be a positive integer (minimum 1 minute)
+  - lunch duration must be less than total working hours for the day
   - at least one day enabled
 
 ## Optimize Route Integration (Future Phase 4)
@@ -316,13 +315,13 @@ When the computed route has a gap of more than a configurable threshold (default
 ### Phase 4: Weekly working-hours schedule + route integration
 
 - Backend:
-  - persist weekly working-hours (including optional lunch break per day) on nurse profile
+  - persist weekly working-hours (including optional lunch break duration per day) on nurse profile
   - expose profile schedule read/write API
   - integrate schedule in optimize-route-v2 constraints
-  - block visits during configured lunch break window
-  - emit `lunch_conflict` warning when a fixed patient's window overlaps the lunch break
+  - optimizer reserves a `durationMinutes`-long lunch slot during the working day when lunch is enabled
+  - emit `lunch_conflict` warning when a fixed patient's window forces lunch to be skipped
 - Frontend:
-  - add weekly schedule editor in account settings modal (day rows with working hours + optional lunch break sub-section)
+  - add weekly schedule editor in account settings modal (day rows with working hours + optional lunch break sub-section with duration input in minutes)
   - show planner warnings/errors tied to working-hours and lunch break constraints
   - show route gap indicator card for idle gaps at or above configured threshold (default 30 minutes)
   - allow nurse to configure route break-gap threshold (default 30 minutes) used by break card rendering
@@ -372,9 +371,10 @@ When the computed route has a gap of more than a configurable threshold (default
   - all flexible/no preferred windows
   - mixed fixed + flexible visits
   - route exceeding working hours
-  - flexible/no-window patients route around lunch break when schedule permits
-  - fixed patient window overlapping lunch break: visit is served, lunch is skipped, `lunch_skipped` note emitted
+  - flexible/no-window patients route around optimizer-chosen lunch slot when lunch is enabled
+  - fixed patient window overlapping lunch slot: visit is served, lunch is skipped, `lunch_skipped` note emitted
   - no lunch taken when it would delay any remaining patient beyond tolerance
+  - lunch duration validation: durationMinutes must be positive and less than working day length
 
 ## Rollout Notes
 

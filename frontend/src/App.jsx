@@ -139,6 +139,7 @@ function App() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
   const accountMenuRef = useRef(null);
 
   useEffect(() => {
@@ -268,6 +269,16 @@ function App() {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [isAccountSettingsOpen]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 300);
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   const openAccountSettingsModal = () => {
     setHomeAddressInput(normalizedProfileHomeAddress);
@@ -503,23 +514,43 @@ function App() {
               <nav className="grid w-full grid-cols-2 gap-1.5 sm:gap-2">
                 <NavLink to="/patients" aria-label="Patients" className={resolveTabCardClassName}>
                   {({ isActive }) => (
-                    <div>
-                      <p
+                    <div className="flex items-center gap-2.5">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
                         className={[
-                          "m-0 text-left text-sm font-semibold leading-tight sm:text-base",
-                          isActive ? "text-blue-800" : "text-slate-700 group-hover:text-slate-800 dark:text-slate-100",
+                          "h-5 w-5 shrink-0",
+                          isActive ? "text-blue-600" : "text-slate-500 group-hover:text-slate-600 dark:text-slate-400",
                         ].join(" ")}
                       >
-                        Patients
-                      </p>
-                      <p
-                        className={[
-                          "m-0 mt-0.5 hidden text-left text-[11px] font-medium leading-tight sm:block sm:text-xs",
-                          isActive ? "text-blue-700" : "text-slate-600 group-hover:text-slate-700 dark:text-slate-300",
-                        ].join(" ")}
-                      >
-                        Search, create, and manage patient visits.
-                      </p>
+                        <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" />
+                        <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
+                        <circle cx="20" cy="10" r="2" />
+                      </svg>
+                      <div>
+                        <p
+                          className={[
+                            "m-0 text-left text-sm font-semibold leading-tight sm:text-base",
+                            isActive ? "text-blue-800" : "text-slate-700 group-hover:text-slate-800 dark:text-slate-100",
+                          ].join(" ")}
+                        >
+                          Patients
+                        </p>
+                        <p
+                          className={[
+                            "m-0 mt-0.5 hidden text-left text-[11px] font-medium leading-tight sm:block sm:text-xs",
+                            isActive ? "text-blue-700" : "text-slate-600 group-hover:text-slate-700 dark:text-slate-300",
+                          ].join(" ")}
+                        >
+                          Search, create, and manage patient visits.
+                        </p>
+                      </div>
                     </div>
                   )}
                 </NavLink>
@@ -529,23 +560,46 @@ function App() {
                   className={resolveTabCardClassName}
                 >
                   {({ isActive }) => (
-                    <div>
-                      <p
+                    <div className="flex items-center gap-2.5">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
                         className={[
-                          "m-0 text-left text-sm font-semibold leading-tight sm:text-base",
-                          isActive ? "text-blue-800" : "text-slate-700 group-hover:text-slate-800 dark:text-slate-100",
+                          "h-5 w-5 shrink-0",
+                          isActive ? "text-blue-600" : "text-slate-500 group-hover:text-slate-600 dark:text-slate-400",
                         ].join(" ")}
                       >
-                        Route Planner
-                      </p>
-                      <p
-                        className={[
-                          "m-0 mt-0.5 hidden text-left text-[11px] font-medium leading-tight sm:block sm:text-xs",
-                          isActive ? "text-blue-700" : "text-slate-600 group-hover:text-slate-700 dark:text-slate-300",
-                        ].join(" ")}
-                      >
-                        Build and optimize your daily route plan.
-                      </p>
+                        <circle cx="3" cy="6" r="2" />
+                        <circle cx="21" cy="6" r="2" />
+                        <circle cx="12" cy="18" r="2" />
+                        <path d="M5 6h6l4.5 6H21" />
+                        <path d="M3 6l4.5 6H12" />
+                        <path d="M12 16V8" />
+                      </svg>
+                      <div>
+                        <p
+                          className={[
+                            "m-0 text-left text-sm font-semibold leading-tight sm:text-base",
+                            isActive ? "text-blue-800" : "text-slate-700 group-hover:text-slate-800 dark:text-slate-100",
+                          ].join(" ")}
+                        >
+                          Route Planner
+                        </p>
+                        <p
+                          className={[
+                            "m-0 mt-0.5 hidden text-left text-[11px] font-medium leading-tight sm:block sm:text-xs",
+                            isActive ? "text-blue-700" : "text-slate-600 group-hover:text-slate-700 dark:text-slate-300",
+                          ].join(" ")}
+                        >
+                          Build and optimize your daily route plan.
+                        </p>
+                      </div>
                     </div>
                   )}
                 </NavLink>
@@ -851,6 +905,30 @@ function App() {
             </form>
           </div>
         </div>
+      )}
+
+      {showScrollTop && (
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          aria-label="Scroll to top"
+          title="Scroll to top"
+          className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white/90 shadow-md backdrop-blur transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:bg-slate-800 lg:bottom-6 lg:left-[calc(50%+28rem+0.75rem)] lg:right-auto"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="h-4 w-4 text-slate-600 dark:text-slate-300"
+          >
+            <path d="M18 15l-6-6-6 6" />
+          </svg>
+        </button>
       )}
     </div>
   );
