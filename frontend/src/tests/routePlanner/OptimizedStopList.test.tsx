@@ -85,6 +85,9 @@ describe("OptimizedStopList", () => {
     expect(screen.getByText(/Break · 2h 15m/)).toBeTruthy();
     expect(screen.getByText("No scheduled visit tasks at this stop.")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Toggle details for Alex Johnson" })).toBeTruthy();
+    expect(screen.getByTestId("details-chevron-visit-1").getAttribute("data-expanded")).toBe(
+      "true",
+    );
     expect(screen.getByText("Duration: 30 min")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Toggle details for Home ending point" })).toBeTruthy();
     expect(screen.getByText(/You should be home by/i)).toBeTruthy();
@@ -126,6 +129,9 @@ describe("OptimizedStopList", () => {
     );
 
     expect(screen.queryByText(/Break ·/)).toBeNull();
+    expect(screen.getByTestId("details-chevron-visit-1").getAttribute("data-expanded")).toBe(
+      "false",
+    );
     expect(
       screen.getByRole("button", { name: "Toggle details for Ending point" }).textContent,
     ).toContain("Clinic Exit");
