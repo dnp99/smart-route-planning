@@ -16,6 +16,26 @@ Current planning documents:
 
 ---
 
+## Patient Card & Form Modal Mobile UX (March 2026)
+
+### Patient form modal
+
+- Added slide-up animation on mobile (0.28s, iOS-style cubic-bezier easing); disabled on desktop (`sm:animate-none`) and respects `prefers-reduced-motion`
+- Added drag handle pill at top of bottom sheet (mobile only, `sm:hidden`) — standard iOS bottom-sheet affordance
+- Reduced mobile max-height to `82vh` (was `92vh`) so scrim is visible above the sheet
+- Added `appearance-none` to `<input type="time">` elements — prevents iOS Safari from applying native gray background styling
+- Visit window rows are now 3-column by default (`grid-cols-[1fr_1fr_auto]`) so Remove button sits inline with the time fields on mobile
+- Renamed "Type" label to "Visit type" for clarity
+
+### Patient card (mobile)
+
+- Cards are collapsible — collapsed by default on mobile; tap chevron or patient name to expand
+- Chevron + full name row is a single wide tap target with `active:bg-slate-100` feedback
+- Overflow (⋮) menu moved into same row as name via 2-column header grid
+- Reduced card padding (`p-4` → `p-3`) and detail section gap (`gap-3` → `gap-2`) for tighter layout
+
+---
+
 ## Manual Stop Reorder Follow-up (March 2026)
 
 ### Bug fix
