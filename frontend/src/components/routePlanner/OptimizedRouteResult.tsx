@@ -191,7 +191,7 @@ export function OptimizedRouteResult({
   return (
     <section className="mt-4 ">
       <div className="grid gap-2">
-        <div className="grid gap-4 rounded-[28px] border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-4 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20">
+        <div className="grid gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:rounded-[28px] sm:p-4">
           <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
             <div className={responsiveStyles.resultHeader}>
               <p className="m-0 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:text-blue-300">
@@ -253,7 +253,7 @@ export function OptimizedRouteResult({
             )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
             <div className={responsiveStyles.resultStatCard}>
               <p className={responsiveStyles.resultStatLabel}>Driving Time</p>
               <p className={responsiveStyles.resultStatValue}>
@@ -291,7 +291,7 @@ export function OptimizedRouteResult({
 
       <div className="mt-5 flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)]">
         <div className="order-2 min-w-0 sm:order-1">
-          <section className="rounded-[28px] bg-slate-50/80 p-4 dark:bg-slate-950/35">
+          <section className="rounded-2xl bg-slate-50/80 p-3 dark:bg-slate-950/35 sm:rounded-[28px] sm:p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="m-0 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -362,7 +362,7 @@ export function OptimizedRouteResult({
         </div>
 
         <div className="order-1 xl:sticky xl:top-4 xl:self-start">
-          <section className="rounded-[28px] bg-slate-50/80 p-4 dark:bg-slate-950/35">
+          <section className="rounded-2xl bg-slate-50/80 p-3 dark:bg-slate-950/35 sm:rounded-[28px] sm:p-4">
             <div className="mb-1">
               <p className="m-0 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                 Map overview

@@ -60,9 +60,9 @@ const MoreActionsIcon = ({ className }: { className?: string }) => (
     aria-hidden="true"
     className={className}
   >
-    <circle cx="5" cy="12" r="1.5" />
+    <circle cx="12" cy="5" r="1.5" />
     <circle cx="12" cy="12" r="1.5" />
-    <circle cx="19" cy="12" r="1.5" />
+    <circle cx="12" cy="19" r="1.5" />
   </svg>
 );
 
@@ -71,12 +71,15 @@ type PatientWindowRow = {
   timeLabel: string;
 };
 
+const formatWindowRange = (startTime: string, endTime: string) =>
+  `${toTimeInput(startTime)}\u00A0-\u00A0${toTimeInput(endTime)}`;
+
 const resolvePatientWindowRows = (patient: Patient): PatientWindowRow[] => {
   const windows = Array.isArray(patient.visitWindows) ? patient.visitWindows : [];
   if (windows.length > 0) {
     return windows.map((window) => ({
       id: window.id,
-      timeLabel: `${toTimeInput(window.startTime)} - ${toTimeInput(window.endTime)}`,
+      timeLabel: formatWindowRange(window.startTime, window.endTime),
     }));
   }
 
@@ -92,7 +95,10 @@ const resolvePatientWindowRows = (patient: Patient): PatientWindowRow[] => {
   return [
     {
       id: `${patient.id}-legacy`,
-      timeLabel: `${toTimeInput(patient.preferredVisitStartTime)} - ${toTimeInput(patient.preferredVisitEndTime)}`,
+      timeLabel: formatWindowRange(
+        patient.preferredVisitStartTime,
+        patient.preferredVisitEndTime,
+      ),
     },
   ];
 };
@@ -214,20 +220,11 @@ export const PatientsTable = ({
                 No. {index + 1}
               </p>
 
-              <div className="mt-1 grid grid-cols-[1fr_auto] items-start gap-x-2 gap-y-2">
+                <div className="mt-1 grid grid-cols-[1fr_auto] items-start gap-x-2 gap-y-2">
                 <h3 className="m-0 min-w-0 text-base font-semibold text-slate-900 dark:text-slate-100">
                   {patientDisplayName}
                 </h3>
                 <div className="row-span-2 flex shrink-0 justify-self-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => onEdit(patient)}
-                    aria-label={`Edit patient ${patientDisplayName}`}
-                    title={`Edit patient ${patientDisplayName}`}
-                    className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                  >
-                    <EditIcon className="h-4 w-4" />
-                  </button>
                   <div
                     ref={isMobileMenuOpen ? actionsMenuRef : undefined}
                     className="relative"
@@ -247,6 +244,18 @@ export const PatientsTable = ({
                     </button>
                     {isMobileMenuOpen && (
                       <div className="absolute right-0 z-20 mt-1 min-w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOpenActionsMenuKey(null);
+                            onEdit(patient);
+                          }}
+                          aria-label={`Edit patient ${patientDisplayName}`}
+                          className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                        >
+                          <EditIcon className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
                         <button
                           type="button"
                           onClick={() => {
@@ -276,7 +285,9 @@ export const PatientsTable = ({
                     <dt className="font-semibold text-slate-700 dark:text-slate-300">Time windows</dt>
                     <dd className="m-0 grid gap-1.5 text-slate-600 dark:text-slate-400">
                       {windowRows.map((window) => (
-                        <div key={window.id}>{window.timeLabel}</div>
+                        <div key={window.id} className="whitespace-nowrap">
+                          {window.timeLabel}
+                        </div>
                       ))}
                       {renderVisitTypePill(visitType)}
                     </dd>
@@ -299,11 +310,11 @@ export const PatientsTable = ({
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <colgroup>
               <col className="w-24" />
-              <col className="w-[22%]" />
-              <col className="w-[40%]" />
-              <col className="w-[20%]" />
-              <col className="w-[8%]" />
-              <col className="w-[10%]" />
+              <col className="w-[31%]" />
+              <col className="w-[47%]" />
+              <col className="w-[17%]" />
+              <col className="w-16" />
+              <col className="w-14" />
             </colgroup>
             <thead className="bg-slate-50 dark:bg-slate-950">
               <tr>
@@ -319,10 +330,10 @@ export const PatientsTable = ({
                 <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                   Preferred window
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                <th className="px-3 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                   Duration
                 </th>
-                <th className="px-6 py-4 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                <th className="px-3 py-4 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
                   Actions
                 </th>
               </tr>
@@ -353,24 +364,17 @@ export const PatientsTable = ({
                       <div className="grid gap-1.5">
                         {renderVisitTypePill(visitType)}
                         {windowRows.map((window) => (
-                          <div key={window.id}>{window.timeLabel}</div>
+                          <div key={window.id} className="whitespace-nowrap">
+                            {window.timeLabel}
+                          </div>
                         ))}
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
+                    <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-300">
                       {patient.visitDurationMinutes} min
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-3 py-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => onEdit(patient)}
-                          aria-label={`Edit patient ${patientDisplayName}`}
-                          title={`Edit patient ${patientDisplayName}`}
-                          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                        >
-                          <EditIcon className="h-4 w-4" />
-                        </button>
                         <div
                           ref={isMenuOpen ? actionsMenuRef : undefined}
                           className="relative"
@@ -384,12 +388,24 @@ export const PatientsTable = ({
                                 current === desktopMenuKey ? null : desktopMenuKey,
                               )
                             }
-                            className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                           >
-                            <MoreActionsIcon className="h-4 w-4" />
+                            <MoreActionsIcon className="h-3.5 w-3.5" />
                           </button>
                           {isMenuOpen && (
                             <div className="absolute right-0 z-20 mt-1 min-w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setOpenActionsMenuKey(null);
+                                  onEdit(patient);
+                                }}
+                                aria-label={`Edit patient ${patientDisplayName}`}
+                                className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                              >
+                                <EditIcon className="h-3.5 w-3.5" />
+                                Edit
+                              </button>
                               <button
                                 type="button"
                                 onClick={() => {
