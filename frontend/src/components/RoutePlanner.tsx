@@ -322,6 +322,8 @@ function RoutePlanner({
   const canOptimize =
     startAddress.trim().length > 0 && resolvedEndAddress.trim().length > 0;
 
+  const hasValidTripAddresses = canOptimize;
+
   const lastOptimizedSnapshotRef = useRef<string | null>(null);
 
   const currentOptimizeSnapshot = [
@@ -329,7 +331,7 @@ function RoutePlanner({
     resolvedEndAddress,
     selectedDestinations
       .filter((d) => d.isIncluded)
-      .map((d) => d.visitKey)
+      .map((d) => `${d.visitKey}:${d.windowStart}:${d.windowEnd}:${d.windowType ?? ""}`)
       .sort()
       .join(","),
   ].join("||");
@@ -578,9 +580,9 @@ function RoutePlanner({
               className={responsiveStyles.mobileStepNav}
             >
               {[
-                { key: "trip", label: "Trip" },
-                { key: "patients", label: "Patients" },
-                { key: "review", label: "Review" },
+                { key: "trip", label: "Trip", stepNumber: 1, isComplete: hasValidTripAddresses },
+                { key: "patients", label: "Patients", stepNumber: 2, isComplete: selectedDestinations.length > 0 },
+                { key: "review", label: "Review", stepNumber: 3, isComplete: false },
               ].map((step) => {
                 const isActive = activeMobileStep === step.key;
                 return (
@@ -597,14 +599,34 @@ function RoutePlanner({
                         : responsiveStyles.mobileStepButtonInactive
                     }`}
                   >
-                    {step.label}
+                    <span className="flex items-center justify-center gap-1">
+                      {step.isComplete && !isActive ? (
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                          className="shrink-0 text-green-600 dark:text-green-400"
+                        >
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                      ) : (
+                        <span className="text-[0.6rem] font-bold opacity-50">{step.stepNumber}</span>
+                      )}
+                      {step.label}
+                    </span>
                   </button>
                 );
               })}
             </nav>
           )}
 
-          {isTripStepVisible && !isTripSetupExpanded && (
+          {isTripStepVisible && !isTripSetupExpanded && !isMobileViewport && (
             <section className={responsiveStyles.panel}>
               <div className="flex items-start justify-between gap-3 sm:items-center">
                 <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
@@ -635,12 +657,12 @@ function RoutePlanner({
             </section>
           )}
 
-          {isTripStepVisible && isTripSetupExpanded && (
+          {isTripStepVisible && (isTripSetupExpanded || isMobileViewport) && (
             <section className={responsiveStyles.panel}>
               <div className={responsiveStyles.cardHeader}>
                 <div className="flex items-center justify-between gap-2">
                   <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
-                  {startAddress.length > 0 && resolvedEndAddress.length > 0 && (
+                  {!isMobileViewport && startAddress.length > 0 && resolvedEndAddress.length > 0 && (
                     <button
                       type="button"
                       aria-label="Collapse trip setup"
@@ -710,19 +732,10 @@ function RoutePlanner({
                 required
               />
 
-              {isMobileViewport && (
-                <button
-                  type="button"
-                  onClick={() => setActiveMobileStep("patients")}
-                  className={responsiveStyles.secondaryButton}
-                >
-                  Continue to Patients
-                </button>
-              )}
             </section>
           )}
 
-          {isPatientsStepVisible && !isPatientSearchExpanded && selectedDestinations.length > 0 && (
+          {isPatientsStepVisible && !isPatientSearchExpanded && selectedDestinations.length > 0 && !isMobileViewport && (
             <section className={responsiveStyles.panel}>
               <div className="flex items-start justify-between gap-3 sm:items-center">
                 <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
@@ -750,7 +763,7 @@ function RoutePlanner({
             </section>
           )}
 
-          {isPatientsStepVisible && isPatientSearchExpanded && (
+          {isPatientsStepVisible && (isPatientSearchExpanded || isMobileViewport) && (
             <section className={responsiveStyles.panel}>
               <div className={responsiveStyles.cardHeader}>
                 <div className="flex items-center justify-between gap-2">
@@ -765,7 +778,7 @@ function RoutePlanner({
                     >
                       Add New Patient
                     </button>
-                    {selectedDestinations.length > 0 && (
+                    {!isMobileViewport && selectedDestinations.length > 0 && (
                       <button
                         type="button"
                         aria-label="Collapse patient search"
@@ -843,7 +856,7 @@ function RoutePlanner({
             </section>
           )}
 
-          {isPatientsStepVisible && isPatientSearchExpanded && !isDestinationListExpanded && selectedDestinations.length > 0 ? (
+          {isPatientsStepVisible && isPatientSearchExpanded && !isDestinationListExpanded && selectedDestinations.length > 0 && !isMobileViewport ? (
             <section className={responsiveStyles.panel}>
               <div className="flex items-start justify-between gap-3 sm:items-center">
                 <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
@@ -871,7 +884,7 @@ function RoutePlanner({
             </section>
           ) : (
             <SelectedDestinationsSection
-              isVisible={isPatientsStepVisible && isPatientSearchExpanded}
+              isVisible={isPatientsStepVisible && (isPatientSearchExpanded || isMobileViewport)}
               isMobileViewport={isMobileViewport}
               selectedDestinations={selectedDestinations}
               expandedDestinationVisitKeys={expandedDestinationVisitKeys}
@@ -884,9 +897,44 @@ function RoutePlanner({
               onSetDestinationPersistPlanningWindow={
                 setDestinationPersistPlanningWindow
               }
-              onContinueToReview={() => setActiveMobileStep("review")}
               onCollapse={() => setIsDestinationListExpanded(false)}
             />
+          )}
+
+          {isMobileViewport && activeMobileStep === "trip" && (
+            <div className={responsiveStyles.stickyFooter}>
+              {!hasValidTripAddresses && (
+                <p className="m-0 mb-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                  Add a starting and ending point to continue.
+                </p>
+              )}
+              <button
+                type="button"
+                disabled={!hasValidTripAddresses}
+                onClick={() => setActiveMobileStep("patients")}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70"
+              >
+                Continue to Patients →
+              </button>
+            </div>
+          )}
+
+          {isMobileViewport && activeMobileStep === "patients" && (
+            <div className={responsiveStyles.stickyFooter}>
+              {selectedDestinations.length === 0 && (
+                <p className="m-0 mb-2 text-center text-xs text-slate-500 dark:text-slate-400">
+                  Add at least one patient to continue.
+                </p>
+              )}
+              <button
+                type="button"
+                disabled={selectedDestinations.length === 0}
+                onClick={() => setActiveMobileStep("review")}
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70"
+              >
+                Continue to Review →
+              </button>
+            </div>
           )}
 
           {isReviewStepVisible && isMobileViewport && (

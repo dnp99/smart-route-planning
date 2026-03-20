@@ -12,7 +12,7 @@ type GoogleMapsRouteInput = {
 };
 
 export const formatDuration = (durationSeconds: number) => {
-  const totalMinutes = Math.round(durationSeconds / 60);
+  const totalMinutes = Math.floor(durationSeconds / 60);
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
 

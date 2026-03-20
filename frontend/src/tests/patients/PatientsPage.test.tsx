@@ -96,6 +96,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
+    fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Jane Doe/i })[0]);
     fireEvent.click(screen.getAllByRole("button", { name: /Edit patient Jane Doe/i })[0]);
 
     expect(screen.getByText("Edit Patient")).toBeTruthy();
@@ -322,6 +323,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
+    fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Jane Doe/i })[0]);
     fireEvent.click(screen.getAllByRole("button", { name: /Edit patient Jane Doe/i })[0]);
     fireEvent.change(screen.getByLabelText("Visit duration (minutes)"), {
       target: { value: "130" },

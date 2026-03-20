@@ -3,6 +3,7 @@ import type { OptimizeRouteResponse } from "../types";
 import { responsiveStyles } from "../responsiveStyles";
 import RouteMap from "../RouteMap";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlannerUtils";
+import { expectedStartTimeFormatter } from "./routePlannerResultUtils";
 import { formatNameWords } from "../patients/patientName";
 import { OptimizedStopList } from "./OptimizedStopList";
 
@@ -207,13 +208,13 @@ export function OptimizedRouteResult({
             </div>
           </div>
 
-          <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
             <div className={responsiveStyles.resultStatCard}>
               <p className={responsiveStyles.resultStatLabel}>Driving Time</p>
               <p className={responsiveStyles.resultStatValue}>
                 {formatDuration(result.metrics.totalDurationSeconds)}
               </p>
-              <p className={responsiveStyles.resultStatMeta}>
+              <p className={`${responsiveStyles.resultStatMeta} hidden sm:block`}>
                 Total driving time, excludes traffic
               </p>
             </div>
@@ -222,7 +223,7 @@ export function OptimizedRouteResult({
               <p className={responsiveStyles.resultStatValue}>
                 {result.metrics.totalDistanceKm} km
               </p>
-              <p className={responsiveStyles.resultStatMeta}>
+              <p className={`${responsiveStyles.resultStatMeta} hidden sm:block`}>
                 Total planned driving distance
               </p>
             </div>
@@ -233,10 +234,42 @@ export function OptimizedRouteResult({
               <p className={responsiveStyles.resultStatValue}>
                 {scheduledStopCount}
               </p>
-              <p className={responsiveStyles.resultStatMeta}>
+              <p className={`${responsiveStyles.resultStatMeta} hidden sm:block`}>
                 {result.unscheduledTasks.length > 0
                   ? `${result.unscheduledTasks.length} unscheduled visit${result.unscheduledTasks.length === 1 ? "" : "s"}`
                   : "All visits currently scheduled"}
+              </p>
+            </div>
+            <div className={responsiveStyles.resultStatCard}>
+              <p className={`${responsiveStyles.resultStatLabel} flex items-center gap-1`}>
+                Leave By
+                <span className="group relative inline-flex">
+                  <svg
+                    width="12"
+                    height="12"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="cursor-help text-amber-500 dark:text-amber-400"
+                  >
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                    <line x1="12" y1="9" x2="12" y2="13" />
+                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                  </svg>
+                  <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100 dark:bg-slate-700">
+                    Excludes traffic — may vary
+                  </span>
+                </span>
+              </p>
+              <p className={responsiveStyles.resultStatValue}>
+                {expectedStartTimeFormatter.format(new Date(result.start.departureTime))}
+              </p>
+              <p className={`${responsiveStyles.resultStatMeta} hidden sm:block`}>
+                Excludes traffic — may vary
               </p>
             </div>
           </div>

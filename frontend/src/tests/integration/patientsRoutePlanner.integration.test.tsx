@@ -359,6 +359,7 @@ describe("patients and route planner integration", () => {
       expect(listPatientsMock).toHaveBeenLastCalledWith("doe");
     });
 
+    fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Jane Doe/i })[0]);
     fireEvent.click(screen.getAllByRole("button", { name: /Edit patient Jane Doe/i })[0]);
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Janet" },

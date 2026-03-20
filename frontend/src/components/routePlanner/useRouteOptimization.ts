@@ -5,6 +5,17 @@ import {
 } from "./routePlannerService";
 import type { OptimizeRouteResponse } from "../types";
 
+const RESULT_SESSION_KEY = "careflow_route_optimization_result";
+
+const readPersistedResult = (): OptimizeRouteResponse | null => {
+  try {
+    const stored = sessionStorage.getItem(RESULT_SESSION_KEY);
+    return stored ? (JSON.parse(stored) as OptimizeRouteResponse) : null;
+  } catch {
+    return null;
+  }
+};
+
 type OptimizeRouteInput = {
   startAddress: string;
   startGooglePlaceId?: string | null;
@@ -18,7 +29,19 @@ type OptimizeRouteInput = {
 };
 
 export const useRouteOptimization = () => {
-  const [result, setResult] = useState<OptimizeRouteResponse | null>(null);
+  const [result, setResult] = useState<OptimizeRouteResponse | null>(readPersistedResult);
+
+  useEffect(() => {
+    try {
+      if (result) {
+        sessionStorage.setItem(RESULT_SESSION_KEY, JSON.stringify(result));
+      } else {
+        sessionStorage.removeItem(RESULT_SESSION_KEY);
+      }
+    } catch {
+      // sessionStorage unavailable or quota exceeded — ignore
+    }
+  }, [result]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
