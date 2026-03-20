@@ -243,13 +243,10 @@ describe("PatientsPage", () => {
     fireEvent.change(screen.getByPlaceholderText("Search and select an address"), {
       target: { value: "123 Main St" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
 
-    await waitFor(() => {
-      expect(screen.getByText("First name is required.")).toBeTruthy();
-      expect(screen.getByText("Last name is required.")).toBeTruthy();
-      expect(mockedCreatePatient).not.toHaveBeenCalled();
-    });
+    // Save is disabled when required name fields are empty
+    expect((screen.getByRole("button", { name: /Save new patient/i }) as HTMLButtonElement).disabled).toBe(true);
+    expect(mockedCreatePatient).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
