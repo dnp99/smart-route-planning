@@ -15,6 +15,7 @@ import LicensePage from "./components/legal/LicensePage";
 import PrivacyPage from "./components/legal/PrivacyPage";
 import TermsPage from "./components/legal/TermsPage";
 import TrademarkPage from "./components/legal/TrademarkPage";
+import nurseQuotes from "./data/nurseQuotes";
 import { formatNameWords } from "./components/patients/patientName";
 import PatientsPage from "./components/patients/PatientsPage";
 
@@ -89,6 +90,7 @@ function App() {
   const [authUser, setAuthUser] = useState(() => getAuthUser());
   const [isAuthResolved, setIsAuthResolved] = useState(() => !getAuthToken());
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const [headerQuote, setHeaderQuote] = useState(null);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [homeAddressInput, setHomeAddressInput] = useState("");
   const [accountSettingsError, setAccountSettingsError] = useState("");
@@ -186,6 +188,15 @@ function App() {
   }, [isAccountMenuOpen]);
 
   const isAuthenticated = Boolean(authToken);
+
+  useEffect(() => {
+    if (!isAuthenticated || headerQuote) {
+      return;
+    }
+
+    const picked = nurseQuotes[Math.floor(Math.random() * nurseQuotes.length)];
+    setHeaderQuote(picked);
+  }, [isAuthenticated]);
   const defaultProtectedPath = "/patients";
   const formattedDisplayName =
     typeof authUser?.displayName === "string"
@@ -344,7 +355,7 @@ function App() {
     <div className="mx-auto w-full max-w-4xl p-3 sm:p-4 md:p-6">
       <header className="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
         <div className="grid gap-3">
-          <div className="flex items-center justify-between gap-3">
+          <div className="flex items-end gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
                 <svg
@@ -375,7 +386,13 @@ function App() {
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-2">
+            {isAuthenticated && headerQuote && (
+              <p className="m-0 hidden min-w-0 flex-1 truncate text-right text-xs text-slate-500 sm:block sm:text-sm dark:text-slate-400">
+                &ldquo;{headerQuote.content}&rdquo;
+              </p>
+            )}
+
+            <div className="ml-auto flex shrink-0 items-end gap-2">
               {!isAuthenticated && (
                 <p className="m-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
