@@ -85,6 +85,25 @@ const MAX_HOME_ADDRESS_LENGTH = 200;
 const MIN_PASSWORD_LENGTH = 8;
 const PROFILE_MODAL_HOME_ADDRESS_ID = "account-settings-home-address";
 
+const pickRandomQuote = (currentQuote = null) => {
+  if (!Array.isArray(nurseQuotes) || nurseQuotes.length === 0) {
+    return null;
+  }
+
+  if (nurseQuotes.length === 1) {
+    return nurseQuotes[0];
+  }
+
+  let next = nurseQuotes[Math.floor(Math.random() * nurseQuotes.length)];
+  if (currentQuote && typeof currentQuote.content === "string") {
+    while (next.content === currentQuote.content) {
+      next = nurseQuotes[Math.floor(Math.random() * nurseQuotes.length)];
+    }
+  }
+
+  return next;
+};
+
 function App() {
   const [authToken, setAuthToken] = useState(() => getAuthToken());
   const [authUser, setAuthUser] = useState(() => getAuthUser());
@@ -190,13 +209,13 @@ function App() {
   const isAuthenticated = Boolean(authToken);
 
   useEffect(() => {
-    if (!isAuthenticated || headerQuote) {
+    if (!isAuthenticated) {
+      setHeaderQuote(null);
       return;
     }
 
-    const picked = nurseQuotes[Math.floor(Math.random() * nurseQuotes.length)];
-    setHeaderQuote(picked);
-  }, [isAuthenticated, headerQuote]);
+    setHeaderQuote((current) => pickRandomQuote(current));
+  }, [isAuthenticated]);
   const defaultProtectedPath = "/patients";
   const formattedDisplayName =
     typeof authUser?.displayName === "string"
