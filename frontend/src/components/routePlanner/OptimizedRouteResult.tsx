@@ -25,6 +25,7 @@ type OptimizedRouteResultProps = {
   orderedStops?: OptimizeRouteResponse["orderedStops"];
   routeLegs?: OptimizeRouteResponse["routeLegs"];
   isManualOrderStale?: boolean;
+  unscheduledResubmitCount?: number;
   onMoveStop?: (stopId: string, direction: "up" | "down") => void;
   canMoveStop?: (stopId: string, direction: "up" | "down") => boolean;
   onResetManualOrder?: () => void;
@@ -46,6 +47,7 @@ export function OptimizedRouteResult({
   orderedStops,
   routeLegs,
   isManualOrderStale = false,
+  unscheduledResubmitCount = 0,
   onMoveStop,
   canMoveStop,
   onResetManualOrder,
@@ -300,6 +302,11 @@ export function OptimizedRouteResult({
                     <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <span className="m-0 font-medium">
                         Route manually adjusted. Times are estimated.
+                        {unscheduledResubmitCount > 0 && (
+                          <span className="ml-1 font-normal">
+                            {unscheduledResubmitCount} previously unscheduled visit{unscheduledResubmitCount === 1 ? "" : "s"} will be re-submitted.
+                          </span>
+                        )}
                       </span>
                       <div className="flex items-center gap-2">
                         {onResetManualOrder && (

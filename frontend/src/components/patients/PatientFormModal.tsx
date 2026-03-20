@@ -92,9 +92,12 @@ export const PatientFormModal = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="patient-modal-title"
-        className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:max-w-2xl sm:rounded-3xl sm:p-6"
+        className="animate-slide-up motion-reduce:animate-none sm:animate-none max-h-[82vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:max-h-[92vh] sm:max-w-2xl sm:rounded-3xl sm:p-6"
       >
-        <div className="-mx-5 -mt-5 mb-4 flex items-start justify-between gap-3 border-b border-slate-200 bg-white/95 px-5 pb-3 pt-[calc(1rem+env(safe-area-inset-top))] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:mb-5 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
+        <div className="sm:hidden -mx-5 -mt-5 mb-2 flex justify-center pb-1 pt-2.5">
+          <div className="h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
+        </div>
+        <div className="-mx-5 -mt-2 mb-4 flex items-start justify-between gap-3 border-b border-slate-200 bg-white/95 px-5 pb-3 pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:mb-5 sm:border-0 sm:bg-transparent sm:p-0 sm:pt-0 sm:backdrop-blur-0">
           <div>
             <h2
               id="patient-modal-title"
@@ -194,7 +197,7 @@ export const PatientFormModal = ({
                 htmlFor="patient-visit-type"
                 className="text-sm font-semibold text-slate-800 dark:text-slate-200"
               >
-                Type
+                Visit type
               </label>
               <select
                 id="patient-visit-type"
@@ -254,7 +257,7 @@ export const PatientFormModal = ({
               {formValues.visitWindows.map((window, index) => (
                 <div
                   key={window.id}
-                  className="grid gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800 sm:grid-cols-[1fr_1fr_auto]"
+                  className="grid grid-cols-[1fr_1fr_auto] gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800"
                 >
                   <div className="grid gap-1">
                     <label
@@ -270,7 +273,7 @@ export const PatientFormModal = ({
                       onChange={(event) =>
                         onVisitWindowChange(window.id, "startTime", event.target.value)
                       }
-                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                      className="w-full appearance-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                     />
                     {formErrors.visitWindowRows?.[index]?.startTime && (
                       <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -293,7 +296,7 @@ export const PatientFormModal = ({
                       onChange={(event) =>
                         onVisitWindowChange(window.id, "endTime", event.target.value)
                       }
-                      className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                      className="w-full appearance-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                     />
                     {formErrors.visitWindowRows?.[index]?.endTime && (
                       formErrors.visitWindowRows[index].endTime !== fixedWindowDurationError && (

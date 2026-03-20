@@ -13,8 +13,68 @@ Upcoming or not-yet-implemented work should be stored as separate planning docum
 Current planning documents:
 
 - `plans/account-settings-and-working-hours-execution-plan.md` - account settings, home address defaults, and future weekly schedule execution plan
-- `plans/mobile-route-planner-ux-plan.md` - mobile route planner UX improvements (sticky footer CTA, wizard flow, step completion indicators)
-- `plans/pr-review-fixes-plan.md` - fixes for PR review findings: restore removed appRoutes tests with listPatients mock, remove windowType from optimize snapshot, fix double blank line
+
+---
+
+## Patient Card & Form Modal Mobile UX (March 2026)
+
+### Patient form modal
+
+- Added slide-up animation on mobile (0.28s, iOS-style cubic-bezier easing); disabled on desktop (`sm:animate-none`) and respects `prefers-reduced-motion`
+- Added drag handle pill at top of bottom sheet (mobile only, `sm:hidden`) — standard iOS bottom-sheet affordance
+- Reduced mobile max-height to `82vh` (was `92vh`) so scrim is visible above the sheet
+- Added `appearance-none` to `<input type="time">` elements — prevents iOS Safari from applying native gray background styling
+- Visit window rows are now 3-column by default (`grid-cols-[1fr_1fr_auto]`) so Remove button sits inline with the time fields on mobile
+- Renamed "Type" label to "Visit type" for clarity
+
+### Patient card (mobile)
+
+- Cards are collapsible — collapsed by default on mobile; tap chevron or patient name to expand
+- Chevron + full name row is a single wide tap target with `active:bg-slate-100` feedback
+- Overflow (⋮) menu moved into same row as name via 2-column header grid
+- Reduced card padding (`p-4` → `p-3`) and detail section gap (`gap-3` → `gap-2`) for tighter layout
+
+---
+
+## Manual Stop Reorder Follow-up (March 2026)
+
+### Bug fix
+
+- `handleRecalculateManualOrder` now re-submits previously unscheduled visits alongside the manually ordered stops, so visits dropped by the optimizer are retried when the nurse recalculates
+- `unscheduledResubmitCount` computed via `useMemo` in `RoutePlanner` — counts included destinations not present in the current manual order
+- Stale-order banner in `OptimizedRouteResult` shows inline notice when `unscheduledResubmitCount > 0` (e.g. "2 previously unscheduled visits will be re-submitted")
+
+### Tests
+
+- Added "estimates sequential task times for a stop with multiple tasks" — verifies multi-task cursor advancement in `estimateStops` (Test Gap A)
+- Added "advances cursor past a no-coords stop so subsequent arrival times are later" — verifies haversine fallback cursor advance for stops missing coordinates (Test Gap B)
+- Rewrote "clears manual order when optimization result changes" — secondResult uses same orderedStops but different `algorithmVersion`; manual order is inverse of native order so the reset is distinguishable from a stale order (Test Gap C)
+- Total test count: 120 (up from 118)
+
+### Code clarity
+
+- `AVERAGE_DRIVE_SPEED_KM_PER_HOUR` annotated with phase-4 replacement note referencing `account-settings-and-working-hours-execution-plan.md`
+- `formatWindowStartMs` return comment explains why windowEnd clamping is omitted (approximate times; recalculate resolves exact lateness)
+- `manualOrder` in return value documented as `@internal` — for test assertions only
+
+---
+
+## PR Review Fixes (March 2026)
+
+### Tests
+
+- Restored 6 removed `appRoutes.test.tsx` tests: route planner nav active, home address prefill, display name capitalization, patients nav active, account options menu, account settings modal save
+- Restored 3rd Footer test: "footer legal links point to correct routes"
+- Added `listPatients` mock via `vi.hoisted` to `appRoutes.test.tsx` — fixes test contamination from unmocked fetch resolving during cleanup; `beforeEach` sets default `mockResolvedValue([])`
+- Total test count: 118 (up from 103)
+
+### Route planner
+
+- Removed `windowType` from `hasChangedSinceLastOptimize` snapshot — only `windowStart` and `windowEnd` are user-editable, so only they should invalidate the snapshot
+
+### App.jsx
+
+- Removed double blank line before `{isAuthenticated && (` nav block
 
 ---
 
@@ -46,10 +106,11 @@ Current planning documents:
 
 ### Route planner — mobile UX
 
-- Wizard-style step flow on mobile: Patient Search → Selected Patients → Review & Optimize
-- Collapsible sections with chevron toggle; step state persisted to draft
-- Sticky footer CTA with `env(safe-area-inset-bottom)` padding for iOS notch safety
-- `SelectedDestinationsSection` collapse button restored on all viewports
+- Wizard-style step flow on mobile: Trip → Patients → Review
+- Step indicator with numbered badges and checkmark on completed inactive steps
+- Sticky footer CTA with `env(safe-area-inset-bottom)` padding for iOS notch safety — always visible, never hidden inside collapsible sections
+- Mobile collapse toggles removed: trip and patients sections always fully expanded on mobile; desktop collapse behavior unchanged
+- `SelectedDestinationsSection` collapse chevron hidden on mobile (`!isMobileViewport` guard)
 
 ### Route planner — dispatch plan improvements
 
@@ -80,7 +141,7 @@ Current planning documents:
 - Extracted `useCreatePatientForm.ts`: all create-patient modal state and handlers
 - `RoutePlanner.tsx` significantly reduced in size
 
-### Tests
+### Test updates
 
 - `useManualReorder.test.ts`: new (164 lines)
 - `useRouteOptimization.test.ts`: new (sessionStorage persistence + error handling)

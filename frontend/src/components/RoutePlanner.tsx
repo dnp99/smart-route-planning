@@ -171,6 +171,24 @@ function RoutePlanner({
     resetOrder,
   } = useManualReorder(result);
 
+  // Count of included destinations absent from the current manual-ordered stop list.
+  // These were previously unscheduled and will be re-submitted on recalculate.
+  const unscheduledResubmitCount = useMemo(() => {
+    if (!isManualOrderStale || !result) return 0;
+    const scheduledKeys = new Set(
+      manuallyOrderedStops
+        .filter((stop) => !stop.isEndingPoint && stop.tasks.length > 0)
+        .flatMap((stop) =>
+          stop.tasks.map((task) => `${task.patientId}:${task.windowStart}:${task.windowEnd}`),
+        ),
+    );
+    return selectedDestinations.filter(
+      (d) =>
+        d.isIncluded &&
+        !scheduledKeys.has(`${d.patientId}:${d.windowStart}:${d.windowEnd}`),
+    ).length;
+  }, [isManualOrderStale, result, manuallyOrderedStops, selectedDestinations]);
+
   useEffect(() => {
     if (result) {
       setIsDestinationListExpanded(false);
@@ -331,7 +349,7 @@ function RoutePlanner({
     resolvedEndAddress,
     selectedDestinations
       .filter((d) => d.isIncluded)
-      .map((d) => `${d.visitKey}:${d.windowStart}:${d.windowEnd}:${d.windowType ?? ""}`)
+      .map((d) => `${d.visitKey}:${d.windowStart}:${d.windowEnd}`)
       .sort()
       .join(","),
   ].join("||");
@@ -512,6 +530,31 @@ function RoutePlanner({
       return;
     }
 
+    // Re-submit any included destinations that were previously unscheduled
+    // (absent from the manual-ordered stop list) so the backend can attempt
+    // to fit them in the new order.
+    const scheduledKeys = new Set(
+      destinationsInManualOrder.map(
+        (d) => `${d.patientId}:${d.windowStart}:${d.windowEnd}`,
+      ),
+    );
+    const unscheduledDestinations = selectedDestinations
+      .filter(
+        (d) =>
+          d.isIncluded &&
+          !scheduledKeys.has(`${d.patientId}:${d.windowStart}:${d.windowEnd}`),
+      )
+      .map((d) => ({
+        patientId: d.patientId,
+        patientName: d.patientName,
+        address: d.address,
+        googlePlaceId: d.googlePlaceId,
+        windowStart: d.windowStart,
+        windowEnd: d.windowEnd,
+        windowType: d.windowType,
+        serviceDurationMinutes: d.serviceDurationMinutes,
+      }));
+
     await optimizeRoute({
       startAddress,
       ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
@@ -519,7 +562,7 @@ function RoutePlanner({
       ...(resolvedEndGooglePlaceId
         ? { endGooglePlaceId: resolvedEndGooglePlaceId }
         : {}),
-      destinations: destinationsInManualOrder,
+      destinations: [...destinationsInManualOrder, ...unscheduledDestinations],
       canOptimize,
       planningDate,
       preserveOrder: true,
@@ -1023,6 +1066,7 @@ function RoutePlanner({
             orderedStops={manuallyOrderedStops}
             routeLegs={result.routeLegs}
             isManualOrderStale={isManualOrderStale}
+            unscheduledResubmitCount={unscheduledResubmitCount}
             onMoveStop={moveStop}
             canMoveStop={canMoveStop}
             onResetManualOrder={resetOrder}

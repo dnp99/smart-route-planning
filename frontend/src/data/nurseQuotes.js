@@ -11,6 +11,24 @@ const nurseQuotes = [
   { content: "It would not be possible to praise nurses too highly.", author: "Stephen Ambrose" },
   { content: "Caring is the essence of nursing.", author: "Jean Watson" },
   { content: "Too often we underestimate the power of a touch, a smile, a kind word, a listening ear.", author: "Leo Buscaglia" },
+
+  // Added quotes
+  { content: "Nursing is an art: and if it is to be made an art, it requires an exclusive devotion.", author: "Florence Nightingale" },
+  { content: "Wherever the art of medicine is loved, there is also a love of humanity.", author: "Hippocrates" },
+  { content: "The simple act of caring is heroic.", author: "Edward Albert" },
+  { content: "They may forget your name, but they will never forget how you made them feel.", author: "Maya Angelou" },
+
+  // Short quotes
+  { content: "Care is stronger than cure.", author: "Unknown" },
+  { content: "Nursing is compassion in action.", author: "Unknown" },
+  { content: "Small acts. Big impact.", author: "Unknown" },
+  { content: "Kindness heals.", author: "Unknown" },
+  { content: "Compassion is powerful.", author: "Unknown" },
+  { content: "Nurses make a difference.", author: "Unknown" },
+  { content: "Healing begins with care.", author: "Unknown" },
+  { content: "Presence is powerful.", author: "Unknown" },
+  { content: "Care never goes unnoticed.", author: "Unknown" },
+  { content: "Empathy saves lives.", author: "Unknown" }
 ];
 
 export default nurseQuotes;

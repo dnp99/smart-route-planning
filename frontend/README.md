@@ -14,7 +14,7 @@ This folder contains the Vite + React frontend for CareFlow.
 - Keep quote/header workspace behavior consistent across auth sessions.
 - Present unified overflow action menus in patient list rows.
 - Serve legal pages (Terms, Privacy, License, Trademark) at `/legal/*` routes.
-- Mobile-first route planner with wizard step flow, collapsible sections, and safe-area-aware sticky footer CTA.
+- Mobile-first route planner with wizard step flow (Trip → Patients → Review), always-expanded sections on mobile, step completion indicators, and safe-area-aware sticky footer CTA.
 
 ## Local development
 

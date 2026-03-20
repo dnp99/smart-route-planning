@@ -83,7 +83,7 @@ export const SelectedDestinationsSection = ({
           <h2 className={responsiveStyles.cardTitle}>
             Selected patients
           </h2>
-          {selectedDestinations.length > 0 && (
+          {selectedDestinations.length > 0 && !isMobileViewport && (
             <button
               type="button"
               aria-label="Collapse selected patients"

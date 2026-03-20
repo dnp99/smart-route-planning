@@ -3,6 +3,8 @@ import type { OrderedStop, OptimizeRouteResponse } from "../types";
 
 type MoveDirection = "up" | "down";
 
+// Hardcoded travel speed used for haversine-based ETA estimation.
+// Phase 4: replace with nurse-configurable travel speed preference (see account-settings-and-working-hours-execution-plan.md).
 const AVERAGE_DRIVE_SPEED_KM_PER_HOUR = 40;
 const EARTH_RADIUS_KM = 6371;
 
@@ -81,6 +83,8 @@ const formatWindowStartMs = (referenceMs: number, windowStart: string, utcOffset
   const mm = String(minutes).padStart(2, "0");
   const candidate = new Date(`${year}-${month}-${day}T${hh}:${mm}:00${utcOffset}`).getTime();
 
+  // Clamping to windowEnd is intentionally omitted: times are prefixed with "~"
+  // to signal they are approximate, and the recalculate call resolves exact lateness.
   return candidate > referenceMs ? candidate : referenceMs;
 };
 
@@ -272,6 +276,7 @@ export const useManualReorder = (result: OptimizeRouteResponse | null) => {
   };
 
   return {
+    /** @internal Exposed for test assertions only. Use orderedStops for display logic. */
     manualOrder,
     isStale,
     orderedStops: reorderedStops,

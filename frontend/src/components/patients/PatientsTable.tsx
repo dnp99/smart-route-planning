@@ -137,6 +137,22 @@ const renderVisitTypePill = (visitType: "fixed" | "flexible" | "mixed") => {
   );
 };
 
+const ChevronIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 20 20"
+    fill="currentColor"
+    aria-hidden="true"
+    className={className}
+  >
+    <path
+      fillRule="evenodd"
+      d="M7.22 4.22a.75.75 0 0 1 1.06 0l5.25 5.25a.75.75 0 0 1 0 1.06l-5.25 5.25a.75.75 0 1 1-1.06-1.06L11.94 10 7.22 5.28a.75.75 0 0 1 0-1.06Z"
+      clipRule="evenodd"
+    />
+  </svg>
+);
+
 export const PatientsTable = ({
   isLoading,
   isSubmitting,
@@ -147,6 +163,19 @@ export const PatientsTable = ({
 }: PatientsTableProps) => {
   const [openActionsMenuKey, setOpenActionsMenuKey] = useState<string | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+  const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
+
+  const toggleExpanded = (id: string) => {
+    setExpandedPatients((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     if (!openActionsMenuKey) {
@@ -211,95 +240,107 @@ export const PatientsTable = ({
           const mobileMenuKey = `mobile:${patient.id}`;
           const isMobileMenuOpen = openActionsMenuKey === mobileMenuKey;
 
+          const isExpanded = expandedPatients.has(patient.id);
+
           return (
             <article
               key={patient.id}
-              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900"
             >
               <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
                 No. {index + 1}
               </p>
 
-                <div className="mt-1 grid grid-cols-[1fr_auto] items-start gap-x-2 gap-y-2">
-                <h3 className="m-0 min-w-0 text-base font-semibold text-slate-900 dark:text-slate-100">
-                  {patientDisplayName}
-                </h3>
-                <div className="row-span-2 flex shrink-0 justify-self-end gap-2">
-                  <div
-                    ref={isMobileMenuOpen ? actionsMenuRef : undefined}
-                    className="relative"
+              <div className="mt-1 grid grid-cols-[1fr_auto] items-center gap-x-1">
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(patient.id)}
+                  aria-expanded={isExpanded}
+                  aria-label={isExpanded ? `Collapse ${patientDisplayName}` : `Expand ${patientDisplayName}`}
+                  className="-mx-1 flex min-w-0 items-center gap-1.5 rounded-lg px-1 py-1 text-left transition active:bg-slate-100 dark:active:bg-slate-800"
+                >
+                  <ChevronIcon className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${isExpanded ? "rotate-90" : "rotate-0"}`} />
+                  <h3 className="m-0 min-w-0 text-base font-semibold text-slate-900 dark:text-slate-100">
+                    {patientDisplayName}
+                  </h3>
+                </button>
+
+                <div
+                  ref={isMobileMenuOpen ? actionsMenuRef : undefined}
+                  className="relative"
+                >
+                  <button
+                    type="button"
+                    aria-label={`Open actions for ${patientDisplayName}`}
+                    title={`Open actions for ${patientDisplayName}`}
+                    onClick={() =>
+                      setOpenActionsMenuKey((current) =>
+                        current === mobileMenuKey ? null : mobileMenuKey,
+                      )
+                    }
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
-                    <button
-                      type="button"
-                      aria-label={`Open actions for ${patientDisplayName}`}
-                      title={`Open actions for ${patientDisplayName}`}
-                      onClick={() =>
-                        setOpenActionsMenuKey((current) =>
-                          current === mobileMenuKey ? null : mobileMenuKey,
-                        )
-                      }
-                      className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <MoreActionsIcon className="h-4 w-4" />
-                    </button>
-                    {isMobileMenuOpen && (
-                      <div className="absolute right-0 z-20 mt-1 min-w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpenActionsMenuKey(null);
-                            onEdit(patient);
-                          }}
-                          aria-label={`Edit patient ${patientDisplayName}`}
-                          className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                        >
-                          <EditIcon className="h-3.5 w-3.5" />
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setOpenActionsMenuKey(null);
-                            void onDelete(patient.id);
-                          }}
-                          disabled={isSubmitting}
-                          aria-label={`Delete patient ${patientDisplayName}`}
-                          className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300 dark:hover:bg-red-950/30"
-                        >
-                          <TrashIcon className="h-3.5 w-3.5" />
-                          Remove
-                        </button>
-                      </div>
-                    )}
-                  </div>
+                    <MoreActionsIcon className="h-4 w-4" />
+                  </button>
+                  {isMobileMenuOpen && (
+                    <div className="absolute right-0 z-20 mt-1 min-w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenActionsMenuKey(null);
+                          onEdit(patient);
+                        }}
+                        aria-label={`Edit patient ${patientDisplayName}`}
+                        className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                      >
+                        <EditIcon className="h-3.5 w-3.5" />
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenActionsMenuKey(null);
+                          void onDelete(patient.id);
+                        }}
+                        disabled={isSubmitting}
+                        aria-label={`Delete patient ${patientDisplayName}`}
+                        className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300 dark:hover:bg-red-950/30"
+                      >
+                        <TrashIcon className="h-3.5 w-3.5" />
+                        Remove
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <dl className="mt-3 grid gap-3 text-sm">
-                <div>
-                  <dt className="font-semibold text-slate-700 dark:text-slate-300">Address</dt>
-                  <dd className="m-0 text-slate-600 dark:text-slate-400">{patient.address}</dd>
-                </div>
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+              {isExpanded && (
+                <dl className="mt-2 grid gap-2 text-sm">
                   <div>
-                    <dt className="font-semibold text-slate-700 dark:text-slate-300">Time windows</dt>
-                    <dd className="m-0 grid gap-1.5 text-slate-600 dark:text-slate-400">
-                      {windowRows.map((window) => (
-                        <div key={window.id} className="whitespace-nowrap">
-                          {window.timeLabel}
-                        </div>
-                      ))}
-                      {renderVisitTypePill(visitType)}
-                    </dd>
+                    <dt className="font-semibold text-slate-700 dark:text-slate-300">Address</dt>
+                    <dd className="m-0 text-slate-600 dark:text-slate-400">{patient.address}</dd>
                   </div>
-                  <div className="text-right">
-                    <dt className="font-semibold text-slate-700 dark:text-slate-300">Visit duration</dt>
-                    <dd className="m-0 text-slate-600 dark:text-slate-400">
-                      {patient.visitDurationMinutes} min
-                    </dd>
+                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
+                    <div>
+                      <dt className="font-semibold text-slate-700 dark:text-slate-300">Time windows</dt>
+                      <dd className="m-0 grid gap-1.5 text-slate-600 dark:text-slate-400">
+                        {windowRows.map((window) => (
+                          <div key={window.id} className="whitespace-nowrap">
+                            {window.timeLabel}
+                          </div>
+                        ))}
+                        {renderVisitTypePill(visitType)}
+                      </dd>
+                    </div>
+                    <div className="text-right">
+                      <dt className="font-semibold text-slate-700 dark:text-slate-300">Visit duration</dt>
+                      <dd className="m-0 text-slate-600 dark:text-slate-400">
+                        {patient.visitDurationMinutes} min
+                      </dd>
+                    </div>
                   </div>
-                </div>
-              </dl>
+                </dl>
+              )}
             </article>
           );
         })}

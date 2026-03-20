@@ -498,7 +498,6 @@ function App() {
             </div>
           </div>
 
-
           {isAuthenticated && (
             <div className="border-t border-slate-200 pt-2.5 dark:border-slate-800">
               <nav className="grid w-full grid-cols-2 gap-1.5 sm:gap-2">
@@ -632,14 +631,17 @@ function App() {
 
       {isAccountSettingsOpen && (
         <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/50 p-3"
+          className="fixed inset-0 z-40 flex items-end justify-center bg-slate-900/50 p-0 sm:items-center sm:p-3"
           onPointerDown={(event) => {
             if (event.target === event.currentTarget) {
               closeAccountSettingsModal();
             }
           }}
         >
-          <div className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:p-5">
+          <div className="animate-slide-up motion-reduce:animate-none sm:animate-none max-h-[82vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-4 shadow-xl dark:border-slate-700 dark:bg-slate-900 sm:max-h-[92vh] sm:max-w-xl sm:rounded-2xl sm:p-5">
+            <div className="sm:hidden -mx-4 -mt-4 mb-3 flex justify-center pb-1 pt-2.5">
+              <div className="h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
+            </div>
             <div className="mb-4 flex items-start justify-between gap-3">
               <div>
                 <h2 className="m-0 text-lg font-semibold text-slate-900 dark:text-slate-100">
