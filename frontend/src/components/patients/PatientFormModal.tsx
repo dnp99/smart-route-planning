@@ -344,7 +344,7 @@ export const PatientFormModal = ({
             </p>
           )}
 
-          <div className="sticky bottom-0 z-10 -mx-5 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0 sm:flex-row sm:justify-end">
+          <div className="sticky bottom-0 z-10 -mx-5 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0 sm:flex-row sm:justify-end">
             <button
               type="button"
               onClick={onClose}
