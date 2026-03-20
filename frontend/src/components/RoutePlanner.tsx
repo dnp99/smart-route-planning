@@ -2,163 +2,35 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import AddressAutocompleteInput from "./AddressAutocompleteInput";
 import { responsiveStyles } from "./responsiveStyles";
-import type { Patient, VisitTimeType } from "../../../shared/contracts";
+import type { Patient } from "../../../shared/contracts";
 import { usePatientSearch } from "./routePlanner/usePatientSearch";
 import { useRouteOptimization } from "./routePlanner/useRouteOptimization";
 import { persistPlanningWindows } from "./routePlanner/routePlannerService";
 import { SelectedDestinationsSection } from "./routePlanner/SelectedDestinationsSection";
 import type { SelectedPatientDestination } from "./routePlanner/routePlannerTypes";
+import {
+  patientMatchesSearchQuery,
+  toSelectedPatientDestinations,
+} from "./routePlanner/routePlannerHelpers";
+import {
+  buildOptimizeDestinations,
+  buildPlanningWindowsToPersist,
+  validateRequestDestinations,
+} from "./routePlanner/routePlannerSubmission";
 import type { AddressSuggestion } from "./types";
-import {
-  formatNameWords,
-  formatPatientNameFromParts,
-} from "./patients/patientName";
+import { formatPatientNameFromParts } from "./patients/patientName";
 import { PatientFormModal } from "./patients/PatientFormModal";
-import {
-  EMPTY_FORM,
-  createEmptyVisitWindow,
-  type FormFieldErrors,
-  type PatientFormValues,
-  type PatientFormVisitWindow,
-  toCreateRequest,
-  validateForm,
-} from "./patients/patientForm";
-import { createPatient } from "./patients/patientService";
 import {
   type MobilePlannerStep,
   readRoutePlannerDraft,
   persistRoutePlannerDraft,
 } from "./routePlanner/routePlannerDraft";
-import { timeToMinutes } from "./routePlanner/routePlannerResultUtils";
 import { OptimizedRouteResult } from "./routePlanner/OptimizedRouteResult";
 import { useManualReorder } from "./routePlanner/useManualReorder";
+import { useCreatePatientForm } from "./routePlanner/useCreatePatientForm";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
-
-const toWindowTime = (value: string) => value.slice(0, 5);
-const HH_MM_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
-
-const hasCompleteWindow = (destination: SelectedPatientDestination) =>
-  HH_MM_PATTERN.test(destination.windowStart) &&
-  HH_MM_PATTERN.test(destination.windowEnd);
-
-const hasAnyWindowBoundary = (destination: SelectedPatientDestination) =>
-  destination.windowStart.trim().length > 0 ||
-  destination.windowEnd.trim().length > 0;
-
-const toSelectedPatientDestinations = (
-  patient: Patient,
-): SelectedPatientDestination[] => {
-  const patientName = formatPatientNameFromParts(
-    patient.firstName,
-    patient.lastName,
-  );
-  const patientVisitWindows = Array.isArray(patient.visitWindows)
-    ? patient.visitWindows
-    : [];
-  if (patientVisitWindows.length > 0) {
-    return patientVisitWindows.map((window) => ({
-      visitKey: `${patient.id}:${window.id}`,
-      sourceWindowId: window.id,
-      patientId: patient.id,
-      patientName,
-      address: patient.address,
-      googlePlaceId: patient.googlePlaceId,
-      windowStart: toWindowTime(window.startTime),
-      windowEnd: toWindowTime(window.endTime),
-      windowType: window.visitTimeType,
-      serviceDurationMinutes: patient.visitDurationMinutes,
-      requiresPlanningWindow: false,
-      isIncluded: true,
-      persistPlanningWindow: false,
-    }));
-  }
-
-  if (patient.visitTimeType === "flexible") {
-    return [
-      {
-        visitKey: `${patient.id}:planning-window`,
-        sourceWindowId: null,
-        patientId: patient.id,
-        patientName,
-        address: patient.address,
-        googlePlaceId: patient.googlePlaceId,
-        windowStart: "",
-        windowEnd: "",
-        windowType: "flexible",
-        serviceDurationMinutes: patient.visitDurationMinutes,
-        requiresPlanningWindow: true,
-        isIncluded: true,
-        persistPlanningWindow: false,
-      },
-    ];
-  }
-
-  return [
-    {
-      visitKey: `${patient.id}:legacy`,
-      sourceWindowId: null,
-      patientId: patient.id,
-      patientName,
-      address: patient.address,
-      googlePlaceId: patient.googlePlaceId,
-      windowStart: toWindowTime(patient.preferredVisitStartTime),
-      windowEnd: toWindowTime(patient.preferredVisitEndTime),
-      windowType: patient.visitTimeType,
-      serviceDurationMinutes: patient.visitDurationMinutes,
-      requiresPlanningWindow: false,
-      isIncluded: true,
-      persistPlanningWindow: false,
-    },
-  ];
-};
-
-const formatPatientListLabel = (destinations: SelectedPatientDestination[]) => {
-  const names = [
-    ...new Set(
-      destinations
-        .map((destination) => formatNameWords(destination.patientName))
-        .filter((name) => name.length > 0),
-    ),
-  ];
-
-  if (names.length === 0) {
-    return "selected patients";
-  }
-
-  if (names.length === 1) {
-    return names[0];
-  }
-
-  if (names.length === 2) {
-    return `${names[0]} and ${names[1]}`;
-  }
-
-  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
-};
-
-const patientMatchesSearchQuery = (patient: Patient, query: string) => {
-  const normalizedQuery = query.trim().toLowerCase();
-  if (!normalizedQuery) {
-    return true;
-  }
-
-  const patientName = formatPatientNameFromParts(
-    patient.firstName,
-    patient.lastName,
-  ).toLowerCase();
-  const firstName = patient.firstName.toLowerCase();
-  const lastName = patient.lastName.toLowerCase();
-  const address = patient.address.toLowerCase();
-
-  return (
-    patientName.indexOf(normalizedQuery) !== -1 ||
-    firstName.indexOf(normalizedQuery) !== -1 ||
-    lastName.indexOf(normalizedQuery) !== -1 ||
-    address.indexOf(normalizedQuery) !== -1
-  );
-};
 
 type RoutePlannerProps = {
   nurseHomeAddress?: string | null;
@@ -204,17 +76,6 @@ function RoutePlanner({
   const [endTouched, setEndTouched] = useState(false);
 
   const [destinationSearchQuery, setDestinationSearchQuery] = useState("");
-  const [locallyCreatedPatients, setLocallyCreatedPatients] = useState<
-    Patient[]
-  >([]);
-  const [isCreatePatientModalOpen, setIsCreatePatientModalOpen] =
-    useState(false);
-  const [createPatientFormValues, setCreatePatientFormValues] =
-    useState<PatientFormValues>(EMPTY_FORM);
-  const [createPatientFormErrors, setCreatePatientFormErrors] =
-    useState<FormFieldErrors>({});
-  const [isCreatingPatient, setIsCreatingPatient] = useState(false);
-  const [createPatientError, setCreatePatientError] = useState("");
   const [localValidationError, setLocalValidationError] = useState("");
   const [selectedDestinations, setSelectedDestinations] = useState<
     SelectedPatientDestination[]
@@ -238,8 +99,51 @@ function RoutePlanner({
   const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
     normalizedHomeAddress.length === 0,
   );
-  const selectedCreateVisitType =
-    createPatientFormValues.visitWindows[0]?.visitTimeType ?? "flexible";
+
+  const addDestinationPatient = (patient: Patient) => {
+    const destinations = toSelectedPatientDestinations(patient);
+    if (destinations.length === 0) {
+      return;
+    }
+
+    setSelectedDestinations((current) => {
+      if (current.some((entry) => entry.patientId === patient.id)) {
+        return current;
+      }
+
+      return [...current, ...destinations];
+    });
+    setExpandedDestinationVisitKeys((current) => {
+      const next = { ...current };
+      destinations.forEach((destination) => {
+        next[destination.visitKey] = false;
+      });
+      return next;
+    });
+    setDestinationSearchQuery("");
+  };
+
+  const {
+    locallyCreatedPatients,
+    isCreatePatientModalOpen,
+    createPatientFormValues,
+    createPatientFormErrors,
+    isCreatingPatient,
+    createPatientError,
+    selectedCreateVisitType,
+    openCreatePatientModal,
+    closeCreatePatientModal,
+    handleCreatePatientFieldChange,
+    handleCreatePatientVisitWindowChange,
+    handleAddCreatePatientVisitWindow,
+    handleRemoveCreatePatientVisitWindow,
+    handleCreatePatientVisitTypeChange,
+    handleCreatePatientAddressChange,
+    handleCreatePatientAddressPick,
+    handleCreatePatientSubmit,
+  } = useCreatePatientForm({
+    onPatientCreated: addDestinationPatient,
+  });
 
   const {
     patients: destinationSearchPatients,
@@ -488,140 +392,6 @@ function RoutePlanner({
     setManualEndGooglePlaceId(suggestion.placeId);
   };
 
-  const resetCreatePatientFormState = () => {
-    setCreatePatientFormValues(EMPTY_FORM);
-    setCreatePatientFormErrors({});
-    setCreatePatientError("");
-  };
-
-  const openCreatePatientModal = () => {
-    resetCreatePatientFormState();
-    setIsCreatePatientModalOpen(true);
-  };
-
-  const closeCreatePatientModal = () => {
-    if (isCreatingPatient) {
-      return;
-    }
-
-    setIsCreatePatientModalOpen(false);
-    resetCreatePatientFormState();
-  };
-
-  const handleCreatePatientFieldChange = <K extends keyof PatientFormValues>(
-    field: K,
-    value: PatientFormValues[K],
-  ) => {
-    setCreatePatientFormValues((current) => ({ ...current, [field]: value }));
-    setCreatePatientFormErrors((current) => ({
-      ...current,
-      [field]: undefined,
-    }));
-  };
-
-  const handleCreatePatientVisitWindowChange = <
-    K extends keyof PatientFormVisitWindow,
-  >(
-    windowId: string,
-    field: K,
-    value: PatientFormVisitWindow[K],
-  ) => {
-    setCreatePatientFormValues((current) => ({
-      ...current,
-      visitWindows: current.visitWindows.map((window) =>
-        window.id === windowId ? { ...window, [field]: value } : window,
-      ),
-    }));
-    setCreatePatientFormErrors((current) => ({
-      ...current,
-      visitWindows: undefined,
-      visitWindowRows: undefined,
-    }));
-  };
-
-  const handleAddCreatePatientVisitWindow = () => {
-    setCreatePatientFormValues((current) => ({
-      ...current,
-      visitWindows: [
-        ...current.visitWindows,
-        createEmptyVisitWindow(
-          current.visitWindows[0]?.visitTimeType ?? "flexible",
-          current.visitWindows.length,
-        ),
-      ],
-    }));
-    setCreatePatientFormErrors((current) => ({
-      ...current,
-      visitWindows: undefined,
-      visitWindowRows: undefined,
-    }));
-  };
-
-  const handleRemoveCreatePatientVisitWindow = (windowId: string) => {
-    setCreatePatientFormValues((current) => ({
-      ...current,
-      visitWindows: current.visitWindows.filter(
-        (window) => window.id !== windowId,
-      ),
-    }));
-    setCreatePatientFormErrors((current) => ({
-      ...current,
-      visitWindows: undefined,
-      visitWindowRows: undefined,
-    }));
-  };
-
-  const handleCreatePatientVisitTypeChange = (visitTimeType: VisitTimeType) => {
-    setCreatePatientFormValues((current) => {
-      if (visitTimeType === "flexible") {
-        return {
-          ...current,
-          visitWindows: [],
-        };
-      }
-
-      if (current.visitWindows.length === 0) {
-        return {
-          ...current,
-          visitWindows: [createEmptyVisitWindow("fixed", 0)],
-        };
-      }
-
-      return {
-        ...current,
-        visitWindows: current.visitWindows.map((window) => ({
-          ...window,
-          visitTimeType,
-        })),
-      };
-    });
-    setCreatePatientFormErrors((current) => ({
-      ...current,
-      visitWindows: undefined,
-      visitWindowRows: undefined,
-    }));
-  };
-
-  const handleCreatePatientAddressChange = (value: string) => {
-    setCreatePatientFormValues((current) => ({
-      ...current,
-      address: value,
-      googlePlaceId: null,
-    }));
-    setCreatePatientFormErrors((current) => ({
-      ...current,
-      address: undefined,
-    }));
-  };
-
-  const handleCreatePatientAddressPick = (suggestion: AddressSuggestion) => {
-    setCreatePatientFormValues((current) => ({
-      ...current,
-      address: suggestion.displayName,
-      googlePlaceId: suggestion.placeId,
-    }));
-  };
-
   const updateDestinationPlanningWindow = (
     visitKey: string,
     field: "windowStart" | "windowEnd",
@@ -675,77 +445,15 @@ function RoutePlanner({
     event.preventDefault();
     setLocalValidationError("");
 
-    const fixedDestinationsMissingWindow = requestDestinations.filter(
-      (destination) =>
-        destination.windowType === "fixed" && !hasCompleteWindow(destination),
-    );
-    if (fixedDestinationsMissingWindow.length > 0) {
-      setLocalValidationError(
-        `Set start and end time before optimizing for fixed visits: ${formatPatientListLabel(fixedDestinationsMissingWindow)}.`,
-      );
+    const validationError = validateRequestDestinations(requestDestinations);
+    if (validationError) {
+      setLocalValidationError(validationError);
       return;
     }
 
-    const flexibleDestinationsWithPartialWindow = requestDestinations.filter(
-      (destination) =>
-        destination.windowType === "flexible" &&
-        hasAnyWindowBoundary(destination) &&
-        !hasCompleteWindow(destination),
-    );
-    if (flexibleDestinationsWithPartialWindow.length > 0) {
-      setLocalValidationError(
-        `Set both start and end time (or clear both) before optimizing for: ${formatPatientListLabel(flexibleDestinationsWithPartialWindow)}.`,
-      );
-      return;
-    }
-
-    const destinationsWithInvalidWindowOrder = requestDestinations.filter(
-      (destination) =>
-        hasCompleteWindow(destination) &&
-        timeToMinutes(destination.windowEnd) <=
-          timeToMinutes(destination.windowStart),
-    );
-    if (destinationsWithInvalidWindowOrder.length > 0) {
-      setLocalValidationError(
-        `Visit end time must be later than start time for: ${formatPatientListLabel(destinationsWithInvalidWindowOrder)}.`,
-      );
-      return;
-    }
-
-    const destinationsMissingPersistWindow = requestDestinations.filter(
-      (destination) =>
-        destination.persistPlanningWindow && !hasCompleteWindow(destination),
-    );
-    if (destinationsMissingPersistWindow.length > 0) {
-      setLocalValidationError(
-        `Set start and end time before saving to patient record for: ${formatPatientListLabel(destinationsMissingPersistWindow)}.`,
-      );
-      return;
-    }
-
-    const optimizeDestinations = requestDestinations.map(
-      ({
-        visitKey: _visitKey,
-        sourceWindowId: _sourceWindowId,
-        requiresPlanningWindow: _requiresPlanningWindow,
-        isIncluded: _isIncluded,
-        persistPlanningWindow: _persistPlanningWindow,
-        ...destination
-      }) => destination,
-    );
-
-    const planningWindowsToPersist = requestDestinations
-      .filter(
-        (destination) =>
-          destination.persistPlanningWindow && hasCompleteWindow(destination),
-      )
-      .map((destination) => ({
-        patientId: destination.patientId,
-        sourceWindowId: destination.sourceWindowId,
-        startTime: destination.windowStart,
-        endTime: destination.windowEnd,
-        visitTimeType: destination.windowType,
-      }));
+    const optimizeDestinations = buildOptimizeDestinations(requestDestinations);
+    const planningWindowsToPersist =
+      buildPlanningWindowsToPersist(requestDestinations);
 
     if (planningWindowsToPersist.length > 0) {
       try {
@@ -814,66 +522,6 @@ function RoutePlanner({
       planningDate,
       preserveOrder: true,
     });
-  };
-
-  const addDestinationPatient = (patient: Patient) => {
-    const destinations = toSelectedPatientDestinations(patient);
-    if (destinations.length === 0) {
-      return;
-    }
-
-    setSelectedDestinations((current) => {
-      if (current.some((entry) => entry.patientId === patient.id)) {
-        return current;
-      }
-
-      return [...current, ...destinations];
-    });
-    setExpandedDestinationVisitKeys((current) => {
-      const next = { ...current };
-      destinations.forEach((destination) => {
-        next[destination.visitKey] = false;
-      });
-      return next;
-    });
-    setDestinationSearchQuery("");
-  };
-
-  const handleCreatePatientSubmit = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
-    event.preventDefault();
-    setCreatePatientError("");
-
-    const nextErrors = validateForm(createPatientFormValues);
-    setCreatePatientFormErrors(nextErrors);
-
-    if (Object.keys(nextErrors).length > 0) {
-      return;
-    }
-
-    setIsCreatingPatient(true);
-    try {
-      const createdPatient = await createPatient(
-        toCreateRequest(createPatientFormValues),
-      );
-
-      setLocallyCreatedPatients((current) => {
-        const next = current.filter(
-          (patient) => patient.id !== createdPatient.id,
-        );
-        return [createdPatient, ...next];
-      });
-      addDestinationPatient(createdPatient);
-      setIsCreatePatientModalOpen(false);
-      resetCreatePatientFormState();
-    } catch (error) {
-      setCreatePatientError(
-        error instanceof Error ? error.message : "Unable to create patient.",
-      );
-    } finally {
-      setIsCreatingPatient(false);
-    }
   };
 
   const removeDestinationVisit = (visitKey: string) => {
@@ -958,9 +606,13 @@ function RoutePlanner({
 
           {isTripStepVisible && !isTripSetupExpanded && (
             <section className={responsiveStyles.panel}>
-              <div className="flex items-center justify-between gap-3">
-                <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
-                  {startAddress} → {resolvedEndAddress} —{" "}
+              <div className="flex items-start justify-between gap-3 sm:items-center">
+                <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
+                  <span className="break-words">
+                    {startAddress} <span className="text-slate-400">→</span>{" "}
+                    {resolvedEndAddress}
+                  </span>{" "}
+                  —{" "}
                   <button
                     type="button"
                     onClick={() => setIsTripSetupExpanded(true)}
@@ -1072,8 +724,8 @@ function RoutePlanner({
 
           {isPatientsStepVisible && !isPatientSearchExpanded && selectedDestinations.length > 0 && (
             <section className={responsiveStyles.panel}>
-              <div className="flex items-center justify-between gap-3">
-                <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+              <div className="flex items-start justify-between gap-3 sm:items-center">
+                <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
                   {destinationCount} patient{destinationCount === 1 ? "" : "s"}{" "}
                   selected —{" "}
                   <button
@@ -1193,8 +845,8 @@ function RoutePlanner({
 
           {isPatientsStepVisible && isPatientSearchExpanded && !isDestinationListExpanded && selectedDestinations.length > 0 ? (
             <section className={responsiveStyles.panel}>
-              <div className="flex items-center justify-between gap-3">
-                <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+              <div className="flex items-start justify-between gap-3 sm:items-center">
+                <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
                   {destinationCount} patient{destinationCount === 1 ? "" : "s"}{" "}
                   selected —{" "}
                   <button

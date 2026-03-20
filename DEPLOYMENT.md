@@ -39,8 +39,6 @@ Use two environments:
   - Default: `1h`.
 - `GOOGLE_MAPS_API_KEY`
   - Required for route legs and address autocomplete.
-- `NOMINATIM_CONTACT_EMAIL`
-  - Real monitored email address required for responsible upstream usage.
 
 ### Frontend SPA routing
 
@@ -113,7 +111,7 @@ Before first prod cut:
    - `POST /api/auth/login`
    - `GET /api/auth/me` with `Authorization: Bearer <token>`
    - `GET /api/address-autocomplete?query=Toronto` with bearer token
-   - `POST /api/optimize-route` with bearer token
+   - `POST /api/optimize-route/v2` with bearer token
 3. Validate frontend runtime API URL points to prod backend.
 4. Smoke test route optimization in browser.
 

@@ -9,9 +9,9 @@ export const responsiveStyles = {
     "m-0 text-base font-semibold text-slate-900 dark:text-slate-100 sm:text-lg",
   cardDescription: "m-0 text-sm text-slate-600 dark:text-slate-300",
   form: "grid gap-2.5 sm:gap-3",
-  mobileStepNav: "grid grid-cols-3 gap-2",
+  mobileStepNav: "grid grid-cols-3 gap-1.5 sm:gap-2",
   mobileStepButton:
-    "rounded-xl border px-2.5 py-2 text-xs font-semibold transition",
+    "rounded-xl border px-2 py-2.5 text-[0.72rem] font-semibold leading-tight transition sm:px-2.5 sm:py-2 sm:text-xs",
   mobileStepButtonActive:
     "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-200",
   mobileStepButtonInactive:
@@ -19,7 +19,7 @@ export const responsiveStyles = {
   mobileReviewCard:
     "grid gap-2 rounded-2xl border border-slate-200 bg-slate-50/90 p-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200",
   stickyFooter:
-    "sticky bottom-3 z-30 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/95",
+    "sticky bottom-2 z-30 rounded-2xl border border-slate-200 bg-white/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 sm:bottom-3 sm:pb-3",
   searchInput:
     "w-full rounded-2xl border border-slate-300 px-3 py-2.5 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:px-4 sm:py-3",
   panel:
@@ -53,18 +53,18 @@ export const responsiveStyles = {
     "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto",
   resultHeader: "flex flex-col gap-2",
   resultCtaStack:
-    "mt-3 flex flex-wrap items-center gap-3 lg:ml-auto lg:items-end lg:justify-end lg:text-right",
+    "mt-2 flex w-full flex-wrap items-center gap-2.5 sm:mt-3 sm:gap-3 lg:ml-auto lg:w-auto lg:items-end lg:justify-end lg:text-right",
   googleMapsButton:
-    "inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600",
+    "inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 sm:w-auto",
   resultInfoNote:
     "inline-flex w-full items-start gap-2 rounded-xl border border-slate-200/90 bg-slate-100/80 px-3 py-2 text-left text-xs text-slate-600 dark:border-slate-700/80 dark:bg-slate-900/50 dark:text-slate-400",
   resultStatsGrid: "mt-4 grid w-full gap-3 sm:grid-cols-2",
   resultStatCard:
-    "rounded-xl border border-slate-200/90 bg-white/85 px-3 py-2 dark:border-slate-700/80 dark:bg-slate-950/60",
-  resultStatLabel: "text-xs font-semibold text-slate-500 dark:text-slate-400",
+    "rounded-xl border border-slate-200/90 bg-white/85 px-2.5 py-1.5 dark:border-slate-700/80 dark:bg-slate-950/60 sm:px-3 sm:py-2",
+  resultStatLabel: "text-xs font-medium text-slate-500 dark:text-slate-400",
   resultStatValue:
-    "mt-0.5 text-base font-bold tracking-tight text-slate-950 dark:text-white sm:text-lg",
-  resultStatMeta: "mt-0.5 text-sm text-slate-600 dark:text-slate-300",
+    "mt-0.5 text-[0.95rem] font-medium tracking-tight text-slate-900 dark:text-slate-100 sm:text-[1.2rem]",
+  resultStatMeta: "mt-0.5 text-xs text-slate-500 dark:text-slate-400 sm:text-sm",
   resultEndpoints:
     "mt-4 grid gap-3 rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/55 sm:grid-cols-2",
   resultEndpointCard:
@@ -73,5 +73,5 @@ export const responsiveStyles = {
     "text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400",
   resultEndpointValue:
     "mt-1 text-sm font-medium leading-6 text-slate-800 dark:text-slate-100",
-  map: "h-72 w-full overflow-hidden rounded-xl border border-slate-300 dark:border-slate-700 sm:h-[min(70vh,600px)] sm:min-h-64",
+  map: "h-56 w-full overflow-hidden rounded-xl border border-slate-300 dark:border-slate-700 sm:h-[min(70vh,600px)] sm:min-h-64",
 };

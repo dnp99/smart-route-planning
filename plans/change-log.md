@@ -16,6 +16,36 @@ Current planning documents:
 
 ---
 
+## Documentation Refresh (March 2026)
+
+### Updated docs
+- `README.md`
+- `frontend/README.md`
+- `DEPLOYMENT.md`
+- `plan.md`
+
+### What was updated
+- Added missing auth endpoints in root API summary:
+  - `PATCH /api/auth/me`
+  - `POST /api/auth/update-password`
+- Added current frontend architecture docs for extracted Route Planner modules:
+  - `routePlannerHelpers.ts`
+  - `routePlannerSubmission.ts`
+  - `useCreatePatientForm.ts`
+- Added notes for current UX behavior:
+  - authenticated workspace quote behavior
+  - consistent patient-row overflow action menus
+- Updated deployment verification to use:
+  - `POST /api/optimize-route/v2`
+- Removed obsolete deployment env guidance for `NOMINATIM_CONTACT_EMAIL`.
+
+### Verification
+- Frontend run:
+  - `npm run lint`
+  - Result: ✅ passed
+
+---
+
 ## 1) Project Scaffolding
 
 ### Created app structure
