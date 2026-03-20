@@ -13,7 +13,29 @@ Upcoming or not-yet-implemented work should be stored as separate planning docum
 Current planning documents:
 
 - `plans/account-settings-and-working-hours-execution-plan.md` - account settings, home address defaults, and future weekly schedule execution plan
-- `plans/manual-reorder-followup-plan.md` - manual stop reorder follow-up: Bug #5 (unscheduled visits silently dropped on recalculate), test gaps A/B/C, non-blocking improvements
+
+---
+
+## Manual Stop Reorder Follow-up (March 2026)
+
+### Bug fix
+
+- `handleRecalculateManualOrder` now re-submits previously unscheduled visits alongside the manually ordered stops, so visits dropped by the optimizer are retried when the nurse recalculates
+- `unscheduledResubmitCount` computed via `useMemo` in `RoutePlanner` — counts included destinations not present in the current manual order
+- Stale-order banner in `OptimizedRouteResult` shows inline notice when `unscheduledResubmitCount > 0` (e.g. "2 previously unscheduled visits will be re-submitted")
+
+### Tests
+
+- Added "estimates sequential task times for a stop with multiple tasks" — verifies multi-task cursor advancement in `estimateStops` (Test Gap A)
+- Added "advances cursor past a no-coords stop so subsequent arrival times are later" — verifies haversine fallback cursor advance for stops missing coordinates (Test Gap B)
+- Rewrote "clears manual order when optimization result changes" — secondResult uses same orderedStops but different `algorithmVersion`; manual order is inverse of native order so the reset is distinguishable from a stale order (Test Gap C)
+- Total test count: 120 (up from 118)
+
+### Code clarity
+
+- `AVERAGE_DRIVE_SPEED_KM_PER_HOUR` annotated with phase-4 replacement note referencing `account-settings-and-working-hours-execution-plan.md`
+- `formatWindowStartMs` return comment explains why windowEnd clamping is omitted (approximate times; recalculate resolves exact lateness)
+- `manualOrder` in return value documented as `@internal` — for test assertions only
 
 ---
 
