@@ -84,6 +84,7 @@ const EyeOffIcon = ({ className }) => (
 const MAX_HOME_ADDRESS_LENGTH = 200;
 const MIN_PASSWORD_LENGTH = 8;
 const PROFILE_MODAL_HOME_ADDRESS_ID = "account-settings-home-address";
+const HEADER_QUOTE_STORAGE_KEY = "careflow.headerQuote";
 
 const pickRandomQuote = (currentQuote = null) => {
   if (!Array.isArray(nurseQuotes) || nurseQuotes.length === 0) {
@@ -104,12 +105,26 @@ const pickRandomQuote = (currentQuote = null) => {
   return next;
 };
 
+const readStoredHeaderQuote = () => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const storedContent = window.localStorage.getItem(HEADER_QUOTE_STORAGE_KEY);
+  if (!storedContent) {
+    return null;
+  }
+
+  const matchedQuote = nurseQuotes.find((quote) => quote.content === storedContent);
+  return matchedQuote ?? null;
+};
+
 function App() {
   const [authToken, setAuthToken] = useState(() => getAuthToken());
   const [authUser, setAuthUser] = useState(() => getAuthUser());
   const [isAuthResolved, setIsAuthResolved] = useState(() => !getAuthToken());
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
-  const [headerQuote, setHeaderQuote] = useState(null);
+  const [headerQuote, setHeaderQuote] = useState(() => readStoredHeaderQuote());
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [homeAddressInput, setHomeAddressInput] = useState("");
   const [accountSettingsError, setAccountSettingsError] = useState("");
@@ -211,10 +226,19 @@ function App() {
   useEffect(() => {
     if (!isAuthenticated) {
       setHeaderQuote(null);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(HEADER_QUOTE_STORAGE_KEY);
+      }
       return;
     }
 
-    setHeaderQuote((current) => pickRandomQuote(current));
+    setHeaderQuote((current) => {
+      const next = current ?? readStoredHeaderQuote() ?? pickRandomQuote();
+      if (next && typeof window !== "undefined") {
+        window.localStorage.setItem(HEADER_QUOTE_STORAGE_KEY, next.content);
+      }
+      return next;
+    });
   }, [isAuthenticated]);
   const defaultProtectedPath = "/patients";
   const formattedDisplayName =
