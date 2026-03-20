@@ -13,6 +13,7 @@ Upcoming or not-yet-implemented work should be stored as separate planning docum
 Current planning documents:
 
 - `plans/account-settings-and-working-hours-execution-plan.md` - account settings, home address defaults, and future weekly schedule execution plan
+- `plans/mobile-route-planner-ux-plan.md` - mobile route planner UX improvements (sticky footer CTA, wizard flow, step completion indicators)
 
 ---
 
@@ -43,6 +44,33 @@ Current planning documents:
 - Frontend run:
   - `npm run lint`
   - Result: ✅ passed
+
+---
+
+## Global Header + Footer + Legal Pages (March 2026)
+
+See plan: `plans/completed/global-header-footer-legal-plan.md`
+
+### Added global footer
+
+- `frontend/src/App.jsx` — footer rendered inside authenticated shell for `/patients` and `/route-planner` routes
+- Links: `Contact Us` (mailto), `Terms`, `Privacy`, `License`, `Trademark`
+- Copyright line: `© {currentYear} CareFlow. All rights reserved.`
+- Trademark line: `CareFlow is a trademark of CareFlow.`
+- Styled with existing Tailwind slate/blue visual language; responsive layout
+
+### Added legal pages + routes
+
+- `frontend/src/components/legal/TermsPage.tsx`
+- `frontend/src/components/legal/PrivacyPage.tsx`
+- `frontend/src/components/legal/LicensePage.tsx`
+- `frontend/src/components/legal/TrademarkPage.tsx`
+- Routes registered in `App.jsx`: `/legal/terms`, `/legal/privacy`, `/legal/license`, `/legal/trademark`
+- Pages are public (no auth guard)
+
+### Added tests
+
+- `frontend/src/tests/appRoutes.test.tsx` — asserts footer renders with Contact Us and all 4 legal links, footer links point to correct routes, each legal page renders at its route
 
 ---
 

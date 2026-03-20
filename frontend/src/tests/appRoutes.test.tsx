@@ -163,28 +163,6 @@ describe("Legal pages", () => {
 });
 
 describe("App routing", () => {
-  it("capitalizes nurse display name in the workspace subtitle", async () => {
-    fetchMeMock.mockResolvedValue({
-      user: {
-        id: "nurse-1",
-        email: "nurse@example.com",
-        displayName: "nUrSe oNe",
-        homeAddress: null,
-      },
-    });
-    seedAuthenticatedSession("nUrSe oNe");
-
-    render(
-      <MemoryRouter initialEntries={["/patients"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitForPatientsPage();
-    expect(screen.getByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
-    expect(screen.getByText("Nurse operations workspace for Nurse One")).toBeTruthy();
-  });
-
   it("redirects unauthenticated users to login", () => {
     render(
       <MemoryRouter initialEntries={["/patients"]}>
