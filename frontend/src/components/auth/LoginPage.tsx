@@ -75,7 +75,7 @@ const LoginPage = () => {
   };
 
   return (
-    <main className="mt-8 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
+    <main className="mt-4 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
       <div className="w-full">
         <div className="mb-5 grid gap-3">
           <div className="flex w-full rounded-2xl bg-slate-100 p-1 dark:bg-slate-800">

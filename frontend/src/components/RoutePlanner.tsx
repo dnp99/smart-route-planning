@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import AddressAutocompleteInput from "./AddressAutocompleteInput";
 import { responsiveStyles } from "./responsiveStyles";
@@ -232,6 +232,9 @@ function RoutePlanner({
     useState(false);
   const [isDestinationListExpanded, setIsDestinationListExpanded] =
     useState(true);
+  const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
+    (initialDraft?.selectedDestinations?.length ?? 0) === 0,
+  );
   const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
     normalizedHomeAddress.length === 0,
   );
@@ -414,6 +417,22 @@ function RoutePlanner({
 
   const canOptimize =
     startAddress.trim().length > 0 && resolvedEndAddress.trim().length > 0;
+
+  const lastOptimizedSnapshotRef = useRef<string | null>(null);
+
+  const currentOptimizeSnapshot = [
+    startAddress,
+    resolvedEndAddress,
+    selectedDestinations
+      .filter((d) => d.isIncluded)
+      .map((d) => d.visitKey)
+      .sort()
+      .join(","),
+  ].join("||");
+
+  const hasChangedSinceLastOptimize =
+    lastOptimizedSnapshotRef.current === null ||
+    lastOptimizedSnapshotRef.current !== currentOptimizeSnapshot;
 
   const optimizeEndpointHint = useMemo(() => {
     if (manualEndAddress.trim().length === 0) {
@@ -741,6 +760,8 @@ function RoutePlanner({
       }
     }
 
+    lastOptimizedSnapshotRef.current = currentOptimizeSnapshot;
+
     await optimizeRoute({
       startAddress,
       ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
@@ -937,16 +958,28 @@ function RoutePlanner({
 
           {isTripStepVisible && !isTripSetupExpanded && (
             <section className={responsiveStyles.panel}>
-              <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
-                {startAddress} → {resolvedEndAddress} —{" "}
+              <div className="flex items-center justify-between gap-3">
+                <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+                  {startAddress} → {resolvedEndAddress} —{" "}
+                  <button
+                    type="button"
+                    onClick={() => setIsTripSetupExpanded(true)}
+                    className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+                  >
+                    Edit
+                  </button>
+                </p>
                 <button
                   type="button"
+                  aria-label="Expand trip setup"
                   onClick={() => setIsTripSetupExpanded(true)}
-                  className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+                  className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
                 >
-                  Edit
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
                 </button>
-              </p>
+              </div>
             </section>
           )}
 
@@ -960,7 +993,7 @@ function RoutePlanner({
                       type="button"
                       aria-label="Collapse trip setup"
                       onClick={() => setIsTripSetupExpanded(false)}
-                      className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                      className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <polyline points="18 15 12 9 6 15" />
@@ -1037,20 +1070,62 @@ function RoutePlanner({
             </section>
           )}
 
-          {isPatientsStepVisible && (
+          {isPatientsStepVisible && !isPatientSearchExpanded && selectedDestinations.length > 0 && (
             <section className={responsiveStyles.panel}>
-              <div className={responsiveStyles.cardHeader}>
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <h2 className={responsiveStyles.cardTitle}>
-                    Destination patient search
-                  </h2>
+              <div className="flex items-center justify-between gap-3">
+                <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+                  {destinationCount} patient{destinationCount === 1 ? "" : "s"}{" "}
+                  selected —{" "}
                   <button
                     type="button"
-                    onClick={openCreatePatientModal}
-                    className="rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    onClick={() => setIsPatientSearchExpanded(true)}
+                    className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
                   >
-                    Add New Patient
+                    Edit
                   </button>
+                </p>
+                <button
+                  type="button"
+                  aria-label="Expand patient search"
+                  onClick={() => setIsPatientSearchExpanded(true)}
+                  className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+              </div>
+            </section>
+          )}
+
+          {isPatientsStepVisible && isPatientSearchExpanded && (
+            <section className={responsiveStyles.panel}>
+              <div className={responsiveStyles.cardHeader}>
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className={responsiveStyles.cardTitle}>
+                    Add patient(s) to create your schedule
+                  </h2>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={openCreatePatientModal}
+                      className="rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    >
+                      Add New Patient
+                    </button>
+                    {selectedDestinations.length > 0 && (
+                      <button
+                        type="button"
+                        aria-label="Collapse patient search"
+                        onClick={() => setIsPatientSearchExpanded(false)}
+                        className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <polyline points="18 15 12 9 6 15" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <p className={responsiveStyles.cardDescription}>
                   Add saved patients as route stops before optimizing the visit
@@ -1116,23 +1191,35 @@ function RoutePlanner({
             </section>
           )}
 
-          {isPatientsStepVisible && !isDestinationListExpanded && selectedDestinations.length > 0 ? (
+          {isPatientsStepVisible && isPatientSearchExpanded && !isDestinationListExpanded && selectedDestinations.length > 0 ? (
             <section className={responsiveStyles.panel}>
-              <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
-                {destinationCount} patient{destinationCount === 1 ? "" : "s"}{" "}
-                selected —{" "}
+              <div className="flex items-center justify-between gap-3">
+                <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+                  {destinationCount} patient{destinationCount === 1 ? "" : "s"}{" "}
+                  selected —{" "}
+                  <button
+                    type="button"
+                    onClick={() => setIsDestinationListExpanded(true)}
+                    className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+                  >
+                    Edit
+                  </button>
+                </p>
                 <button
                   type="button"
+                  aria-label="Expand selected patients"
                   onClick={() => setIsDestinationListExpanded(true)}
-                  className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
+                  className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
                 >
-                  Edit
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
                 </button>
-              </p>
+              </div>
             </section>
           ) : (
             <SelectedDestinationsSection
-              isVisible={isPatientsStepVisible}
+              isVisible={isPatientsStepVisible && isPatientSearchExpanded}
               isMobileViewport={isMobileViewport}
               selectedDestinations={selectedDestinations}
               expandedDestinationVisitKeys={expandedDestinationVisitKeys}
@@ -1187,11 +1274,11 @@ function RoutePlanner({
               }`}
             >
               <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-semibold text-blue-700 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/20 dark:text-blue-300">
-                {destinationCount} patient(s) detected
+                {destinationCount} visit(s) detected
               </span>
               <button
                 type="submit"
-                disabled={isLoading || !canOptimize}
+                disabled={isLoading || !canOptimize || (!!result && !hasChangedSinceLastOptimize)}
                 className="optimize-route-button inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto"
                 data-loading={isLoading ? "true" : "false"}
                 data-success={showOptimizeSuccess ? "true" : "false"}

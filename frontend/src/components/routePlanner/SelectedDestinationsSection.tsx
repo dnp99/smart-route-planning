@@ -83,14 +83,14 @@ export const SelectedDestinationsSection = ({
       <div className={responsiveStyles.cardHeader}>
         <div className="flex items-center justify-between gap-2">
           <h2 className={responsiveStyles.cardTitle}>
-            Selected destination patients
+            Selected patients
           </h2>
           {selectedDestinations.length > 0 && (
             <button
               type="button"
               aria-label="Collapse selected patients"
               onClick={onCollapse}
-              className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+              className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <polyline points="18 15 12 9 6 15" />

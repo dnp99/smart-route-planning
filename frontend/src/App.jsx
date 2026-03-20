@@ -11,6 +11,10 @@ import {
   getAuthUser,
   setStoredAuthUser,
 } from "./components/auth/authSession";
+import LicensePage from "./components/legal/LicensePage";
+import PrivacyPage from "./components/legal/PrivacyPage";
+import TermsPage from "./components/legal/TermsPage";
+import TrademarkPage from "./components/legal/TrademarkPage";
 import { formatNameWords } from "./components/patients/patientName";
 import PatientsPage from "./components/patients/PatientsPage";
 
@@ -340,17 +344,45 @@ function App() {
     <div className="mx-auto w-full max-w-4xl p-3 sm:p-4 md:p-6">
       <header className="w-full rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-4">
         <div className="grid gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="m-0 text-base font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 sm:text-lg">
-                CareFlow
-              </p>
-              <p className="m-0 mt-1 text-sm text-slate-500 dark:text-slate-400">
-                {workspaceSubtitle}
-              </p>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex min-w-0 items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="h-5 w-5 text-blue-600 dark:text-blue-400"
+                >
+                  {/* ECG / pulse line */}
+                  <path d="M1 12 L5 12 L7 5 L9 19 L11 12 L13 12" />
+                  {/* Map pin — route destination */}
+                  <path d="M19 5C16.8 5 15 6.8 15 9C15 11.8 19 17 19 17C19 17 23 11.8 23 9C23 6.8 21.2 5 19 5Z" />
+                  <circle cx="19" cy="9" r="1.8" fill="currentColor" strokeWidth="0" />
+                </svg>
+              </div>
+              <div className="min-w-0">
+                <p className="m-0 text-base font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 sm:text-lg">
+                  CareFlow
+                </p>
+                <p className="m-0 mt-0.5 truncate text-xs text-slate-500 sm:text-sm dark:text-slate-400">
+                  {workspaceSubtitle}
+                </p>
+              </div>
             </div>
 
-            {isAuthenticated ? (
+            <div className="flex shrink-0 items-center gap-2">
+              {!isAuthenticated && (
+                <p className="m-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                </p>
+              )}
+
+              {isAuthenticated ? (
               <div ref={accountMenuRef} className="relative">
                 <button
                   type="button"
@@ -402,12 +434,10 @@ function App() {
                   </div>
                 )}
               </div>
-            ) : (
-              <p className="m-0 text-right text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                Authentication required
-              </p>
-            )}
+              ) : null}
+            </div>
           </div>
+
 
           {isAuthenticated && (
             <div className="border-t border-slate-200 pt-2.5 dark:border-slate-800">
@@ -481,6 +511,10 @@ function App() {
             />,
           )}
         />
+        <Route path="/legal/terms" element={<TermsPage />} />
+        <Route path="/legal/privacy" element={<PrivacyPage />} />
+        <Route path="/legal/license" element={<LicensePage />} />
+        <Route path="/legal/trademark" element={<TrademarkPage />} />
         <Route
           path="/"
           element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
@@ -490,6 +524,51 @@ function App() {
           element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
         />
       </Routes>
+
+      <footer className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <nav aria-label="Legal and support links" className="flex flex-wrap gap-x-3 gap-y-0">
+            <a
+              href="mailto:dpatel1995@yahoo.com"
+              className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Contact Us
+            </a>
+            <NavLink
+              to="/legal/terms"
+              className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Terms
+            </NavLink>
+            <NavLink
+              to="/legal/privacy"
+              className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Privacy
+            </NavLink>
+            <NavLink
+              to="/legal/license"
+              className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              License
+            </NavLink>
+            <NavLink
+              to="/legal/trademark"
+              className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
+            >
+              Trademark
+            </NavLink>
+          </nav>
+          <div className="flex flex-col gap-0.5 sm:text-right">
+            <p className="m-0 text-xs text-slate-400 dark:text-slate-500">
+              &copy; {new Date().getFullYear()} CareFlow. All rights reserved.
+            </p>
+            <p className="m-0 text-xs text-slate-400 dark:text-slate-500">
+              CareFlow is a trademark of CareFlow.
+            </p>
+          </div>
+        </div>
+      </footer>
 
       {isAccountSettingsOpen && (
         <div
