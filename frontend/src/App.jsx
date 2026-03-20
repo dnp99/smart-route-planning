@@ -396,7 +396,7 @@ function App() {
 
   return (
     <div className="mx-auto w-full max-w-4xl p-3 sm:p-4 md:p-6">
-      <header className="sticky top-0 z-30 w-full rounded-2xl border border-slate-300 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-4">
+      <header className="z-30 w-full overflow-x-clip rounded-2xl border border-slate-300 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-900 sm:sticky sm:top-0 sm:p-4">
         <div className="grid gap-3">
           <div className="flex items-center gap-3">
             <div className="flex min-w-0 items-center gap-3">
@@ -430,7 +430,7 @@ function App() {
             </div>
 
             {isAuthenticated && headerQuote && (
-              <p className="m-0 hidden min-w-0 flex-1 truncate text-right text-xs italic text-slate-600 sm:block sm:text-sm dark:text-slate-300">
+              <p className="m-0 hidden w-0 min-w-0 max-w-[42ch] flex-1 overflow-hidden text-ellipsis whitespace-nowrap text-right text-xs italic text-slate-600 sm:block sm:text-sm dark:text-slate-300">
                 &ldquo;{headerQuote.content}&rdquo;
               </p>
             )}

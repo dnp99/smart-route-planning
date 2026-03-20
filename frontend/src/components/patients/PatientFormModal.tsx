@@ -94,7 +94,7 @@ export const PatientFormModal = ({
         aria-labelledby="patient-modal-title"
         className="max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:max-w-2xl sm:rounded-3xl sm:p-6"
       >
-        <div className="mb-5 flex items-start justify-between gap-3">
+        <div className="-mx-5 -mt-5 mb-4 flex items-start justify-between gap-3 border-b border-slate-200 bg-white/95 px-5 pb-3 pt-[calc(1rem+env(safe-area-inset-top))] backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:mb-5 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
           <div>
             <h2
               id="patient-modal-title"
@@ -339,7 +339,7 @@ export const PatientFormModal = ({
               )}
             </div>
 
-            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+            <div className="-mx-5 -mb-5 mt-1 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-5 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={onClose}
