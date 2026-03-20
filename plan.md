@@ -14,6 +14,26 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Updated repository documentation to reflect current API endpoints, frontend architecture splits, and recent UI behavior updates.
+
+### Files added/updated/deleted
+- Updated:
+  - `README.md`
+  - `frontend/README.md`
+  - `DEPLOYMENT.md`
+  - `plan.md`
+  - `plans/change-log.md`
+
+### Why
+- Top-level docs were missing newer auth endpoints and recent frontend behavior details.
+- Frontend docs did not mention extracted Route Planner modules now used in production code.
+- Deployment safety checklist still referenced a legacy optimize-route endpoint and obsolete backend env guidance.
+
+### Verification
+- Frontend:
+  - `npm run lint` ✅
+
+### Change
 Refactored Route Planner by extracting selected-destination rendering into a dedicated component and moving shared destination types to route-planner-specific type modules.
 
 ### Files added/updated/deleted
