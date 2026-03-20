@@ -498,7 +498,6 @@ function App() {
             </div>
           </div>
 
-
           {isAuthenticated && (
             <div className="border-t border-slate-200 pt-2.5 dark:border-slate-800">
               <nav className="grid w-full grid-cols-2 gap-1.5 sm:gap-2">

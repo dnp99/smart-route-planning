@@ -13,8 +13,26 @@ Upcoming or not-yet-implemented work should be stored as separate planning docum
 Current planning documents:
 
 - `plans/account-settings-and-working-hours-execution-plan.md` - account settings, home address defaults, and future weekly schedule execution plan
-- `plans/mobile-route-planner-ux-plan.md` - mobile route planner UX improvements (sticky footer CTA, wizard flow, step completion indicators)
-- `plans/pr-review-fixes-plan.md` - fixes for PR review findings: restore removed appRoutes tests with listPatients mock, remove windowType from optimize snapshot, fix double blank line
+- `plans/manual-reorder-followup-plan.md` - manual stop reorder follow-up: Bug #5 (unscheduled visits silently dropped on recalculate), test gaps A/B/C, non-blocking improvements
+
+---
+
+## PR Review Fixes (March 2026)
+
+### Tests
+
+- Restored 6 removed `appRoutes.test.tsx` tests: route planner nav active, home address prefill, display name capitalization, patients nav active, account options menu, account settings modal save
+- Restored 3rd Footer test: "footer legal links point to correct routes"
+- Added `listPatients` mock via `vi.hoisted` to `appRoutes.test.tsx` — fixes test contamination from unmocked fetch resolving during cleanup; `beforeEach` sets default `mockResolvedValue([])`
+- Total test count: 118 (up from 103)
+
+### Route planner
+
+- Removed `windowType` from `hasChangedSinceLastOptimize` snapshot — only `windowStart` and `windowEnd` are user-editable, so only they should invalidate the snapshot
+
+### App.jsx
+
+- Removed double blank line before `{isAuthenticated && (` nav block
 
 ---
 
@@ -46,10 +64,11 @@ Current planning documents:
 
 ### Route planner — mobile UX
 
-- Wizard-style step flow on mobile: Patient Search → Selected Patients → Review & Optimize
-- Collapsible sections with chevron toggle; step state persisted to draft
-- Sticky footer CTA with `env(safe-area-inset-bottom)` padding for iOS notch safety
-- `SelectedDestinationsSection` collapse button restored on all viewports
+- Wizard-style step flow on mobile: Trip → Patients → Review
+- Step indicator with numbered badges and checkmark on completed inactive steps
+- Sticky footer CTA with `env(safe-area-inset-bottom)` padding for iOS notch safety — always visible, never hidden inside collapsible sections
+- Mobile collapse toggles removed: trip and patients sections always fully expanded on mobile; desktop collapse behavior unchanged
+- `SelectedDestinationsSection` collapse chevron hidden on mobile (`!isMobileViewport` guard)
 
 ### Route planner — dispatch plan improvements
 
@@ -80,7 +99,7 @@ Current planning documents:
 - Extracted `useCreatePatientForm.ts`: all create-patient modal state and handlers
 - `RoutePlanner.tsx` significantly reduced in size
 
-### Tests
+### Test updates
 
 - `useManualReorder.test.ts`: new (164 lines)
 - `useRouteOptimization.test.ts`: new (sessionStorage persistence + error handling)

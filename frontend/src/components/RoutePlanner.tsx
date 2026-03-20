@@ -331,7 +331,7 @@ function RoutePlanner({
     resolvedEndAddress,
     selectedDestinations
       .filter((d) => d.isIncluded)
-      .map((d) => `${d.visitKey}:${d.windowStart}:${d.windowEnd}:${d.windowType ?? ""}`)
+      .map((d) => `${d.visitKey}:${d.windowStart}:${d.windowEnd}`)
       .sort()
       .join(","),
   ].join("||");
