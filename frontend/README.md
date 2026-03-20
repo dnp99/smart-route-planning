@@ -10,8 +10,11 @@ This folder contains the Vite + React frontend for CareFlow.
 - Submit route optimization requests to the backend.
 - Render the optimized route with Leaflet.
 - Support manual stop reordering with recalculated ETA flow.
+- Persist optimization result in sessionStorage across tab switches; clear on auth change.
 - Keep quote/header workspace behavior consistent across auth sessions.
 - Present unified overflow action menus in patient list rows.
+- Serve legal pages (Terms, Privacy, License, Trademark) at `/legal/*` routes.
+- Mobile-first route planner with wizard step flow, collapsible sections, and safe-area-aware sticky footer CTA.
 
 ## Local development
 
@@ -47,14 +50,21 @@ or:
 
 ## Key files
 
+- `src/App.jsx` - global layout, sticky header with logo + rotating nurse quote, footer with legal links, account settings modal
 - `src/components/RoutePlanner.tsx` - route planner composition and workflow orchestration
-- `src/components/routePlanner/routePlannerHelpers.ts` - planner helper utilities for destination/window handling
-- `src/components/routePlanner/routePlannerSubmission.ts` - planner submit-time validation and request builders
-- `src/components/routePlanner/useCreatePatientForm.ts` - extracted create-patient modal/form state and handlers
+- `src/components/routePlanner/routePlannerHelpers.ts` - destination-to-visit mapping and patient search filtering
+- `src/components/routePlanner/routePlannerSubmission.ts` - submit-time validation and request builders
+- `src/components/routePlanner/routePlannerDraft.ts` - localStorage draft persistence and mobile step state
+- `src/components/routePlanner/useCreatePatientForm.ts` - create-patient modal/form state and handlers
+- `src/components/routePlanner/useManualReorder.ts` - manual stop drag/reorder with stale-order tracking
+- `src/components/routePlanner/useRouteOptimization.ts` - optimization request state with sessionStorage persistence
+- `src/components/routePlanner/OptimizedRouteResult.tsx` - dispatch plan view (stat cards, route timeline, map, warnings)
+- `src/components/auth/authSession.ts` - local session/token storage, session-scoped key cleanup on auth change
 - `src/components/auth/LoginPage.tsx` - login screen
-- `src/components/auth/authSession.ts` - local session/token storage and auth change events
 - `src/components/auth/authFetch.ts` - authenticated backend fetch helper
+- `src/components/legal/` - Terms, Privacy, License, Trademark static pages
 - `src/components/AddressAutocompleteInput.tsx` - address suggestion input
 - `src/components/RouteMap.tsx` - Leaflet route map
-- `src/components/patients/PatientsTable.tsx` - patient table rendering and row action menus
+- `src/components/patients/PatientsTable.tsx` - patient table with overflow action menus (Edit, Delete)
+- `src/components/responsiveStyles.ts` - shared Tailwind class tokens for consistent panel/card/button styling
 - `src/components/apiBaseUrl.ts` - runtime backend URL resolution

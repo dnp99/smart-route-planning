@@ -40,7 +40,6 @@ type SelectedDestinationsSectionProps = {
     visitKey: string,
     persistPlanningWindow: boolean,
   ) => void;
-  onContinueToReview: () => void;
   onCollapse: () => void;
 };
 
@@ -54,7 +53,6 @@ export const SelectedDestinationsSection = ({
   onSetDestinationVisitIncluded,
   onUpdateDestinationPlanningWindow,
   onSetDestinationPersistPlanningWindow,
-  onContinueToReview,
   onCollapse,
 }: SelectedDestinationsSectionProps) => {
   const [openDestinationActionsVisitKey, setOpenDestinationActionsVisitKey] = useState<
@@ -252,15 +250,6 @@ export const SelectedDestinationsSection = ({
           </ol>
         )}
       </div>
-      {isMobileViewport && (
-        <button
-          type="button"
-          onClick={onContinueToReview}
-          className={responsiveStyles.secondaryButton}
-        >
-          Continue to Review
-        </button>
-      )}
     </section>
   );
 };

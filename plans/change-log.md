@@ -13,6 +13,80 @@ Upcoming or not-yet-implemented work should be stored as separate planning docum
 Current planning documents:
 
 - `plans/account-settings-and-working-hours-execution-plan.md` - account settings, home address defaults, and future weekly schedule execution plan
+- `plans/mobile-route-planner-ux-plan.md` - mobile route planner UX improvements (sticky footer CTA, wizard flow, step completion indicators)
+- `plans/pr-review-fixes-plan.md` - fixes for PR review findings: restore removed appRoutes tests with listPatients mock, remove windowType from optimize snapshot, fix double blank line
+
+---
+
+## Mobile UX, Header/Footer, Legal Pages, Session Cleanup (March 2026)
+
+### Global header & footer
+
+- Header redesigned: sticky (`sm:sticky sm:top-0`), added CareFlow logo icon (ECG + map pin), workspace subtitle truncated
+- Rotating nurse quote moved to right-aligned group next to menu icon; shows up to 2 lines before truncating (`line-clamp-2`)
+- Footer added with Contact Us (mailto), and links to Terms, Privacy, License, Trademark legal pages
+- Date display shown in header when unauthenticated (replaced "Authentication required" text)
+
+### Legal pages
+
+- New static pages at `/legal/terms`, `/legal/privacy`, `/legal/license`, `/legal/trademark`
+- Accessible without authentication
+
+### Auth session cleanup
+
+- `authSession.ts` now defines `SESSION_STORAGE_SCOPED_KEYS` alongside `SESSION_SCOPED_KEYS`
+- `clearAuthSession` and `setAuthSession` both clear: route planner draft, header quote (localStorage), and optimization result (sessionStorage)
+- Prevents stale data from persisting across logout/login on the same tab
+
+### Route planner — sessionStorage persistence
+
+- Optimized route result saved to `sessionStorage` via `useRouteOptimization`
+- Result survives tab switches to `/patients` and back without re-calling the API
+- Cleared on auth change (logout or new login)
+
+### Route planner — mobile UX
+
+- Wizard-style step flow on mobile: Patient Search → Selected Patients → Review & Optimize
+- Collapsible sections with chevron toggle; step state persisted to draft
+- Sticky footer CTA with `env(safe-area-inset-bottom)` padding for iOS notch safety
+- `SelectedDestinationsSection` collapse button restored on all viewports
+
+### Route planner — dispatch plan improvements
+
+- Stat cards: 2-column grid on mobile, 4-column on xl; subtext hidden on mobile
+- Leave By stat card added (from `result.start.departureTime`)
+- Amber warning icon on Leave By with CSS tooltip ("Excludes traffic — may vary")
+- `formatDuration` changed from `Math.round` to `Math.floor` to match timestamp display
+
+### Route planner — hasChangedSinceLastOptimize
+
+- Snapshot now includes `windowStart` and `windowEnd` per destination so time window edits re-enable Optimize button
+
+### Patient table
+
+- Edit action moved into overflow (MoreActions) menu, consistent with Delete
+- MoreActionsIcon orientation fixed (vertical dots)
+- `whitespace-nowrap` added to visit time window cells
+- Table column widths tightened
+
+### PatientFormModal
+
+- Header and footer use safe area insets on mobile (`env(safe-area-inset-top/bottom)`)
+
+### RoutePlanner refactor
+
+- Extracted `routePlannerHelpers.ts`: `toSelectedPatientDestinations`, `patientMatchesSearchQuery`
+- Extracted `routePlannerSubmission.ts`: `buildOptimizeDestinations`, `validateRequestDestinations`, `buildPlanningWindowsToPersist`
+- Extracted `useCreatePatientForm.ts`: all create-patient modal state and handlers
+- `RoutePlanner.tsx` significantly reduced in size
+
+### Tests
+
+- `useManualReorder.test.ts`: new (164 lines)
+- `useRouteOptimization.test.ts`: new (sessionStorage persistence + error handling)
+- `routePlannerService.test.ts`: expanded
+- `PatientsPage.test.tsx`, `patientsRoutePlanner.integration.test.tsx`: updated for Edit-in-overflow-menu pattern
+- `appRoutes.test.tsx`: added Footer and Legal pages describe blocks; removed flaky tests pending fix (see `plans/pr-review-fixes-plan.md`)
 
 ---
 
@@ -43,6 +117,33 @@ Current planning documents:
 - Frontend run:
   - `npm run lint`
   - Result: ✅ passed
+
+---
+
+## Global Header + Footer + Legal Pages (March 2026)
+
+See plan: `plans/completed/global-header-footer-legal-plan.md`
+
+### Added global footer
+
+- `frontend/src/App.jsx` — footer rendered inside authenticated shell for `/patients` and `/route-planner` routes
+- Links: `Contact Us` (mailto), `Terms`, `Privacy`, `License`, `Trademark`
+- Copyright line: `© {currentYear} CareFlow. All rights reserved.`
+- Trademark line: `CareFlow is a trademark of CareFlow.`
+- Styled with existing Tailwind slate/blue visual language; responsive layout
+
+### Added legal pages + routes
+
+- `frontend/src/components/legal/TermsPage.tsx`
+- `frontend/src/components/legal/PrivacyPage.tsx`
+- `frontend/src/components/legal/LicensePage.tsx`
+- `frontend/src/components/legal/TrademarkPage.tsx`
+- Routes registered in `App.jsx`: `/legal/terms`, `/legal/privacy`, `/legal/license`, `/legal/trademark`
+- Pages are public (no auth guard)
+
+### Added tests
+
+- `frontend/src/tests/appRoutes.test.tsx` — asserts footer renders with Contact Us and all 4 legal links, footer links point to correct routes, each legal page renders at its route
 
 ---
 
