@@ -9,7 +9,7 @@ const EARTH_RADIUS_KM = 6371;
 type Coords = { lat: number; lon: number };
 
 const isFiniteNumber = (value: unknown): value is number =>
-  typeof value === "number" && Number.isFinite(value);
+  typeof value === "number" && isFinite(value);
 
 const getStopCoords = (stop: OrderedStop): Coords | null => {
   if (
@@ -129,7 +129,7 @@ const estimateStops = (
     isFiniteNumber(resultStart.coords?.lat) && isFiniteNumber(resultStart.coords?.lon)
       ? { lat: resultStart.coords.lat, lon: resultStart.coords.lon }
       : null;
-  if (!Number.isFinite(departureMs) || !startCoords) {
+  if (!isFiniteNumber(departureMs) || !startCoords) {
     return orderedStops;
   }
 
@@ -284,4 +284,3 @@ export const useManualReorder = (result: OptimizeRouteResponse | null) => {
     },
   };
 };
-
