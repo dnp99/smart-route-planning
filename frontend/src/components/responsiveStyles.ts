@@ -33,6 +33,9 @@ export const responsiveStyles = {
     "mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4",
   contentWrapper: "mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6",
   tabNav: "flex gap-6 border-b border-slate-200 dark:border-slate-800",
+  // ── Header quote ──────────────────────────────────────────────────────────
+  headerQuote:
+    "m-0 hidden min-w-0 max-w-[50vw] text-right text-xs italic text-slate-600 line-clamp-2 sm:block sm:text-sm dark:text-slate-300",
   // ── Account menu ──────────────────────────────────────────────────────────
   accountMenuButton:
     "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800",
@@ -43,6 +46,14 @@ export const responsiveStyles = {
     "fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 sm:items-center sm:p-3",
   modalSurface:
     "animate-slide-up motion-reduce:animate-none sm:animate-none max-h-[82vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:max-h-[92vh] sm:max-w-xl sm:rounded-2xl sm:p-5",
+  confirmDialogSurface:
+    "animate-slide-up motion-reduce:animate-none sm:animate-none w-full rounded-t-3xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:max-w-sm sm:rounded-2xl",
+  confirmDialogTitle:
+    "m-0 mb-1 text-base font-semibold text-slate-900 dark:text-slate-100",
+  confirmDialogMessage:
+    "m-0 mb-5 text-sm text-slate-600 dark:text-slate-300",
+  destructiveButton:
+    "rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60",
   // ── Scroll-to-top button ──────────────────────────────────────────────────
   scrollToTopButton:
     "fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white/90 shadow-md backdrop-blur transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:bg-slate-800 lg:bottom-6 lg:left-[calc(50%+36rem+0.75rem)] lg:right-auto",

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import { responsiveStyles } from "../responsiveStyles";
+import ConfirmDialog from "../modals/ConfirmDialog";
 import type { Patient, VisitTimeType } from "../../../../shared/contracts";
 import { PatientFormModal } from "./PatientFormModal";
 import { PatientsTable } from "./PatientsTable";
@@ -46,6 +47,8 @@ const PatientsPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingPatients, setIsLoadingPatients] = useState(true);
   const [pageError, setPageError] = useState("");
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [isDeletingPatient, setIsDeletingPatient] = useState(false);
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<PatientFormValues>(EMPTY_FORM);
@@ -254,24 +257,26 @@ const PatientsPage = () => {
     }
   };
 
-  const handleDelete = async (patientId: string) => {
-    if (!window.confirm("Delete this patient? This action cannot be undone.")) {
-      return;
-    }
+  const handleDelete = (patientId: string) => {
+    setPendingDeleteId(patientId);
+  };
 
-    setIsSubmitting(true);
+  const confirmDelete = async () => {
+    if (!pendingDeleteId) return;
+    setIsDeletingPatient(true);
     setPageError("");
-
     try {
-      await deletePatient(patientId);
-      if (selectedPatientId === patientId) {
+      await deletePatient(pendingDeleteId);
+      if (selectedPatientId === pendingDeleteId) {
         closeModal();
       }
       await fetchPatients(searchQuery);
+      setPendingDeleteId(null);
     } catch (error) {
       setPageError(error instanceof Error ? error.message : "Unable to delete patient.");
+      setPendingDeleteId(null);
     } finally {
-      setIsSubmitting(false);
+      setIsDeletingPatient(false);
     }
   };
 
@@ -368,6 +373,18 @@ const PatientsPage = () => {
             onEdit={openEditModal}
           />
         </div>
+
+        {pendingDeleteId && (
+          <ConfirmDialog
+            title="Delete patient"
+            message="This action cannot be undone."
+            confirmLabel="Delete"
+            confirmLoadingLabel="Deleting..."
+            onConfirm={confirmDelete}
+            onCancel={() => setPendingDeleteId(null)}
+            isLoading={isDeletingPatient}
+          />
+        )}
 
         <PatientFormModal
           formMode={formMode}

@@ -153,7 +153,7 @@ export default function AppHeader({ isAuthenticated, authUser, onOpenAccountSett
 
         <div className="ml-auto flex min-w-0 items-center gap-2">
           {isAuthenticated && headerQuote && !headerScrolled && (
-            <p className="m-0 hidden min-w-0 max-w-[42ch] text-right text-xs italic text-slate-600 sm:block sm:line-clamp-2 sm:text-sm dark:text-slate-300">
+            <p className={responsiveStyles.headerQuote}>
               &ldquo;{headerQuote.content}&rdquo;
             </p>
           )}
