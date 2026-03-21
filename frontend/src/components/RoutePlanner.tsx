@@ -91,9 +91,7 @@ function RoutePlanner({
     useState(false);
   const [latenessWarningsDismissed, setLatenessWarningsDismissed] =
     useState(false);
-  const [isDestinationListExpanded, setIsDestinationListExpanded] =
-    useState(true);
-  const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
+const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
     (initialDraft?.selectedDestinations?.length ?? 0) === 0,
   );
   const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
@@ -191,7 +189,6 @@ function RoutePlanner({
 
   useEffect(() => {
     if (result) {
-      setIsDestinationListExpanded(false);
       setIsTripSetupExpanded(false);
     }
   }, [result]);
@@ -809,141 +806,104 @@ function RoutePlanner({
           )}
 
           {isPatientsStepVisible && (isPatientSearchExpanded || isMobileViewport) && (
-            <section className={responsiveStyles.panel}>
-              <div className={responsiveStyles.cardHeader}>
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className={responsiveStyles.cardTitle}>
-                    Add patient(s) to create your schedule
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={openCreatePatientModal}
-                      className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                    >
-                      Add New Patient
-                    </button>
-                    {!isMobileViewport && selectedDestinations.length > 0 && (
+            <div className={responsiveStyles.patientSelectionGrid}>
+              <section className={responsiveStyles.panel}>
+                <div className={responsiveStyles.cardHeader}>
+                  <div className="flex items-center justify-between gap-2">
+                    <h2 className={responsiveStyles.cardTitle}>
+                      Add patient(s) to create your schedule
+                    </h2>
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        aria-label="Collapse patient search"
-                        onClick={() => setIsPatientSearchExpanded(false)}
-                        className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                        onClick={openCreatePatientModal}
+                        className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <polyline points="18 15 12 9 6 15" />
-                        </svg>
+                        Add New Patient
                       </button>
-                    )}
-                  </div>
-                </div>
-                <p className={responsiveStyles.cardDescription}>
-                  Add saved patients as route stops before optimizing the visit
-                  order.
-                </p>
-              </div>
-              {createPatientError && (
-                <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
-                  {createPatientError}
-                </p>
-              )}
-              <input
-                id="destination-patient-search"
-                type="search"
-                aria-label="Destination patient search"
-                value={destinationSearchQuery}
-                onChange={(event) =>
-                  setDestinationSearchQuery(event.target.value)
-                }
-                placeholder="Search saved patients by first or last name"
-                className={responsiveStyles.searchInput}
-              />
-
-              {isDestinationSearchLoading && (
-                <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
-                  Loading patients…
-                </p>
-              )}
-
-              {destinationSearchError && (
-                <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
-                  {destinationSearchError}
-                </p>
-              )}
-
-              {destinationSearchResults.length > 0 && (
-                <ul className={responsiveStyles.selectableList}>
-                  {destinationSearchResults.map((patient) => {
-                    const patientName = formatPatientNameFromParts(
-                      patient.firstName,
-                      patient.lastName,
-                    );
-
-                    return (
-                      <li key={patient.id}>
+                      {!isMobileViewport && (
                         <button
                           type="button"
-                          onClick={() => addDestinationPatient(patient)}
-                          className={responsiveStyles.selectableItemButton}
+                          aria-label="Collapse patient search"
+                          onClick={() => setIsPatientSearchExpanded(false)}
+                          className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                         >
-                          <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
-                            {patientName}
-                          </p>
-                          <p className="m-0 text-slate-600 dark:text-slate-300">
-                            {patient.address}
-                          </p>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <polyline points="18 15 12 9 6 15" />
+                          </svg>
                         </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </section>
-          )}
+                      )}
+                    </div>
+                  </div>
+                  <p className={responsiveStyles.cardDescription}>
+                    Add saved patients as route stops before optimizing the visit order.
+                  </p>
+                </div>
+                {createPatientError && (
+                  <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+                    {createPatientError}
+                  </p>
+                )}
+                <input
+                  id="destination-patient-search"
+                  type="search"
+                  aria-label="Destination patient search"
+                  value={destinationSearchQuery}
+                  onChange={(event) =>
+                    setDestinationSearchQuery(event.target.value)
+                  }
+                  placeholder="Search saved patients by first or last name"
+                  className={responsiveStyles.searchInput}
+                />
+                {isDestinationSearchLoading && (
+                  <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                    Loading patients…
+                  </p>
+                )}
+                {destinationSearchError && (
+                  <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
+                    {destinationSearchError}
+                  </p>
+                )}
+                {destinationSearchResults.length > 0 && (
+                  <ul className={responsiveStyles.selectableList}>
+                    {destinationSearchResults.map((patient) => {
+                      const patientName = formatPatientNameFromParts(
+                        patient.firstName,
+                        patient.lastName,
+                      );
+                      return (
+                        <li key={patient.id}>
+                          <button
+                            type="button"
+                            onClick={() => addDestinationPatient(patient)}
+                            className={responsiveStyles.selectableItemButton}
+                          >
+                            <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
+                              {patientName}
+                            </p>
+                            <p className="m-0 text-slate-600 dark:text-slate-300">
+                              {patient.address}
+                            </p>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
 
-          {isPatientsStepVisible && isPatientSearchExpanded && !isDestinationListExpanded && selectedDestinations.length > 0 && !isMobileViewport ? (
-            <section className={responsiveStyles.panel}>
-              <div className="flex items-start justify-between gap-3 sm:items-center">
-                <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
-                  {destinationCount} patient{destinationCount === 1 ? "" : "s"}{" "}
-                  selected —{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsDestinationListExpanded(true)}
-                    className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
-                  >
-                    Edit
-                  </button>
-                </p>
-                <button
-                  type="button"
-                  aria-label="Expand selected patients"
-                  onClick={() => setIsDestinationListExpanded(true)}
-                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
-              </div>
-            </section>
-          ) : (
-            <SelectedDestinationsSection
-              isVisible={isPatientsStepVisible && (isPatientSearchExpanded || isMobileViewport)}
-              isMobileViewport={isMobileViewport}
-              selectedDestinations={selectedDestinations}
-              expandedDestinationVisitKeys={expandedDestinationVisitKeys}
-              onToggleDestinationDetails={toggleDestinationDetails}
-              onRemoveDestinationVisit={removeDestinationVisit}
-              onSetDestinationVisitIncluded={setDestinationVisitIncluded}
-              onUpdateDestinationPlanningWindow={
-                updateDestinationPlanningWindow
-              }
-              onSetDestinationPersistPlanningWindow={
-                setDestinationPersistPlanningWindow
-              }
-              onCollapse={() => setIsDestinationListExpanded(false)}
-            />
+              <SelectedDestinationsSection
+                isVisible={true}
+                selectedDestinations={selectedDestinations}
+                expandedDestinationVisitKeys={expandedDestinationVisitKeys}
+                onToggleDestinationDetails={toggleDestinationDetails}
+                onRemoveDestinationVisit={removeDestinationVisit}
+                onSetDestinationVisitIncluded={setDestinationVisitIncluded}
+                onUpdateDestinationPlanningWindow={updateDestinationPlanningWindow}
+                onSetDestinationPersistPlanningWindow={setDestinationPersistPlanningWindow}
+              />
+            </div>
           )}
 
           {isMobileViewport && activeMobileStep === "trip" && (

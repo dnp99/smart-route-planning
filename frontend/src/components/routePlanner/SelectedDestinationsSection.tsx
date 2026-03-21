@@ -25,7 +25,6 @@ const MoreActionsIcon = ({ className }: { className?: string }) => (
 
 type SelectedDestinationsSectionProps = {
   isVisible: boolean;
-  isMobileViewport: boolean;
   selectedDestinations: SelectedPatientDestination[];
   expandedDestinationVisitKeys: Record<string, boolean>;
   onToggleDestinationDetails: (visitKey: string) => void;
@@ -40,12 +39,10 @@ type SelectedDestinationsSectionProps = {
     visitKey: string,
     persistPlanningWindow: boolean,
   ) => void;
-  onCollapse: () => void;
 };
 
 export const SelectedDestinationsSection = ({
   isVisible,
-  isMobileViewport,
   selectedDestinations,
   expandedDestinationVisitKeys,
   onToggleDestinationDetails,
@@ -53,7 +50,6 @@ export const SelectedDestinationsSection = ({
   onSetDestinationVisitIncluded,
   onUpdateDestinationPlanningWindow,
   onSetDestinationPersistPlanningWindow,
-  onCollapse,
 }: SelectedDestinationsSectionProps) => {
   const [openDestinationActionsVisitKey, setOpenDestinationActionsVisitKey] = useState<
     string | null
@@ -83,18 +79,6 @@ export const SelectedDestinationsSection = ({
           <h2 className={responsiveStyles.cardTitle}>
             Selected patients
           </h2>
-          {selectedDestinations.length > 0 && !isMobileViewport && (
-            <button
-              type="button"
-              aria-label="Collapse selected patients"
-              onClick={onCollapse}
-              className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-            </button>
-          )}
         </div>
         <p className={responsiveStyles.cardDescription}>
           Review the patients included in the route before you optimize it.

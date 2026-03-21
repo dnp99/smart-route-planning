@@ -109,8 +109,11 @@ export const responsiveStyles = {
   stickyFooter:
     "sticky bottom-2 z-30 rounded-2xl border border-slate-200 bg-white/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 sm:bottom-3 sm:pb-3",
 
+  // ── Patient selection two-column layout ────────────────────────────────────
+  patientSelectionGrid: "grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start",
+
   // ── Selectable list (patient search results) ───────────────────────────────
-  selectableList: "m-0 max-h-56 list-none space-y-2 overflow-y-auto p-0",
+  selectableList: "m-0 max-h-72 list-none space-y-2 overflow-y-auto p-0",
   selectableItemButton:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm transition hover:bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900",
 
