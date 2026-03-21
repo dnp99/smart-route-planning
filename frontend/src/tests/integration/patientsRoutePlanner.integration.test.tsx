@@ -325,7 +325,6 @@ describe("patients and route planner integration", () => {
   });
 
   it("supports create -> search -> edit -> delete lifecycle on /patients", async () => {
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     render(
       <MemoryRouter initialEntries={["/patients"]}>
@@ -335,7 +334,7 @@ describe("patients and route planner integration", () => {
 
     expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });
@@ -372,14 +371,12 @@ describe("patients and route planner integration", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Janet Doe/i })[0]);
     fireEvent.click(screen.getByRole("button", { name: /Delete patient Janet Doe/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
     await waitFor(() => {
       expect(deletePatientMock).toHaveBeenCalledTimes(1);
       expect(screen.getByText("No patients match this search.")).toBeTruthy();
     });
-
-    expect(confirmSpy).toHaveBeenCalled();
-    confirmSpy.mockRestore();
   });
 
   it("makes created patients available on /route-planner and preserves patient context in optimization", async () => {
@@ -391,7 +388,7 @@ describe("patients and route planner integration", () => {
 
     expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "John" },
     });
