@@ -20,11 +20,11 @@ Key rules enforced every session:
 
 6. **Status pills:** Fixed = `bg-blue-100 text-blue-700`, Flexible = `bg-emerald-100 text-emerald-700`
 
-7. **Max content width:** `max-w-6xl` — do not change to `max-w-4xl` or narrower.
+7. **Max content width:** `max-w-7xl` — do not change to `max-w-4xl` or narrower.
 
 8. **Spacing:** 8pt grid only — `4 / 8 / 12 / 16 / 24 / 32px`.
 
-9. **Shadows:** One level per element — `shadow-sm` for cards, `shadow-md` for chrome (header/footer). Never stack.
+9. **Shadows:** One level per element — `shadow-sm` for cards. Header and footer are borderless and use `bg-slate-50/95 backdrop-blur-sm` (no shadow). Never stack shadows.
 
 10. **Typography:** Map all text to the type scale in the design doc. Never introduce a new font size.
 
@@ -34,7 +34,7 @@ Key rules enforced every session:
 
 13. **Selected/Active (§11):** `border-blue-200 bg-blue-50/50`. Blue = selection only. Green = success only. Amber = warning only. Red = error only. Never mix.
 
-14. **Page background (§12):** `bg-gradient-to-b from-slate-50 to-white` on the outermost container only. The `max-w-6xl` content wrapper is always transparent.
+14. **Page background (§12):** `bg-gradient-to-b from-slate-50 to-white` on the outermost container only. The `max-w-7xl` content wrapper is always transparent.
 
 15. **Mobile (§13):** Cards `p-4`, sections `gap-4`. Tables go card layout below `md`. All buttons `w-full sm:w-auto`. Touch targets minimum `44px`.
 

@@ -202,6 +202,8 @@ export const PatientsTable = ({
 }: PatientsTableProps) => {
   const [openActionsMenuKey, setOpenActionsMenuKey] = useState<string | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
+  const [openWindowsPopoverKey, setOpenWindowsPopoverKey] = useState<string | null>(null);
+  const windowsPopoverRef = useRef<HTMLDivElement | null>(null);
   const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
   const [sortField, setSortField] = useState<SortField>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -292,6 +294,31 @@ export const PatientsTable = ({
       setOpenActionsMenuKey(null);
     }
   }, [openActionsMenuKey, patients]);
+
+  useEffect(() => {
+    if (!openWindowsPopoverKey) {
+      return;
+    }
+
+    const onMouseDown = (event: MouseEvent) => {
+      if (!windowsPopoverRef.current?.contains(event.target as Node)) {
+        setOpenWindowsPopoverKey(null);
+      }
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        setOpenWindowsPopoverKey(null);
+      }
+    };
+
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [openWindowsPopoverKey]);
 
   if (isLoading) {
     return (
@@ -584,16 +611,43 @@ export const PatientsTable = ({
                       })()}
                     </td>
                     <td className="px-6 py-5">
-                      <div className="flex flex-col gap-1">
-                        {windowRows.map((row, i) => (
-                          <div key={i} className="flex items-center gap-1.5 flex-wrap">
-                            {i === 0 && renderVisitTypePill(visitType)}
-                            {row.timeLabel !== "Not set" && (
-                              <span className="whitespace-nowrap text-xs text-slate-600 dark:text-slate-300">{row.timeLabel}</span>
-                            )}
-                          </div>
-                        ))}
+                      <div className="flex items-center gap-1.5">
+                        {renderVisitTypePill(visitType)}
+                        {windowRows[0]?.timeLabel !== "Not set" && (
+                          <span className="whitespace-nowrap text-xs text-slate-600 dark:text-slate-300">
+                            {windowRows[0]?.timeLabel}
+                          </span>
+                        )}
                       </div>
+                      {windowRows.length > 1 && (
+                        <div
+                          className="relative mt-0.5"
+                          ref={openWindowsPopoverKey === patient.id ? windowsPopoverRef : undefined}
+                        >
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenWindowsPopoverKey((current) =>
+                                current === patient.id ? null : patient.id,
+                              )
+                            }
+                            className="text-xs font-medium text-blue-600 underline underline-offset-2 cursor-pointer dark:text-blue-400"
+                          >
+                            +{windowRows.length - 1} more
+                          </button>
+                          {openWindowsPopoverKey === patient.id && (
+                            <div className="absolute left-0 top-full z-20 mt-1 min-w-max rounded-xl border border-slate-200 bg-white p-2 shadow-md dark:border-slate-700 dark:bg-slate-900">
+                              {windowRows.slice(1).map((row) => (
+                                <div key={row.id} className="px-1 py-1">
+                                  <span className="whitespace-nowrap text-xs text-slate-600 dark:text-slate-300">
+                                    {row.timeLabel}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-5 text-right text-sm text-slate-600 dark:text-slate-300">
                       <span className="inline-flex items-center justify-end gap-1">

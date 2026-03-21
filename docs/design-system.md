@@ -94,22 +94,22 @@
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ Header (full width, sticky, shadow-md)                           │
+│ Header (full width, sticky, bg-slate-50/95 backdrop-blur-sm)     │
 ├──────────────────────────────────────────────────────────────────┤
 │ Tab bar (full width, border-b)                                   │
 ├──────────────────────────────────────────────────────────────────┤
-│  bg-slate-50 canvas                                              │
+│  bg-gradient-to-b from-slate-50 to-white canvas                  │
 │  ┌────────────────────────────────────┐                          │
-│  │  max-w-6xl  mx-auto  px-4 sm:px-6  │                          │
+│  │  max-w-7xl  mx-auto  px-4 sm:px-6  │                          │
 │  │  pb-6                              │                          │
 │  │  [page content]                    │                          │
 │  └────────────────────────────────────┘                          │
 ├──────────────────────────────────────────────────────────────────┤
-│ Footer (full width, shadow-md)                                   │
+│ Footer (full width, bg-transparent)                              │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-- **Max width:** `max-w-6xl` (72rem / 1152px)
+- **Max width:** `max-w-7xl` (80rem / 1280px)
 - **Horizontal padding:** `px-4 sm:px-6`
 - **Canvas:** `bg-gradient-to-b from-slate-50 to-white` on the outer flex container
 - **Between sections:** `mt-6` or `mt-8`
@@ -893,7 +893,7 @@ Defines how layers stack visually so nothing feels flat or cluttered.
 | Base | Page canvas | `bg-gradient-to-b from-slate-50 to-white` (no shadow) |
 | Level 1 | Cards, panels, table rows | `shadow-sm` |
 | Level 2 | Hovered cards, metric cards on hover | `shadow` (one step up from `shadow-sm`) |
-| Level 3 | Sticky/elevated chrome: header, footer, modal backdrop | `shadow-md` |
+| Level 3 | Sticky/elevated chrome: header, footer | `bg-slate-50/95 backdrop-blur-sm` (no shadow — blends with canvas) |
 | Level 4 | Modal dialog surface | `shadow-2xl` |
 
 **Rules:**

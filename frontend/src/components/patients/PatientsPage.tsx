@@ -333,7 +333,7 @@ const PatientsPage = () => {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search patients by name or address"
-                className={`${responsiveStyles.searchInput} pl-9 sm:pl-10 ${searchQuery ? "pr-8" : ""}`}
+                className={`${responsiveStyles.searchInput} pl-9 sm:pl-10 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden ${searchQuery ? "pr-8" : ""}`}
               />
               {searchQuery && (
                 <button

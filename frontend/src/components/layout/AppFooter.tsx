@@ -1,9 +1,10 @@
 import { NavLink } from "react-router-dom";
+import { responsiveStyles } from "../responsiveStyles";
 
 export default function AppFooter() {
   return (
-    <footer className="w-full bg-transparent dark:bg-transparent">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4">
+    <footer className={responsiveStyles.appFooter}>
+      <div className={responsiveStyles.appFooterInner}>
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
             <svg

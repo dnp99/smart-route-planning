@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { responsiveStyles } from "../responsiveStyles";
 
 export default function ScrollToTopButton() {
   const [visible, setVisible] = useState(false);
@@ -17,7 +18,7 @@ export default function ScrollToTopButton() {
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
       aria-label="Scroll to top"
       title="Scroll to top"
-      className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white/90 shadow-md backdrop-blur transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:bg-slate-800 lg:bottom-6 lg:left-[calc(50%+36rem+0.75rem)] lg:right-auto"
+      className={responsiveStyles.scrollToTopButton}
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"

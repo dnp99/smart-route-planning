@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import AddressAutocompleteInput from "../AddressAutocompleteInput";
+import { responsiveStyles } from "../responsiveStyles";
 import { updatePassword, updateProfileHomeAddress } from "../auth/authService";
 import { clearAuthSession, getAuthToken, setStoredAuthUser } from "../auth/authSession";
 
@@ -144,12 +145,12 @@ export default function AccountSettingsModal({ isOpen, onClose, authUser, onHome
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 sm:items-center sm:p-3"
+      className={responsiveStyles.modalBackdrop}
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) handleClose();
       }}
     >
-      <div className="animate-slide-up motion-reduce:animate-none sm:animate-none max-h-[82vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:max-h-[92vh] sm:max-w-xl sm:rounded-2xl sm:p-5">
+      <div className={responsiveStyles.modalSurface}>
         <div className="sm:hidden -mx-4 -mt-4 mb-3 flex justify-center pb-1 pt-2.5">
           <div className="h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
         </div>

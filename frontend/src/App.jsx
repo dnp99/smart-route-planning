@@ -15,6 +15,7 @@ import PrivacyPage from "./components/legal/PrivacyPage";
 import TermsPage from "./components/legal/TermsPage";
 import TrademarkPage from "./components/legal/TrademarkPage";
 import PatientsPage from "./components/patients/PatientsPage";
+import { responsiveStyles } from "./components/responsiveStyles";
 import AppHeader from "./components/layout/AppHeader";
 import AppFooter from "./components/layout/AppFooter";
 import AccountSettingsModal from "./components/layout/AccountSettingsModal";
@@ -70,7 +71,7 @@ function App() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white dark:bg-none dark:bg-slate-950">
+    <div className={responsiveStyles.appShell}>
       <AppHeader
         isAuthenticated={isAuthenticated}
         authUser={authUser}
@@ -78,9 +79,9 @@ function App() {
         onLogout={clearAuthSession}
       />
 
-      <div className="mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6">
+      <div className={responsiveStyles.contentWrapper}>
         {isAuthenticated && (
-          <nav className="flex gap-6 border-b border-slate-200 dark:border-slate-800">
+          <nav className={responsiveStyles.tabNav}>
             <NavLink to="/patients" aria-label="Patients" className={resolveTabClassName}>
               {({ isActive }) => (
                 <>

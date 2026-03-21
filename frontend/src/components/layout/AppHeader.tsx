@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import nurseQuotes from "../../data/nurseQuotes";
 import { formatNameWords } from "../patients/patientName";
+import { responsiveStyles } from "../responsiveStyles";
 
 const HEADER_QUOTE_STORAGE_KEY = "careflow.headerQuote";
 
@@ -115,13 +116,8 @@ export default function AppHeader({ isAuthenticated, authUser, onOpenAccountSett
     : "Nurse operations workspace";
 
   return (
-    <header className="sticky top-0 z-30 w-full overflow-x-clip bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95">
-      <div
-        className={[
-          "mx-auto flex w-full max-w-7xl items-center gap-3 px-4 sm:px-6 transition-[padding] duration-300",
-          headerScrolled ? "py-2" : "py-3 sm:py-4",
-        ].join(" ")}
-      >
+    <header className={responsiveStyles.appHeader}>
+      <div className={[responsiveStyles.appHeaderInner, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(" ")}>
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
             <svg
@@ -177,7 +173,7 @@ export default function AppHeader({ isAuthenticated, authUser, onOpenAccountSett
                 aria-haspopup="menu"
                 aria-expanded={isAccountMenuOpen}
                 title="Open account options menu"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+                className={responsiveStyles.accountMenuButton}
               >
                 <OptionsIcon className="h-4 w-4" />
               </button>
@@ -186,7 +182,7 @@ export default function AppHeader({ isAuthenticated, authUser, onOpenAccountSett
                 <div
                   role="menu"
                   aria-label="Account options menu"
-                  className="absolute right-0 z-20 mt-2 min-w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900"
+                  className={responsiveStyles.accountMenuDropdown}
                 >
                   <button
                     type="button"
