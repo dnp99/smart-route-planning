@@ -75,8 +75,15 @@ type PatientWindowRow = {
   timeLabel: string;
 };
 
+const formatTime12h = (time: string) => {
+  const [h, m] = time.split(":").map(Number);
+  const period = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2, "0")}\u00A0${period}`;
+};
+
 const formatWindowRange = (startTime: string, endTime: string) =>
-  `${toTimeInput(startTime)}\u00A0-\u00A0${toTimeInput(endTime)}`;
+  `${formatTime12h(toTimeInput(startTime))}\u00A0-\u00A0${formatTime12h(toTimeInput(endTime))}`;
 
 const splitAddress = (addr: string) => {
   const idx = addr.indexOf(", ");
@@ -288,15 +295,59 @@ export const PatientsTable = ({
 
   if (isLoading) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-        Loading patients...
-      </div>
+      <>
+        {/* Mobile skeleton cards */}
+        <div className="grid gap-3 md:hidden">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div
+              key={i}
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+            >
+              <div className="h-5 w-2/5 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
+              <div className="mt-3 h-4 w-3/5 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
+            </div>
+          ))}
+        </div>
+        {/* Desktop skeleton table */}
+        <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 md:block">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+              <colgroup>
+                <col className="w-[32%]" />
+                <col className="w-[38%]" />
+                <col className="w-[20%]" />
+                <col className="w-20" />
+                <col className="w-20" />
+              </colgroup>
+              <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="px-6 py-5">
+                      <div className="h-4 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="h-4 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="h-4 w-24 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
+                    </td>
+                    <td className="px-4 py-5">
+                      <div className="h-4 w-12 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
+                    </td>
+                    <td className="px-4 py-5" />
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </>
     );
   }
 
   if (patients.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white px-5 py-10 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
         {searchQuery.trim() ? "No patients match this search." : "No patients added yet."}
       </div>
     );
@@ -349,7 +400,7 @@ export const PatientsTable = ({
                         current === mobileMenuKey ? null : mobileMenuKey,
                       )
                     }
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
                     <MoreActionsIcon className="h-4 w-4" />
                   </button>
@@ -533,15 +584,16 @@ export const PatientsTable = ({
                       })()}
                     </td>
                     <td className="px-6 py-5">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        {renderVisitTypePill(visitType)}
-                        {windowRows[0]?.timeLabel !== "Not set" && (
-                          <span className="whitespace-nowrap text-xs text-slate-600 dark:text-slate-300">{windowRows[0]?.timeLabel}</span>
-                        )}
+                      <div className="flex flex-col gap-1">
+                        {windowRows.map((row, i) => (
+                          <div key={i} className="flex items-center gap-1.5 flex-wrap">
+                            {i === 0 && renderVisitTypePill(visitType)}
+                            {row.timeLabel !== "Not set" && (
+                              <span className="whitespace-nowrap text-xs text-slate-600 dark:text-slate-300">{row.timeLabel}</span>
+                            )}
+                          </div>
+                        ))}
                       </div>
-                      {windowRows.length > 1 && (
-                        <p className="m-0 mt-0.5 cursor-pointer text-xs font-medium text-blue-600 underline underline-offset-2 dark:text-blue-400">+{windowRows.length - 1} more</p>
-                      )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-5 text-right text-sm text-slate-600 dark:text-slate-300">
                       <span className="inline-flex items-center justify-end gap-1">

@@ -106,7 +106,7 @@ export const PatientFormModal = ({
           <div>
             <h2
               id="patient-modal-title"
-              className="m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100"
+              className="m-0 text-xl font-semibold text-slate-900 dark:text-slate-100"
             >
               {formMode === "create" ? "Add New Patient" : "Edit Patient"}
             </h2>
@@ -148,7 +148,7 @@ export const PatientFormModal = ({
                 id="patient-first-name"
                 value={formValues.firstName}
                 onChange={(event) => onFieldChange("firstName", event.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
               {formErrors.firstName && (
                 <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -173,7 +173,7 @@ export const PatientFormModal = ({
                 id="patient-last-name"
                 value={formValues.lastName}
                 onChange={(event) => onFieldChange("lastName", event.target.value)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
               {formErrors.lastName && (
                 <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -208,7 +208,7 @@ export const PatientFormModal = ({
                 id="patient-visit-type"
                 value={selectedVisitType}
                 onChange={(event) => onVisitTypeChange(event.target.value as VisitTimeType)}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               >
                 <option value="fixed">Fixed</option>
                 <option value="flexible">Flexible</option>
@@ -234,7 +234,7 @@ export const PatientFormModal = ({
                   const safeValue = parsed !== parsed ? 0 : parsed;
                   onFieldChange("visitDurationMinutes", safeValue);
                 }}
-                className="w-full rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
               {formErrors.visitDurationMinutes && (
                 <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -253,7 +253,7 @@ export const PatientFormModal = ({
                 <button
                   type="button"
                   onClick={onAddVisitWindow}
-                  className="rounded-lg border border-slate-300 px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="rounded-xl px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
                 >
                   Add window
                 </button>
@@ -278,7 +278,7 @@ export const PatientFormModal = ({
                       onChange={(event) =>
                         onVisitWindowChange(window.id, "startTime", event.target.value)
                       }
-                      className="w-full appearance-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                      className="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                     />
                     {formErrors.visitWindowRows?.[index]?.startTime && (
                       <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -301,7 +301,7 @@ export const PatientFormModal = ({
                       onChange={(event) =>
                         onVisitWindowChange(window.id, "endTime", event.target.value)
                       }
-                      className="w-full appearance-none rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                      className="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                     />
                     {formErrors.visitWindowRows?.[index]?.endTime && (
                       formErrors.visitWindowRows[index].endTime !== fixedWindowDurationError && (
@@ -312,13 +312,20 @@ export const PatientFormModal = ({
                     )}
                   </div>
 
-                  <div className="flex items-end">
+                  <div className="flex items-end pb-1">
                     <button
                       type="button"
                       onClick={() => onRemoveVisitWindow(window.id)}
-                      className="w-full rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30"
+                      aria-label="Remove window"
+                      className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-red-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-500 dark:hover:bg-red-950/30 dark:hover:text-red-300"
                     >
-                      Remove
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-4 w-4">
+                        <polyline points="3 6 5 6 21 6" />
+                        <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                        <path d="M10 11v6" />
+                        <path d="M14 11v6" />
+                        <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                      </svg>
                     </button>
                   </div>
                 </div>

@@ -352,7 +352,7 @@ const PatientsPage = () => {
             <button
               type="button"
               onClick={openCreateModal}
-              className="hidden w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 sm:inline-flex sm:w-auto sm:shrink-0"
+              className={`hidden shrink-0 items-center justify-center gap-2 sm:inline-flex ${responsiveStyles.primaryButton}`}
             >
               <PlusIcon className="h-4 w-4" />
               Add Patient
