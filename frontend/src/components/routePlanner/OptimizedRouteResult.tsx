@@ -192,7 +192,7 @@ export function OptimizedRouteResult({
       : null;
 
   return (
-    <section className="mt-4 ">
+    <section className="mt-6 border-t border-slate-200 pt-6 dark:border-slate-800">
       <div className="grid gap-2">
         <div className="grid gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:rounded-[28px] sm:p-4">
           <div className="flex flex-col gap-3">
@@ -267,7 +267,7 @@ export function OptimizedRouteResult({
                   </span>
                 </span>
               </p>
-              <p className={responsiveStyles.resultStatValue}>
+              <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight text-amber-600 dark:text-amber-400 sm:text-lg">
                 {expectedStartTimeFormatter.format(new Date(result.start.departureTime))}
               </p>
               <p className={`${responsiveStyles.resultStatMeta} hidden sm:block`}>
@@ -280,14 +280,14 @@ export function OptimizedRouteResult({
 
       <div className="mt-5 flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)]">
         <div className="order-2 min-w-0 sm:order-1">
-          <section className="rounded-2xl bg-slate-50/80 p-3 dark:bg-slate-950/35 sm:rounded-[28px] sm:p-4">
+          <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:rounded-[28px] sm:p-4">
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="m-0 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                   Route timeline
                 </p>
                 <h3 className="m-0 mt-1 text-lg font-semibold text-slate-950 dark:text-slate-50">
-                  Scheduled visits in driving order
+                  Visit order
                 </h3>
               </div>
               <span className="inline-flex items-center whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
@@ -356,14 +356,14 @@ export function OptimizedRouteResult({
         </div>
 
         <div className="order-1 xl:sticky xl:top-4 xl:self-start">
-          <section className="rounded-2xl bg-slate-50/80 p-3 dark:bg-slate-950/35 sm:rounded-[28px] sm:p-4">
+          <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:rounded-[28px] sm:p-4">
             <div className="mb-1">
               <p className="m-0 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
                 Map overview
               </p>
             </div>
             <h3 className="mb-3 mt-0 text-lg font-semibold text-slate-950 dark:text-slate-50">
-              Route map overview
+              Route map
             </h3>
             {googleMapsTripUrl && (
               <div className="mb-3 grid gap-2">

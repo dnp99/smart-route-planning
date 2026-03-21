@@ -605,7 +605,7 @@ function RoutePlanner({
       <section className={responsiveStyles.section}>
         <div className={responsiveStyles.sectionHeader}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-            <h1 className="m-0 text-xl font-bold leading-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
+            <h1 className="m-0 text-xl font-semibold leading-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
               Smart Route Planner
             </h1>
           </div>
@@ -690,7 +690,7 @@ function RoutePlanner({
                   type="button"
                   aria-label="Expand trip setup"
                   onClick={() => setIsTripSetupExpanded(true)}
-                  className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
+                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polyline points="6 9 12 15 18 9" />
@@ -710,7 +710,7 @@ function RoutePlanner({
                       type="button"
                       aria-label="Collapse trip setup"
                       onClick={() => setIsTripSetupExpanded(false)}
-                      className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
+                      className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                     >
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                         <polyline points="18 15 12 9 6 15" />
@@ -798,7 +798,7 @@ function RoutePlanner({
                   type="button"
                   aria-label="Expand patient search"
                   onClick={() => setIsPatientSearchExpanded(true)}
-                  className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
+                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polyline points="6 9 12 15 18 9" />
@@ -819,7 +819,7 @@ function RoutePlanner({
                     <button
                       type="button"
                       onClick={openCreatePatientModal}
-                      className="rounded-xl border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                      className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                     >
                       Add New Patient
                     </button>
@@ -828,7 +828,7 @@ function RoutePlanner({
                         type="button"
                         aria-label="Collapse patient search"
                         onClick={() => setIsPatientSearchExpanded(false)}
-                        className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
+                        className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                           <polyline points="18 15 12 9 6 15" />
@@ -919,7 +919,7 @@ function RoutePlanner({
                   type="button"
                   aria-label="Expand selected patients"
                   onClick={() => setIsDestinationListExpanded(true)}
-                  className="text-slate-900 hover:text-slate-600 dark:text-slate-100 dark:hover:text-slate-300"
+                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
                 >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <polyline points="6 9 12 15 18 9" />
@@ -1018,8 +1018,8 @@ function RoutePlanner({
                 isMobileViewport ? responsiveStyles.stickyFooter : ""
               }`}
             >
-              <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-semibold text-blue-700 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/20 dark:text-blue-300">
-                {destinationCount} visit(s) detected
+              <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
+                {destinationCount} visit{destinationCount === 1 ? "" : "s"} queued
               </span>
               <button
                 type="submit"
