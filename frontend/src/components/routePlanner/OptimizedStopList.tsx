@@ -32,8 +32,19 @@ export function OptimizedStopList({
   onToggleResultEndingStop,
   normalizedHomeAddress,
 }: OptimizedStopListProps) {
+  // Pre-compute a sequential label per task (1, 2, 3…) across all stops,
+  // so multi-task stops don't repeat the same stop number.
+  const taskLabels = new Map<string, number>();
+  let taskCounter = 0;
+  orderedStops.forEach((stop) => {
+    stop.tasks.forEach((task) => {
+      taskCounter += 1;
+      taskLabels.set(task.visitId, taskCounter);
+    });
+  });
+
   return (
-    <ol className="mb-0 mt-3 list-none space-y-2.5 p-0">
+    <ol className="mb-0 mt-3 list-none space-y-3 p-0">
       {orderedStops.map((stop, stopIndex) => {
         const prevStop = stopIndex > 0 ? orderedStops[stopIndex - 1] : null;
         let idleGapMinutes = 0;
@@ -89,29 +100,75 @@ export function OptimizedStopList({
                 <div className="space-y-1.5">
                   {stop.tasks.map((task, taskIndex) => {
                     const detailsKey = `${task.visitId}`;
+
+                    let interTaskBreakMinutes = 0;
+                    let interTaskBreakStartMs = 0;
+                    let interTaskBreakEndMs = 0;
+                    if (taskIndex > 0) {
+                      const prevTask = stop.tasks[taskIndex - 1];
+                      interTaskBreakStartMs = new Date(prevTask.serviceEndTime).getTime();
+                      interTaskBreakEndMs = new Date(task.serviceStartTime).getTime();
+                      interTaskBreakMinutes = (interTaskBreakEndMs - interTaskBreakStartMs) / 60000;
+                    }
+                    const showInterTaskBreak = interTaskBreakMinutes >= BREAK_GAP_THRESHOLD_MINUTES;
+
                     return (
-                      <OptimizedStopCard
-                        key={task.visitId}
-                        task={task}
-                        stop={stop}
-                        stopLabel={String(stopIndex + 1)}
-                        isStale={isStale}
-                        showMoveControls={taskIndex === 0}
-                        canMoveUp={
-                          taskIndex === 0 &&
-                          typeof canMoveStop === "function" &&
-                          canMoveStop(stop.stopId, "up")
-                        }
-                        canMoveDown={
-                          taskIndex === 0 &&
-                          typeof canMoveStop === "function" &&
-                          canMoveStop(stop.stopId, "down")
-                        }
-                        onMoveUp={() => onMoveStop?.(stop.stopId, "up")}
-                        onMoveDown={() => onMoveStop?.(stop.stopId, "down")}
-                        isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
-                        onToggle={() => onToggleResultTask(detailsKey)}
-                      />
+                      <Fragment key={task.visitId}>
+                        {showInterTaskBreak && (
+                          <div className="flex items-center gap-3 py-1">
+                            <div className="flex items-center gap-2.5 rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
+                                aria-hidden="true"
+                              >
+                                <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+                                <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+                                <line x1="6" y1="2" x2="6" y2="4" />
+                                <line x1="10" y1="2" x2="10" y2="4" />
+                                <line x1="14" y1="2" x2="14" y2="4" />
+                              </svg>
+                              <div className="flex flex-col">
+                                <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                                  Break · {formatBreakGap(interTaskBreakMinutes)}
+                                </span>
+                                <span className="text-xs text-blue-700/90 dark:text-blue-300/90">
+                                  {isStale ? "~ " : ""}
+                                  {expectedStartTimeFormatter.format(new Date(interTaskBreakStartMs))} –{" "}
+                                  {expectedStartTimeFormatter.format(new Date(interTaskBreakEndMs))}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        <OptimizedStopCard
+                          task={task}
+                          stop={stop}
+                          stopLabel={String(taskLabels.get(task.visitId) ?? stopIndex + 1)}
+                          isStale={isStale}
+                          showMoveControls={taskIndex === 0}
+                          canMoveUp={
+                            taskIndex === 0 &&
+                            typeof canMoveStop === "function" &&
+                            canMoveStop(stop.stopId, "up")
+                          }
+                          canMoveDown={
+                            taskIndex === 0 &&
+                            typeof canMoveStop === "function" &&
+                            canMoveStop(stop.stopId, "down")
+                          }
+                          onMoveUp={() => onMoveStop?.(stop.stopId, "up")}
+                          onMoveDown={() => onMoveStop?.(stop.stopId, "down")}
+                          isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
+                          onToggle={() => onToggleResultTask(detailsKey)}
+                        />
+                      </Fragment>
                     );
                   })}
                 </div>

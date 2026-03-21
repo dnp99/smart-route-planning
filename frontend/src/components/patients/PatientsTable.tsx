@@ -78,6 +78,12 @@ type PatientWindowRow = {
 const formatWindowRange = (startTime: string, endTime: string) =>
   `${toTimeInput(startTime)}\u00A0-\u00A0${toTimeInput(endTime)}`;
 
+const splitAddress = (addr: string) => {
+  const idx = addr.indexOf(", ");
+  if (idx === -1) return { street: addr, cityRegion: "" };
+  return { street: addr.slice(0, idx), cityRegion: addr.slice(idx + 2) };
+};
+
 const resolvePatientWindowRows = (patient: Patient): PatientWindowRow[] => {
   const windows = Array.isArray(patient.visitWindows) ? patient.visitWindows : [];
   if (windows.length > 0) {
@@ -314,13 +320,9 @@ export const PatientsTable = ({
           return (
             <article
               key={patient.id}
-              className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900"
+              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
             >
-              <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
-                No. {index + 1}
-              </p>
-
-              <div className="mt-1 grid grid-cols-[1fr_auto] items-center gap-x-1">
+              <div className="grid grid-cols-[1fr_auto] items-center gap-x-1">
                 <button
                   type="button"
                   onClick={() => toggleExpanded(patient.id)}
@@ -387,18 +389,35 @@ export const PatientsTable = ({
                 <dl className="mt-2 grid gap-2 text-sm">
                   <div>
                     <dt className="font-semibold text-slate-700 dark:text-slate-300">Address</dt>
-                    <dd className="m-0 text-slate-600 dark:text-slate-400">{patient.address}</dd>
+                    <dd className="m-0">
+                      {(() => {
+                        const { street, cityRegion } = splitAddress(patient.address);
+                        return (
+                          <>
+                            <p className="m-0 text-sm text-slate-700 dark:text-slate-300">{street}</p>
+                            {cityRegion && <p className="m-0 text-xs text-slate-400 dark:text-slate-500">{cityRegion}</p>}
+                          </>
+                        );
+                      })()}
+                    </dd>
                   </div>
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                     <div>
                       <dt className="font-semibold text-slate-700 dark:text-slate-300">Time windows</dt>
-                      <dd className="m-0 grid gap-1.5 text-slate-600 dark:text-slate-400">
-                        {windowRows.map((window) => (
-                          <div key={window.id} className="whitespace-nowrap">
-                            {window.timeLabel}
+                      <dd className="m-0 grid gap-1.5">
+                        {windowRows[0]?.timeLabel === "Not set" ? (
+                          <div className="flex items-center gap-1.5">
+                            {renderVisitTypePill(visitType)}
+                            <span className="text-xs text-slate-400 dark:text-slate-500">Not set</span>
                           </div>
-                        ))}
-                        {renderVisitTypePill(visitType)}
+                        ) : (
+                          windowRows.map((window) => (
+                            <div key={window.id} className="flex items-center gap-1.5">
+                              {renderVisitTypePill(visitType)}
+                              <span className="whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{window.timeLabel}</span>
+                            </div>
+                          ))
+                        )}
                       </dd>
                     </div>
                     <div className="text-right">
@@ -415,28 +434,24 @@ export const PatientsTable = ({
         })}
       </div>
 
-      <div className="hidden overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 md:block">
+      <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 md:block">
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <colgroup>
-              <col className="w-24" />
-              <col className="w-[31%]" />
-              <col className="w-[47%]" />
-              <col className="w-[17%]" />
-              <col className="w-16" />
-              <col className="w-14" />
+              <col className="w-[32%]" />
+              <col className="w-[38%]" />
+              <col className="w-[20%]" />
+              <col className="w-20" />
+              <col className="w-20" />
             </colgroup>
-            <thead className="bg-slate-50 dark:bg-slate-950">
+            <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/80">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                  No.
-                </th>
-                <th className="px-6 py-4 text-left">
+                <th className="px-6 py-3 text-left">
                   <button
                     type="button"
                     onClick={() => handleSortClick("name")}
                     className={[
-                      "inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.14em] transition hover:text-slate-700 dark:hover:text-slate-200",
+                      "inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
                       sortField === "name" ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400",
                     ].join(" ")}
                   >
@@ -444,19 +459,19 @@ export const PatientsTable = ({
                     <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
                   </button>
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
                   Address
                 </th>
-                <th className="px-6 py-4 text-left">
+                <th className="px-6 py-3 text-left">
                   <button
                     type="button"
                     onClick={cycleWindowFilter}
                     className={[
-                      "inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.14em] transition hover:text-slate-700 dark:hover:text-slate-200",
+                      "inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
                       windowFilterActive ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400",
                     ].join(" ")}
                   >
-                    Preferred window
+                    Window
                     {windowFilterLabel ? (
                       <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] normal-case tracking-normal text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
                         {windowFilterLabel}
@@ -468,12 +483,12 @@ export const PatientsTable = ({
                     )}
                   </button>
                 </th>
-                <th className="px-3 py-4 text-left">
+                <th className="px-4 py-3 text-right">
                   <button
                     type="button"
                     onClick={() => handleSortClick("duration")}
                     className={[
-                      "inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-[0.14em] transition hover:text-slate-700 dark:hover:text-slate-200",
+                      "inline-flex w-full items-center justify-end gap-1 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
                       sortField === "duration" ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400",
                     ].join(" ")}
                   >
@@ -481,15 +496,13 @@ export const PatientsTable = ({
                     <SortIcon field="duration" sortField={sortField} sortDir={sortDir} />
                   </button>
                 </th>
-                <th className="px-3 py-4 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
-                  Actions
-                </th>
+                <th className="px-4 py-3" aria-label="Actions" />
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 bg-white dark:divide-slate-800 dark:bg-slate-900">
+            <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
               {sortedFilteredPatients.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
                     No patients match the current filter.
                   </td>
                 </tr>
@@ -498,85 +511,68 @@ export const PatientsTable = ({
                 const windowRows = resolvePatientWindowRows(patient);
                 const visitType = resolveVisitTypeLabel(patient);
                 const patientDisplayName = getPatientDisplayName(patient);
-                const desktopMenuKey = `desktop:${patient.id}`;
-                const isMenuOpen = openActionsMenuKey === desktopMenuKey;
-
                 return (
                   <tr
                     key={patient.id}
-                    className="transition hover:bg-slate-50 dark:hover:bg-slate-950"
+                    className="group transition hover:bg-slate-50 dark:hover:bg-slate-800/40"
                   >
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      {index + 1}
+                    <td className="px-6 py-5">
+                      <p className="m-0 line-clamp-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                        {patientDisplayName}
+                      </p>
                     </td>
-                    <td className="px-6 py-4 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {patientDisplayName}
+                    <td className="px-6 py-5">
+                      {(() => {
+                        const { street, cityRegion } = splitAddress(patient.address);
+                        return (
+                          <>
+                            <p className="m-0 text-sm text-slate-800 dark:text-slate-200">{street}</p>
+                            {cityRegion && <p className="m-0 text-xs text-slate-400 dark:text-slate-500">{cityRegion}</p>}
+                          </>
+                        );
+                      })()}
                     </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      {patient.address}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      <div className="grid gap-1.5">
+                    <td className="px-6 py-5">
+                      <div className="flex items-center gap-1.5 flex-wrap">
                         {renderVisitTypePill(visitType)}
-                        {windowRows.map((window) => (
-                          <div key={window.id} className="whitespace-nowrap">
-                            {window.timeLabel}
-                          </div>
-                        ))}
+                        {windowRows[0]?.timeLabel !== "Not set" && (
+                          <span className="whitespace-nowrap text-xs text-slate-600 dark:text-slate-300">{windowRows[0]?.timeLabel}</span>
+                        )}
                       </div>
+                      {windowRows.length > 1 && (
+                        <p className="m-0 mt-0.5 cursor-pointer text-xs font-medium text-blue-600 underline underline-offset-2 dark:text-blue-400">+{windowRows.length - 1} more</p>
+                      )}
                     </td>
-                    <td className="whitespace-nowrap px-3 py-4 text-sm text-slate-600 dark:text-slate-300">
-                      {patient.visitDurationMinutes} min
+                    <td className="whitespace-nowrap px-4 py-5 text-right text-sm text-slate-600 dark:text-slate-300">
+                      <span className="inline-flex items-center justify-end gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500">
+                          <circle cx="12" cy="12" r="10" />
+                          <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                        {patient.visitDurationMinutes} min
+                      </span>
                     </td>
-                    <td className="px-3 py-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <div
-                          ref={isMenuOpen ? actionsMenuRef : undefined}
-                          className="relative"
+                    <td className="px-4 py-5 text-right">
+                      <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(patient)}
+                          aria-label={`Edit ${patientDisplayName}`}
+                          title="Edit"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
                         >
-                          <button
-                            type="button"
-                            aria-label={`Open actions for ${patientDisplayName}`}
-                            title={`Open actions for ${patientDisplayName}`}
-                            onClick={() =>
-                              setOpenActionsMenuKey((current) =>
-                                current === desktopMenuKey ? null : desktopMenuKey,
-                              )
-                            }
-                            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                          >
-                            <MoreActionsIcon className="h-3.5 w-3.5" />
-                          </button>
-                          {isMenuOpen && (
-                            <div className="absolute right-0 z-20 mt-1 min-w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOpenActionsMenuKey(null);
-                                  onEdit(patient);
-                                }}
-                                aria-label={`Edit patient ${patientDisplayName}`}
-                                className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                              >
-                                <EditIcon className="h-3.5 w-3.5" />
-                                Edit
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setOpenActionsMenuKey(null);
-                                  void onDelete(patient.id);
-                                }}
-                                disabled={isSubmitting}
-                                aria-label={`Delete patient ${patientDisplayName}`}
-                                className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300 dark:hover:bg-red-950/30"
-                              >
-                                <TrashIcon className="h-3.5 w-3.5" />
-                                Remove
-                              </button>
-                            </div>
-                          )}
-                        </div>
+                          <EditIcon className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void onDelete(patient.id)}
+                          disabled={isSubmitting}
+                          aria-label={`Delete ${patientDisplayName}`}
+                          title="Delete"
+                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                        >
+                          <TrashIcon className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>

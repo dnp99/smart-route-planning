@@ -106,7 +106,7 @@ export const PatientFormModal = ({
           <div>
             <h2
               id="patient-modal-title"
-              className="m-0 text-2xl font-bold text-slate-900 dark:text-slate-100"
+              className="m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100"
             >
               {formMode === "create" ? "Add New Patient" : "Edit Patient"}
             </h2>
@@ -124,7 +124,7 @@ export const PatientFormModal = ({
             onClick={onClose}
             aria-label="Close modal"
             title="Close modal"
-            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <CloseIcon className="h-4 w-4" />
           </button>

@@ -42,6 +42,7 @@ const PlusIcon = ({ className }: { className?: string }) => (
 
 const PatientsPage = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
+  const [totalPatientCount, setTotalPatientCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingPatients, setIsLoadingPatients] = useState(true);
   const [pageError, setPageError] = useState("");
@@ -66,6 +67,7 @@ const PatientsPage = () => {
     try {
       const nextPatients = await listPatients(query);
       setPatients(nextPatients);
+      if (!query) setTotalPatientCount(nextPatients.length);
 
       if (selectedPatientId && !nextPatients.some((patient) => patient.id === selectedPatientId)) {
         setSelectedPatientId(null);
@@ -278,21 +280,23 @@ const PatientsPage = () => {
       <section className={responsiveStyles.section}>
         <div className={responsiveStyles.sectionHeader}>
           <div className="flex items-start justify-between gap-3">
-            <h1 className="m-0 text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {`Patients (${patients.length})`}
+            <h1 className="m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100">
+              {searchQuery.trim()
+                ? `Patients (${patients.length} of ${totalPatientCount})`
+                : `Patients (${patients.length})`}
             </h1>
             <button
               type="button"
               onClick={openCreateModal}
               aria-label="Add patient"
               title="Add patient"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:hidden"
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:hidden"
             >
               <PlusIcon className="h-4 w-4" />
             </button>
           </div>
           <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
-            Search, create, update, and delete patients for route-planning workflows.
+            Manage patients for route planning.
           </p>
         </div>
 
@@ -303,28 +307,55 @@ const PatientsPage = () => {
         )}
 
         <div>
-          <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <label htmlFor="patient-search" className="sr-only">
               Search patients
             </label>
 
-            <div className="min-w-0 flex-1">
+            <div className="relative min-w-0 flex-1">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
               <input
                 id="patient-search"
                 type="search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search by first or last name"
-                className={responsiveStyles.searchInput}
+                placeholder="Search patients by name or address"
+                className={`${responsiveStyles.searchInput} pl-9 sm:pl-10 ${searchQuery ? "pr-8" : ""}`}
               />
+              {searchQuery && (
+                <button
+                  type="button"
+                  aria-label="Clear search"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="h-3.5 w-3.5">
+                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </button>
+              )}
             </div>
 
             <button
               type="button"
               onClick={openCreateModal}
-              className="hidden w-full rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 sm:inline-flex sm:w-auto sm:shrink-0"
+              className="hidden w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 sm:inline-flex sm:w-auto sm:shrink-0"
             >
-              Add New Patient
+              <PlusIcon className="h-4 w-4" />
+              Add Patient
             </button>
           </div>
 

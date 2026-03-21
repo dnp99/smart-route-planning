@@ -19,12 +19,12 @@ import nurseQuotes from "./data/nurseQuotes";
 import { formatNameWords } from "./components/patients/patientName";
 import PatientsPage from "./components/patients/PatientsPage";
 
-const resolveTabCardClassName = ({ isActive }) =>
+const resolveTabClassName = ({ isActive }) =>
   [
-    "group block rounded-xl border p-2.5 transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 sm:p-3",
+    "group flex items-center gap-2 border-b-[3px] px-1 pb-3 pt-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
     isActive
-      ? "border-blue-400 bg-blue-50/90 shadow-sm"
-      : "border-slate-300 bg-slate-100/90 hover:border-slate-400 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:hover:border-slate-600 dark:hover:bg-slate-700",
+      ? "border-blue-700 text-blue-700 dark:border-blue-400 dark:text-blue-300"
+      : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200",
   ].join(" ");
 
 const OptionsIcon = ({ className }) => (
@@ -397,7 +397,7 @@ function App() {
 
   if (!isAuthResolved) {
     return (
-      <div className="mx-auto w-full max-w-4xl p-3 sm:p-4 md:p-6">
+      <div className="mx-auto w-full max-w-6xl p-3 sm:p-4 md:p-6">
         <main className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
           Validating session...
         </main>
@@ -406,9 +406,8 @@ function App() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-4xl p-3 sm:p-4 md:p-6">
-      <header className="z-30 w-full overflow-x-clip rounded-2xl border border-slate-300 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-900 sm:sticky sm:top-0 sm:p-4">
-        <div className="grid gap-3">
+    <div className="flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white dark:bg-none dark:bg-slate-950">
+      <header className="z-30 w-full overflow-x-clip border-b border-slate-200 bg-white px-4 py-3 shadow-md dark:border-slate-800 dark:bg-slate-900 sm:sticky sm:top-0 sm:px-6 sm:py-4">
           <div className="flex items-center gap-3">
             <div className="flex min-w-0 items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
@@ -462,7 +461,7 @@ function App() {
                   aria-haspopup="menu"
                   aria-expanded={isAccountMenuOpen}
                   title="Open account options menu"
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-300 text-slate-700 transition hover:border-slate-400 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800"
                 >
                   <OptionsIcon className="h-4 w-4" />
                 </button>
@@ -508,107 +507,60 @@ function App() {
               ) : null}
             </div>
           </div>
-
-          {isAuthenticated && (
-            <div className="border-t border-slate-200 pt-2.5 dark:border-slate-800">
-              <nav className="grid w-full grid-cols-2 gap-1.5 sm:gap-2">
-                <NavLink to="/patients" aria-label="Patients" className={resolveTabCardClassName}>
-                  {({ isActive }) => (
-                    <div className="flex items-center gap-2.5">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.75"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                        className={[
-                          "h-5 w-5 shrink-0",
-                          isActive ? "text-blue-600" : "text-slate-500 group-hover:text-slate-600 dark:text-slate-400",
-                        ].join(" ")}
-                      >
-                        <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" />
-                        <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
-                        <circle cx="20" cy="10" r="2" />
-                      </svg>
-                      <div>
-                        <p
-                          className={[
-                            "m-0 text-left text-sm font-semibold leading-tight sm:text-base",
-                            isActive ? "text-blue-800" : "text-slate-700 group-hover:text-slate-800 dark:text-slate-100",
-                          ].join(" ")}
-                        >
-                          Patients
-                        </p>
-                        <p
-                          className={[
-                            "m-0 mt-0.5 hidden text-left text-[11px] font-medium leading-tight sm:block sm:text-xs",
-                            isActive ? "text-blue-700" : "text-slate-600 group-hover:text-slate-700 dark:text-slate-300",
-                          ].join(" ")}
-                        >
-                          Search, create, and manage patient visits.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </NavLink>
-                <NavLink
-                  to="/route-planner"
-                  aria-label="Route Planner"
-                  className={resolveTabCardClassName}
-                >
-                  {({ isActive }) => (
-                    <div className="flex items-center gap-2.5">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="1.75"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                        className={[
-                          "h-5 w-5 shrink-0",
-                          isActive ? "text-blue-600" : "text-slate-500 group-hover:text-slate-600 dark:text-slate-400",
-                        ].join(" ")}
-                      >
-                        <circle cx="3" cy="6" r="2" />
-                        <circle cx="21" cy="6" r="2" />
-                        <circle cx="12" cy="18" r="2" />
-                        <path d="M5 6h6l4.5 6H21" />
-                        <path d="M3 6l4.5 6H12" />
-                        <path d="M12 16V8" />
-                      </svg>
-                      <div>
-                        <p
-                          className={[
-                            "m-0 text-left text-sm font-semibold leading-tight sm:text-base",
-                            isActive ? "text-blue-800" : "text-slate-700 group-hover:text-slate-800 dark:text-slate-100",
-                          ].join(" ")}
-                        >
-                          Route Planner
-                        </p>
-                        <p
-                          className={[
-                            "m-0 mt-0.5 hidden text-left text-[11px] font-medium leading-tight sm:block sm:text-xs",
-                            isActive ? "text-blue-700" : "text-slate-600 group-hover:text-slate-700 dark:text-slate-300",
-                          ].join(" ")}
-                        >
-                          Build and optimize your daily route plan.
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </NavLink>
-              </nav>
-            </div>
-          )}
-        </div>
       </header>
 
+      <div className="mx-auto w-full max-w-6xl flex-1 px-4 pb-6 sm:px-6">
+      {isAuthenticated && (
+        <nav className="flex gap-6 border-b border-slate-200 dark:border-slate-800">
+          <NavLink to="/patients" aria-label="Patients" className={resolveTabClassName}>
+            {({ isActive }) => (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className={["h-4 w-4 shrink-0", isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500"].join(" ")}
+                >
+                  <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" />
+                  <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
+                  <circle cx="20" cy="10" r="2" />
+                </svg>
+                Patients
+              </>
+            )}
+          </NavLink>
+          <NavLink to="/route-planner" aria-label="Route Planner" className={resolveTabClassName}>
+            {({ isActive }) => (
+              <>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className={["h-4 w-4 shrink-0", isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500"].join(" ")}
+                >
+                  <circle cx="3" cy="6" r="2" />
+                  <circle cx="21" cy="6" r="2" />
+                  <circle cx="12" cy="18" r="2" />
+                  <path d="M5 6h6l4.5 6H21" />
+                  <path d="M3 6l4.5 6H12" />
+                  <path d="M12 16V8" />
+                </svg>
+                Route Planner
+              </>
+            )}
+          </NavLink>
+        </nav>
+      )}
       <Routes>
         <Route
           path="/login"
@@ -638,7 +590,9 @@ function App() {
         />
       </Routes>
 
-      <footer className="mt-4 rounded-2xl border border-slate-300 bg-white p-4 shadow-md dark:border-slate-800 dark:bg-slate-900">
+      </div>
+
+      <footer className="w-full border-t border-slate-200 bg-white px-4 py-4 shadow-md dark:border-slate-800 dark:bg-slate-900 sm:px-6">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <nav aria-label="Legal and support links" className="flex flex-wrap gap-x-3 gap-y-0">
             <a
@@ -764,7 +718,7 @@ function App() {
                   type="button"
                   onClick={closeAccountSettingsModal}
                   disabled={isSavingAccountSettings}
-                  className="rounded-xl border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                  className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-70 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                 >
                   Cancel
                 </button>
@@ -913,7 +867,7 @@ function App() {
           onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
           aria-label="Scroll to top"
           title="Scroll to top"
-          className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white/90 shadow-md backdrop-blur transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:bg-slate-800 lg:bottom-6 lg:left-[calc(50%+28rem+0.75rem)] lg:right-auto"
+          className="fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white/90 shadow-md backdrop-blur transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:bg-slate-800 lg:bottom-6 lg:left-[calc(50%+36rem+0.75rem)] lg:right-auto"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
