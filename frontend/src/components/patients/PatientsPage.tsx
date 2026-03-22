@@ -17,12 +17,7 @@ import {
   toFormValues,
   validateForm,
 } from "./patientForm";
-import {
-  createPatient,
-  deletePatient,
-  listPatients,
-  updatePatient,
-} from "./patientService";
+import { createPatient, deletePatient, listPatients, updatePatient } from "./patientService";
 
 const PlusIcon = ({ className }: { className?: string }) => (
   <svg
@@ -60,8 +55,7 @@ const PatientsPage = () => {
     () => patients.find((patient) => patient.id === selectedPatientId) ?? null,
     [patients, selectedPatientId],
   );
-  const selectedVisitType: VisitTimeType =
-    formValues.visitWindows[0]?.visitTimeType ?? "flexible";
+  const selectedVisitType: VisitTimeType = formValues.visitWindows[0]?.visitTimeType ?? "flexible";
 
   const fetchPatients = async (query: string) => {
     setIsLoadingPatients(true);
@@ -347,8 +341,19 @@ const PatientsPage = () => {
                   onClick={() => setSearchQuery("")}
                   className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" fill="none" aria-hidden="true" className="h-3.5 w-3.5">
-                    <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 14 14"
+                    fill="none"
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5"
+                  >
+                    <path
+                      d="M2 2l10 10M12 2L2 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
                   </svg>
                 </button>
               )}

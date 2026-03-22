@@ -177,12 +177,10 @@ describe("auth request guards", () => {
       headers: { "x-forwarded-for": "203.0.113.101" },
     });
 
-    await expect(
-      enforceLoginRateLimit(firstRequest, "nurse@example.com"),
-    ).resolves.toBeUndefined();
-    await expect(
-      enforceLoginRateLimit(secondRequest, "nurse@example.com"),
-    ).rejects.toThrow("Too many login attempts. Please try again shortly.");
+    await expect(enforceLoginRateLimit(firstRequest, "nurse@example.com")).resolves.toBeUndefined();
+    await expect(enforceLoginRateLimit(secondRequest, "nurse@example.com")).rejects.toThrow(
+      "Too many login attempts. Please try again shortly.",
+    );
   });
 
   it("adds retry-after header when lockout is active", async () => {
@@ -205,9 +203,7 @@ describe("auth request guards", () => {
     process.env.NODE_ENV = "production";
 
     expect(() =>
-      requireSecureAuthTransport(
-        new Request("http://localhost:3000/api/auth/login"),
-      ),
+      requireSecureAuthTransport(new Request("http://localhost:3000/api/auth/login")),
     ).toThrow("HTTPS is required for authentication endpoints.");
   });
 

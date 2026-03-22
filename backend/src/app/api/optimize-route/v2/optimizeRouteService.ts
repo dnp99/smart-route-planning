@@ -1,7 +1,10 @@
 import { HttpError } from "../../../../lib/http";
 import { geocodeTargetsSequentially, normalizeAddressKey } from "../geocoding";
 import { buildDrivingRoute } from "../routing";
-import type { GeocodedStop as LegacyGeocodedStop, OrderedStop as LegacyOrderedStop } from "../types";
+import type {
+  GeocodedStop as LegacyGeocodedStop,
+  OrderedStop as LegacyOrderedStop,
+} from "../types";
 import type {
   LatLng,
   OptimizeRouteResultV2,
@@ -187,7 +190,10 @@ const toIsoFromPlanningDateAndLocalSeconds = (
   return new Date(timestampMs).toISOString();
 };
 
-const groupVisitsIntoStops = (orderedVisits: VisitWithCoords[], end: GeocodeTarget & { coords: LatLng }) => {
+const groupVisitsIntoStops = (
+  orderedVisits: VisitWithCoords[],
+  end: GeocodeTarget & { coords: LatLng },
+) => {
   const stops: PlannedStop[] = [];
 
   orderedVisits.forEach((visit) => {
@@ -315,7 +321,10 @@ const computeMinuteAlignedLateBySeconds = (
   serviceStartSeconds: number,
   windowEndSeconds: number,
 ) => {
-  const lateMinutes = Math.max(0, minuteBucket(serviceStartSeconds) - minuteBucket(windowEndSeconds));
+  const lateMinutes = Math.max(
+    0,
+    minuteBucket(serviceStartSeconds) - minuteBucket(windowEndSeconds),
+  );
   return lateMinutes * 60;
 };
 
@@ -386,11 +395,8 @@ const compareScores = (left: ProjectionScore, right: ProjectionScore) => {
   return left.totalTravelSeconds - right.totalTravelSeconds;
 };
 
-const scoreProjection = (
-  projection: Omit<VisitProjection, "score">,
-): ProjectionScore => {
-  const fixedLateSeconds =
-    projection.visit.windowType === "fixed" ? projection.lateBySeconds : 0;
+const scoreProjection = (projection: Omit<VisitProjection, "score">): ProjectionScore => {
+  const fixedLateSeconds = projection.visit.windowType === "fixed" ? projection.lateBySeconds : 0;
 
   return {
     fixedLateCount: fixedLateSeconds > 0 ? 1 : 0,
@@ -606,7 +612,9 @@ const evaluateFutureBestScore = (
   const beamCandidates = projectedCandidates.slice(0, LOOKAHEAD_BEAM_WIDTH);
 
   const futureCandidates = beamCandidates.map(({ visit, projection, immediateScore }) => {
-    const remainingAfter = remainingVisits.filter((candidate) => candidate.visitId !== visit.visitId);
+    const remainingAfter = remainingVisits.filter(
+      (candidate) => candidate.visitId !== visit.visitId,
+    );
 
     const future = evaluateFutureBestScore(
       remainingAfter,
@@ -728,7 +736,8 @@ const maybeSelectGapFiller = (
         return null;
       }
 
-      const gapUtilizationSeconds = projection.serviceEndSeconds + anchorReturnTravelSeconds - currentTimeSeconds;
+      const gapUtilizationSeconds =
+        projection.serviceEndSeconds + anchorReturnTravelSeconds - currentTimeSeconds;
       if (gapUtilizationSeconds < IDLE_GAP_MIN_UTILIZATION_SECONDS) {
         return null;
       }
@@ -804,8 +813,16 @@ const orderVisitsByWindowDistanceAndDuration = (
     let currentTimeSeconds = departureLocalSeconds;
 
     for (const visit of visits) {
-      const projection = projectVisit(visit, currentLocation, currentTimeSeconds, resolveTravelSeconds);
-      if (visit.windowType === "flexible" && projection.serviceEndSeconds > PLANNING_DAY_END_SECONDS) {
+      const projection = projectVisit(
+        visit,
+        currentLocation,
+        currentTimeSeconds,
+        resolveTravelSeconds,
+      );
+      if (
+        visit.windowType === "flexible" &&
+        projection.serviceEndSeconds > PLANNING_DAY_END_SECONDS
+      ) {
         unscheduledTasks.push({
           visitId: visit.visitId,
           patientId: visit.patientId,
@@ -832,7 +849,12 @@ const orderVisitsByWindowDistanceAndDuration = (
       remaining
         .filter((visit) => visit.windowType === "flexible")
         .filter((visit) => {
-          const projection = projectVisit(visit, currentLocation, currentTimeSeconds, resolveTravelSeconds);
+          const projection = projectVisit(
+            visit,
+            currentLocation,
+            currentTimeSeconds,
+            resolveTravelSeconds,
+          );
           return projection.serviceEndSeconds > PLANNING_DAY_END_SECONDS;
         })
         .map((visit) => visit.visitId),
@@ -859,7 +881,12 @@ const orderVisitsByWindowDistanceAndDuration = (
     }
 
     const projections = remaining.map((visit) => {
-      const projected = projectVisit(visit, currentLocation, currentTimeSeconds, resolveTravelSeconds);
+      const projected = projectVisit(
+        visit,
+        currentLocation,
+        currentTimeSeconds,
+        resolveTravelSeconds,
+      );
       const remainingAfter = remaining.filter((candidate) => candidate.visitId !== visit.visitId);
       const futureScore = evaluateFutureBestScore(
         remainingAfter,
@@ -879,10 +906,9 @@ const orderVisitsByWindowDistanceAndDuration = (
     const lateFixedProjections = hasFixedRemaining
       ? projections.filter((p) => p.visit.windowType === "fixed" && p.lateBySeconds > 0)
       : [];
-    const lateFlexibleProjections =
-      !hasFixedRemaining
-        ? projections.filter((p) => p.visit.hasPreferredWindow && p.lateBySeconds > 0)
-        : [];
+    const lateFlexibleProjections = !hasFixedRemaining
+      ? projections.filter((p) => p.visit.hasPreferredWindow && p.lateBySeconds > 0)
+      : [];
     const urgentFlexibleProjections =
       !hasFixedRemaining && lateFlexibleProjections.length === 0
         ? projections.filter(
@@ -985,9 +1011,21 @@ const buildTaskResult = (
       windowEnd: task.hasPreferredWindow ? task.windowEnd : "",
       windowType: task.windowType,
       serviceDurationMinutes: task.serviceDurationMinutes,
-      arrivalTime: toIsoFromLocalSeconds(arrivalLocalSeconds, departureLocalSeconds, departureTimestampMs),
-      serviceStartTime: toIsoFromLocalSeconds(serviceStartSeconds, departureLocalSeconds, departureTimestampMs),
-      serviceEndTime: toIsoFromLocalSeconds(serviceEndSeconds, departureLocalSeconds, departureTimestampMs),
+      arrivalTime: toIsoFromLocalSeconds(
+        arrivalLocalSeconds,
+        departureLocalSeconds,
+        departureTimestampMs,
+      ),
+      serviceStartTime: toIsoFromLocalSeconds(
+        serviceStartSeconds,
+        departureLocalSeconds,
+        departureTimestampMs,
+      ),
+      serviceEndTime: toIsoFromLocalSeconds(
+        serviceEndSeconds,
+        departureLocalSeconds,
+        departureTimestampMs,
+      ),
       waitSeconds,
       lateBySeconds,
       onTime: !task.hasPreferredWindow || lateBySeconds === 0,
@@ -1152,10 +1190,15 @@ export const optimizeRouteV2 = async (
         departureLocalSeconds,
         departureTimestampMs,
       ),
-      departureTime: toIsoFromLocalSeconds(cursorLocalSeconds, departureLocalSeconds, departureTimestampMs),
+      departureTime: toIsoFromLocalSeconds(
+        cursorLocalSeconds,
+        departureLocalSeconds,
+        departureTimestampMs,
+      ),
       tasks,
       distanceFromPreviousKm: drivingRoute.orderedStops[index]?.distanceFromPreviousKm ?? 0,
-      durationFromPreviousSeconds: drivingRoute.orderedStops[index]?.durationFromPreviousSeconds ?? 0,
+      durationFromPreviousSeconds:
+        drivingRoute.orderedStops[index]?.durationFromPreviousSeconds ?? 0,
       ...(stop.isEndingPoint ? { isEndingPoint: true } : {}),
     };
   });

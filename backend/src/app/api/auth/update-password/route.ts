@@ -3,10 +3,7 @@ import { isUpdatePasswordRequest } from "../../../../../../shared/contracts";
 import { hashPassword, verifyPassword } from "../../../../lib/auth/password";
 import { requireAuth } from "../../../../lib/auth/requireAuth";
 import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
-import {
-  findNurseById,
-  updateNursePasswordHash,
-} from "../../../../lib/patients/patientRepository";
+import { findNurseById, updateNursePasswordHash } from "../../../../lib/patients/patientRepository";
 import { enforceUpdatePasswordRateLimit } from "../../../../lib/rateLimit/authUpdatePasswordRateLimit";
 import { requireSecureAuthTransport, resolveAuthClientKey } from "../requestGuards";
 

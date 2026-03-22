@@ -52,12 +52,31 @@ export const TripSetupSection = ({
               {startAddress} <span className="text-slate-400">→</span> {resolvedEndAddress}
             </span>{" "}
             —{" "}
-            <button type="button" onClick={() => onSetExpanded(true)} className={responsiveStyles.inlineEditLink}>
+            <button
+              type="button"
+              onClick={() => onSetExpanded(true)}
+              className={responsiveStyles.inlineEditLink}
+            >
               Edit
             </button>
           </p>
-          <button type="button" aria-label="Expand trip setup" onClick={() => onSetExpanded(true)} className={responsiveStyles.panelChevronButton}>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <button
+            type="button"
+            aria-label="Expand trip setup"
+            onClick={() => onSetExpanded(true)}
+            className={responsiveStyles.panelChevronButton}
+          >
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
               <polyline points="6 9 12 15 18 9" />
             </svg>
           </button>
@@ -72,8 +91,23 @@ export const TripSetupSection = ({
         <div className="flex items-center justify-between gap-2">
           <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
           {!isMobileViewport && startAddress.length > 0 && resolvedEndAddress.length > 0 && (
-            <button type="button" aria-label="Collapse trip setup" onClick={() => onSetExpanded(false)} className={responsiveStyles.panelChevronButton}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <button
+              type="button"
+              aria-label="Collapse trip setup"
+              onClick={() => onSetExpanded(false)}
+              className={responsiveStyles.panelChevronButton}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
                 <polyline points="18 15 12 9 6 15" />
               </svg>
             </button>
@@ -90,11 +124,16 @@ export const TripSetupSection = ({
             <div>
               <p className={responsiveStyles.warningBannerTitle}>Home address not set</p>
               <p className={responsiveStyles.warningBannerDescription}>
-                Set your home address in Account settings to auto-fill starting and ending points. You can still enter addresses manually.
+                Set your home address in Account settings to auto-fill starting and ending points.
+                You can still enter addresses manually.
               </p>
             </div>
             {onOpenAccountSettings && (
-              <button type="button" onClick={onOpenAccountSettings} className={responsiveStyles.warningBannerButton}>
+              <button
+                type="button"
+                onClick={onOpenAccountSettings}
+                className={responsiveStyles.warningBannerButton}
+              >
                 Open account settings
               </button>
             )}

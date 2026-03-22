@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { DestinationRow } from "../../components/routePlanner/DestinationRow";
 import type { SelectedPatientDestination } from "../../components/routePlanner/routePlannerTypes";
 
-const buildDestination = (overrides: Partial<SelectedPatientDestination> = {}): SelectedPatientDestination => ({
+const buildDestination = (
+  overrides: Partial<SelectedPatientDestination> = {},
+): SelectedPatientDestination => ({
   visitKey: "visit-1",
   sourceWindowId: null,
   patientId: "patient-1",
@@ -50,13 +52,20 @@ describe("DestinationRow", () => {
   });
 
   it("shows the fixed pill in the modal", () => {
-    render(<DestinationRow destination={buildDestination({ windowType: "fixed" })} {...defaultProps} />);
+    render(
+      <DestinationRow destination={buildDestination({ windowType: "fixed" })} {...defaultProps} />,
+    );
     fireEvent.click(screen.getByText("Alex Johnson"));
     expect(screen.getByText("fixed")).toBeTruthy();
   });
 
   it("shows the flexible pill in the modal", () => {
-    render(<DestinationRow destination={buildDestination({ windowType: "flexible" })} {...defaultProps} />);
+    render(
+      <DestinationRow
+        destination={buildDestination({ windowType: "flexible" })}
+        {...defaultProps}
+      />,
+    );
     fireEvent.click(screen.getByText("Alex Johnson"));
     expect(screen.getByText("flexible")).toBeTruthy();
   });
@@ -84,7 +93,9 @@ describe("DestinationRow", () => {
     render(<DestinationRow destination={buildDestination()} {...defaultProps} />);
     fireEvent.click(screen.getByText("Alex Johnson"));
     const allDivs = document.querySelectorAll("div");
-    const backdropEl = Array.from(allDivs).find(el => el.className.indexOf("fixed") !== -1 && el.className.indexOf("inset-0") !== -1);
+    const backdropEl = Array.from(allDivs).find(
+      (el) => el.className.indexOf("fixed") !== -1 && el.className.indexOf("inset-0") !== -1,
+    );
     if (backdropEl) fireEvent.click(backdropEl);
     expect(screen.queryByText("10 First Avenue, Toronto, ON")).toBeNull();
   });
@@ -98,14 +109,22 @@ describe("DestinationRow", () => {
 
   it("clicking Remove calls onRemove", () => {
     const onRemove = vi.fn();
-    render(<DestinationRow destination={buildDestination()} {...defaultProps} onRemove={onRemove} />);
+    render(
+      <DestinationRow destination={buildDestination()} {...defaultProps} onRemove={onRemove} />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Remove Alex Johnson" }));
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
 
   it("clicking Edit window calls onToggleDetails", () => {
     const onToggleDetails = vi.fn();
-    render(<DestinationRow destination={buildDestination()} {...defaultProps} onToggleDetails={onToggleDetails} />);
+    render(
+      <DestinationRow
+        destination={buildDestination()}
+        {...defaultProps}
+        onToggleDetails={onToggleDetails}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: /edit window/i }));
     expect(onToggleDetails).toHaveBeenCalledTimes(1);
   });
@@ -118,7 +137,9 @@ describe("DestinationRow", () => {
   });
 
   it("applies opacity when isIncluded is false", () => {
-    render(<DestinationRow destination={buildDestination({ isIncluded: false })} {...defaultProps} />);
+    render(
+      <DestinationRow destination={buildDestination({ isIncluded: false })} {...defaultProps} />,
+    );
     const li = screen.getByText("Alex Johnson").closest("li");
     expect(li?.className).toContain("opacity-60");
   });

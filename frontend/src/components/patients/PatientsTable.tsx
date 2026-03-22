@@ -112,10 +112,7 @@ const resolvePatientWindowRows = (patient: Patient): PatientWindowRow[] => {
   return [
     {
       id: `${patient.id}-legacy`,
-      timeLabel: formatWindowRange(
-        patient.preferredVisitStartTime,
-        patient.preferredVisitEndTime,
-      ),
+      timeLabel: formatWindowRange(patient.preferredVisitStartTime, patient.preferredVisitEndTime),
     },
   ];
 };
@@ -170,22 +167,60 @@ const ChevronIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const SortIcon = ({ field, sortField, sortDir }: { field: "name" | "duration"; sortField: SortField; sortDir: SortDir }) => {
+const SortIcon = ({
+  field,
+  sortField,
+  sortDir,
+}: {
+  field: "name" | "duration";
+  sortField: SortField;
+  sortDir: SortDir;
+}) => {
   if (sortField !== field) {
     return (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5 opacity-85">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+        className="h-3.5 w-3.5 opacity-85"
+      >
         <path d="M7 15l5 5 5-5" />
         <path d="M7 9l5-5 5 5" />
       </svg>
     );
   }
   return sortDir === "asc" ? (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="h-3.5 w-3.5"
+    >
       <path d="M12 19V5" />
       <path d="M7 10l5-5 5 5" />
     </svg>
   ) : (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5">
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className="h-3.5 w-3.5"
+    >
       <path d="M12 5v14" />
       <path d="M17 14l-5 5-5-5" />
     </svg>
@@ -381,7 +416,8 @@ export const PatientsTable = ({
   }
 
   const windowFilterActive = windowFilter !== "all";
-  const windowFilterLabel = windowFilter === "fixed" ? "Fixed" : windowFilter === "flexible" ? "Flexible" : null;
+  const windowFilterLabel =
+    windowFilter === "fixed" ? "Fixed" : windowFilter === "flexible" ? "Flexible" : null;
 
   return (
     <>
@@ -405,19 +441,20 @@ export const PatientsTable = ({
                   type="button"
                   onClick={() => toggleExpanded(patient.id)}
                   aria-expanded={isExpanded}
-                  aria-label={isExpanded ? `Collapse ${patientDisplayName}` : `Expand ${patientDisplayName}`}
+                  aria-label={
+                    isExpanded ? `Collapse ${patientDisplayName}` : `Expand ${patientDisplayName}`
+                  }
                   className="-mx-1 flex min-w-0 items-center gap-1.5 rounded-lg px-1 py-1 text-left transition active:bg-slate-100 dark:active:bg-slate-800"
                 >
-                  <ChevronIcon className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${isExpanded ? "rotate-90" : "rotate-0"}`} />
+                  <ChevronIcon
+                    className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${isExpanded ? "rotate-90" : "rotate-0"}`}
+                  />
                   <h3 className="m-0 min-w-0 text-base font-semibold text-slate-900 dark:text-slate-100">
                     {patientDisplayName}
                   </h3>
                 </button>
 
-                <div
-                  ref={isMobileMenuOpen ? actionsMenuRef : undefined}
-                  className="relative"
-                >
+                <div ref={isMobileMenuOpen ? actionsMenuRef : undefined} className="relative">
                   <button
                     type="button"
                     aria-label={`Open actions for ${patientDisplayName}`}
@@ -472,8 +509,14 @@ export const PatientsTable = ({
                         const { street, cityRegion } = splitAddress(patient.address);
                         return (
                           <>
-                            <p className="m-0 text-sm text-slate-700 dark:text-slate-300">{street}</p>
-                            {cityRegion && <p className="m-0 text-xs text-slate-400 dark:text-slate-500">{cityRegion}</p>}
+                            <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+                              {street}
+                            </p>
+                            {cityRegion && (
+                              <p className="m-0 text-xs text-slate-400 dark:text-slate-500">
+                                {cityRegion}
+                              </p>
+                            )}
                           </>
                         );
                       })()}
@@ -481,25 +524,33 @@ export const PatientsTable = ({
                   </div>
                   <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
                     <div>
-                      <dt className="font-semibold text-slate-700 dark:text-slate-300">Time windows</dt>
+                      <dt className="font-semibold text-slate-700 dark:text-slate-300">
+                        Time windows
+                      </dt>
                       <dd className="m-0 grid gap-1.5">
                         {windowRows[0]?.timeLabel === "Not set" ? (
                           <div className="flex items-center gap-1.5">
                             {renderVisitTypePill(visitType)}
-                            <span className="text-xs text-slate-400 dark:text-slate-500">Not set</span>
+                            <span className="text-xs text-slate-400 dark:text-slate-500">
+                              Not set
+                            </span>
                           </div>
                         ) : (
                           windowRows.map((window) => (
                             <div key={window.id} className="flex items-center gap-1.5">
                               {renderVisitTypePill(visitType)}
-                              <span className="whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">{window.timeLabel}</span>
+                              <span className="whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
+                                {window.timeLabel}
+                              </span>
                             </div>
                           ))
                         )}
                       </dd>
                     </div>
                     <div className="text-right">
-                      <dt className="font-semibold text-slate-700 dark:text-slate-300">Visit duration</dt>
+                      <dt className="font-semibold text-slate-700 dark:text-slate-300">
+                        Visit duration
+                      </dt>
                       <dd className="m-0 text-slate-600 dark:text-slate-400">
                         {patient.visitDurationMinutes} min
                       </dd>
@@ -530,7 +581,9 @@ export const PatientsTable = ({
                     onClick={() => handleSortClick("name")}
                     className={[
                       "inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
-                      sortField === "name" ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400",
+                      sortField === "name"
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-slate-500 dark:text-slate-400",
                     ].join(" ")}
                   >
                     Name
@@ -546,7 +599,9 @@ export const PatientsTable = ({
                     onClick={cycleWindowFilter}
                     className={[
                       "inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
-                      windowFilterActive ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400",
+                      windowFilterActive
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-slate-500 dark:text-slate-400",
                     ].join(" ")}
                   >
                     Window
@@ -555,7 +610,17 @@ export const PatientsTable = ({
                         {windowFilterLabel}
                       </span>
                     ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5 opacity-85">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 opacity-85"
+                      >
                         <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
                       </svg>
                     )}
@@ -567,7 +632,9 @@ export const PatientsTable = ({
                     onClick={() => handleSortClick("duration")}
                     className={[
                       "inline-flex w-full items-center justify-end gap-1 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
-                      sortField === "duration" ? "text-blue-600 dark:text-blue-400" : "text-slate-500 dark:text-slate-400",
+                      sortField === "duration"
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-slate-500 dark:text-slate-400",
                     ].join(" ")}
                   >
                     Duration
@@ -580,7 +647,10 @@ export const PatientsTable = ({
             <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
               {sortedFilteredPatients.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400">
+                  <td
+                    colSpan={5}
+                    className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
+                  >
                     No patients match the current filter.
                   </td>
                 </tr>
@@ -604,8 +674,14 @@ export const PatientsTable = ({
                         const { street, cityRegion } = splitAddress(patient.address);
                         return (
                           <>
-                            <p className="m-0 text-sm text-slate-800 dark:text-slate-200">{street}</p>
-                            {cityRegion && <p className="m-0 text-xs text-slate-400 dark:text-slate-500">{cityRegion}</p>}
+                            <p className="m-0 text-sm text-slate-800 dark:text-slate-200">
+                              {street}
+                            </p>
+                            {cityRegion && (
+                              <p className="m-0 text-xs text-slate-400 dark:text-slate-500">
+                                {cityRegion}
+                              </p>
+                            )}
                           </>
                         );
                       })()}
@@ -651,7 +727,17 @@ export const PatientsTable = ({
                     </td>
                     <td className="whitespace-nowrap px-4 py-5 text-right text-sm text-slate-600 dark:text-slate-300">
                       <span className="inline-flex items-center justify-end gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                          className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500"
+                        >
                           <circle cx="12" cy="12" r="10" />
                           <polyline points="12 6 12 12 16 14" />
                         </svg>

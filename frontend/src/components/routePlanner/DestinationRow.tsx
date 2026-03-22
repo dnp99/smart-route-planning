@@ -3,7 +3,17 @@ import { responsiveStyles } from "../responsiveStyles";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 
 const TrashIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
     <path d="M3 6h18" />
     <path d="M8 6V4h8v2" />
     <path d="M19 6l-1 14H6L5 6" />
@@ -11,7 +21,17 @@ const TrashIcon = ({ className }: { className?: string }) => (
 );
 
 const XIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
     <path d="M18 6 6 18" />
     <path d="m6 6 12 12" />
   </svg>
@@ -39,7 +59,12 @@ const PatientInfoModal = ({
       <div className={responsiveStyles.confirmDialogSurface} onClick={(e) => e.stopPropagation()}>
         <div className={responsiveStyles.infoModalHeader}>
           <h3 className={responsiveStyles.confirmDialogTitle}>{destination.patientName}</h3>
-          <button type="button" aria-label="Close" onClick={onClose} className={responsiveStyles.infoModalCloseButton}>
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={onClose}
+            className={responsiveStyles.infoModalCloseButton}
+          >
             <XIcon className="h-4 w-4" />
           </button>
         </div>
@@ -97,11 +122,11 @@ export const DestinationRow = ({
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   return (
-    <li className={`rounded-xl border border-transparent px-2 py-1 text-sm text-slate-900 dark:border-transparent dark:text-slate-200 ${destination.isIncluded ? "" : "opacity-60"}`}>
+    <li
+      className={`rounded-xl border border-transparent px-2 py-1 text-sm text-slate-900 dark:border-transparent dark:text-slate-200 ${destination.isIncluded ? "" : "opacity-60"}`}
+    >
       <div className="flex items-center gap-2">
-        <span className={responsiveStyles.destinationIndex}>
-          {index + 1}.
-        </span>
+        <span className={responsiveStyles.destinationIndex}>{index + 1}.</span>
         <div className="min-w-0 flex-1">
           <button
             type="button"
@@ -113,10 +138,19 @@ export const DestinationRow = ({
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <button type="button" onClick={onToggleDetails} className={responsiveStyles.destinationDetailsToggle}>
+          <button
+            type="button"
+            onClick={onToggleDetails}
+            className={responsiveStyles.destinationDetailsToggle}
+          >
             {isExpanded ? "Hide details" : "Edit window"}
           </button>
-          <button type="button" aria-label={`Remove ${destination.patientName}`} onClick={onRemove} className={responsiveStyles.destinationRemoveIcon}>
+          <button
+            type="button"
+            aria-label={`Remove ${destination.patientName}`}
+            onClick={onRemove}
+            className={responsiveStyles.destinationRemoveIcon}
+          >
             <TrashIcon className="h-3.5 w-3.5" />
           </button>
         </div>

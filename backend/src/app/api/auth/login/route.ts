@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  isLoginRequest,
-  type AuthUser,
-} from "../../../../../../shared/contracts";
+import { isLoginRequest, type AuthUser } from "../../../../../../shared/contracts";
 import { logAuthAuditEvent } from "../../../../lib/auth/auditLogger";
 import { verifyPassword } from "../../../../lib/auth/password";
 import { signAccessToken } from "../../../../lib/auth/jwt";

@@ -14,11 +14,7 @@ const isFiniteNumber = (value: unknown): value is number =>
   typeof value === "number" && isFinite(value);
 
 const getStopCoords = (stop: OrderedStop): Coords | null => {
-  if (
-    stop.coords &&
-    isFiniteNumber(stop.coords.lat) &&
-    isFiniteNumber(stop.coords.lon)
-  ) {
+  if (stop.coords && isFiniteNumber(stop.coords.lat) && isFiniteNumber(stop.coords.lon)) {
     return {
       lat: stop.coords.lat,
       lon: stop.coords.lon,
@@ -38,10 +34,7 @@ const haversineDistanceKm = (from: Coords, to: Coords) => {
 
   const a =
     Math.sin(latDelta / 2) * Math.sin(latDelta / 2) +
-    Math.cos(fromLat) *
-      Math.cos(toLat) *
-      Math.sin(lonDelta / 2) *
-      Math.sin(lonDelta / 2);
+    Math.cos(fromLat) * Math.cos(toLat) * Math.sin(lonDelta / 2) * Math.sin(lonDelta / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 
   return EARTH_RADIUS_KM * c;
@@ -88,16 +81,12 @@ const formatWindowStartMs = (referenceMs: number, windowStart: string, utcOffset
   return candidate > referenceMs ? candidate : referenceMs;
 };
 
-const isMovableStop = (stop: OrderedStop) =>
-  !stop.isEndingPoint && stop.tasks.length > 0;
+const isMovableStop = (stop: OrderedStop) => !stop.isEndingPoint && stop.tasks.length > 0;
 
 const buildMovableStopIds = (orderedStops: OrderedStop[]) =>
   orderedStops.filter(isMovableStop).map((stop) => stop.stopId);
 
-const applyManualOrder = (
-  orderedStops: OrderedStop[],
-  manualOrder: string[] | null,
-) => {
+const applyManualOrder = (orderedStops: OrderedStop[], manualOrder: string[] | null) => {
   if (!manualOrder || manualOrder.length === 0) {
     return orderedStops;
   }
@@ -151,9 +140,7 @@ const estimateStops = (
     }
 
     const distanceKm = haversineDistanceKm(previousCoords, stopCoords);
-    const durationSeconds = Math.round(
-      (distanceKm / AVERAGE_DRIVE_SPEED_KM_PER_HOUR) * 3600,
-    );
+    const durationSeconds = Math.round((distanceKm / AVERAGE_DRIVE_SPEED_KM_PER_HOUR) * 3600);
     const arrivalMs = cursorMs + durationSeconds * 1000;
 
     let stopCursorMs = arrivalMs;
@@ -163,15 +150,9 @@ const estimateStops = (
         task.windowStart && task.windowStart.length > 0
           ? formatWindowStartMs(arrivalTimeMs, task.windowStart, utcOffset)
           : arrivalTimeMs;
-      const serviceDurationMs = Math.max(
-        0,
-        Math.round(task.serviceDurationMinutes * 60_000),
-      );
+      const serviceDurationMs = Math.max(0, Math.round(task.serviceDurationMinutes * 60_000));
       const serviceEndMs = serviceStartMs + serviceDurationMs;
-      const waitSeconds = Math.max(
-        0,
-        Math.round((serviceStartMs - arrivalTimeMs) / 1000),
-      );
+      const waitSeconds = Math.max(0, Math.round((serviceStartMs - arrivalTimeMs) / 1000));
 
       stopCursorMs = serviceEndMs;
 
@@ -184,8 +165,7 @@ const estimateStops = (
       };
     });
 
-    const departureMsForStop =
-      estimatedTasks.length > 0 ? stopCursorMs : arrivalMs;
+    const departureMsForStop = estimatedTasks.length > 0 ? stopCursorMs : arrivalMs;
     cursorMs = departureMsForStop;
     previousCoords = stopCoords;
 
@@ -223,13 +203,9 @@ export const useManualReorder = (result: OptimizeRouteResponse | null) => {
   }, [result]);
 
   const baseStops = result?.orderedStops ?? [];
-  const fallbackMovableIds = useMemo(
-    () => buildMovableStopIds(baseStops),
-    [baseStops],
-  );
+  const fallbackMovableIds = useMemo(() => buildMovableStopIds(baseStops), [baseStops]);
   const orderedMovableIds = useMemo(
-    () =>
-      manualOrder && manualOrder.length > 0 ? manualOrder : fallbackMovableIds,
+    () => (manualOrder && manualOrder.length > 0 ? manualOrder : fallbackMovableIds),
     [fallbackMovableIds, manualOrder],
   );
 

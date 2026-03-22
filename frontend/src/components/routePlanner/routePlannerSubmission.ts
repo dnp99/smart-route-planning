@@ -14,8 +14,7 @@ export const validateRequestDestinations = (
   requestDestinations: SelectedPatientDestination[],
 ): string | null => {
   const fixedDestinationsMissingWindow = requestDestinations.filter(
-    (destination) =>
-      destination.windowType === "fixed" && !hasCompleteWindow(destination),
+    (destination) => destination.windowType === "fixed" && !hasCompleteWindow(destination),
   );
   if (fixedDestinationsMissingWindow.length > 0) {
     return `Set start and end time before optimizing for fixed visits: ${formatPatientListLabel(fixedDestinationsMissingWindow)}.`;
@@ -41,8 +40,7 @@ export const validateRequestDestinations = (
   }
 
   const destinationsMissingPersistWindow = requestDestinations.filter(
-    (destination) =>
-      destination.persistPlanningWindow && !hasCompleteWindow(destination),
+    (destination) => destination.persistPlanningWindow && !hasCompleteWindow(destination),
   );
   if (destinationsMissingPersistWindow.length > 0) {
     return `Set start and end time before saving to patient record for: ${formatPatientListLabel(destinationsMissingPersistWindow)}.`;
@@ -69,10 +67,7 @@ export const buildPlanningWindowsToPersist = (
   requestDestinations: SelectedPatientDestination[],
 ): PersistPlanningWindowInput[] =>
   requestDestinations
-    .filter(
-      (destination) =>
-        destination.persistPlanningWindow && hasCompleteWindow(destination),
-    )
+    .filter((destination) => destination.persistPlanningWindow && hasCompleteWindow(destination))
     .map((destination) => ({
       patientId: destination.patientId,
       sourceWindowId: destination.sourceWindowId,

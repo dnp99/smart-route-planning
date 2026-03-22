@@ -82,8 +82,7 @@ export const PatientFormModal = ({
       ?.map((row) => row.endTime)
       .find(
         (message): message is string =>
-          typeof message === "string" &&
-          message.indexOf("fixed window must be at least") !== -1,
+          typeof message === "string" && message.indexOf("fixed window must be at least") !== -1,
       ) ?? null;
 
   const isFormValid =
@@ -151,9 +150,7 @@ export const PatientFormModal = ({
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
               {formErrors.firstName && (
-                <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                  {formErrors.firstName}
-                </p>
+                <p className="m-0 text-xs text-red-600 dark:text-red-400">{formErrors.firstName}</p>
               )}
             </div>
 
@@ -176,9 +173,7 @@ export const PatientFormModal = ({
                 className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
               />
               {formErrors.lastName && (
-                <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                  {formErrors.lastName}
-                </p>
+                <p className="m-0 text-xs text-red-600 dark:text-red-400">{formErrors.lastName}</p>
               )}
             </div>
           </div>
@@ -303,13 +298,12 @@ export const PatientFormModal = ({
                       }
                       className="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
                     />
-                    {formErrors.visitWindowRows?.[index]?.endTime && (
+                    {formErrors.visitWindowRows?.[index]?.endTime &&
                       formErrors.visitWindowRows[index].endTime !== fixedWindowDurationError && (
                         <p className="m-0 text-xs text-red-600 dark:text-red-400">
                           {formErrors.visitWindowRows[index].endTime}
                         </p>
-                      )
-                    )}
+                      )}
                   </div>
 
                   <div className="flex items-end pb-1">
@@ -319,7 +313,17 @@ export const PatientFormModal = ({
                       aria-label="Remove window"
                       className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-red-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-500 dark:hover:bg-red-950/30 dark:hover:text-red-300"
                     >
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-4 w-4">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className="h-4 w-4"
+                      >
                         <polyline points="3 6 5 6 21 6" />
                         <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                         <path d="M10 11v6" />
@@ -333,7 +337,8 @@ export const PatientFormModal = ({
 
               {formValues.visitWindows.length === 0 && (
                 <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
-                  No preferred window set. This patient will be treated as flexible, and timing can be picked during route planning.
+                  No preferred window set. This patient will be treated as flexible, and timing can
+                  be picked during route planning.
                 </p>
               )}
 
@@ -346,9 +351,7 @@ export const PatientFormModal = ({
           </div>
 
           {fixedWindowDurationError && (
-            <p className="m-0 text-xs text-red-600 dark:text-red-400">
-              {fixedWindowDurationError}
-            </p>
+            <p className="m-0 text-xs text-red-600 dark:text-red-400">{fixedWindowDurationError}</p>
           )}
 
           <div className="sticky bottom-0 z-10 -mx-5 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0 sm:flex-row sm:justify-end">

@@ -80,8 +80,7 @@ const formatDateInTimeZone = (date: Date, timezone: string) => {
   return `${year}-${month}-${day}`;
 };
 
-const buildVisitId = (patientId: string, index: number) =>
-  `visit-${index + 1}-${patientId}`;
+const buildVisitId = (patientId: string, index: number) => `visit-${index + 1}-${patientId}`;
 
 export type OptimizeRouteDestinationInput = {
   patientId: string;
@@ -151,10 +150,7 @@ export const persistPlanningWindows = async (
   const patients = parseListPatientsResponse(patientsPayload).patients;
   const patientsById = new Map(patients.map((patient) => [patient.id, patient]));
 
-  const compareVisitWindows = (
-    left: PatientVisitWindowInput,
-    right: PatientVisitWindowInput,
-  ) => {
+  const compareVisitWindows = (left: PatientVisitWindowInput, right: PatientVisitWindowInput) => {
     const startDelta = left.startTime.localeCompare(right.startTime);
     if (startDelta !== 0) {
       return startDelta;
@@ -232,8 +228,7 @@ export const requestOptimizedRoute = async ({
 }: OptimizeRouteRequestInput): Promise<OptimizeRouteResponse> => {
   const resolvedTimezone = resolveTimezone(timezone);
   const now = new Date();
-  const resolvedPlanningDate =
-    planningDate ?? formatDateInTimeZone(now, resolvedTimezone);
+  const resolvedPlanningDate = planningDate ?? formatDateInTimeZone(now, resolvedTimezone);
 
   const visits = destinations.map((destination, index) => {
     const windowStart = normalizeWindowTime(destination.windowStart);
@@ -255,9 +250,7 @@ export const requestOptimizedRoute = async ({
         windowEnd,
         serviceDurationMinutes: destination.serviceDurationMinutes,
       }),
-      ...(destination.priority !== undefined
-        ? { priority: destination.priority }
-        : {}),
+      ...(destination.priority !== undefined ? { priority: destination.priority } : {}),
     };
   });
 
@@ -275,15 +268,11 @@ export const requestOptimizedRoute = async ({
         timezone: resolvedTimezone,
         start: {
           address: startAddress,
-          ...(startGooglePlaceId !== undefined
-            ? { googlePlaceId: startGooglePlaceId }
-            : {}),
+          ...(startGooglePlaceId !== undefined ? { googlePlaceId: startGooglePlaceId } : {}),
         },
         end: {
           address: endAddress,
-          ...(endGooglePlaceId !== undefined
-            ? { googlePlaceId: endGooglePlaceId }
-            : {}),
+          ...(endGooglePlaceId !== undefined ? { googlePlaceId: endGooglePlaceId } : {}),
         },
         visits,
         ...(preserveOrder === true ? { preserveOrder: true } : {}),

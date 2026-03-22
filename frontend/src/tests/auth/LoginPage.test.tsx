@@ -16,8 +16,7 @@ vi.mock("../../components/auth/authService", () => ({
 }));
 
 describe("LoginPage", () => {
-  const getPasswordInputs = () =>
-    screen.getAllByLabelText(/password/i) as HTMLInputElement[];
+  const getPasswordInputs = () => screen.getAllByLabelText(/password/i) as HTMLInputElement[];
 
   beforeEach(() => {
     loginMock.mockReset();

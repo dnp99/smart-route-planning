@@ -14,16 +14,16 @@ const FALLBACK_FLEXIBLE_START_TIME = "00:00";
 const FALLBACK_FLEXIBLE_END_TIME = "23:59";
 const FALLBACK_FLEXIBLE_VISIT_TYPE = "flexible";
 
-const runInTransaction = async <T>(
-  operation: (db: ReturnType<typeof getDb>) => Promise<T>,
-) => {
+const runInTransaction = async <T>(operation: (db: ReturnType<typeof getDb>) => Promise<T>) => {
   const db = getDb();
   const transactionalDb = db as unknown as {
     transaction?: (fn: (tx: unknown) => Promise<T>) => Promise<T>;
   };
 
   if (typeof transactionalDb.transaction === "function") {
-    return transactionalDb.transaction((transaction) => operation(transaction as ReturnType<typeof getDb>));
+    return transactionalDb.transaction((transaction) =>
+      operation(transaction as ReturnType<typeof getDb>),
+    );
   }
 
   return operation(db);
@@ -175,12 +175,11 @@ export const listPatientsByNurse = async (nurseId: string, query?: string) => {
 
 export const createPatientForNurse = async (nurseId: string, payload: CreatePatientRequest) => {
   return runInTransaction(async (transaction) => {
-    const primaryWindow =
-      payload.visitWindows[0] ?? {
-        startTime: FALLBACK_FLEXIBLE_START_TIME,
-        endTime: FALLBACK_FLEXIBLE_END_TIME,
-        visitTimeType: FALLBACK_FLEXIBLE_VISIT_TYPE,
-      };
+    const primaryWindow = payload.visitWindows[0] ?? {
+      startTime: FALLBACK_FLEXIBLE_START_TIME,
+      endTime: FALLBACK_FLEXIBLE_END_TIME,
+      visitTimeType: FALLBACK_FLEXIBLE_VISIT_TYPE,
+    };
 
     const [patient] = await transaction
       .insert(patients)
@@ -255,11 +254,11 @@ export const updatePatientForNurse = async (
     const nextVisitWindows = payload.visitWindows;
     const hasVisitWindowsUpdate = nextVisitWindows !== undefined;
     const primaryWindow = hasVisitWindowsUpdate
-      ? nextVisitWindows[0] ?? {
+      ? (nextVisitWindows[0] ?? {
           startTime: FALLBACK_FLEXIBLE_START_TIME,
           endTime: FALLBACK_FLEXIBLE_END_TIME,
           visitTimeType: FALLBACK_FLEXIBLE_VISIT_TYPE,
-        }
+        })
       : undefined;
 
     const [updatedPatient] = await transaction

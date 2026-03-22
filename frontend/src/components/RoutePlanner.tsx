@@ -36,17 +36,11 @@ type RoutePlannerProps = {
   onOpenAccountSettings?: () => void;
 };
 
-function RoutePlanner({
-  nurseHomeAddress = null,
-  onOpenAccountSettings,
-}: RoutePlannerProps) {
+function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RoutePlannerProps) {
   const initialDraft = useMemo(() => readRoutePlannerDraft(), []);
   const normalizedHomeAddress = nurseHomeAddress?.trim() ?? "";
   const [isMobileViewport, setIsMobileViewport] = useState(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof window.matchMedia !== "function"
-    ) {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return false;
     }
 
@@ -57,9 +51,7 @@ function RoutePlanner({
   );
   const [startAddress, setStartAddress] = useState(
     initialDraft?.startAddress ??
-      (normalizedHomeAddress.length > 0
-        ? normalizedHomeAddress
-        : DEFAULT_START_ADDRESS),
+      (normalizedHomeAddress.length > 0 ? normalizedHomeAddress : DEFAULT_START_ADDRESS),
   );
   const [manualEndAddress, setManualEndAddress] = useState(
     initialDraft?.manualEndAddress ?? normalizedHomeAddress,
@@ -67,30 +59,28 @@ function RoutePlanner({
   const [startGooglePlaceId, setStartGooglePlaceId] = useState<string | null>(
     initialDraft?.startGooglePlaceId ?? null,
   );
-  const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<
-    string | null
-  >(initialDraft?.manualEndGooglePlaceId ?? null);
+  const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<string | null>(
+    initialDraft?.manualEndGooglePlaceId ?? null,
+  );
 
   const [startTouched, setStartTouched] = useState(false);
   const [endTouched, setEndTouched] = useState(false);
 
   const [destinationSearchQuery, setDestinationSearchQuery] = useState("");
   const [localValidationError, setLocalValidationError] = useState("");
-  const [selectedDestinations, setSelectedDestinations] = useState<
-    SelectedPatientDestination[]
-  >(initialDraft?.selectedDestinations ?? []);
-  const [expandedDestinationVisitKeys, setExpandedDestinationVisitKeys] =
-    useState<Record<string, boolean>>({});
-  const [expandedResultTaskIds, setExpandedResultTaskIds] = useState<
+  const [selectedDestinations, setSelectedDestinations] = useState<SelectedPatientDestination[]>(
+    initialDraft?.selectedDestinations ?? [],
+  );
+  const [expandedDestinationVisitKeys, setExpandedDestinationVisitKeys] = useState<
     Record<string, boolean>
   >({});
-  const [expandedResultEndingStopIds, setExpandedResultEndingStopIds] =
-    useState<Record<string, boolean>>({});
-  const [conflictWarningsDismissed, setConflictWarningsDismissed] =
-    useState(false);
-  const [latenessWarningsDismissed, setLatenessWarningsDismissed] =
-    useState(false);
-const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
+  const [expandedResultTaskIds, setExpandedResultTaskIds] = useState<Record<string, boolean>>({});
+  const [expandedResultEndingStopIds, setExpandedResultEndingStopIds] = useState<
+    Record<string, boolean>
+  >({});
+  const [conflictWarningsDismissed, setConflictWarningsDismissed] = useState(false);
+  const [latenessWarningsDismissed, setLatenessWarningsDismissed] = useState(false);
+  const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
     (initialDraft?.selectedDestinations?.length ?? 0) === 0,
   );
   const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
@@ -180,9 +170,7 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
         ),
     );
     return selectedDestinations.filter(
-      (d) =>
-        d.isIncluded &&
-        !scheduledKeys.has(`${d.patientId}:${d.windowStart}:${d.windowEnd}`),
+      (d) => d.isIncluded && !scheduledKeys.has(`${d.patientId}:${d.windowStart}:${d.windowEnd}`),
     ).length;
   }, [isManualOrderStale, result, manuallyOrderedStops, selectedDestinations]);
 
@@ -194,10 +182,7 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
   }, [result]);
 
   useEffect(() => {
-    if (
-      typeof window === "undefined" ||
-      typeof window.matchMedia !== "function"
-    ) {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return;
     }
 
@@ -237,10 +222,7 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
       return;
     }
 
-    if (
-      startAddress.trim().length === 0 ||
-      startAddress === DEFAULT_START_ADDRESS
-    ) {
+    if (startAddress.trim().length === 0 || startAddress === DEFAULT_START_ADDRESS) {
       setStartAddress(normalizedHomeAddress);
       setStartGooglePlaceId(null);
     }
@@ -267,10 +249,7 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
         next[destination.visitKey] = existing;
       });
 
-      if (
-        !changed &&
-        Object.keys(current).length !== selectedDestinations.length
-      ) {
+      if (!changed && Object.keys(current).length !== selectedDestinations.length) {
         changed = true;
       }
 
@@ -303,8 +282,7 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
   ]);
 
   const selectedDestinationIdSet = useMemo(
-    () =>
-      new Set(selectedDestinations.map((destination) => destination.patientId)),
+    () => new Set(selectedDestinations.map((destination) => destination.patientId)),
     [selectedDestinations],
   );
 
@@ -334,8 +312,7 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
   const resolvedEndAddress = manualEndAddress;
   const resolvedEndGooglePlaceId = manualEndGooglePlaceId;
 
-  const canOptimize =
-    startAddress.trim().length > 0 && resolvedEndAddress.trim().length > 0;
+  const canOptimize = startAddress.trim().length > 0 && resolvedEndAddress.trim().length > 0;
 
   const hasValidTripAddresses = canOptimize;
 
@@ -426,10 +403,7 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
     );
   };
 
-  const setDestinationVisitIncluded = (
-    visitKey: string,
-    isIncluded: boolean,
-  ) => {
+  const setDestinationVisitIncluded = (visitKey: string, isIncluded: boolean) => {
     setSelectedDestinations((current) =>
       current.map((destination) =>
         destination.visitKey === visitKey
@@ -469,17 +443,14 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
     }
 
     const optimizeDestinations = buildOptimizeDestinations(requestDestinations);
-    const planningWindowsToPersist =
-      buildPlanningWindowsToPersist(requestDestinations);
+    const planningWindowsToPersist = buildPlanningWindowsToPersist(requestDestinations);
 
     if (planningWindowsToPersist.length > 0) {
       try {
         await persistPlanningWindows(planningWindowsToPersist);
       } catch (error) {
         setLocalValidationError(
-          error instanceof Error
-            ? error.message
-            : "Unable to save planning windows.",
+          error instanceof Error ? error.message : "Unable to save planning windows.",
         );
         return;
       }
@@ -491,9 +462,7 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
       startAddress,
       ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
       endAddress: resolvedEndAddress,
-      ...(resolvedEndGooglePlaceId
-        ? { endGooglePlaceId: resolvedEndGooglePlaceId }
-        : {}),
+      ...(resolvedEndGooglePlaceId ? { endGooglePlaceId: resolvedEndGooglePlaceId } : {}),
       destinations: optimizeDestinations,
       canOptimize,
     });
@@ -531,15 +500,11 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
     // (absent from the manual-ordered stop list) so the backend can attempt
     // to fit them in the new order.
     const scheduledKeys = new Set(
-      destinationsInManualOrder.map(
-        (d) => `${d.patientId}:${d.windowStart}:${d.windowEnd}`,
-      ),
+      destinationsInManualOrder.map((d) => `${d.patientId}:${d.windowStart}:${d.windowEnd}`),
     );
     const unscheduledDestinations = selectedDestinations
       .filter(
-        (d) =>
-          d.isIncluded &&
-          !scheduledKeys.has(`${d.patientId}:${d.windowStart}:${d.windowEnd}`),
+        (d) => d.isIncluded && !scheduledKeys.has(`${d.patientId}:${d.windowStart}:${d.windowEnd}`),
       )
       .map((d) => ({
         patientId: d.patientId,
@@ -556,9 +521,7 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
       startAddress,
       ...(startGooglePlaceId ? { startGooglePlaceId } : {}),
       endAddress: resolvedEndAddress,
-      ...(resolvedEndGooglePlaceId
-        ? { endGooglePlaceId: resolvedEndGooglePlaceId }
-        : {}),
+      ...(resolvedEndGooglePlaceId ? { endGooglePlaceId: resolvedEndGooglePlaceId } : {}),
       destinations: [...destinationsInManualOrder, ...unscheduledDestinations],
       canOptimize,
       planningDate,
@@ -567,9 +530,7 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
   };
 
   const removeDestinationVisit = (visitKey: string) => {
-    setSelectedDestinations((current) =>
-      current.filter((entry) => entry.visitKey !== visitKey),
-    );
+    setSelectedDestinations((current) => current.filter((entry) => entry.visitKey !== visitKey));
     setExpandedDestinationVisitKeys((current) => {
       if (current[visitKey] === undefined) {
         return current;
@@ -592,10 +553,8 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
     (destination) => destination.isIncluded,
   ).length;
   const isTripStepVisible = !isMobileViewport || activeMobileStep === "trip";
-  const isPatientsStepVisible =
-    !isMobileViewport || activeMobileStep === "patients";
-  const isReviewStepVisible =
-    !isMobileViewport || activeMobileStep === "review";
+  const isPatientsStepVisible = !isMobileViewport || activeMobileStep === "patients";
+  const isReviewStepVisible = !isMobileViewport || activeMobileStep === "review";
 
   return (
     <main className={responsiveStyles.page}>
@@ -605,9 +564,9 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
             <h1 className={responsiveStyles.pageTitle}>Smart Route Planner</h1>
           </div>
           <p className={responsiveStyles.cardDescription}>
-            Enter your starting point, ending point, and destination addresses.
-            The planner prioritizes time-window feasibility first, then distance,
-            with the ending point as the final stop.
+            Enter your starting point, ending point, and destination addresses. The planner
+            prioritizes time-window feasibility first, then distance, with the ending point as the
+            final stop.
           </p>
         </div>
 
@@ -616,7 +575,12 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
             <nav aria-label="Route planner steps" className={responsiveStyles.mobileStepNav}>
               {[
                 { key: "trip", label: "Trip", stepNumber: 1, isComplete: hasValidTripAddresses },
-                { key: "patients", label: "Patients", stepNumber: 2, isComplete: selectedDestinations.length > 0 },
+                {
+                  key: "patients",
+                  label: "Patients",
+                  stepNumber: 2,
+                  isComplete: selectedDestinations.length > 0,
+                },
                 { key: "review", label: "Review", stepNumber: 3, isComplete: false },
               ].map((step) => {
                 const isActive = activeMobileStep === step.key;
@@ -630,7 +594,18 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
                   >
                     <span className="flex items-center justify-center gap-1">
                       {step.isComplete && !isActive ? (
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={responsiveStyles.stepCheckIcon}>
+                        <svg
+                          width="11"
+                          height="11"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden="true"
+                          className={responsiveStyles.stepCheckIcon}
+                        >
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
                       ) : (
@@ -718,9 +693,13 @@ const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
             latenessWarningsDismissed={latenessWarningsDismissed}
             onDismissLatenessWarnings={() => setLatenessWarningsDismissed(true)}
             expandedResultTaskIds={expandedResultTaskIds}
-            onToggleResultTask={(taskId) => setExpandedResultTaskIds((c) => ({ ...c, [taskId]: !c[taskId] }))}
+            onToggleResultTask={(taskId) =>
+              setExpandedResultTaskIds((c) => ({ ...c, [taskId]: !c[taskId] }))
+            }
             expandedResultEndingStopIds={expandedResultEndingStopIds}
-            onToggleResultEndingStop={(stopId) => setExpandedResultEndingStopIds((c) => ({ ...c, [stopId]: !c[stopId] }))}
+            onToggleResultEndingStop={(stopId) =>
+              setExpandedResultEndingStopIds((c) => ({ ...c, [stopId]: !c[stopId] }))
+            }
             normalizedHomeAddress={normalizedHomeAddress}
           />
         </form>

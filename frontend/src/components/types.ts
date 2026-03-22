@@ -23,9 +23,6 @@ export type UnscheduledTask = SharedUnscheduledTask & {
   windowType?: SharedWindowType;
 };
 
-export type OptimizeRouteResponse = Omit<
-  SharedOptimizeRouteResponse,
-  "unscheduledTasks"
-> & {
+export type OptimizeRouteResponse = Omit<SharedOptimizeRouteResponse, "unscheduledTasks"> & {
   unscheduledTasks: UnscheduledTask[];
 };

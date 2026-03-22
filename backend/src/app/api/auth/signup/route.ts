@@ -1,8 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  isSignupRequest,
-  type AuthUser,
-} from "../../../../../../shared/contracts";
+import { isSignupRequest, type AuthUser } from "../../../../../../shared/contracts";
 import { signAccessToken } from "../../../../lib/auth/jwt";
 import { hashPassword } from "../../../../lib/auth/password";
 import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
@@ -144,10 +141,7 @@ export const POST = async (request: Request) => {
     );
   } catch (error) {
     if (error instanceof NurseEmailConflictError) {
-      return NextResponse.json(
-        { error: error.message },
-        { status: 409, headers: corsHeaders },
-      );
+      return NextResponse.json({ error: error.message }, { status: 409, headers: corsHeaders });
     }
 
     return toErrorResponse(error, "Failed to sign up.", corsHeaders);

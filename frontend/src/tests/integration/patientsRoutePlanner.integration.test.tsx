@@ -113,9 +113,7 @@ const updatePatientMock = vi.fn<
   const updatedAt = new Date().toISOString();
   const nextVisitWindows = request.visitWindows
     ? request.visitWindows.map((window, index) => ({
-        id:
-          existingPatient.visitWindows[index]?.id ??
-          `${existingPatient.id}-window-${index + 1}`,
+        id: existingPatient.visitWindows[index]?.id ?? `${existingPatient.id}-window-${index + 1}`,
         startTime: `${window.startTime}:00`,
         endTime: `${window.endTime}:00`,
         visitTimeType: window.visitTimeType,
@@ -234,12 +232,9 @@ const requestOptimizedRouteMock = vi.fn(
 
 vi.mock("../../components/patients/patientService", () => ({
   listPatients: (query: string) => listPatientsMock(query),
-  createPatient: (request: Parameters<typeof createPatientMock>[0]) =>
-    createPatientMock(request),
-  updatePatient: (
-    patientId: string,
-    request: Parameters<typeof updatePatientMock>[1],
-  ) => updatePatientMock(patientId, request),
+  createPatient: (request: Parameters<typeof createPatientMock>[0]) => createPatientMock(request),
+  updatePatient: (patientId: string, request: Parameters<typeof updatePatientMock>[1]) =>
+    updatePatientMock(patientId, request),
   deletePatient: (patientId: string) => deletePatientMock(patientId),
 }));
 
@@ -325,7 +320,6 @@ describe("patients and route planner integration", () => {
   });
 
   it("supports create -> search -> edit -> delete lifecycle on /patients", async () => {
-
     render(
       <MemoryRouter initialEntries={["/patients"]}>
         <App />
@@ -413,9 +407,12 @@ describe("patients and route planner integration", () => {
       target: { value: "john" },
     });
 
-    await waitFor(() => {
-      expect(screen.getByRole("button", { name: /John Smith/i })).toBeTruthy();
-    }, { timeout: 1500 });
+    await waitFor(
+      () => {
+        expect(screen.getByRole("button", { name: /John Smith/i })).toBeTruthy();
+      },
+      { timeout: 1500 },
+    );
 
     fireEvent.click(screen.getByRole("button", { name: /John Smith/i }));
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));

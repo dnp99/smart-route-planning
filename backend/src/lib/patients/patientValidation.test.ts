@@ -40,7 +40,9 @@ describe("patientValidation", () => {
 
   it("throws 400 when create payload is not an object", () => {
     expect(() => validateCreatePatientPayload("bad")).toThrowError(HttpError);
-    expect(() => validateCreatePatientPayload("bad")).toThrow("Request body must be a JSON object.");
+    expect(() => validateCreatePatientPayload("bad")).toThrow(
+      "Request body must be a JSON object.",
+    );
   });
 
   it("allows empty visitWindows for flexible scheduling", () => {
@@ -176,7 +178,9 @@ describe("patientValidation", () => {
   });
 
   it("throws required-field errors for empty update strings", () => {
-    expect(() => validateUpdatePatientPayload({ lastName: "   " })).toThrow("lastName is required.");
+    expect(() => validateUpdatePatientPayload({ lastName: "   " })).toThrow(
+      "lastName is required.",
+    );
     expect(() => validateUpdatePatientPayload({ address: "   " })).toThrow("address is required.");
   });
 
@@ -191,9 +195,7 @@ describe("patientValidation", () => {
           },
         ],
       }),
-    ).toThrow(
-      "visitWindows[0].endTime must use HH:MM 24-hour format.",
-    );
+    ).toThrow("visitWindows[0].endTime must use HH:MM 24-hour format.");
   });
 
   it("validates visitTimeType when provided in update", () => {
@@ -207,9 +209,7 @@ describe("patientValidation", () => {
           },
         ],
       }),
-    ).toThrow(
-      "visitWindows[0].visitTimeType must be one of: fixed, flexible.",
-    );
+    ).toThrow("visitWindows[0].visitTimeType must be one of: fixed, flexible.");
   });
 
   it("rejects non-array visitWindows payloads", () => {

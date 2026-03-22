@@ -1,8 +1,4 @@
-import type {
-  CreatePatientRequest,
-  Patient,
-  VisitTimeType,
-} from "../../../../shared/contracts";
+import type { CreatePatientRequest, Patient, VisitTimeType } from "../../../../shared/contracts";
 import { formatPatientNameFromParts } from "./patientName";
 
 export type PatientFormVisitWindow = {
@@ -120,26 +116,25 @@ export const toFormValues = (patient: Patient): PatientFormValues => ({
         }))
       : patient.visitTimeType === "flexible"
         ? []
-      : [
-          {
-            id: createWindowId(),
-            startTime: toTimeInput(patient.preferredVisitStartTime),
-            endTime: toTimeInput(patient.preferredVisitEndTime),
-            visitTimeType: patient.visitTimeType,
-          },
-        ],
+        : [
+            {
+              id: createWindowId(),
+              startTime: toTimeInput(patient.preferredVisitStartTime),
+              endTime: toTimeInput(patient.preferredVisitEndTime),
+              visitTimeType: patient.visitTimeType,
+            },
+          ],
 });
 
 export const formatTimeWindow = (patient: Patient) =>
   (getPatientVisitWindows(patient).length > 0
-    ? getPatientVisitWindows(patient).map(
-        (window) => formatWindowRange(window.startTime, window.endTime),
+    ? getPatientVisitWindows(patient).map((window) =>
+        formatWindowRange(window.startTime, window.endTime),
       )
     : patient.visitTimeType === "flexible"
       ? ["Not set"]
-      : [formatWindowRange(patient.preferredVisitStartTime, patient.preferredVisitEndTime)]).join(
-    ", ",
-  );
+      : [formatWindowRange(patient.preferredVisitStartTime, patient.preferredVisitEndTime)]
+  ).join(", ");
 
 export const getPatientDisplayName = (patient: Patient) =>
   formatPatientNameFromParts(patient.firstName, patient.lastName);
@@ -223,9 +218,9 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
       endMinutes - startMinutes < values.visitDurationMinutes
     ) {
       const minuteLabel = values.visitDurationMinutes === 1 ? "minute" : "minutes";
-      visitWindowRows[index].endTime = `${patientValidationName} fixed window must be at least ${values.visitDurationMinutes} ${minuteLabel} long as per patient's profile.`;
+      visitWindowRows[index].endTime =
+        `${patientValidationName} fixed window must be at least ${values.visitDurationMinutes} ${minuteLabel} long as per patient's profile.`;
     }
-
   });
 
   if (visitWindowRows.some((entry) => Object.keys(entry).length > 0)) {

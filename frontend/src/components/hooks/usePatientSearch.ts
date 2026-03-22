@@ -9,10 +9,7 @@ type UsePatientSearchOptions = {
 
 const SEARCH_DEBOUNCE_MS = 300;
 
-export const usePatientSearch = ({
-  query,
-  enabled,
-}: UsePatientSearchOptions) => {
+export const usePatientSearch = ({ query, enabled }: UsePatientSearchOptions) => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -38,11 +35,7 @@ export const usePatientSearch = ({
       } catch (searchError) {
         if (isSubscribed) {
           setPatients([]);
-          setError(
-            searchError instanceof Error
-              ? searchError.message
-              : "Unable to load patients.",
-          );
+          setError(searchError instanceof Error ? searchError.message : "Unable to load patients.");
         }
       } finally {
         if (isSubscribed) {

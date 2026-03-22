@@ -1,8 +1,5 @@
 import { HttpError } from "../../../lib/http";
-import {
-  isAddressSuggestion,
-  type AddressSuggestion,
-} from "../../../../../shared/contracts";
+import { isAddressSuggestion, type AddressSuggestion } from "../../../../../shared/contracts";
 import { AUTOCOMPLETE_TIMEOUT_MS, MAX_SUGGESTIONS } from "./constants";
 
 type PlacesAutocompletePayload = {
@@ -70,7 +67,10 @@ export const fetchAutocompleteSuggestions = async (
     }
 
     if (response.status === 429) {
-      throw new HttpError(503, "Address suggestion service is rate-limited. Please try again shortly.");
+      throw new HttpError(
+        503,
+        "Address suggestion service is rate-limited. Please try again shortly.",
+      );
     }
 
     throw new HttpError(503, "Address suggestion service returned an unexpected error.");

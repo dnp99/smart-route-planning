@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { divIcon } from 'leaflet';
-import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from 'react-leaflet';
-import { responsiveStyles } from './responsiveStyles';
-import { emitRouteMapUnavailable } from './routePlanner/routePlannerTelemetry';
-import type { GeocodedStop, OrderedStop, RouteLeg } from './types';
+import { useEffect, useMemo, useRef, useState } from "react";
+import { divIcon } from "leaflet";
+import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
+import { responsiveStyles } from "./responsiveStyles";
+import { emitRouteMapUnavailable } from "./routePlanner/routePlannerTelemetry";
+import type { GeocodedStop, OrderedStop, RouteLeg } from "./types";
 
 type RouteMapProps = {
   start: GeocodedStop;
@@ -19,7 +19,7 @@ export type RoutePoint = {
   markerLat: number;
   markerLon: number;
   markerText: string;
-  markerVariant: 'start' | 'stop' | 'end';
+  markerVariant: "start" | "stop" | "end";
   isEndingPoint?: boolean;
 };
 
@@ -28,7 +28,7 @@ type FitToRouteProps = {
 };
 
 function isFiniteNumber(value: unknown): value is number {
-  return typeof value === 'number' && isFinite(value);
+  return typeof value === "number" && isFinite(value);
 }
 
 function decodePolyline(encoded: string): Array<[number, number]> {
@@ -73,18 +73,16 @@ export function toPatientInitials(name: string): string {
   const words = name
     .trim()
     .split(/\s+/)
-    .map((word) => word.replace(/[^a-zA-Z0-9]/g, ''))
+    .map((word) => word.replace(/[^a-zA-Z0-9]/g, ""))
     .filter((word) => word.length > 0);
 
   if (words.length === 0) {
-    return '?';
+    return "?";
   }
 
   const firstInitial = words[0].charAt(0).toUpperCase();
   const secondInitial =
-    words.length > 1
-      ? words[1].charAt(0).toUpperCase()
-      : words[0].charAt(1).toUpperCase();
+    words.length > 1 ? words[1].charAt(0).toUpperCase() : words[0].charAt(1).toUpperCase();
 
   if (secondInitial.length === 0) {
     return firstInitial;
@@ -99,12 +97,7 @@ const MAX_VISIBLE_MARKER_INITIALS = 2;
 const OVERLAP_CLUSTER_METERS = 25;
 const OVERLAP_RADIUS_METERS = 18;
 
-function distanceMeters(
-  latA: number,
-  lonA: number,
-  latB: number,
-  lonB: number,
-): number {
+function distanceMeters(latA: number, lonA: number, latB: number, lonB: number): number {
   const metersPerDegreeLat = 111_320;
   const latMidRadians = ((latA + latB) * Math.PI) / 360;
   const metersPerDegreeLon = metersPerDegreeLat * Math.cos(latMidRadians);
@@ -114,18 +107,18 @@ function distanceMeters(
   return Math.sqrt(deltaLatMeters * deltaLatMeters + deltaLonMeters * deltaLonMeters);
 }
 
-export function buildStopMarkerText(tasks: OrderedStop['tasks']): string {
+export function buildStopMarkerText(tasks: OrderedStop["tasks"]): string {
   if (tasks.length === 0) {
-    return '';
+    return "";
   }
 
   const initials = tasks.map((task) => toPatientInitials(task.patientName));
   if (initials.length <= MAX_VISIBLE_MARKER_INITIALS) {
-    return initials.join('+');
+    return initials.join("+");
   }
 
   const remainingCount = initials.length - MAX_VISIBLE_MARKER_INITIALS;
-  return `${initials.slice(0, MAX_VISIBLE_MARKER_INITIALS).join('+')}+${remainingCount}`;
+  return `${initials.slice(0, MAX_VISIBLE_MARKER_INITIALS).join("+")}+${remainingCount}`;
 }
 
 export function computeMarkerIconMetrics(markerText: string): {
@@ -156,9 +149,10 @@ export function offsetOverlappingMarkers(points: RoutePoint[]): RoutePoint[] {
   }> = [];
 
   points.forEach((point) => {
-    const cluster = clusters.find((candidate) =>
-      distanceMeters(point.lat, point.lon, candidate.centerLat, candidate.centerLon) <=
-      OVERLAP_CLUSTER_METERS,
+    const cluster = clusters.find(
+      (candidate) =>
+        distanceMeters(point.lat, point.lon, candidate.centerLat, candidate.centerLon) <=
+        OVERLAP_CLUSTER_METERS,
     );
 
     if (!cluster) {
@@ -229,18 +223,17 @@ type RouteMapCanvasProps = {
   className: string;
 };
 
-const markerVariantClasses: Record<RoutePoint['markerVariant'], string> = {
-  start:
-    'border-emerald-200 bg-emerald-500 text-white shadow-emerald-900/30',
-  stop: 'border-blue-200 bg-blue-600 text-white shadow-blue-900/30',
-  end: 'border-rose-200 bg-rose-500 text-white shadow-rose-900/30',
+const markerVariantClasses: Record<RoutePoint["markerVariant"], string> = {
+  start: "border-emerald-200 bg-emerald-500 text-white shadow-emerald-900/30",
+  stop: "border-blue-200 bg-blue-600 text-white shadow-blue-900/30",
+  end: "border-rose-200 bg-rose-500 text-white shadow-rose-900/30",
 };
 
 const createRouteMarkerIcon = (point: RoutePoint) => {
   const metrics = computeMarkerIconMetrics(point.markerText);
 
   return divIcon({
-    className: 'bg-transparent border-0',
+    className: "bg-transparent border-0",
     html: `
       <div class="flex h-8 min-w-8 items-center justify-center rounded-full border-2 px-2 text-[11px] font-bold shadow-lg ${markerVariantClasses[point.markerVariant]}">
         ${point.markerText}
@@ -259,12 +252,7 @@ function RouteMapCanvas({
   className,
 }: RouteMapCanvasProps) {
   return (
-    <MapContainer
-      center={defaultCenter}
-      zoom={12}
-      className={className}
-      scrollWheelZoom
-    >
+    <MapContainer center={defaultCenter} zoom={12} className={className} scrollWheelZoom>
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -272,18 +260,8 @@ function RouteMapCanvas({
 
       <FitToRoute points={polylinePoints} />
 
-      <Polyline
-        positions={polylinePoints}
-        color="#0f172a"
-        weight={8}
-        opacity={0.18}
-      />
-      <Polyline
-        positions={polylinePoints}
-        color="#2563eb"
-        weight={5}
-        opacity={0.95}
-      />
+      <Polyline positions={polylinePoints} color="#0f172a" weight={8} opacity={0.18} />
+      <Polyline positions={polylinePoints} color="#2563eb" weight={5} opacity={0.95} />
 
       {routePoints.map((point, index) => (
         <Marker
@@ -311,14 +289,14 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
 
     if (isFiniteNumber(start?.coords?.lat) && isFiniteNumber(start?.coords?.lon)) {
       points.push({
-        label: 'Start',
+        label: "Start",
         address: start.address,
         lat: start.coords.lat,
         lon: start.coords.lon,
         markerLat: start.coords.lat,
         markerLon: start.coords.lon,
-        markerText: 'S',
-        markerVariant: 'start',
+        markerText: "S",
+        markerVariant: "start",
       });
     }
 
@@ -328,12 +306,12 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
 
         points.push({
           label: isEndingPoint
-            ? 'End'
+            ? "End"
             : stop.tasks.length > 0
               ? stop.tasks
                   .map((task) => task.patientName)
                   .filter((name, taskIndex, names) => names.indexOf(name) === taskIndex)
-                  .join(', ')
+                  .join(", ")
               : `Stop ${index + 1}`,
           address: stop.address,
           lat: stop.coords.lat,
@@ -341,11 +319,11 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
           markerLat: stop.coords.lat,
           markerLon: stop.coords.lon,
           markerText: isEndingPoint
-            ? 'E'
+            ? "E"
             : stop.tasks.length > 0
               ? buildStopMarkerText(stop.tasks)
               : String(index + 1),
-          markerVariant: isEndingPoint ? 'end' : 'stop',
+          markerVariant: isEndingPoint ? "end" : "stop",
           isEndingPoint,
         });
       }
@@ -376,8 +354,7 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
     return routePoints.map((point) => [point.lat, point.lon]);
   }, [routeLegs, routePoints]);
 
-  const hasStartCoords =
-    isFiniteNumber(start?.coords?.lat) && isFiniteNumber(start?.coords?.lon);
+  const hasStartCoords = isFiniteNumber(start?.coords?.lat) && isFiniteNumber(start?.coords?.lon);
   const hasStopCoords = orderedStops.some(
     (stop) => isFiniteNumber(stop?.coords?.lat) && isFiniteNumber(stop?.coords?.lon),
   );
@@ -422,15 +399,15 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
+      if (event.key === "Escape") {
         setIsExpanded(false);
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isExpanded]);
 
@@ -459,9 +436,7 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
           <div className="mx-auto flex h-full w-full max-w-6xl flex-col gap-3 rounded-2xl border border-slate-700 bg-slate-900 p-3 shadow-2xl sm:p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
-                <h3 className="m-0 text-base font-semibold text-slate-100">
-                  Full-size Route Map
-                </h3>
+                <h3 className="m-0 text-base font-semibold text-slate-100">Full-size Route Map</h3>
                 <p className="m-0 text-sm text-slate-400">
                   Press Escape or use close to return to the route summary.
                 </p>

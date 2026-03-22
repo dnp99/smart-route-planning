@@ -71,7 +71,9 @@ describe("/api/patients/[id] route", () => {
   });
 
   it("returns 401 when authorization is missing or invalid", async () => {
-    requireAuthMock.mockRejectedValue(new HttpError(401, "Missing or invalid authorization token."));
+    requireAuthMock.mockRejectedValue(
+      new HttpError(401, "Missing or invalid authorization token."),
+    );
 
     const response = await PATCH(
       new Request("http://localhost:3000/api/patients/p1", {

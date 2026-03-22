@@ -1,8 +1,5 @@
 import type { Patient } from "../../../../shared/contracts";
-import {
-  formatNameWords,
-  formatPatientNameFromParts,
-} from "../patients/patientName";
+import { formatNameWords, formatPatientNameFromParts } from "../patients/patientName";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 
 export const toWindowTime = (value: string) => value.slice(0, 5);
@@ -10,23 +7,14 @@ export const toWindowTime = (value: string) => value.slice(0, 5);
 const HH_MM_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export const hasCompleteWindow = (destination: SelectedPatientDestination) =>
-  HH_MM_PATTERN.test(destination.windowStart) &&
-  HH_MM_PATTERN.test(destination.windowEnd);
+  HH_MM_PATTERN.test(destination.windowStart) && HH_MM_PATTERN.test(destination.windowEnd);
 
 export const hasAnyWindowBoundary = (destination: SelectedPatientDestination) =>
-  destination.windowStart.trim().length > 0 ||
-  destination.windowEnd.trim().length > 0;
+  destination.windowStart.trim().length > 0 || destination.windowEnd.trim().length > 0;
 
-export const toSelectedPatientDestinations = (
-  patient: Patient,
-): SelectedPatientDestination[] => {
-  const patientName = formatPatientNameFromParts(
-    patient.firstName,
-    patient.lastName,
-  );
-  const patientVisitWindows = Array.isArray(patient.visitWindows)
-    ? patient.visitWindows
-    : [];
+export const toSelectedPatientDestinations = (patient: Patient): SelectedPatientDestination[] => {
+  const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
+  const patientVisitWindows = Array.isArray(patient.visitWindows) ? patient.visitWindows : [];
   if (patientVisitWindows.length > 0) {
     return patientVisitWindows.map((window) => ({
       visitKey: `${patient.id}:${window.id}`,
@@ -84,9 +72,7 @@ export const toSelectedPatientDestinations = (
   ];
 };
 
-export const formatPatientListLabel = (
-  destinations: SelectedPatientDestination[],
-) => {
+export const formatPatientListLabel = (destinations: SelectedPatientDestination[]) => {
   const names = [
     ...new Set(
       destinations
@@ -116,10 +102,7 @@ export const patientMatchesSearchQuery = (patient: Patient, query: string) => {
     return true;
   }
 
-  const patientName = formatPatientNameFromParts(
-    patient.firstName,
-    patient.lastName,
-  ).toLowerCase();
+  const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName).toLowerCase();
   const firstName = patient.firstName.toLowerCase();
   const lastName = patient.lastName.toLowerCase();
   const address = patient.address.toLowerCase();

@@ -93,18 +93,12 @@ describe("http helpers", () => {
     expect(headers["X-Content-Type-Options"]).toBe("nosniff");
     expect(headers["X-Frame-Options"]).toBe("DENY");
     expect(headers["Referrer-Policy"]).toBe("no-referrer");
-    expect(headers["Permissions-Policy"]).toBe(
-      "camera=(), microphone=(), geolocation=()",
-    );
+    expect(headers["Permissions-Policy"]).toBe("camera=(), microphone=(), geolocation=()");
     expect(headers["Strict-Transport-Security"]).toContain("max-age=");
   });
 
   it("maps HttpError to JSON response with same status", async () => {
-    const response = toErrorResponse(
-      new HttpError(418, "Teapot."),
-      "Fallback",
-      { "x-test": "1" },
-    );
+    const response = toErrorResponse(new HttpError(418, "Teapot."), "Fallback", { "x-test": "1" });
 
     expect(response.status).toBe(418);
     expect(response.headers.get("x-test")).toBe("1");

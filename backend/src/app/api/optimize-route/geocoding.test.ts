@@ -74,12 +74,10 @@ describe("geocoding helpers", () => {
   });
 
   it("falls back to text geocoding when place lookup fails", async () => {
-    fetchMock
-      .mockResolvedValueOnce({ ok: false, status: 403 } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        json: async () => [{ lat: "43.7000", lon: "-79.4000" }],
-      } as Response);
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 403 } as Response).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ lat: "43.7000", lon: "-79.4000" }],
+    } as Response);
 
     const result = await geocodeTargetsSequentially(
       [{ address: "Address A", googlePlaceId: "place-123" }],
@@ -110,7 +108,10 @@ describe("geocoding helpers", () => {
         }),
       } as Response);
 
-    const result = await geocodeTargetsSequentially([{ address: "6625 snow goose lane" }], "google-key");
+    const result = await geocodeTargetsSequentially(
+      [{ address: "6625 snow goose lane" }],
+      "google-key",
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock).toHaveBeenNthCalledWith(
@@ -133,7 +134,9 @@ describe("geocoding helpers", () => {
         signal: expect.any(AbortSignal),
       },
     );
-    expect(result).toEqual([{ address: "6625 snow goose lane", coords: { lat: 43.5991, lon: -79.6482 } }]);
+    expect(result).toEqual([
+      { address: "6625 snow goose lane", coords: { lat: 43.5991, lon: -79.6482 } },
+    ]);
   });
 
   it("rethrows plain geocoding failure when Google API key is unavailable", async () => {
@@ -160,7 +163,9 @@ describe("geocoding helpers", () => {
       } as Response)
       .mockResolvedValueOnce({ ok: false, status: 401 } as Response);
 
-    await expect(geocodeTargetsSequentially([{ address: "Address A" }], "google-key")).rejects.toMatchObject({
+    await expect(
+      geocodeTargetsSequentially([{ address: "Address A" }], "google-key"),
+    ).rejects.toMatchObject({
       status: 500,
       message: "Google Places API key is invalid or not authorized.",
     });
@@ -177,7 +182,9 @@ describe("geocoding helpers", () => {
         json: async () => ({ places: [] }),
       } as Response);
 
-    await expect(geocodeTargetsSequentially([{ address: "Address A" }], "google-key")).rejects.toMatchObject({
+    await expect(
+      geocodeTargetsSequentially([{ address: "Address A" }], "google-key"),
+    ).rejects.toMatchObject({
       status: 400,
       message: "Could not geocode address: Address A",
     });
@@ -191,7 +198,9 @@ describe("geocoding helpers", () => {
       } as Response)
       .mockRejectedValueOnce(new Error("search unavailable"));
 
-    await expect(geocodeTargetsSequentially([{ address: "Address A" }], "google-key")).rejects.toMatchObject({
+    await expect(
+      geocodeTargetsSequentially([{ address: "Address A" }], "google-key"),
+    ).rejects.toMatchObject({
       status: 503,
       message: "Place lookup service is currently unavailable.",
     });
@@ -205,7 +214,9 @@ describe("geocoding helpers", () => {
       } as Response)
       .mockResolvedValueOnce({ ok: false, status: 429 } as Response);
 
-    await expect(geocodeTargetsSequentially([{ address: "Address A" }], "google-key")).rejects.toMatchObject({
+    await expect(
+      geocodeTargetsSequentially([{ address: "Address A" }], "google-key"),
+    ).rejects.toMatchObject({
       status: 503,
       message: "Place lookup service is rate-limited. Please try again shortly.",
     });
@@ -219,7 +230,9 @@ describe("geocoding helpers", () => {
       } as Response)
       .mockResolvedValueOnce({ ok: false, status: 500 } as Response);
 
-    await expect(geocodeTargetsSequentially([{ address: "Address A" }], "google-key")).rejects.toMatchObject({
+    await expect(
+      geocodeTargetsSequentially([{ address: "Address A" }], "google-key"),
+    ).rejects.toMatchObject({
       status: 503,
       message: "Place lookup service returned an unexpected error.",
     });

@@ -1,11 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpError } from "../../../../lib/http";
 
-const {
-  requireAuthMock,
-  findNurseByIdMock,
-  updateNurseHomeAddressMock,
-} = vi.hoisted(() => ({
+const { requireAuthMock, findNurseByIdMock, updateNurseHomeAddressMock } = vi.hoisted(() => ({
   requireAuthMock: vi.fn(),
   findNurseByIdMock: vi.fn(),
   updateNurseHomeAddressMock: vi.fn(),
@@ -97,7 +93,9 @@ describe("/api/auth/me route", () => {
   });
 
   it("returns 401 when authorization is invalid", async () => {
-    requireAuthMock.mockRejectedValue(new HttpError(401, "Missing or invalid authorization token."));
+    requireAuthMock.mockRejectedValue(
+      new HttpError(401, "Missing or invalid authorization token."),
+    );
 
     const response = await GET(
       new Request("http://localhost:3000/api/auth/me", {

@@ -52,9 +52,7 @@ export const requireSecureAuthTransport = (request: Request) => {
 export const enforceLoginRateLimit = async (request: Request, email?: string) => {
   await enforceAuthLoginRateLimit({
     clientKey: resolveAuthClientKey(request),
-    ...(email && email.trim().length > 0
-      ? { accountKey: email.trim().toLowerCase() }
-      : {}),
+    ...(email && email.trim().length > 0 ? { accountKey: email.trim().toLowerCase() } : {}),
   });
 };
 

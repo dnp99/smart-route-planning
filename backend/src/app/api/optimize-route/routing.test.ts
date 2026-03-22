@@ -242,7 +242,9 @@ describe("routing helpers", () => {
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => ({
-        routes: [{ distanceMeters: "2500", duration: "300s", polyline: { encodedPolyline: "abc" } }],
+        routes: [
+          { distanceMeters: "2500", duration: "300s", polyline: { encodedPolyline: "abc" } },
+        ],
       }),
     } as Response);
 

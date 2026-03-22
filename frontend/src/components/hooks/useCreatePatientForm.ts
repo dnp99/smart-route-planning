@@ -17,18 +17,12 @@ type UseCreatePatientFormOptions = {
   onPatientCreated: (patient: Patient) => void;
 };
 
-export const useCreatePatientForm = ({
-  onPatientCreated,
-}: UseCreatePatientFormOptions) => {
-  const [locallyCreatedPatients, setLocallyCreatedPatients] = useState<
-    Patient[]
-  >([]);
-  const [isCreatePatientModalOpen, setIsCreatePatientModalOpen] =
-    useState(false);
+export const useCreatePatientForm = ({ onPatientCreated }: UseCreatePatientFormOptions) => {
+  const [locallyCreatedPatients, setLocallyCreatedPatients] = useState<Patient[]>([]);
+  const [isCreatePatientModalOpen, setIsCreatePatientModalOpen] = useState(false);
   const [createPatientFormValues, setCreatePatientFormValues] =
     useState<PatientFormValues>(EMPTY_FORM);
-  const [createPatientFormErrors, setCreatePatientFormErrors] =
-    useState<FormFieldErrors>({});
+  const [createPatientFormErrors, setCreatePatientFormErrors] = useState<FormFieldErrors>({});
   const [isCreatingPatient, setIsCreatingPatient] = useState(false);
   const [createPatientError, setCreatePatientError] = useState("");
 
@@ -66,9 +60,7 @@ export const useCreatePatientForm = ({
     }));
   };
 
-  const handleCreatePatientVisitWindowChange = <
-    K extends keyof PatientFormVisitWindow,
-  >(
+  const handleCreatePatientVisitWindowChange = <K extends keyof PatientFormVisitWindow>(
     windowId: string,
     field: K,
     value: PatientFormVisitWindow[K],
@@ -107,9 +99,7 @@ export const useCreatePatientForm = ({
   const handleRemoveCreatePatientVisitWindow = (windowId: string) => {
     setCreatePatientFormValues((current) => ({
       ...current,
-      visitWindows: current.visitWindows.filter(
-        (window) => window.id !== windowId,
-      ),
+      visitWindows: current.visitWindows.filter((window) => window.id !== windowId),
     }));
     setCreatePatientFormErrors((current) => ({
       ...current,
@@ -169,9 +159,7 @@ export const useCreatePatientForm = ({
     }));
   };
 
-  const handleCreatePatientSubmit = async (
-    event: FormEvent<HTMLFormElement>,
-  ) => {
+  const handleCreatePatientSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setCreatePatientError("");
 
@@ -184,23 +172,17 @@ export const useCreatePatientForm = ({
 
     setIsCreatingPatient(true);
     try {
-      const createdPatient = await createPatient(
-        toCreateRequest(createPatientFormValues),
-      );
+      const createdPatient = await createPatient(toCreateRequest(createPatientFormValues));
 
       setLocallyCreatedPatients((current) => {
-        const next = current.filter(
-          (patient) => patient.id !== createdPatient.id,
-        );
+        const next = current.filter((patient) => patient.id !== createdPatient.id);
         return [createdPatient, ...next];
       });
       onPatientCreated(createdPatient);
       setIsCreatePatientModalOpen(false);
       resetCreatePatientFormState();
     } catch (error) {
-      setCreatePatientError(
-        error instanceof Error ? error.message : "Unable to create patient.",
-      );
+      setCreatePatientError(error instanceof Error ? error.message : "Unable to create patient.");
     } finally {
       setIsCreatingPatient(false);
     }

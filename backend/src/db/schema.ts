@@ -72,8 +72,15 @@ export const patientVisitWindows = pgTable(
   },
   (table) => [
     index("patient_visit_windows_patient_id_idx").on(table.patientId),
-    index("patient_visit_windows_patient_time_idx").on(table.patientId, table.startTime, table.endTime),
-    check("patient_visit_windows_visit_time_type_chk", sql`${table.visitTimeType} in ('fixed', 'flexible')`),
+    index("patient_visit_windows_patient_time_idx").on(
+      table.patientId,
+      table.startTime,
+      table.endTime,
+    ),
+    check(
+      "patient_visit_windows_visit_time_type_chk",
+      sql`${table.visitTimeType} in ('fixed', 'flexible')`,
+    ),
     check("patient_visit_windows_window_order_chk", sql`${table.endTime} > ${table.startTime}`),
   ],
 );

@@ -77,7 +77,6 @@ const parseGoogleDurationSeconds = (duration: unknown) => {
   return Math.round(seconds);
 };
 
-
 const parseGoogleDistanceMeters = (distanceMeters: unknown) => {
   const value =
     typeof distanceMeters === "string" && distanceMeters.trim().length > 0
@@ -91,8 +90,7 @@ const parseGoogleDistanceMeters = (distanceMeters: unknown) => {
   return Math.round(value);
 };
 
-const hasSameCoordinates = (from: LatLng, to: LatLng) =>
-  from.lat === to.lat && from.lon === to.lon;
+const hasSameCoordinates = (from: LatLng, to: LatLng) => from.lat === to.lat && from.lon === to.lon;
 
 const fetchDrivingRouteLeg = async (
   from: GeocodedStop,
@@ -122,8 +120,7 @@ const fetchDrivingRouteLeg = async (
       headers: {
         "Content-Type": "application/json",
         "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask":
-          "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline",
+        "X-Goog-FieldMask": "routes.distanceMeters,routes.duration,routes.polyline.encodedPolyline",
       },
       body: JSON.stringify({
         origin: {

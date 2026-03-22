@@ -18,14 +18,34 @@ interface AccountSettingsModalProps {
 }
 
 const EyeIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
     <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
     <circle cx="12" cy="12" r="3" />
   </svg>
 );
 
 const EyeOffIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
     <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24" />
     <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68" />
     <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61" />
@@ -33,7 +53,12 @@ const EyeOffIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-export default function AccountSettingsModal({ isOpen, onClose, authUser, onHomeAddressSaved }: AccountSettingsModalProps) {
+export default function AccountSettingsModal({
+  isOpen,
+  onClose,
+  authUser,
+  onHomeAddressSaved,
+}: AccountSettingsModalProps) {
   const [homeAddressInput, setHomeAddressInput] = useState("");
   const [accountSettingsError, setAccountSettingsError] = useState("");
   const [accountSettingsSuccess, setAccountSettingsSuccess] = useState("");
@@ -99,7 +124,10 @@ export default function AccountSettingsModal({ isOpen, onClose, authUser, onHome
     }
 
     const token = getAuthToken();
-    if (!token || !authUser) { clearAuthSession(); return; }
+    if (!token || !authUser) {
+      clearAuthSession();
+      return;
+    }
 
     setIsSavingAccountSettings(true);
     try {
@@ -108,7 +136,9 @@ export default function AccountSettingsModal({ isOpen, onClose, authUser, onHome
       onHomeAddressSaved(updated.user);
       setAccountSettingsSuccess("Account settings saved.");
     } catch (err) {
-      setAccountSettingsError(err instanceof Error ? err.message : "Unable to update account settings.");
+      setAccountSettingsError(
+        err instanceof Error ? err.message : "Unable to update account settings.",
+      );
     } finally {
       setIsSavingAccountSettings(false);
     }
@@ -119,13 +149,28 @@ export default function AccountSettingsModal({ isOpen, onClose, authUser, onHome
     setPasswordError("");
     setPasswordSuccess("");
 
-    if (!currentPasswordInput.trim()) { setPasswordError("Current password is required."); return; }
-    if (newPasswordInput.length < MIN_PASSWORD_LENGTH) { setPasswordError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters.`); return; }
-    if (newPasswordInput !== confirmPasswordInput) { setPasswordError("Passwords do not match."); return; }
-    if (currentPasswordInput === newPasswordInput) { setPasswordError("New password must differ from current password."); return; }
+    if (!currentPasswordInput.trim()) {
+      setPasswordError("Current password is required.");
+      return;
+    }
+    if (newPasswordInput.length < MIN_PASSWORD_LENGTH) {
+      setPasswordError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+      return;
+    }
+    if (newPasswordInput !== confirmPasswordInput) {
+      setPasswordError("Passwords do not match.");
+      return;
+    }
+    if (currentPasswordInput === newPasswordInput) {
+      setPasswordError("New password must differ from current password.");
+      return;
+    }
 
     const token = getAuthToken();
-    if (!token || !authUser) { clearAuthSession(); return; }
+    if (!token || !authUser) {
+      clearAuthSession();
+      return;
+    }
 
     setIsUpdatingPassword(true);
     try {
@@ -171,7 +216,12 @@ export default function AccountSettingsModal({ isOpen, onClose, authUser, onHome
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              <path
+                d="M2 2l10 10M12 2L2 12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
             </svg>
           </button>
         </div>
@@ -240,21 +290,50 @@ export default function AccountSettingsModal({ isOpen, onClose, authUser, onHome
           {(["current", "new", "confirm"] as const).map((field) => {
             const isConfirm = field === "confirm";
             const isCurrent = field === "current";
-            const value = isCurrent ? currentPasswordInput : isConfirm ? confirmPasswordInput : newPasswordInput;
-            const show = isCurrent ? showCurrentPassword : isConfirm ? showConfirmPassword : showNewPassword;
-            const setShow = isCurrent ? setShowCurrentPassword : isConfirm ? setShowConfirmPassword : setShowNewPassword;
-            const setValue = isCurrent
-              ? (v: string) => { setCurrentPasswordInput(v); if (passwordError) setPasswordError(""); if (passwordSuccess) setPasswordSuccess(""); }
+            const value = isCurrent
+              ? currentPasswordInput
               : isConfirm
-              ? (v: string) => { setConfirmPasswordInput(v); if (passwordError) setPasswordError(""); if (passwordSuccess) setPasswordSuccess(""); }
-              : (v: string) => { setNewPasswordInput(v); if (passwordError) setPasswordError(""); if (passwordSuccess) setPasswordSuccess(""); };
-            const label = isCurrent ? "Current password" : isConfirm ? "Confirm new password" : "New password";
+                ? confirmPasswordInput
+                : newPasswordInput;
+            const show = isCurrent
+              ? showCurrentPassword
+              : isConfirm
+                ? showConfirmPassword
+                : showNewPassword;
+            const setShow = isCurrent
+              ? setShowCurrentPassword
+              : isConfirm
+                ? setShowConfirmPassword
+                : setShowNewPassword;
+            const setValue = isCurrent
+              ? (v: string) => {
+                  setCurrentPasswordInput(v);
+                  if (passwordError) setPasswordError("");
+                  if (passwordSuccess) setPasswordSuccess("");
+                }
+              : isConfirm
+                ? (v: string) => {
+                    setConfirmPasswordInput(v);
+                    if (passwordError) setPasswordError("");
+                    if (passwordSuccess) setPasswordSuccess("");
+                  }
+                : (v: string) => {
+                    setNewPasswordInput(v);
+                    if (passwordError) setPasswordError("");
+                    if (passwordSuccess) setPasswordSuccess("");
+                  };
+            const label = isCurrent
+              ? "Current password"
+              : isConfirm
+                ? "Confirm new password"
+                : "New password";
             const autoComplete = isCurrent ? "current-password" : "new-password";
-            const confirmBorderClass = isConfirm && confirmPasswordInput.length > 0
-              ? confirmPasswordInput === newPasswordInput
-                ? "border-emerald-500 focus:border-emerald-500 dark:border-emerald-500"
-                : "border-red-400 focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:border-red-400"
-              : "border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700";
+            const confirmBorderClass =
+              isConfirm && confirmPasswordInput.length > 0
+                ? confirmPasswordInput === newPasswordInput
+                  ? "border-emerald-500 focus:border-emerald-500 dark:border-emerald-500"
+                  : "border-red-400 focus:border-red-400 focus:ring-2 focus:ring-red-100 dark:border-red-400"
+                : "border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700";
 
             return (
               <label key={field} className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
@@ -268,7 +347,9 @@ export default function AccountSettingsModal({ isOpen, onClose, authUser, onHome
                     disabled={isUpdatingPassword}
                     className={[
                       "w-full rounded-xl border bg-white px-3 py-2.5 pr-10 text-sm text-slate-900 outline-none transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-100 sm:px-4 sm:py-3",
-                      isConfirm ? confirmBorderClass : "border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700",
+                      isConfirm
+                        ? confirmBorderClass
+                        : "border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700",
                     ].join(" ")}
                   />
                   <button
@@ -298,7 +379,14 @@ export default function AccountSettingsModal({ isOpen, onClose, authUser, onHome
           <div className="sticky bottom-0 z-10 -mx-4 flex justify-end border-t border-slate-200 bg-white/95 px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0">
             <button
               type="submit"
-              disabled={isUpdatingPassword || !(currentPasswordInput.length > 0 && newPasswordInput.length > 0 && confirmPasswordInput === newPasswordInput)}
+              disabled={
+                isUpdatingPassword ||
+                !(
+                  currentPasswordInput.length > 0 &&
+                  newPasswordInput.length > 0 &&
+                  confirmPasswordInput === newPasswordInput
+                )
+              }
               className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isUpdatingPassword ? "Updating..." : "Update password"}

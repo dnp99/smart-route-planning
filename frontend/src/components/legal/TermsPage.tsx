@@ -3,9 +3,7 @@ import { Link } from "react-router-dom";
 export default function TermsPage() {
   return (
     <main className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
-      <h1 className="m-0 text-xl font-semibold text-slate-900 dark:text-slate-100">
-        Terms of Use
-      </h1>
+      <h1 className="m-0 text-xl font-semibold text-slate-900 dark:text-slate-100">Terms of Use</h1>
       <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Last updated: March 2026</p>
 
       <div className="mt-4 grid gap-4 text-sm text-slate-700 dark:text-slate-300">

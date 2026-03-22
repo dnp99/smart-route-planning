@@ -51,7 +51,9 @@ describe("patientRepository", () => {
   });
 
   it("creates nurse account", async () => {
-    const returningMock = vi.fn().mockResolvedValue([{ id: "nurse-2", email: "nurse@example.com" }]);
+    const returningMock = vi
+      .fn()
+      .mockResolvedValue([{ id: "nurse-2", email: "nurse@example.com" }]);
     const valuesMock = vi.fn().mockReturnValue({ returning: returningMock });
     const insertMock = vi.fn().mockReturnValue({ values: valuesMock });
     getDbMock.mockReturnValue({ insert: insertMock });
@@ -289,11 +291,11 @@ describe("patientRepository", () => {
   });
 
   it("creates flexible patient without persisted windows", async () => {
-    const patientReturningMock = vi.fn().mockResolvedValue([{ id: "patient-2", visitTimeType: "flexible" }]);
-    const patientValuesMock = vi.fn().mockReturnValue({ returning: patientReturningMock });
-    const insertMock = vi
+    const patientReturningMock = vi
       .fn()
-      .mockReturnValueOnce({ values: patientValuesMock });
+      .mockResolvedValue([{ id: "patient-2", visitTimeType: "flexible" }]);
+    const patientValuesMock = vi.fn().mockReturnValue({ returning: patientReturningMock });
+    const insertMock = vi.fn().mockReturnValueOnce({ values: patientValuesMock });
 
     getDbMock.mockReturnValue({ insert: insertMock });
 
@@ -389,7 +391,9 @@ describe("patientRepository", () => {
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
     getDbMock.mockReturnValue({ select: selectMock, update: vi.fn() });
 
-    await expect(updatePatientForNurse("nurse-1", "missing", { firstName: "A" })).resolves.toBeNull();
+    await expect(
+      updatePatientForNurse("nurse-1", "missing", { firstName: "A" }),
+    ).resolves.toBeNull();
   });
 
   it("updates existing patient row", async () => {
@@ -718,7 +722,9 @@ describe("patientRepository", () => {
     const deleteMock = vi.fn().mockReturnValue({ where: whereMock });
     getDbMock.mockReturnValue({ delete: deleteMock });
 
-    await expect(deletePatientForNurse("nurse-1", "patient-1")).resolves.toEqual({ id: "patient-1" });
+    await expect(deletePatientForNurse("nurse-1", "patient-1")).resolves.toEqual({
+      id: "patient-1",
+    });
   });
 
   it("returns null when delete query removes nothing", async () => {

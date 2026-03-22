@@ -36,9 +36,7 @@ export default function ConfirmDialog({
       }}
     >
       <div className={responsiveStyles.confirmDialogSurface}>
-        {title && (
-          <p className={responsiveStyles.confirmDialogTitle}>{title}</p>
-        )}
+        {title && <p className={responsiveStyles.confirmDialogTitle}>{title}</p>}
         <p className={responsiveStyles.confirmDialogMessage}>{message}</p>
         <div className="flex justify-end gap-2">
           <button

@@ -25,7 +25,11 @@ const enforceBucket = (bucketKey: string) => {
   }
 
   if (!current || nowMs - current.windowStart >= WINDOW_MS) {
-    updatePasswordRateLimitByBucket.set(bucketKey, { windowStart: nowMs, count: 1, lockUntilMs: 0 });
+    updatePasswordRateLimitByBucket.set(bucketKey, {
+      windowStart: nowMs,
+      count: 1,
+      lockUntilMs: 0,
+    });
     return;
   }
 

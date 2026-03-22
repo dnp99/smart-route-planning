@@ -25,8 +25,7 @@ export class HttpError extends Error {
 }
 
 const resolveConfiguredOrigins = () =>
-  process.env.ALLOWED_ORIGINS
-    ?.split(",")
+  process.env.ALLOWED_ORIGINS?.split(",")
     .map((value) => value.trim())
     .filter(Boolean);
 
@@ -81,8 +80,7 @@ export const buildSecurityHeaders = (
   };
 
   if (includeHsts && requestUsesHttps(request)) {
-    headers["Strict-Transport-Security"] =
-      "max-age=31536000; includeSubDomains; preload";
+    headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload";
   }
 
   return headers;
