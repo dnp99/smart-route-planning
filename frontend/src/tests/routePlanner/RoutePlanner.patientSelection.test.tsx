@@ -108,8 +108,7 @@ vi.mock("../../components/RouteMap", () => ({
 
 import RoutePlanner from "../../components/RoutePlanner";
 
-const escapeRegExp = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const janePatient = {
   id: "patient-1",
@@ -378,13 +377,8 @@ describe("RoutePlanner patient selection integration", () => {
   it("shows a clear hint when ending point is not selected", () => {
     render(<RoutePlanner />);
 
-    expect(
-      screen.getByText("Select an ending point to enable route optimization."),
-    ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Optimize Route" })).toHaveProperty(
-      "disabled",
-      true,
-    );
+    expect(screen.getByText("Select an ending point to enable route optimization.")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Optimize Route" })).toHaveProperty("disabled", true);
   });
 
   it("restores draft selections after remounting route planner", () => {
@@ -619,7 +613,9 @@ describe("RoutePlanner patient selection integration", () => {
 
     expect(screen.queryByText(/Suggested leave-by:/)).toBeNull();
     expect(screen.queryByText(/Based on a .+ drive to your first visit\./)).toBeNull();
-    expect(screen.getByText(/^Expected start$/i).parentElement?.textContent).toContain(janeExpectedStartTimeLabel);
+    expect(screen.getByText(/^Expected start$/i).parentElement?.textContent).toContain(
+      janeExpectedStartTimeLabel,
+    );
     const janeCard = janeDetailsToggle.closest("div");
     if (!janeCard) {
       throw new Error("Expected Jane Doe result card container");
@@ -725,7 +721,9 @@ describe("RoutePlanner patient selection integration", () => {
       hour12: true,
     }).format(new Date("2026-03-14T10:20:00.000Z"));
 
-    expect(screen.getByText(/^Expected start$/i).parentElement?.textContent).toContain(expectedStartTimeLabel);
+    expect(screen.getByText(/^Expected start$/i).parentElement?.textContent).toContain(
+      expectedStartTimeLabel,
+    );
     expect(screen.getByText(/Outside preferred window by 20 min/i)).toBeTruthy();
   });
 

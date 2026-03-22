@@ -148,12 +148,9 @@ describe("useManualReorder", () => {
     // so the assertion on orderedStops[0] would correctly catch that regression.
     const secondResult = buildResult({ algorithmVersion: "v2.5.1-edf-tier/v2" });
 
-    const { result, rerender } = renderHook(
-      ({ routeResult }) => useManualReorder(routeResult),
-      {
-        initialProps: { routeResult: firstResult as OptimizeRouteResponse | null },
-      },
-    );
+    const { result, rerender } = renderHook(({ routeResult }) => useManualReorder(routeResult), {
+      initialProps: { routeResult: firstResult as OptimizeRouteResponse | null },
+    });
 
     // Apply manual order [stop-2, stop-1] — inverse of secondResult's native order
     act(() => {
@@ -267,9 +264,7 @@ describe("useManualReorder", () => {
 
     // After reorder: [stop-after, stop-multi, stop-end]
     // stop-multi is now the second stop; stop-end follows it.
-    const multiStop = hookResult.current.orderedStops.find(
-      (s) => s.stopId === "stop-multi",
-    );
+    const multiStop = hookResult.current.orderedStops.find((s) => s.stopId === "stop-multi");
     expect(multiStop).toBeDefined();
 
     const [task1, task2] = multiStop!.tasks;
@@ -287,9 +282,7 @@ describe("useManualReorder", () => {
 
     // stop-end follows stop-multi and must arrive after stop-multi's last task ends,
     // confirming the cursor advanced through both tasks before computing stop-end's arrival
-    const stopEnd = hookResult.current.orderedStops.find(
-      (s) => s.stopId === "stop-end",
-    );
+    const stopEnd = hookResult.current.orderedStops.find((s) => s.stopId === "stop-end");
     expect(stopEnd).toBeDefined();
     const stopEndArrivalMs = new Date(stopEnd!.arrivalTime).getTime();
     expect(stopEndArrivalMs).toBeGreaterThan(task2EndMs);
@@ -422,8 +415,6 @@ describe("useManualReorder", () => {
     // Haversine travel from stop-3 (43.7,-79.7) to stop-end (43.72,-79.72) at 40km/h
     // is ~250s, which is well under 600s. Without the cursor advance, stop-end would
     // arrive only ~250s past stop-3 departure and this assertion would fail.
-    expect(stopEndArrivalMs).toBeGreaterThanOrEqual(
-      stop3DepartureMs + NO_COORDS_DURATION_S * 1000,
-    );
+    expect(stopEndArrivalMs).toBeGreaterThanOrEqual(stop3DepartureMs + NO_COORDS_DURATION_S * 1000);
   });
 });

@@ -45,10 +45,7 @@ vi.mock("../../components/AddressAutocompleteInput", () => ({
   ),
 }));
 
-import {
-  createPatient,
-  listPatients,
-} from "../../components/patients/patientService";
+import { createPatient, listPatients } from "../../components/patients/patientService";
 import PatientsPage from "../../components/patients/PatientsPage";
 
 const mockedListPatients = vi.mocked(listPatients);

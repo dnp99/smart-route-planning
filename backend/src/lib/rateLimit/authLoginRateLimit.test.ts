@@ -1,8 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  __resetAuthLoginRateLimitForTests,
-  enforceAuthLoginRateLimit,
-} from "./authLoginRateLimit";
+import { __resetAuthLoginRateLimitForTests, enforceAuthLoginRateLimit } from "./authLoginRateLimit";
 
 describe("authLoginRateLimit", () => {
   const fetchMock = vi.fn();
@@ -67,13 +64,9 @@ describe("authLoginRateLimit", () => {
   });
 
   it("applies lockout with retry-after headers in memory mode", async () => {
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.1" }),
-    ).resolves.toBeUndefined();
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.1" })).resolves.toBeUndefined();
 
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.1" }),
-    ).rejects.toMatchObject({
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.1" })).rejects.toMatchObject({
       status: 429,
       headers: { "Retry-After": "5" },
     });
@@ -114,9 +107,9 @@ describe("authLoginRateLimit", () => {
       ).resolves.toBeUndefined();
     }
 
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.22" }),
-    ).rejects.toThrow("Too many login attempts. Please try again shortly.");
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.22" })).rejects.toThrow(
+      "Too many login attempts. Please try again shortly.",
+    );
   });
 
   it("resets in-memory buckets after the configured window elapses", async () => {
@@ -126,17 +119,13 @@ describe("authLoginRateLimit", () => {
     process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS = "1";
     process.env.AUTH_LOGIN_RATE_LIMIT_LOCKOUT_SECONDS = "1";
 
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.31" }),
-    ).resolves.toBeUndefined();
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.31" }),
-    ).rejects.toThrow("Too many login attempts. Please try again shortly.");
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.31" })).resolves.toBeUndefined();
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.31" })).rejects.toThrow(
+      "Too many login attempts. Please try again shortly.",
+    );
 
     vi.setSystemTime(new Date("2026-03-18T10:00:01.100Z"));
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.31" }),
-    ).resolves.toBeUndefined();
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.31" })).resolves.toBeUndefined();
 
     vi.useRealTimers();
   });
@@ -166,9 +155,7 @@ describe("authLoginRateLimit", () => {
 
     fetchMock.mockResolvedValue(buildUpstashResponse([{ result: 12 }]));
 
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.51" }),
-    ).rejects.toMatchObject({
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.51" })).rejects.toMatchObject({
       status: 429,
       headers: { "Retry-After": "12" },
     });
@@ -184,9 +171,7 @@ describe("authLoginRateLimit", () => {
       .mockResolvedValueOnce(buildUpstashResponse([{ result: 1 }, { result: -1 }]))
       .mockResolvedValueOnce(buildUpstashResponse([{ result: 1 }]));
 
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.61" }),
-    ).resolves.toBeUndefined();
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.61" })).resolves.toBeUndefined();
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
@@ -202,9 +187,7 @@ describe("authLoginRateLimit", () => {
       .mockResolvedValueOnce(buildUpstashResponse([{ result: 2 }, { result: 30 }]))
       .mockResolvedValueOnce(buildUpstashResponse([{ result: "OK" }]));
 
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.71" }),
-    ).rejects.toMatchObject({
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.71" })).rejects.toMatchObject({
       status: 429,
       headers: { "Retry-After": "9" },
     });
@@ -229,11 +212,9 @@ describe("authLoginRateLimit", () => {
       return buildUpstashResponse([]);
     });
 
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.81" }),
-    ).resolves.toBeUndefined();
-    await expect(
-      enforceAuthLoginRateLimit({ clientKey: "203.0.113.81" }),
-    ).rejects.toThrow("Too many login attempts. Please try again shortly.");
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.81" })).resolves.toBeUndefined();
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.81" })).rejects.toThrow(
+      "Too many login attempts. Please try again shortly.",
+    );
   });
 });

@@ -23,7 +23,10 @@ const trimRequiredString = (value: unknown, fieldName: string) => {
   return trimmed;
 };
 
-const parseOptionalStringOrNull = (value: unknown, fieldName: string): string | null | undefined => {
+const parseOptionalStringOrNull = (
+  value: unknown,
+  fieldName: string,
+): string | null | undefined => {
   if (value === undefined) {
     return undefined;
   }
@@ -206,7 +209,10 @@ const parseVisit = (value: unknown, index: number): VisitV2 => {
   const patientId = trimRequiredString(candidate.patientId, `visits[${index}].patientId`);
   const patientName = trimRequiredString(candidate.patientName, `visits[${index}].patientName`);
   const address = parseAddress(candidate.address, `visits[${index}].address`);
-  const googlePlaceId = parseOptionalStringOrNull(candidate.googlePlaceId, `visits[${index}].googlePlaceId`);
+  const googlePlaceId = parseOptionalStringOrNull(
+    candidate.googlePlaceId,
+    `visits[${index}].googlePlaceId`,
+  );
   const windowType = parseWindowType(candidate.windowType, `visits[${index}].windowType`);
   const serviceDurationMinutes = parsePositiveInteger(
     candidate.serviceDurationMinutes,
@@ -298,7 +304,13 @@ const parseVisit = (value: unknown, index: number): VisitV2 => {
   };
 };
 
-const buildLocationKey = ({ address, googlePlaceId }: { address: string; googlePlaceId?: string | null }) => {
+const buildLocationKey = ({
+  address,
+  googlePlaceId,
+}: {
+  address: string;
+  googlePlaceId?: string | null;
+}) => {
   if (googlePlaceId && googlePlaceId.trim().length > 0) {
     return `place:${googlePlaceId.trim()}`;
   }
@@ -329,11 +341,17 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteV2Req
   const endCandidate = payload.end as Record<string, unknown>;
 
   const startAddress = parseAddress(startCandidate.address, "start.address");
-  const startGooglePlaceId = parseOptionalStringOrNull(startCandidate.googlePlaceId, "start.googlePlaceId");
+  const startGooglePlaceId = parseOptionalStringOrNull(
+    startCandidate.googlePlaceId,
+    "start.googlePlaceId",
+  );
   const departureTime = parseDepartureTime(startCandidate.departureTime, planningDate, timezone);
 
   const endAddress = parseAddress(endCandidate.address, "end.address");
-  const endGooglePlaceId = parseOptionalStringOrNull(endCandidate.googlePlaceId, "end.googlePlaceId");
+  const endGooglePlaceId = parseOptionalStringOrNull(
+    endCandidate.googlePlaceId,
+    "end.googlePlaceId",
+  );
 
   if (!Array.isArray(payload.visits)) {
     throw new HttpError(400, "visits must be an array.");
@@ -355,8 +373,12 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteV2Req
   });
 
   const uniqueLocationKeys = new Set<string>();
-  uniqueLocationKeys.add(buildLocationKey({ address: startAddress, googlePlaceId: startGooglePlaceId }));
-  uniqueLocationKeys.add(buildLocationKey({ address: endAddress, googlePlaceId: endGooglePlaceId }));
+  uniqueLocationKeys.add(
+    buildLocationKey({ address: startAddress, googlePlaceId: startGooglePlaceId }),
+  );
+  uniqueLocationKeys.add(
+    buildLocationKey({ address: endAddress, googlePlaceId: endGooglePlaceId }),
+  );
   visits.forEach((visit) => {
     uniqueLocationKeys.add(buildLocationKey(visit));
   });

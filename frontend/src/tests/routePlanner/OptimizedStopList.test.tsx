@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { OptimizedStopList } from "../../components/routePlanner/OptimizedStopList";
 import type { OrderedStop } from "../../components/types";
 
-const buildTask = (overrides: Partial<OrderedStop["tasks"][number]> = {}): OrderedStop["tasks"][number] => ({
+const buildTask = (
+  overrides: Partial<OrderedStop["tasks"][number]> = {},
+): OrderedStop["tasks"][number] => ({
   visitId: "visit-1",
   patientId: "patient-1",
   patientName: "alex johnson",
@@ -53,7 +55,15 @@ describe("OptimizedStopList", () => {
         arrivalTime: "2026-03-20T11:15:00-04:00",
         departureTime: "2026-03-20T11:45:00-04:00",
         durationFromPreviousSeconds: 900,
-        tasks: [buildTask({ visitId: "visit-2", patientName: "jamie doe", address: "20 Second Avenue", serviceStartTime: "2026-03-20T11:30:00-04:00", serviceEndTime: "2026-03-20T12:00:00-04:00" })],
+        tasks: [
+          buildTask({
+            visitId: "visit-2",
+            patientName: "jamie doe",
+            address: "20 Second Avenue",
+            serviceStartTime: "2026-03-20T11:30:00-04:00",
+            serviceEndTime: "2026-03-20T12:00:00-04:00",
+          }),
+        ],
       }),
       buildStop({
         stopId: "stop-3",
@@ -89,7 +99,9 @@ describe("OptimizedStopList", () => {
       "true",
     );
     expect(screen.getByText(/^Duration$/i).parentElement?.textContent).toContain("30 min");
-    expect(screen.getByRole("button", { name: "Toggle details for Home ending point" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Toggle details for Home ending point" }),
+    ).toBeTruthy();
     expect(screen.getByText(/You should be home by/i)).toBeTruthy();
     expect(screen.getByText(/99 Home Road/)).toBeTruthy();
 

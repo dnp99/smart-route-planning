@@ -122,10 +122,18 @@ export const RouteResultSection = ({
             {resolvedEndAddress.trim().length === 0 ? " • ending point missing" : ""}
           </p>
           <div className="grid grid-cols-2 gap-2">
-            <button type="button" onClick={() => onSetActiveMobileStep("trip")} className={responsiveStyles.secondaryButton}>
+            <button
+              type="button"
+              onClick={() => onSetActiveMobileStep("trip")}
+              className={responsiveStyles.secondaryButton}
+            >
               Edit trip
             </button>
-            <button type="button" onClick={() => onSetActiveMobileStep("patients")} className={responsiveStyles.secondaryButton}>
+            <button
+              type="button"
+              onClick={() => onSetActiveMobileStep("patients")}
+              className={responsiveStyles.secondaryButton}
+            >
               Edit patients
             </button>
           </div>
@@ -133,7 +141,9 @@ export const RouteResultSection = ({
       )}
 
       {isReviewStepVisible && (
-        <div className={`${responsiveStyles.footerRow} ${isMobileViewport ? responsiveStyles.stickyFooter : ""}`}>
+        <div
+          className={`${responsiveStyles.footerRow} ${isMobileViewport ? responsiveStyles.stickyFooter : ""}`}
+        >
           <span className={responsiveStyles.visitCountPill}>
             {destinationCount} visit{destinationCount === 1 ? "" : "s"} queued
           </span>
@@ -144,9 +154,7 @@ export const RouteResultSection = ({
             data-loading={isLoading ? "true" : "false"}
             data-success={showOptimizeSuccess ? "true" : "false"}
           >
-            {isLoading && (
-              <span className={responsiveStyles.spinnerWhite} aria-hidden="true" />
-            )}
+            {isLoading && <span className={responsiveStyles.spinnerWhite} aria-hidden="true" />}
             {isLoading ? "Optimizing..." : result ? "Re-optimize Route" : "Optimize Route"}
           </button>
         </div>
@@ -160,9 +168,7 @@ export const RouteResultSection = ({
         <p className={responsiveStyles.formWarningBanner}>{localValidationError}</p>
       )}
 
-      {optimizeError && (
-        <p className={responsiveStyles.formErrorBanner}>{optimizeError}</p>
-      )}
+      {optimizeError && <p className={responsiveStyles.formErrorBanner}>{optimizeError}</p>}
 
       {result && (
         <OptimizedRouteResult

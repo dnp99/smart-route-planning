@@ -181,9 +181,7 @@ describe("buildPlanningTravelDurationMatrix", () => {
 
   it("parses object payloads that contain a single matrix element", async () => {
     fetchMock.mockResolvedValue(
-      buildMatrixResponse(
-        JSON.stringify({ originIndex: 0, destinationIndex: 1, duration: "61s" }),
-      ),
+      buildMatrixResponse(JSON.stringify({ originIndex: 0, destinationIndex: 1, duration: "61s" })),
     );
 
     const matrix = await buildPlanningTravelDurationMatrix(

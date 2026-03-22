@@ -8,7 +8,11 @@ type SelectedDestinationsSectionProps = {
   onToggleDestinationDetails: (visitKey: string) => void;
   onRemoveDestinationVisit: (visitKey: string) => void;
   onSetDestinationVisitIncluded: (visitKey: string, isIncluded: boolean) => void;
-  onUpdateDestinationPlanningWindow: (visitKey: string, field: "windowStart" | "windowEnd", value: string) => void;
+  onUpdateDestinationPlanningWindow: (
+    visitKey: string,
+    field: "windowStart" | "windowEnd",
+    value: string,
+  ) => void;
   onSetDestinationPersistPlanningWindow: (visitKey: string, persistPlanningWindow: boolean) => void;
 };
 
@@ -40,8 +44,12 @@ export const SelectedDestinationsSection = ({
                 onToggleDetails={() => onToggleDestinationDetails(destination.visitKey)}
                 onRemove={() => onRemoveDestinationVisit(destination.visitKey)}
                 onSetIncluded={(v) => onSetDestinationVisitIncluded(destination.visitKey, v)}
-                onUpdateWindow={(field, value) => onUpdateDestinationPlanningWindow(destination.visitKey, field, value)}
-                onSetPersistWindow={(v) => onSetDestinationPersistPlanningWindow(destination.visitKey, v)}
+                onUpdateWindow={(field, value) =>
+                  onUpdateDestinationPlanningWindow(destination.visitKey, field, value)
+                }
+                onSetPersistWindow={(v) =>
+                  onSetDestinationPersistPlanningWindow(destination.visitKey, v)
+                }
               />
             ))}
           </ol>

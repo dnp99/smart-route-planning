@@ -137,9 +137,7 @@ describe("PatientsPage", () => {
   });
 
   it("deletes selected patient after confirmation", async () => {
-    mockedListPatients
-      .mockResolvedValueOnce([seedPatient])
-      .mockResolvedValue([]);
+    mockedListPatients.mockResolvedValueOnce([seedPatient]).mockResolvedValue([]);
     mockedDeletePatient.mockResolvedValue({ deleted: true, id: "patient-1" });
 
     render(<PatientsPage />);
@@ -242,7 +240,9 @@ describe("PatientsPage", () => {
     });
 
     // Save is disabled when required name fields are empty
-    expect((screen.getByRole("button", { name: /Save new patient/i }) as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      (screen.getByRole("button", { name: /Save new patient/i }) as HTMLButtonElement).disabled,
+    ).toBe(true);
     expect(mockedCreatePatient).not.toHaveBeenCalled();
 
     fireEvent.change(screen.getByLabelText("First name"), {

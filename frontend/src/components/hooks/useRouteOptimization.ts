@@ -101,11 +101,7 @@ export const useRouteOptimization = () => {
       setResult(optimizedResult);
       setShowOptimizeSuccess(true);
     } catch (apiError) {
-      setError(
-        apiError instanceof Error
-          ? apiError.message
-          : "Something went wrong.",
-      );
+      setError(apiError instanceof Error ? apiError.message : "Something went wrong.");
     } finally {
       setIsLoading(false);
       setIsRecalculating(false);

@@ -239,11 +239,7 @@ describe("optimize-route v2 request validation", () => {
       serviceDurationMinutes: 15,
     }));
 
-    expectHttpError(
-      () => parseAndValidateBody(payload),
-      400,
-      "Please provide at most 40 visits.",
-    );
+    expectHttpError(() => parseAndValidateBody(payload), 400, "Please provide at most 40 visits.");
   });
 
   it("throws when visit ids are duplicated", () => {
@@ -307,11 +303,7 @@ describe("optimize-route v2 request validation", () => {
     payload.visits[0].windowStart = "";
     payload.visits[0].windowEnd = "";
 
-    expectHttpError(
-      () => parseAndValidateBody(payload),
-      400,
-      "visits[0].windowStart is required.",
-    );
+    expectHttpError(() => parseAndValidateBody(payload), 400, "visits[0].windowStart is required.");
   });
 
   it("throws for invalid visit window format", () => {

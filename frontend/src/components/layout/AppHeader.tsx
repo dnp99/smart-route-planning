@@ -52,7 +52,12 @@ const OptionsIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-export default function AppHeader({ isAuthenticated, authUser, onOpenAccountSettings, onLogout }: AppHeaderProps) {
+export default function AppHeader({
+  isAuthenticated,
+  authUser,
+  onOpenAccountSettings,
+  onLogout,
+}: AppHeaderProps) {
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const [headerScrolled, setHeaderScrolled] = useState(false);
   const [headerQuote, setHeaderQuote] = useState<Quote | null>(() => readStoredHeaderQuote());
@@ -117,7 +122,11 @@ export default function AppHeader({ isAuthenticated, authUser, onOpenAccountSett
 
   return (
     <header className={responsiveStyles.appHeader}>
-      <div className={[responsiveStyles.appHeaderInner, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(" ")}>
+      <div
+        className={[responsiveStyles.appHeaderInner, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(
+          " ",
+        )}
+      >
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
             <svg
@@ -153,14 +162,16 @@ export default function AppHeader({ isAuthenticated, authUser, onOpenAccountSett
 
         <div className="ml-auto flex min-w-0 items-center gap-2">
           {isAuthenticated && headerQuote && !headerScrolled && (
-            <p className={responsiveStyles.headerQuote}>
-              &ldquo;{headerQuote.content}&rdquo;
-            </p>
+            <p className={responsiveStyles.headerQuote}>&ldquo;{headerQuote.content}&rdquo;</p>
           )}
 
           {!isAuthenticated && (
             <p className="m-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {new Date().toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+              {new Date().toLocaleDateString("en-US", {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
             </p>
           )}
 
@@ -193,7 +204,18 @@ export default function AppHeader({ isAuthenticated, authUser, onOpenAccountSett
                     }}
                     className="flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
                       <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
                       <circle cx="12" cy="12" r="3" />
                     </svg>
@@ -209,7 +231,18 @@ export default function AppHeader({ isAuthenticated, authUser, onOpenAccountSett
                     }}
                     className="flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
                   >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="15"
+                      height="15"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
                       <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
                       <polyline points="16 17 21 12 16 7" />
                       <line x1="21" y1="12" x2="9" y2="12" />

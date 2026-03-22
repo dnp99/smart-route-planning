@@ -1,14 +1,8 @@
 import { NextResponse } from "next/server";
-import {
-  isUpdateMeRequest,
-  type AuthUser,
-} from "../../../../../../shared/contracts";
+import { isUpdateMeRequest, type AuthUser } from "../../../../../../shared/contracts";
 import { requireAuth } from "../../../../lib/auth/requireAuth";
 import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
-import {
-  findNurseById,
-  updateNurseHomeAddress,
-} from "../../../../lib/patients/patientRepository";
+import { findNurseById, updateNurseHomeAddress } from "../../../../lib/patients/patientRepository";
 import { requireSecureAuthTransport } from "../requestGuards";
 
 const MAX_HOME_ADDRESS_LENGTH = 200;

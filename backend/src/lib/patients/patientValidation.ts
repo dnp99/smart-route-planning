@@ -52,10 +52,7 @@ const parseVisitTimeType = (value: unknown, fieldName = "visitTimeType"): VisitT
   return value;
 };
 
-const parseVisitDurationMinutes = (
-  value: unknown,
-  fieldName = "visitDurationMinutes",
-): number => {
+const parseVisitDurationMinutes = (value: unknown, fieldName = "visitDurationMinutes"): number => {
   if (typeof value !== "number" || !Number.isInteger(value)) {
     throw new HttpError(
       400,

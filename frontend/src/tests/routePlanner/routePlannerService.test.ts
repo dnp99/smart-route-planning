@@ -229,25 +229,24 @@ describe("requestOptimizedRoute", () => {
 
   it("falls back to UTC when timezone is missing and browser timezone is unavailable", async () => {
     const originalDateTimeFormat = Intl.DateTimeFormat;
-    const dateTimeFormatMock = vi
-      .spyOn(Intl, "DateTimeFormat")
-      .mockImplementation((function (...args: unknown[]) {
-        if (args.length === 0) {
-          return {
-            resolvedOptions: () => ({ timeZone: "   " }),
-          };
-        }
+    const dateTimeFormatMock = vi.spyOn(Intl, "DateTimeFormat").mockImplementation(function (
+      ...args: unknown[]
+    ) {
+      if (args.length === 0) {
+        return {
+          resolvedOptions: () => ({ timeZone: "   " }),
+        };
+      }
 
-        const DateTimeFormatCtor =
-          originalDateTimeFormat as unknown as new (
-            locales?: Intl.LocalesArgument,
-            options?: Intl.DateTimeFormatOptions,
-          ) => Intl.DateTimeFormat;
-        return new DateTimeFormatCtor(
-          args[0] as Intl.LocalesArgument | undefined,
-          args[1] as Intl.DateTimeFormatOptions | undefined,
-        );
-      }) as typeof Intl.DateTimeFormat);
+      const DateTimeFormatCtor = originalDateTimeFormat as unknown as new (
+        locales?: Intl.LocalesArgument,
+        options?: Intl.DateTimeFormatOptions,
+      ) => Intl.DateTimeFormat;
+      return new DateTimeFormatCtor(
+        args[0] as Intl.LocalesArgument | undefined,
+        args[1] as Intl.DateTimeFormatOptions | undefined,
+      );
+    } as typeof Intl.DateTimeFormat);
 
     try {
       fetchMock.mockResolvedValue({
@@ -272,23 +271,23 @@ describe("requestOptimizedRoute", () => {
   });
 
   it("throws when planning date cannot be formatted in timezone", async () => {
-    const dateTimeFormatMock = vi
-      .spyOn(Intl, "DateTimeFormat")
-      .mockImplementation((function (...args: unknown[]) {
-        if (args.length === 0) {
-          return {
-            resolvedOptions: () => ({ timeZone: "America/Toronto" }),
-          };
-        }
-
+    const dateTimeFormatMock = vi.spyOn(Intl, "DateTimeFormat").mockImplementation(function (
+      ...args: unknown[]
+    ) {
+      if (args.length === 0) {
         return {
-          formatToParts: () => [
-            { type: "year", value: "2026" },
-            { type: "month", value: "03" },
-          ],
           resolvedOptions: () => ({ timeZone: "America/Toronto" }),
         };
-      }) as typeof Intl.DateTimeFormat);
+      }
+
+      return {
+        formatToParts: () => [
+          { type: "year", value: "2026" },
+          { type: "month", value: "03" },
+        ],
+        resolvedOptions: () => ({ timeZone: "America/Toronto" }),
+      };
+    } as typeof Intl.DateTimeFormat);
 
     try {
       await expect(

@@ -19,7 +19,10 @@ const trimRequiredString = (value: unknown, fieldName: string) => {
   return trimmed;
 };
 
-const parseOptionalStringOrNull = (value: unknown, fieldName: string): string | null | undefined => {
+const parseOptionalStringOrNull = (
+  value: unknown,
+  fieldName: string,
+): string | null | undefined => {
   if (value === undefined) {
     return undefined;
   }
@@ -60,7 +63,10 @@ const parseDestination = (value: unknown, index: number): OptimizeRouteDestinati
   }
 
   const patientId = trimRequiredString(candidate.patientId, `destinations[${index}].patientId`);
-  const patientName = trimRequiredString(candidate.patientName, `destinations[${index}].patientName`);
+  const patientName = trimRequiredString(
+    candidate.patientName,
+    `destinations[${index}].patientName`,
+  );
 
   const googlePlaceId = parseOptionalStringOrNull(
     candidate.googlePlaceId,
@@ -120,7 +126,10 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteReque
 
   const startAddress = payload.startAddress.trim();
   const endAddress = payload.endAddress.trim();
-  const startGooglePlaceId = parseOptionalStringOrNull(payload.startGooglePlaceId, "startGooglePlaceId");
+  const startGooglePlaceId = parseOptionalStringOrNull(
+    payload.startGooglePlaceId,
+    "startGooglePlaceId",
+  );
   const endGooglePlaceId = parseOptionalStringOrNull(payload.endGooglePlaceId, "endGooglePlaceId");
 
   if (!Array.isArray(payload.destinations)) {
@@ -151,9 +160,14 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteReque
     throw new HttpError(400, `Please provide at most ${MAX_DESTINATIONS} destinations.`);
   }
 
-  const hasOverlongAddress = destinations.some((destination) => destination.address.length > MAX_ADDRESS_LENGTH);
+  const hasOverlongAddress = destinations.some(
+    (destination) => destination.address.length > MAX_ADDRESS_LENGTH,
+  );
   if (hasOverlongAddress) {
-    throw new HttpError(400, `Each destination address must be at most ${MAX_ADDRESS_LENGTH} characters.`);
+    throw new HttpError(
+      400,
+      `Each destination address must be at most ${MAX_ADDRESS_LENGTH} characters.`,
+    );
   }
 
   return {

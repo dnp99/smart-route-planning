@@ -2,11 +2,7 @@ import { describe, expect, it } from "vitest";
 import { HttpError } from "../../../lib/http";
 import { parseAndValidateBody } from "./validation";
 
-const expectHttpError = (
-  fn: () => unknown,
-  status: number,
-  message: string,
-) => {
+const expectHttpError = (fn: () => unknown, status: number, message: string) => {
   try {
     fn();
     throw new Error("Expected function to throw HttpError");
@@ -122,11 +118,11 @@ describe("parseAndValidateBody", () => {
   it("throws when destinations is not an array", () => {
     expectHttpError(
       () =>
-      parseAndValidateBody({
-        startAddress: "Start",
-        endAddress: "End",
-        destinations: "invalid",
-      }),
+        parseAndValidateBody({
+          startAddress: "Start",
+          endAddress: "End",
+          destinations: "invalid",
+        }),
       400,
       "destinations must be an array.",
     );

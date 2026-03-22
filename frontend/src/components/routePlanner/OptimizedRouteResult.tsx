@@ -76,9 +76,7 @@ export function OptimizedRouteResult({
   );
   const scheduledStopCount = useMemo(
     () =>
-      displayedOrderedStops.filter(
-        (stop) => !stop.isEndingPoint && stop.tasks.length > 0,
-      ).length,
+      displayedOrderedStops.filter((stop) => !stop.isEndingPoint && stop.tasks.length > 0).length,
     [displayedOrderedStops],
   );
 
@@ -94,13 +92,7 @@ export function OptimizedRouteResult({
       onClick={onDismiss}
       className="shrink-0 text-current opacity-60 hover:opacity-100"
     >
-      <svg
-        width="14"
-        height="14"
-        viewBox="0 0 14 14"
-        fill="none"
-        aria-hidden="true"
-      >
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
         <path
           d="M2 2l10 10M12 2L2 12"
           stroke="currentColor"
@@ -114,12 +106,8 @@ export function OptimizedRouteResult({
   const warningsSection =
     result.warnings && result.warnings.length > 0
       ? (() => {
-          const conflictWarnings = result.warnings.filter(
-            (w) => w.type === "window_conflict",
-          );
-          const latenessWarnings = result.warnings.filter(
-            (w) => w.type !== "window_conflict",
-          );
+          const conflictWarnings = result.warnings.filter((w) => w.type === "window_conflict");
+          const latenessWarnings = result.warnings.filter((w) => w.type !== "window_conflict");
           return (
             <section className="mt-5 grid gap-3 lg:grid-cols-2">
               {conflictWarnings.length > 0 && !conflictWarningsDismissed && (
@@ -130,10 +118,7 @@ export function OptimizedRouteResult({
                         Exceptions
                       </p>
                       <p className="m-0 mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">
-                        Scheduling{" "}
-                        {conflictWarnings.length === 1
-                          ? "Conflict"
-                          : "Conflicts"}
+                        Scheduling {conflictWarnings.length === 1 ? "Conflict" : "Conflicts"}
                       </p>
                     </div>
                     {makeDismissButton(onDismissConflictWarnings)}
@@ -163,8 +148,7 @@ export function OptimizedRouteResult({
                         Timing risk
                       </p>
                       <p className="m-0 mt-1 text-sm font-semibold text-red-900 dark:text-red-100">
-                        Lateness{" "}
-                        {latenessWarnings.length === 1 ? "Warning" : "Warnings"}
+                        Lateness {latenessWarnings.length === 1 ? "Warning" : "Warnings"}
                       </p>
                     </div>
                     {makeDismissButton(onDismissLatenessWarnings)}
@@ -204,8 +188,8 @@ export function OptimizedRouteResult({
                 Optimized Route
               </h2>
               <p className="m-0 max-w-2xl text-sm text-slate-600 dark:text-slate-300">
-                Review the route timeline, verify timing risk, and use the map
-                as a spatial check before heading out.
+                Review the route timeline, verify timing risk, and use the map as a spatial check
+                before heading out.
               </p>
             </div>
           </div>
@@ -230,12 +214,8 @@ export function OptimizedRouteResult({
               </p>
             </div>
             <div className={responsiveStyles.resultStatCard}>
-              <p className={responsiveStyles.resultStatLabel}>
-                Scheduled Stops
-              </p>
-              <p className={responsiveStyles.resultStatValue}>
-                {scheduledStopCount}
-              </p>
+              <p className={responsiveStyles.resultStatLabel}>Scheduled Stops</p>
+              <p className={responsiveStyles.resultStatValue}>{scheduledStopCount}</p>
               <p className={`${responsiveStyles.resultStatMeta} hidden sm:block`}>
                 {result.unscheduledTasks.length > 0
                   ? `${result.unscheduledTasks.length} unscheduled visit${result.unscheduledTasks.length === 1 ? "" : "s"}`
@@ -304,7 +284,8 @@ export function OptimizedRouteResult({
                         Route manually adjusted. Times are estimated.
                         {unscheduledResubmitCount > 0 && (
                           <span className="ml-1 font-normal">
-                            {unscheduledResubmitCount} previously unscheduled visit{unscheduledResubmitCount === 1 ? "" : "s"} will be re-submitted.
+                            {unscheduledResubmitCount} previously unscheduled visit
+                            {unscheduledResubmitCount === 1 ? "" : "s"} will be re-submitted.
                           </span>
                         )}
                       </span>
@@ -325,9 +306,7 @@ export function OptimizedRouteResult({
                             disabled={isRecalculatingManualOrder}
                             className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600"
                           >
-                            {isRecalculatingManualOrder
-                              ? "Recalculating..."
-                              : "Recalculate times"}
+                            {isRecalculatingManualOrder ? "Recalculating..." : "Recalculate times"}
                           </button>
                         )}
                       </div>
@@ -348,8 +327,7 @@ export function OptimizedRouteResult({
               </>
             ) : (
               <p className="mt-3 rounded-2xl border border-slate-200 bg-white px-4 py-5 text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
-                No scheduled visits are available for the current optimized
-                route.
+                No scheduled visits are available for the current optimized route.
               </p>
             )}
           </section>
@@ -434,19 +412,14 @@ export function OptimizedRouteResult({
           </p>
           <ul className="m-0 space-y-2 pl-4 sm:pl-5">
             {result.unscheduledTasks.map((task) => (
-              <li
-                key={task.visitId}
-                className="text-sm text-amber-900 dark:text-amber-200"
-              >
+              <li key={task.visitId} className="text-sm text-amber-900 dark:text-amber-200">
                 <p className="m-0 font-medium">
                   {task.patientName
                     ? compactDisplayCopy(formatNameWords(task.patientName))
                     : task.patientId}
                 </p>
                 {task.address && (
-                  <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
-                    {task.address}
-                  </p>
+                  <p className="m-0 text-xs text-amber-800 dark:text-amber-300">{task.address}</p>
                 )}
                 {task.windowStart && task.windowEnd && (
                   <p className="m-0 text-xs text-amber-800 dark:text-amber-300">

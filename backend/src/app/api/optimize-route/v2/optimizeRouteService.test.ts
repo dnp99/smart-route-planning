@@ -650,9 +650,7 @@ describe("optimizeRouteV2 service", () => {
       { address: "End", coords: { lat: 43.8, lon: -79.8 } },
     ]);
 
-    mockedBuildDrivingRoute.mockResolvedValue(
-      buildDrivingRouteResult(["Shared Address", "End"]),
-    );
+    mockedBuildDrivingRoute.mockResolvedValue(buildDrivingRouteResult(["Shared Address", "End"]));
 
     const result = await optimizeRouteV2(
       {
@@ -1486,8 +1484,20 @@ describe("optimizeRouteV2 service", () => {
         },
       ],
       routeLegs: [
-        { fromAddress: "Start", toAddress: "Fixed Address", distanceMeters: 10000, durationSeconds: 7020, encodedPolyline: "a" },
-        { fromAddress: "Fixed Address", toAddress: "End", distanceMeters: 2000, durationSeconds: 600, encodedPolyline: "b" },
+        {
+          fromAddress: "Start",
+          toAddress: "Fixed Address",
+          distanceMeters: 10000,
+          durationSeconds: 7020,
+          encodedPolyline: "a",
+        },
+        {
+          fromAddress: "Fixed Address",
+          toAddress: "End",
+          distanceMeters: 2000,
+          durationSeconds: 600,
+          encodedPolyline: "b",
+        },
       ],
       totalDistanceMeters: 12000,
       totalDistanceKm: 12,
@@ -1552,8 +1562,20 @@ describe("optimizeRouteV2 service", () => {
         },
       ],
       routeLegs: [
-        { fromAddress: "Start", toAddress: "Flex Address", distanceMeters: 10000, durationSeconds: 7200, encodedPolyline: "a" },
-        { fromAddress: "Flex Address", toAddress: "End", distanceMeters: 2000, durationSeconds: 600, encodedPolyline: "b" },
+        {
+          fromAddress: "Start",
+          toAddress: "Flex Address",
+          distanceMeters: 10000,
+          durationSeconds: 7200,
+          encodedPolyline: "a",
+        },
+        {
+          fromAddress: "Flex Address",
+          toAddress: "End",
+          distanceMeters: 2000,
+          durationSeconds: 600,
+          encodedPolyline: "b",
+        },
       ],
       totalDistanceMeters: 12000,
       totalDistanceKm: 12,
@@ -1607,8 +1629,8 @@ describe("optimizeRouteV2 service", () => {
 
     mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
       buildTravelMatrix([
-        ["address:start", "address:shirley address", 2700],   // 45 min
-        ["address:start", "address:wide address", 120],        // 2 min
+        ["address:start", "address:shirley address", 2700], // 45 min
+        ["address:start", "address:wide address", 120], // 2 min
         ["address:shirley address", "address:wide address", 4800], // 80 min
         ["address:wide address", "address:shirley address", 4800], // 80 min
         ["address:shirley address", "address:end", 600],
@@ -1693,8 +1715,20 @@ describe("optimizeRouteV2 service", () => {
         },
       ],
       routeLegs: [
-        { fromAddress: "Start", toAddress: "Fixed Address", distanceMeters: 10000, durationSeconds: 5400, encodedPolyline: "a" },
-        { fromAddress: "Fixed Address", toAddress: "End", distanceMeters: 2000, durationSeconds: 600, encodedPolyline: "b" },
+        {
+          fromAddress: "Start",
+          toAddress: "Fixed Address",
+          distanceMeters: 10000,
+          durationSeconds: 5400,
+          encodedPolyline: "a",
+        },
+        {
+          fromAddress: "Fixed Address",
+          toAddress: "End",
+          distanceMeters: 2000,
+          durationSeconds: 600,
+          encodedPolyline: "b",
+        },
       ],
       totalDistanceMeters: 12000,
       totalDistanceKm: 12,

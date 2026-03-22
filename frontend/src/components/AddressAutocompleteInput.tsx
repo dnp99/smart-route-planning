@@ -1,9 +1,7 @@
-import { useEffect, useId, useMemo, useState } from 'react';
-import type { AddressSuggestion } from './types';
-import {
-  parseAddressAutocompleteResponse,
-} from '../../../shared/contracts';
-import { requestAuthedJson } from './auth/authFetch';
+import { useEffect, useId, useMemo, useState } from "react";
+import type { AddressSuggestion } from "./types";
+import { parseAddressAutocompleteResponse } from "../../../shared/contracts";
+import { requestAuthedJson } from "./auth/authFetch";
 
 type AddressAutocompleteInputProps = {
   id: string;
@@ -42,12 +40,10 @@ function AddressAutocompleteInput({
 }: AddressAutocompleteInputProps) {
   const [suggestions, setSuggestions] = useState<AddressSuggestion[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [error, setError] = useState("");
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [selectedSuggestionName, setSelectedSuggestionName] = useState(
-    value.trim(),
-  );
+  const [selectedSuggestionName, setSelectedSuggestionName] = useState(value.trim());
   const listboxId = useId();
 
   const shouldSearch = value.trim().length >= MIN_QUERY_LENGTH;
@@ -60,7 +56,7 @@ function AddressAutocompleteInput({
     if (!shouldSearch || shouldSuppressSuggestions) {
       setSuggestions([]);
       setIsLoading(false);
-      setError('');
+      setError("");
       setIsDropdownOpen(false);
       setActiveSuggestionIndex(-1);
       return;
@@ -72,17 +68,17 @@ function AddressAutocompleteInput({
 
     const timeoutId = window.setTimeout(async () => {
       setIsLoading(true);
-      setError('');
+      setError("");
 
       try {
         const params = new URLSearchParams({ query });
         const payload = await requestAuthedJson(
           `/api/address-autocomplete?${params}`,
           {
-            method: 'GET',
+            method: "GET",
             signal: controller.signal,
           },
-          'Unable to load address suggestions.',
+          "Unable to load address suggestions.",
         );
 
         if (isSubscribed) {
@@ -92,13 +88,17 @@ function AddressAutocompleteInput({
           setActiveSuggestionIndex(nextSuggestions.length > 0 ? 0 : -1);
         }
       } catch (fetchError) {
-        if (fetchError instanceof DOMException && fetchError.name === 'AbortError') {
+        if (fetchError instanceof DOMException && fetchError.name === "AbortError") {
           return;
         }
 
         if (isSubscribed) {
           setSuggestions([]);
-          setError(fetchError instanceof Error ? fetchError.message : 'Unable to load address suggestions.');
+          setError(
+            fetchError instanceof Error
+              ? fetchError.message
+              : "Unable to load address suggestions.",
+          );
           setIsDropdownOpen(false);
           setActiveSuggestionIndex(-1);
         }
@@ -146,7 +146,7 @@ function AddressAutocompleteInput({
           value={value}
           onChange={(event) => {
             onChange(event.target.value);
-            setSelectedSuggestionName('');
+            setSelectedSuggestionName("");
             setIsDropdownOpen(true);
           }}
           onFocus={() => {
@@ -162,7 +162,7 @@ function AddressAutocompleteInput({
             onBlur?.();
           }}
           onKeyDown={(event) => {
-            if (event.key === 'ArrowDown') {
+            if (event.key === "ArrowDown") {
               event.preventDefault();
               if (!showSuggestions) {
                 setIsDropdownOpen(suggestionNames.length > 0);
@@ -176,11 +176,13 @@ function AddressAutocompleteInput({
               return;
             }
 
-            if (event.key === 'ArrowUp') {
+            if (event.key === "ArrowUp") {
               event.preventDefault();
               if (!showSuggestions) {
                 setIsDropdownOpen(suggestionNames.length > 0);
-                setActiveSuggestionIndex(suggestionNames.length > 0 ? suggestionNames.length - 1 : -1);
+                setActiveSuggestionIndex(
+                  suggestionNames.length > 0 ? suggestionNames.length - 1 : -1,
+                );
                 return;
               }
 
@@ -188,14 +190,18 @@ function AddressAutocompleteInput({
               return;
             }
 
-            if (event.key === 'Escape') {
+            if (event.key === "Escape") {
               setIsDropdownOpen(false);
               setActiveSuggestionIndex(-1);
               return;
             }
 
-            if (event.key === 'Enter') {
-              if (showSuggestions && activeSuggestionIndex >= 0 && suggestions[activeSuggestionIndex]) {
+            if (event.key === "Enter") {
+              if (
+                showSuggestions &&
+                activeSuggestionIndex >= 0 &&
+                suggestions[activeSuggestionIndex]
+              ) {
                 event.preventDefault();
                 selectSuggestion(suggestions[activeSuggestionIndex]);
                 if (onEnterKey && !onSuggestionSelect) {
@@ -220,11 +226,11 @@ function AddressAutocompleteInput({
           }
           aria-invalid={hasVisibleError}
           className={[
-            'w-full rounded-xl border px-3 py-2 text-sm text-slate-900 outline-none transition focus:ring-2 dark:bg-slate-950 dark:text-slate-100',
+            "w-full rounded-xl border px-3 py-2 text-sm text-slate-900 outline-none transition focus:ring-2 dark:bg-slate-950 dark:text-slate-100",
             hasVisibleError
-              ? 'border-red-400 ring-red-500 focus:border-red-500 dark:border-red-700 dark:focus:border-red-500'
-              : 'border-slate-300 ring-blue-500 dark:border-slate-700',
-          ].join(' ')}
+              ? "border-red-400 ring-red-500 focus:border-red-500 dark:border-red-700 dark:focus:border-red-500"
+              : "border-slate-300 ring-blue-500 dark:border-slate-700",
+          ].join(" ")}
           required={required}
           disabled={disabled}
         />
@@ -248,20 +254,24 @@ function AddressAutocompleteInput({
                       }}
                       onMouseEnter={() => setActiveSuggestionIndex(index)}
                       className={[
-                        'flex w-full items-start gap-3 px-4 py-3 text-left transition',
+                        "flex w-full items-start gap-3 px-4 py-3 text-left transition",
                         isActive
-                          ? 'bg-blue-50 text-slate-950 dark:bg-blue-950/40 dark:text-white'
-                          : 'text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-900',
-                      ].join(' ')}
+                          ? "bg-blue-50 text-slate-950 dark:bg-blue-950/40 dark:text-white"
+                          : "text-slate-700 hover:bg-slate-50 dark:text-slate-200 dark:hover:bg-slate-900",
+                      ].join(" ")}
                     >
                       <span
                         aria-hidden="true"
                         className={[
-                          'mt-1 h-2.5 w-2.5 rounded-full',
-                          isActive ? 'bg-blue-600 dark:bg-blue-400' : 'bg-slate-300 dark:bg-slate-600',
-                        ].join(' ')}
+                          "mt-1 h-2.5 w-2.5 rounded-full",
+                          isActive
+                            ? "bg-blue-600 dark:bg-blue-400"
+                            : "bg-slate-300 dark:bg-slate-600",
+                        ].join(" ")}
                       />
-                      <span className="block text-sm font-medium leading-5">{suggestion.displayName}</span>
+                      <span className="block text-sm font-medium leading-5">
+                        {suggestion.displayName}
+                      </span>
                     </button>
                   </li>
                 );

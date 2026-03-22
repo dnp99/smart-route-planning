@@ -140,7 +140,10 @@ export function OptimizedStopList({
                                 </span>
                                 <span className="text-xs text-blue-700/90 dark:text-blue-300/90">
                                   {isStale ? "~ " : ""}
-                                  {expectedStartTimeFormatter.format(new Date(interTaskBreakStartMs))} –{" "}
+                                  {expectedStartTimeFormatter.format(
+                                    new Date(interTaskBreakStartMs),
+                                  )}{" "}
+                                  –{" "}
                                   {expectedStartTimeFormatter.format(new Date(interTaskBreakEndMs))}
                                 </span>
                               </div>
@@ -177,10 +180,7 @@ export function OptimizedStopList({
                   {stop.isEndingPoint ? (
                     (() => {
                       const endingDetailsKey = `ending:${stop.stopId}`;
-                      const isHomeEndingPoint = addressesMatch(
-                        stop.address,
-                        normalizedHomeAddress,
-                      );
+                      const isHomeEndingPoint = addressesMatch(stop.address, normalizedHomeAddress);
                       return (
                         <EndingStopCard
                           stop={stop}

@@ -8,12 +8,9 @@ import {
   type RoutePoint,
 } from "../../components/RouteMap";
 
-const createTask = (patientName: string) =>
-  ({ patientName } as OrderedStop["tasks"][number]);
+const createTask = (patientName: string) => ({ patientName }) as OrderedStop["tasks"][number];
 
-const createRoutePoint = (
-  overrides: Partial<RoutePoint>,
-): RoutePoint => ({
+const createRoutePoint = (overrides: Partial<RoutePoint>): RoutePoint => ({
   label: "Stop 1",
   address: "123 Main St",
   lat: 43.58025,
@@ -33,19 +30,13 @@ describe("RouteMap helpers", () => {
   });
 
   it("aggregates stop marker text per task initials", () => {
-    expect(
-      buildStopMarkerText([
-        createTask("Yasmin Ramji"),
-        createTask("Yasmin Ramji"),
-      ]),
-    ).toBe("YR+YR");
+    expect(buildStopMarkerText([createTask("Yasmin Ramji"), createTask("Yasmin Ramji")])).toBe(
+      "YR+YR",
+    );
 
-    expect(
-      buildStopMarkerText([
-        createTask("Yasmin Ramji"),
-        createTask("Xavier Ross"),
-      ]),
-    ).toBe("YR+XR");
+    expect(buildStopMarkerText([createTask("Yasmin Ramji"), createTask("Xavier Ross")])).toBe(
+      "YR+XR",
+    );
 
     expect(
       buildStopMarkerText([

@@ -87,8 +87,7 @@ export const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
     if (
       typeof parsed.startAddress !== "string" ||
       typeof parsed.manualEndAddress !== "string" ||
-      (parsed.startGooglePlaceId !== null &&
-        typeof parsed.startGooglePlaceId !== "string") ||
+      (parsed.startGooglePlaceId !== null && typeof parsed.startGooglePlaceId !== "string") ||
       (parsed.manualEndGooglePlaceId !== null &&
         typeof parsed.manualEndGooglePlaceId !== "string") ||
       !isMobilePlannerStep(parsed.activeMobileStep) ||
@@ -99,9 +98,7 @@ export const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
 
     const selectedDestinations = parsed.selectedDestinations
       .map(parseSelectedPatientDestination)
-      .filter(
-        (destination): destination is SelectedPatientDestination => destination !== null,
-      );
+      .filter((destination): destination is SelectedPatientDestination => destination !== null);
 
     if (selectedDestinations.length !== parsed.selectedDestinations.length) {
       return null;
@@ -126,10 +123,7 @@ export const persistRoutePlannerDraft = (draft: RoutePlannerDraft): void => {
     return;
   }
 
-  window.localStorage.setItem(
-    ROUTE_PLANNER_DRAFT_STORAGE_KEY,
-    JSON.stringify(draft),
-  );
+  window.localStorage.setItem(ROUTE_PLANNER_DRAFT_STORAGE_KEY, JSON.stringify(draft));
 };
 
 export const clearRoutePlannerDraft = (): void => {

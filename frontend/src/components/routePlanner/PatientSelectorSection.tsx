@@ -23,7 +23,11 @@ type PatientSelectorSectionProps = {
   onToggleDestinationDetails: (visitKey: string) => void;
   onRemoveDestinationVisit: (visitKey: string) => void;
   onSetDestinationVisitIncluded: (visitKey: string, isIncluded: boolean) => void;
-  onUpdateDestinationPlanningWindow: (visitKey: string, field: "windowStart" | "windowEnd", value: string) => void;
+  onUpdateDestinationPlanningWindow: (
+    visitKey: string,
+    field: "windowStart" | "windowEnd",
+    value: string,
+  ) => void;
   onSetDestinationPersistPlanningWindow: (visitKey: string, persistPlanningWindow: boolean) => void;
 };
 
@@ -68,7 +72,11 @@ export const PatientSelectorSection = ({
         </div>
         <div className="flex shrink-0 items-center gap-3">
           {isContentVisible && (
-            <button type="button" onClick={onOpenCreatePatient} className={responsiveStyles.secondaryButton}>
+            <button
+              type="button"
+              onClick={onOpenCreatePatient}
+              className={responsiveStyles.secondaryButton}
+            >
               Add New Patient
             </button>
           )}
@@ -78,11 +86,22 @@ export const PatientSelectorSection = ({
             onClick={() => onSetExpanded(!isExpanded)}
             className={responsiveStyles.panelChevronButton}
           >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              {isExpanded
-                ? <polyline points="18 15 12 9 6 15" />
-                : <polyline points="6 9 12 15 18 9" />
-              }
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              {isExpanded ? (
+                <polyline points="18 15 12 9 6 15" />
+              ) : (
+                <polyline points="6 9 12 15 18 9" />
+              )}
             </svg>
           </button>
         </div>
@@ -99,7 +118,17 @@ export const PatientSelectorSection = ({
                 <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
               )}
               <div className="relative">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                >
                   <circle cx="11" cy="11" r="8" />
                   <path d="m21 21-4.35-4.35" />
                 </svg>
@@ -122,12 +151,23 @@ export const PatientSelectorSection = ({
               {destinationSearchResults.length > 0 && (
                 <ul className={responsiveStyles.selectableList}>
                   {destinationSearchResults.map((patient) => {
-                    const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
+                    const patientName = formatPatientNameFromParts(
+                      patient.firstName,
+                      patient.lastName,
+                    );
                     return (
                       <li key={patient.id}>
-                        <button type="button" onClick={() => onAddPatient(patient)} className={responsiveStyles.selectableItemButton}>
-                          <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">{patientName}</p>
-                          <p className="m-0 text-slate-600 dark:text-slate-300">{patient.address}</p>
+                        <button
+                          type="button"
+                          onClick={() => onAddPatient(patient)}
+                          className={responsiveStyles.selectableItemButton}
+                        >
+                          <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
+                            {patientName}
+                          </p>
+                          <p className="m-0 text-slate-600 dark:text-slate-300">
+                            {patient.address}
+                          </p>
                         </button>
                       </li>
                     );

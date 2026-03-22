@@ -97,5 +97,4 @@ describe("requireAuth", () => {
       message: "Unauthorized.",
     });
   });
-
 });

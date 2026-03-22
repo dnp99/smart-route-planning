@@ -189,7 +189,10 @@ export const buildPlanningTravelDurationMatrix = async (
     }
 
     if (response.status === 429) {
-      throw new HttpError(503, "Driving route matrix service is rate-limited. Please try again shortly.");
+      throw new HttpError(
+        503,
+        "Driving route matrix service is rate-limited. Please try again shortly.",
+      );
     }
 
     throw new HttpError(503, "Driving route matrix service returned an unexpected error.");

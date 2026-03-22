@@ -94,15 +94,18 @@ const geocodeGooglePlaceId = async (placeId: string, apiKey: string): Promise<La
   let response: Response;
 
   try {
-    response = await fetch(`https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`, {
-      headers: {
-        Accept: "application/json",
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "location",
+    response = await fetch(
+      `https://places.googleapis.com/v1/places/${encodeURIComponent(placeId)}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask": "location",
+        },
+        cache: "no-store",
+        signal: controller.signal,
       },
-      cache: "no-store",
-      signal: controller.signal,
-    });
+    );
   } catch {
     throw new HttpError(503, "Place lookup service is currently unavailable.");
   } finally {
@@ -223,4 +226,7 @@ export const geocodeTargetsSequentially = async (
 };
 
 export const geocodeAddressesSequentially = async (addresses: string[]) =>
-  geocodeTargetsSequentially(addresses.map((address) => ({ address })), "");
+  geocodeTargetsSequentially(
+    addresses.map((address) => ({ address })),
+    "",
+  );

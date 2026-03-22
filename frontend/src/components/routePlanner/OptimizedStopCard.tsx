@@ -43,10 +43,7 @@ export function OptimizedStopCard({
   onMoveDown,
 }: OptimizedStopCardProps) {
   const formattedPatientName = formatNameWords(task.patientName);
-  const expectedStartLabel = formatExpectedStartTimeText(
-    task.serviceStartTime,
-    isStale,
-  );
+  const expectedStartLabel = formatExpectedStartTimeText(task.serviceStartTime, isStale);
   const expectedStartTimeValue = expectedStartLabel
     .replace("Expected start time ", "")
     .replace(/^~\s+/, "");
@@ -144,7 +141,17 @@ export function OptimizedStopCard({
                 : "cursor-not-allowed text-slate-300 dark:text-slate-600"
             }`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3 w-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-3 w-3"
+            >
               <path d="M18 15l-6-6-6 6" />
             </svg>
           </button>
@@ -159,7 +166,17 @@ export function OptimizedStopCard({
                 : "cursor-not-allowed text-slate-300 dark:text-slate-600"
             }`}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="h-3 w-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-3 w-3"
+            >
               <path d="M6 9l6 6 6-6" />
             </svg>
           </button>
@@ -167,11 +184,14 @@ export function OptimizedStopCard({
       )}
 
       {expectedStartLabel && (
-        <div className={`mt-2 flex flex-wrap items-center justify-between gap-1${showMoveControls ? " pr-9" : ""}`}>
+        <div
+          className={`mt-2 flex flex-wrap items-center justify-between gap-1${showMoveControls ? " pr-9" : ""}`}
+        >
           <div className="flex items-baseline gap-1.5">
             <span className="text-xs text-slate-500 dark:text-slate-400">Expected start</span>
             <span className="text-sm font-semibold text-slate-900 dark:text-slate-50">
-              {isStale ? "~\u00A0" : ""}{expectedStartTimeValue}
+              {isStale ? "~\u00A0" : ""}
+              {expectedStartTimeValue}
             </span>
           </div>
           {isStale && (
@@ -218,16 +238,21 @@ export function OptimizedStopCard({
             </div>
             <div className="flex gap-2">
               <span className="w-20 shrink-0 text-slate-400 dark:text-slate-500">Visit type</span>
-              <span className="text-slate-700 dark:text-slate-300 capitalize">{task.windowType}</span>
+              <span className="text-slate-700 dark:text-slate-300 capitalize">
+                {task.windowType}
+              </span>
             </div>
             <div className="flex gap-2">
               <span className="w-20 shrink-0 text-slate-400 dark:text-slate-500">Duration</span>
-              <span className="text-slate-700 dark:text-slate-300">{formatVisitDurationMinutes(task.serviceDurationMinutes)}</span>
+              <span className="text-slate-700 dark:text-slate-300">
+                {formatVisitDurationMinutes(task.serviceDurationMinutes)}
+              </span>
             </div>
             <div className="flex gap-2">
               <span className="w-20 shrink-0 text-slate-400 dark:text-slate-500">Travel</span>
               <span className="text-slate-700 dark:text-slate-300">
-                {stop.distanceFromPreviousKm} km · {formatDuration(stop.durationFromPreviousSeconds)} from prev stop
+                {stop.distanceFromPreviousKm} km ·{" "}
+                {formatDuration(stop.durationFromPreviousSeconds)} from prev stop
               </span>
             </div>
           </div>
@@ -280,19 +305,21 @@ export function EndingStopCard({
         )}
       </button>
 
-      {isHomeEndingPoint && (() => {
-        const arrivalDate = new Date(stop.arrivalTime);
-        if (arrivalDate.getTime() !== arrivalDate.getTime()) return null;
-        return (
-          <p className="mt-1 text-sm font-semibold leading-6 text-emerald-700 dark:text-emerald-300">
-            {isStale ? "~\u00A0" : ""}You should be home by{" "}
-            {expectedStartTimeFormatter.format(arrivalDate)}
-          </p>
-        );
-      })()}
+      {isHomeEndingPoint &&
+        (() => {
+          const arrivalDate = new Date(stop.arrivalTime);
+          if (arrivalDate.getTime() !== arrivalDate.getTime()) return null;
+          return (
+            <p className="mt-1 text-sm font-semibold leading-6 text-emerald-700 dark:text-emerald-300">
+              {isStale ? "~\u00A0" : ""}You should be home by{" "}
+              {expectedStartTimeFormatter.format(arrivalDate)}
+            </p>
+          );
+        })()}
 
       <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-        {stop.distanceFromPreviousKm} km · {formatDuration(stop.durationFromPreviousSeconds)} from previous stop
+        {stop.distanceFromPreviousKm} km · {formatDuration(stop.durationFromPreviousSeconds)} from
+        previous stop
       </p>
 
       {isExpanded && (

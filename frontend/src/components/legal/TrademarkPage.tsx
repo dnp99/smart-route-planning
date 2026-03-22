@@ -12,9 +12,9 @@ export default function TrademarkPage() {
             CareFlow Trademark
           </h2>
           <p className="m-0">
-            &ldquo;CareFlow&rdquo; is a trademark of CareFlow. All rights reserved. Unauthorized
-            use of the CareFlow name, logo, or any associated marks is prohibited without prior
-            written consent.
+            &ldquo;CareFlow&rdquo; is a trademark of CareFlow. All rights reserved. Unauthorized use
+            of the CareFlow name, logo, or any associated marks is prohibited without prior written
+            consent.
           </p>
         </section>
 

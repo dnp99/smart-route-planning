@@ -5,9 +5,7 @@ import {
   type PatientFormValues,
 } from "../../components/patients/patientForm";
 
-const buildValues = (
-  overrides?: Partial<PatientFormValues>,
-): PatientFormValues => ({
+const buildValues = (overrides?: Partial<PatientFormValues>): PatientFormValues => ({
   firstName: "Jane",
   lastName: "Doe",
   address: "123 Main St",

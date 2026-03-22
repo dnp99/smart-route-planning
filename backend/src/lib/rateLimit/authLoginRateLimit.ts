@@ -86,9 +86,7 @@ const executeUpstashPipeline = async (
 
   const payload = await response.json().catch(() => null);
   if (!response.ok) {
-    throw new Error(
-      `Upstash pipeline request failed with status ${response.status}.`,
-    );
+    throw new Error(`Upstash pipeline request failed with status ${response.status}.`);
   }
 
   return parsePipelineResults(payload);

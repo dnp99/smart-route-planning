@@ -109,7 +109,9 @@ describe("/api/auth/update-password route", () => {
   });
 
   it("returns 401 when authorization is invalid", async () => {
-    requireAuthMock.mockRejectedValue(new HttpError(401, "Missing or invalid authorization token."));
+    requireAuthMock.mockRejectedValue(
+      new HttpError(401, "Missing or invalid authorization token."),
+    );
 
     const response = await POST(makeRequest({ currentPassword: "old", newPassword: "newpass123" }));
 
