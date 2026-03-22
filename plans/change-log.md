@@ -16,6 +16,46 @@ Current planning documents:
 
 ---
 
+## Route Planner UX Overhaul & Component Refactor (March 2026)
+
+### UI changes
+
+- Merged the two side-by-side patient panels ("Add patient(s)" + "Selected patients") into a single collapsible card with a chevron
+- Added max-height + scroll to patient lists so large patient counts don't overflow the viewport
+- Starting point and Ending point fields are now side by side
+- Replaced overflow ("…") menu on destination rows with a direct trash icon (matching Patients table style)
+- Patient names in the selected list truncate with ellipsis and show the full name as a `title` tooltip
+- Clicking a patient name opens a light modal showing address, time window, and Fixed/Flexible pill
+- Added a search icon inset to the patient search bar
+- Patient search bar label shows available count: "Search patients (X)"
+- "Add New Patient" button is hidden when the patient card is collapsed
+- Collapsed patient card title changes to "Added patients [X]" when patients are selected
+- Panels collapse when Optimize / Re-optimize is clicked
+
+### Component architecture
+
+- `RoutePlanner.tsx` split into three child components; all state/logic stays in the parent:
+  - `TripSetupSection.tsx` — trip address form, collapse/expand, home-address warning
+  - `PatientSelectorSection.tsx` — patient search, selected list, Add New Patient
+  - `RouteResultSection.tsx` — mobile sticky footers, submit row, result/error banners, `OptimizedRouteResult`
+- `DestinationRow.tsx` extracted from `SelectedDestinationsSection` — contains `DestinationRow` and `PatientInfoModal`
+- `SelectedDestinationsSection.tsx` rewritten as a thin wrapper around `DestinationRow`
+- All custom hooks moved from `routePlanner/` to `components/hooks/`:
+  - `usePatientSearch`, `useRouteOptimization`, `useManualReorder`, `useCreatePatientForm`, `useDestinationAddresses`
+- New tokens added to `responsiveStyles.ts` (no inline Tailwind strings in any component)
+
+### Tests
+
+- Added 12 unit tests for `DestinationRow` (`DestinationRow.test.tsx`)
+- Updated `RoutePlanner.patientSelection.test.tsx` for new UI (name button, direct trash icon)
+- Updated all hook test imports to new `components/hooks/` paths
+
+### Tooling
+
+- Added mandatory pre-push checklist to `CLAUDE.md`: run `npm run lint` and `npm run test` from `frontend/` before every push
+
+---
+
 ## UI Polish — Sorting, Scroll, Icons, Route Map (March 2026)
 
 ### Patient list sorting & filtering

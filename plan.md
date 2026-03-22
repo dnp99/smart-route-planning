@@ -14,6 +14,44 @@ This root file exists to preserve the repository convention that `plan.md` is up
 ## Latest change addendum
 
 ### Change
+Route Planner UX overhaul and component refactor — merged patient panels, collapsible cards, patient info modal, DestinationRow extraction, child component split, hooks moved to `components/hooks/`.
+
+### Files added/updated/deleted
+- Added:
+  - `frontend/src/components/routePlanner/DestinationRow.tsx`
+  - `frontend/src/components/routePlanner/TripSetupSection.tsx`
+  - `frontend/src/components/routePlanner/PatientSelectorSection.tsx`
+  - `frontend/src/components/routePlanner/RouteResultSection.tsx`
+  - `frontend/src/components/hooks/usePatientSearch.ts`
+  - `frontend/src/components/hooks/useRouteOptimization.ts`
+  - `frontend/src/components/hooks/useManualReorder.ts`
+  - `frontend/src/components/hooks/useCreatePatientForm.ts`
+  - `frontend/src/components/hooks/useDestinationAddresses.ts`
+  - `frontend/src/tests/routePlanner/DestinationRow.test.tsx`
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/components/responsiveStyles.ts`
+  - `frontend/src/components/routePlanner/SelectedDestinationsSection.tsx`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `CLAUDE.md`
+  - `plan.md`
+  - `plans/change-log.md`
+- Deleted:
+  - `frontend/src/components/routePlanner/use*.ts` (all five hooks, relocated to `components/hooks/`)
+
+### Why
+
+- `RoutePlanner.tsx` had grown to ~1100 lines; split into focused child components reduces cognitive load and makes future changes safer.
+- Single patient card reduces visual clutter; collapsible UI reduces screen real estate usage.
+- Hooks now live in a dedicated `components/hooks/` folder, consistent with idiomatic React project structure.
+
+### Verification
+
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run test` ✅ (132 tests pass)
+
+### Change
 Updated repository documentation to reflect current API endpoints, frontend architecture splits, and recent UI behavior updates.
 
 ### Files added/updated/deleted
