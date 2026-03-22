@@ -26,7 +26,7 @@ const usePatientSearchMock = vi.fn<
   error: "",
 }));
 
-vi.mock("../../components/routePlanner/useRouteOptimization", () => ({
+vi.mock("../../components/hooks/useRouteOptimization", () => ({
   useRouteOptimization: () => ({
     result: routeOptimizationState.result,
     error: routeOptimizationState.error,
@@ -37,7 +37,7 @@ vi.mock("../../components/routePlanner/useRouteOptimization", () => ({
   }),
 }));
 
-vi.mock("../../components/routePlanner/usePatientSearch", () => ({
+vi.mock("../../components/hooks/usePatientSearch", () => ({
   usePatientSearch: (args: { enabled: boolean }) => usePatientSearchMock(args),
 }));
 
@@ -370,7 +370,9 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByText("1 visit queued")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Edit window" })).toBeTruthy();
     expect(screen.queryByText("Include this visit in route")).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Jane Doe$/i })).toBeNull();
+    // Jane Doe button in the search results list should be gone (duplicate prevention);
+    // only the destination row name button (title="Jane Doe") should remain
+    expect(screen.getAllByRole("button", { name: /^Jane Doe$/i })).toHaveLength(1);
   });
 
   it("shows a clear hint when ending point is not selected", () => {
@@ -797,11 +799,10 @@ describe("RoutePlanner patient selection integration", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
     expect(screen.getByText("1 visit queued")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /Open actions for John Smith/i }));
     fireEvent.click(screen.getByRole("button", { name: /Remove John Smith/i }));
 
     expect(screen.getByText("0 visits queued")).toBeTruthy();
-    expect(screen.getByText("No destination patients selected yet.")).toBeTruthy();
+    expect(screen.getByText("No patients selected yet.")).toBeTruthy();
   });
 
   it("allows optimizing flexible patients without preferred windows", () => {
