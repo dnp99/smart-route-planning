@@ -42,6 +42,17 @@ Key rules enforced every session:
 
 17. **Naming (§15):** Card = static. Panel = interactive/collapsible. Section = page-level grouping. Pill = inline badge. Use these terms consistently in code and component names.
 
+## Pre-push checklist (mandatory)
+
+Before every `git push`, run both of these from `frontend/` and fix any failures:
+
+```sh
+npm run lint   # ESLint + ES compatibility check
+npm run test   # Vitest unit tests (or: node_modules/.bin/vitest run)
+```
+
+Never push with failing lint or tests.
+
 ## Stack
 
 - Frontend: React + TypeScript, Vite, Tailwind CSS
