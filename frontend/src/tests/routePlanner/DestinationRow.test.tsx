@@ -84,7 +84,7 @@ describe("DestinationRow", () => {
     render(<DestinationRow destination={buildDestination()} {...defaultProps} />);
     fireEvent.click(screen.getByText("Alex Johnson"));
     const allDivs = document.querySelectorAll("div");
-    const backdropEl = Array.from(allDivs).find(el => el.className.includes("fixed") && el.className.includes("inset-0"));
+    const backdropEl = Array.from(allDivs).find(el => el.className.indexOf("fixed") !== -1 && el.className.indexOf("inset-0") !== -1);
     if (backdropEl) fireEvent.click(backdropEl);
     expect(screen.queryByText("10 First Avenue, Toronto, ON")).toBeNull();
   });
