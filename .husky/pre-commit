@@ -1,0 +1,18 @@
+#!/bin/sh
+
+FRONTEND_STAGED=$(git diff --cached --name-only | grep "^frontend/src/")
+BACKEND_STAGED=$(git diff --cached --name-only | grep "^backend/src/")
+
+if [ -n "$FRONTEND_STAGED" ]; then
+  echo "→ frontend: prettier + lint on staged files"
+  (cd frontend && npx lint-staged) || exit 1
+  echo "→ frontend: unit tests"
+  (cd frontend && npm run test) || exit 1
+fi
+
+if [ -n "$BACKEND_STAGED" ]; then
+  echo "→ backend: prettier + lint on staged files"
+  (cd backend && npx lint-staged) || exit 1
+  echo "→ backend: unit tests"
+  (cd backend && npm run test) || exit 1
+fi

@@ -31,7 +31,14 @@
     "drizzle-kit": "^0.31.7",
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
+    "prettier": "^3.8.1",
     "typescript": "^5",
     "vitest": "^4.0.18"
+  },
+  "lint-staged": {
+    "src/**/*.{ts,tsx}": [
+      "prettier --write",
+      "eslint --fix"
+    ]
   }
 }
