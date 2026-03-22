@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import AddressAutocompleteInput from "./AddressAutocompleteInput";
 import { responsiveStyles } from "./responsiveStyles";
 import type { Patient } from "../../../shared/contracts";
-import { usePatientSearch } from "./routePlanner/usePatientSearch";
-import { useRouteOptimization } from "./routePlanner/useRouteOptimization";
+import { usePatientSearch } from "./hooks/usePatientSearch";
+import { useRouteOptimization } from "./hooks/useRouteOptimization";
 import { persistPlanningWindows } from "./routePlanner/routePlannerService";
-import { SelectedDestinationsSection } from "./routePlanner/SelectedDestinationsSection";
 import type { SelectedPatientDestination } from "./routePlanner/routePlannerTypes";
 import {
   patientMatchesSearchQuery,
@@ -18,16 +16,17 @@ import {
   validateRequestDestinations,
 } from "./routePlanner/routePlannerSubmission";
 import type { AddressSuggestion } from "./types";
-import { formatPatientNameFromParts } from "./patients/patientName";
 import { PatientFormModal } from "./patients/PatientFormModal";
 import {
   type MobilePlannerStep,
   readRoutePlannerDraft,
   persistRoutePlannerDraft,
 } from "./routePlanner/routePlannerDraft";
-import { OptimizedRouteResult } from "./routePlanner/OptimizedRouteResult";
-import { useManualReorder } from "./routePlanner/useManualReorder";
-import { useCreatePatientForm } from "./routePlanner/useCreatePatientForm";
+import { useManualReorder } from "./hooks/useManualReorder";
+import { useCreatePatientForm } from "./hooks/useCreatePatientForm";
+import { TripSetupSection } from "./routePlanner/TripSetupSection";
+import { PatientSelectorSection } from "./routePlanner/PatientSelectorSection";
+import { RouteResultSection } from "./routePlanner/RouteResultSection";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
@@ -91,9 +90,7 @@ function RoutePlanner({
     useState(false);
   const [latenessWarningsDismissed, setLatenessWarningsDismissed] =
     useState(false);
-  const [isDestinationListExpanded, setIsDestinationListExpanded] =
-    useState(true);
-  const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
+const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
     (initialDraft?.selectedDestinations?.length ?? 0) === 0,
   );
   const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
@@ -191,7 +188,7 @@ function RoutePlanner({
 
   useEffect(() => {
     if (result) {
-      setIsDestinationListExpanded(false);
+      setIsPatientSearchExpanded(false);
       setIsTripSetupExpanded(false);
     }
   }, [result]);
@@ -605,23 +602,18 @@ function RoutePlanner({
       <section className={responsiveStyles.section}>
         <div className={responsiveStyles.sectionHeader}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-            <h1 className="m-0 text-xl font-semibold leading-tight text-slate-900 dark:text-slate-100 sm:text-2xl">
-              Smart Route Planner
-            </h1>
+            <h1 className={responsiveStyles.pageTitle}>Smart Route Planner</h1>
           </div>
-          <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
+          <p className={responsiveStyles.cardDescription}>
             Enter your starting point, ending point, and destination addresses.
-            The planner prioritizes time-window feasibility first, then
-            distance, with the ending point as the final stop.
+            The planner prioritizes time-window feasibility first, then distance,
+            with the ending point as the final stop.
           </p>
         </div>
 
         <form className={responsiveStyles.form} onSubmit={handleSubmit}>
           {isMobileViewport && (
-            <nav
-              aria-label="Route planner steps"
-              className={responsiveStyles.mobileStepNav}
-            >
+            <nav aria-label="Route planner steps" className={responsiveStyles.mobileStepNav}>
               {[
                 { key: "trip", label: "Trip", stepNumber: 1, isComplete: hasValidTripAddresses },
                 { key: "patients", label: "Patients", stepNumber: 2, isComplete: selectedDestinations.length > 0 },
@@ -633,33 +625,16 @@ function RoutePlanner({
                     key={step.key}
                     type="button"
                     aria-pressed={isActive}
-                    onClick={() =>
-                      setActiveMobileStep(step.key as MobilePlannerStep)
-                    }
-                    className={`${responsiveStyles.mobileStepButton} ${
-                      isActive
-                        ? responsiveStyles.mobileStepButtonActive
-                        : responsiveStyles.mobileStepButtonInactive
-                    }`}
+                    onClick={() => setActiveMobileStep(step.key as MobilePlannerStep)}
+                    className={`${responsiveStyles.mobileStepButton} ${isActive ? responsiveStyles.mobileStepButtonActive : responsiveStyles.mobileStepButtonInactive}`}
                   >
                     <span className="flex items-center justify-center gap-1">
                       {step.isComplete && !isActive ? (
-                        <svg
-                          width="11"
-                          height="11"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                          className="shrink-0 text-green-600 dark:text-green-400"
-                        >
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={responsiveStyles.stepCheckIcon}>
                           <polyline points="20 6 9 17 4 12" />
                         </svg>
                       ) : (
-                        <span className="text-[0.6rem] font-bold opacity-50">{step.stepNumber}</span>
+                        <span className={responsiveStyles.stepNumberBadge}>{step.stepNumber}</span>
                       )}
                       {step.label}
                     </span>
@@ -669,404 +644,68 @@ function RoutePlanner({
             </nav>
           )}
 
-          {isTripStepVisible && !isTripSetupExpanded && !isMobileViewport && (
-            <section className={responsiveStyles.panel}>
-              <div className="flex items-start justify-between gap-3 sm:items-center">
-                <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
-                  <span className="break-words">
-                    {startAddress} <span className="text-slate-400">→</span>{" "}
-                    {resolvedEndAddress}
-                  </span>{" "}
-                  —{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsTripSetupExpanded(true)}
-                    className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
-                  >
-                    Edit
-                  </button>
-                </p>
-                <button
-                  type="button"
-                  aria-label="Expand trip setup"
-                  onClick={() => setIsTripSetupExpanded(true)}
-                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
-              </div>
-            </section>
-          )}
+          <TripSetupSection
+            isVisible={isTripStepVisible}
+            isMobileViewport={isMobileViewport}
+            isExpanded={isTripSetupExpanded}
+            onSetExpanded={setIsTripSetupExpanded}
+            startAddress={startAddress}
+            resolvedEndAddress={resolvedEndAddress}
+            manualEndAddress={manualEndAddress}
+            startFieldError={startFieldError}
+            endFieldError={endFieldError}
+            isHomeAddressMissing={isHomeAddressMissing}
+            onStartAddressChange={handleStartAddressChange}
+            onStartAddressPick={handleStartAddressPick}
+            onEndAddressChange={handleManualEndAddressChange}
+            onEndAddressPick={handleManualEndAddressPick}
+            onStartBlur={() => setStartTouched(true)}
+            onEndBlur={() => setEndTouched(true)}
+            onOpenAccountSettings={onOpenAccountSettings}
+          />
 
-          {isTripStepVisible && (isTripSetupExpanded || isMobileViewport) && (
-            <section className={responsiveStyles.panel}>
-              <div className={responsiveStyles.cardHeader}>
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
-                  {!isMobileViewport && startAddress.length > 0 && resolvedEndAddress.length > 0 && (
-                    <button
-                      type="button"
-                      aria-label="Collapse trip setup"
-                      onClick={() => setIsTripSetupExpanded(false)}
-                      className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <polyline points="18 15 12 9 6 15" />
-                      </svg>
-                    </button>
-                  )}
-                </div>
-                <p className={responsiveStyles.cardDescription}>
-                  Define where the nurse starts and how the route should end.
-                </p>
-              </div>
+          <PatientSelectorSection
+            isVisible={isPatientsStepVisible}
+            isMobileViewport={isMobileViewport}
+            isExpanded={isPatientSearchExpanded}
+            onSetExpanded={setIsPatientSearchExpanded}
+            destinationCount={destinationCount}
+            destinationSearchResults={destinationSearchResults}
+            destinationSearchQuery={destinationSearchQuery}
+            onSearchQueryChange={setDestinationSearchQuery}
+            isSearchLoading={isDestinationSearchLoading}
+            searchError={destinationSearchError ?? ""}
+            createPatientError={createPatientError ?? ""}
+            selectedDestinations={selectedDestinations}
+            expandedDestinationVisitKeys={expandedDestinationVisitKeys}
+            onAddPatient={addDestinationPatient}
+            onOpenCreatePatient={openCreatePatientModal}
+            onToggleDestinationDetails={toggleDestinationDetails}
+            onRemoveDestinationVisit={removeDestinationVisit}
+            onSetDestinationVisitIncluded={setDestinationVisitIncluded}
+            onUpdateDestinationPlanningWindow={updateDestinationPlanningWindow}
+            onSetDestinationPersistPlanningWindow={setDestinationPersistPlanningWindow}
+          />
 
-              {isHomeAddressMissing && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-900/70 dark:bg-amber-950/40">
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="m-0 text-sm font-semibold text-amber-900 dark:text-amber-200">
-                        Home address not set
-                      </p>
-                      <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
-                        Set your home address in Account settings to auto-fill
-                        starting and ending points. You can still enter
-                        addresses manually.
-                      </p>
-                    </div>
-                    {onOpenAccountSettings && (
-                      <button
-                        type="button"
-                        onClick={onOpenAccountSettings}
-                        className="rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
-                      >
-                        Open account settings
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <AddressAutocompleteInput
-                id="startAddress"
-                label="Starting point"
-                placeholder="e.g. 1 Apple Park Way, Cupertino"
-                value={startAddress}
-                onChange={handleStartAddressChange}
-                onSuggestionPick={handleStartAddressPick}
-                onBlur={() => setStartTouched(true)}
-                helperText="Type at least 3 characters to see suggestions."
-                errorText={startFieldError}
-                required
-              />
-
-              <AddressAutocompleteInput
-                id="endAddress"
-                label="Ending point"
-                placeholder="e.g. Pearson International Airport"
-                value={manualEndAddress}
-                onChange={handleManualEndAddressChange}
-                onSuggestionPick={handleManualEndAddressPick}
-                onBlur={() => setEndTouched(true)}
-                helperText="Type at least 3 characters to see suggestions."
-                errorText={endFieldError}
-                required
-              />
-
-            </section>
-          )}
-
-          {isPatientsStepVisible && !isPatientSearchExpanded && !isMobileViewport && (
-            <section className={responsiveStyles.panel}>
-              <div className="flex items-start justify-between gap-3 sm:items-center">
-                <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
-                  {destinationCount === 0
-                    ? "No patients selected"
-                    : `${destinationCount} patient${destinationCount === 1 ? "" : "s"} selected`}{" "}
-                  —{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsPatientSearchExpanded(true)}
-                    className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
-                  >
-                    Edit
-                  </button>
-                </p>
-                <button
-                  type="button"
-                  aria-label="Expand patient search"
-                  onClick={() => setIsPatientSearchExpanded(true)}
-                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
-              </div>
-            </section>
-          )}
-
-          {isPatientsStepVisible && (isPatientSearchExpanded || isMobileViewport) && (
-            <section className={responsiveStyles.panel}>
-              <div className={responsiveStyles.cardHeader}>
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className={responsiveStyles.cardTitle}>
-                    Add patient(s) to create your schedule
-                  </h2>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={openCreatePatientModal}
-                      className="rounded-xl bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
-                    >
-                      Add New Patient
-                    </button>
-                    {!isMobileViewport && selectedDestinations.length > 0 && (
-                      <button
-                        type="button"
-                        aria-label="Collapse patient search"
-                        onClick={() => setIsPatientSearchExpanded(false)}
-                        className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                          <polyline points="18 15 12 9 6 15" />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                </div>
-                <p className={responsiveStyles.cardDescription}>
-                  Add saved patients as route stops before optimizing the visit
-                  order.
-                </p>
-              </div>
-              {createPatientError && (
-                <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
-                  {createPatientError}
-                </p>
-              )}
-              <input
-                id="destination-patient-search"
-                type="search"
-                aria-label="Destination patient search"
-                value={destinationSearchQuery}
-                onChange={(event) =>
-                  setDestinationSearchQuery(event.target.value)
-                }
-                placeholder="Search saved patients by first or last name"
-                className={responsiveStyles.searchInput}
-              />
-
-              {isDestinationSearchLoading && (
-                <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
-                  Loading patients…
-                </p>
-              )}
-
-              {destinationSearchError && (
-                <p className="m-0 text-xs text-amber-700 dark:text-amber-300">
-                  {destinationSearchError}
-                </p>
-              )}
-
-              {destinationSearchResults.length > 0 && (
-                <ul className={responsiveStyles.selectableList}>
-                  {destinationSearchResults.map((patient) => {
-                    const patientName = formatPatientNameFromParts(
-                      patient.firstName,
-                      patient.lastName,
-                    );
-
-                    return (
-                      <li key={patient.id}>
-                        <button
-                          type="button"
-                          onClick={() => addDestinationPatient(patient)}
-                          className={responsiveStyles.selectableItemButton}
-                        >
-                          <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
-                            {patientName}
-                          </p>
-                          <p className="m-0 text-slate-600 dark:text-slate-300">
-                            {patient.address}
-                          </p>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-            </section>
-          )}
-
-          {isPatientsStepVisible && isPatientSearchExpanded && !isDestinationListExpanded && selectedDestinations.length > 0 && !isMobileViewport ? (
-            <section className={responsiveStyles.panel}>
-              <div className="flex items-start justify-between gap-3 sm:items-center">
-                <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
-                  {destinationCount} patient{destinationCount === 1 ? "" : "s"}{" "}
-                  selected —{" "}
-                  <button
-                    type="button"
-                    onClick={() => setIsDestinationListExpanded(true)}
-                    className="text-blue-600 underline-offset-2 hover:underline dark:text-blue-300"
-                  >
-                    Edit
-                  </button>
-                </p>
-                <button
-                  type="button"
-                  aria-label="Expand selected patients"
-                  onClick={() => setIsDestinationListExpanded(true)}
-                  className="text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <polyline points="6 9 12 15 18 9" />
-                  </svg>
-                </button>
-              </div>
-            </section>
-          ) : (
-            <SelectedDestinationsSection
-              isVisible={isPatientsStepVisible && (isPatientSearchExpanded || isMobileViewport)}
-              isMobileViewport={isMobileViewport}
-              selectedDestinations={selectedDestinations}
-              expandedDestinationVisitKeys={expandedDestinationVisitKeys}
-              onToggleDestinationDetails={toggleDestinationDetails}
-              onRemoveDestinationVisit={removeDestinationVisit}
-              onSetDestinationVisitIncluded={setDestinationVisitIncluded}
-              onUpdateDestinationPlanningWindow={
-                updateDestinationPlanningWindow
-              }
-              onSetDestinationPersistPlanningWindow={
-                setDestinationPersistPlanningWindow
-              }
-              onCollapse={() => setIsDestinationListExpanded(false)}
-            />
-          )}
-
-          {isMobileViewport && activeMobileStep === "trip" && (
-            <div className={responsiveStyles.stickyFooter}>
-              {!hasValidTripAddresses && (
-                <p className="m-0 mb-2 text-center text-xs text-slate-500 dark:text-slate-400">
-                  Add a starting and ending point to continue.
-                </p>
-              )}
-              <button
-                type="button"
-                disabled={!hasValidTripAddresses}
-                onClick={() => setActiveMobileStep("patients")}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70"
-              >
-                Continue to Patients →
-              </button>
-            </div>
-          )}
-
-          {isMobileViewport && activeMobileStep === "patients" && (
-            <div className={responsiveStyles.stickyFooter}>
-              {selectedDestinations.length === 0 && (
-                <p className="m-0 mb-2 text-center text-xs text-slate-500 dark:text-slate-400">
-                  Add at least one patient to continue.
-                </p>
-              )}
-              <button
-                type="button"
-                disabled={selectedDestinations.length === 0}
-                onClick={() => setActiveMobileStep("review")}
-                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70"
-              >
-                Continue to Review →
-              </button>
-            </div>
-          )}
-
-          {isReviewStepVisible && isMobileViewport && (
-            <section className={responsiveStyles.mobileReviewCard}>
-              <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
-                Ready to optimize
-              </p>
-              <p className="m-0 text-xs text-slate-600 dark:text-slate-300">
-                {destinationCount} destination(s) included
-                {resolvedEndAddress.trim().length === 0
-                  ? " • ending point missing"
-                  : ""}
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => setActiveMobileStep("trip")}
-                  className={responsiveStyles.secondaryButton}
-                >
-                  Edit trip
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveMobileStep("patients")}
-                  className={responsiveStyles.secondaryButton}
-                >
-                  Edit patients
-                </button>
-              </div>
-            </section>
-          )}
-
-          {isReviewStepVisible && (
-            <div
-              className={`${responsiveStyles.footerRow} ${
-                isMobileViewport ? responsiveStyles.stickyFooter : ""
-              }`}
-            >
-              <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400">
-                {destinationCount} visit{destinationCount === 1 ? "" : "s"} queued
-              </span>
-              <button
-                type="submit"
-                disabled={isLoading || !canOptimize || (!!result && !hasChangedSinceLastOptimize)}
-                className="optimize-route-button inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto"
-                data-loading={isLoading ? "true" : "false"}
-                data-success={showOptimizeSuccess ? "true" : "false"}
-              >
-                {isLoading && (
-                  <span
-                    className="h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white"
-                    aria-hidden="true"
-                  />
-                )}
-                {isLoading
-                  ? "Optimizing..."
-                  : result
-                    ? "Re-optimize Route"
-                    : "Optimize Route"}
-              </button>
-            </div>
-          )}
-        </form>
-
-        {optimizeEndpointHint && (
-          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
-            {optimizeEndpointHint}
-          </p>
-        )}
-
-        {localValidationError && (
-          <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
-            {localValidationError}
-          </p>
-        )}
-
-        {error && (
-          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
-            {error}
-          </p>
-        )}
-
-        {result && (
-          <OptimizedRouteResult
+          <RouteResultSection
+            isMobileViewport={isMobileViewport}
+            activeMobileStep={activeMobileStep}
+            onSetActiveMobileStep={setActiveMobileStep}
+            isReviewStepVisible={isReviewStepVisible}
+            hasValidTripAddresses={hasValidTripAddresses}
+            destinationCount={destinationCount}
+            selectedDestinationsCount={selectedDestinations.length}
+            resolvedEndAddress={resolvedEndAddress}
+            isLoading={isLoading}
+            canOptimize={canOptimize}
             result={result}
+            hasChangedSinceLastOptimize={hasChangedSinceLastOptimize}
+            showOptimizeSuccess={showOptimizeSuccess}
+            optimizeEndpointHint={optimizeEndpointHint}
+            localValidationError={localValidationError}
+            optimizeError={error ?? ""}
             orderedStops={manuallyOrderedStops}
-            routeLegs={result.routeLegs}
+            routeLegs={result?.routeLegs ?? []}
             isManualOrderStale={isManualOrderStale}
             unscheduledResubmitCount={unscheduledResubmitCount}
             onMoveStop={moveStop}
@@ -1079,22 +718,12 @@ function RoutePlanner({
             latenessWarningsDismissed={latenessWarningsDismissed}
             onDismissLatenessWarnings={() => setLatenessWarningsDismissed(true)}
             expandedResultTaskIds={expandedResultTaskIds}
-            onToggleResultTask={(taskId) =>
-              setExpandedResultTaskIds((current) => ({
-                ...current,
-                [taskId]: !current[taskId],
-              }))
-            }
+            onToggleResultTask={(taskId) => setExpandedResultTaskIds((c) => ({ ...c, [taskId]: !c[taskId] }))}
             expandedResultEndingStopIds={expandedResultEndingStopIds}
-            onToggleResultEndingStop={(stopId) =>
-              setExpandedResultEndingStopIds((current) => ({
-                ...current,
-                [stopId]: !current[stopId],
-              }))
-            }
+            onToggleResultEndingStop={(stopId) => setExpandedResultEndingStopIds((c) => ({ ...c, [stopId]: !c[stopId] }))}
             normalizedHomeAddress={normalizedHomeAddress}
           />
-        )}
+        </form>
       </section>
 
       <PatientFormModal

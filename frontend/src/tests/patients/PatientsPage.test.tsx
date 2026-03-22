@@ -114,7 +114,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });
@@ -141,7 +141,6 @@ describe("PatientsPage", () => {
       .mockResolvedValueOnce([seedPatient])
       .mockResolvedValue([]);
     mockedDeletePatient.mockResolvedValue({ deleted: true, id: "patient-1" });
-    const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
     render(<PatientsPage />);
 
@@ -152,13 +151,11 @@ describe("PatientsPage", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Jane Doe/i })[0]);
     fireEvent.click(screen.getByRole("button", { name: /Delete patient Jane Doe/i }));
 
+    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+
     await waitFor(() => {
       expect(mockedDeletePatient).toHaveBeenCalledWith("patient-1");
     });
-
-    expect(confirmSpy).toHaveBeenCalled();
-
-    confirmSpy.mockRestore();
   });
 
   it("filters by first/last name substring as user types", async () => {
@@ -239,7 +236,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
     fireEvent.change(screen.getByPlaceholderText("Search and select an address"), {
       target: { value: "123 Main St" },
     });
@@ -285,7 +282,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Add New Patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });

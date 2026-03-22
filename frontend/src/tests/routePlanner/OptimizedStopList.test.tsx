@@ -88,10 +88,10 @@ describe("OptimizedStopList", () => {
     expect(screen.getByTestId("details-chevron-visit-1").getAttribute("data-expanded")).toBe(
       "true",
     );
-    expect(screen.getByText("Duration: 30 min")).toBeTruthy();
+    expect(screen.getByText(/^Duration$/i).parentElement?.textContent).toContain("30 min");
     expect(screen.getByRole("button", { name: "Toggle details for Home ending point" })).toBeTruthy();
     expect(screen.getByText(/You should be home by/i)).toBeTruthy();
-    expect(screen.getByText("Address: 99 Home Road")).toBeTruthy();
+    expect(screen.getByText(/99 Home Road/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Toggle details for Alex Johnson" }));
     fireEvent.click(screen.getByRole("button", { name: "Toggle details for Home ending point" }));

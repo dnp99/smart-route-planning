@@ -1,7 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { OptimizeRouteResponse } from "../../components/types";
-import { useManualReorder } from "../../components/routePlanner/useManualReorder";
+import { useManualReorder } from "../../components/hooks/useManualReorder";
 
 const buildResult = (overrides: Partial<OptimizeRouteResponse> = {}): OptimizeRouteResponse => ({
   start: {

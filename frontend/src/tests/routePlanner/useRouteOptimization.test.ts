@@ -6,7 +6,7 @@ vi.mock("../../components/routePlanner/routePlannerService", () => ({
 }));
 
 import { requestOptimizedRoute } from "../../components/routePlanner/routePlannerService";
-import { useRouteOptimization } from "../../components/routePlanner/useRouteOptimization";
+import { useRouteOptimization } from "../../components/hooks/useRouteOptimization";
 
 const mockedRequestOptimizedRoute = vi.mocked(requestOptimizedRoute);
 const buildResponse = () => ({

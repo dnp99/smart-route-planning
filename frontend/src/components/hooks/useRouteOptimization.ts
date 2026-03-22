@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import {
   requestOptimizedRoute,
   type OptimizeRouteDestinationInput,
-} from "./routePlannerService";
+} from "../routePlanner/routePlannerService";
 import type { OptimizeRouteResponse } from "../types";
 
 const RESULT_SESSION_KEY = "careflow_route_optimization_result";

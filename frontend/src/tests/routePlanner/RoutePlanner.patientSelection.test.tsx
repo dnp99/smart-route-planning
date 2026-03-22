@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { routeOptimizationState } = vi.hoisted(() => ({
@@ -26,7 +26,7 @@ const usePatientSearchMock = vi.fn<
   error: "",
 }));
 
-vi.mock("../../components/routePlanner/useRouteOptimization", () => ({
+vi.mock("../../components/hooks/useRouteOptimization", () => ({
   useRouteOptimization: () => ({
     result: routeOptimizationState.result,
     error: routeOptimizationState.error,
@@ -37,7 +37,7 @@ vi.mock("../../components/routePlanner/useRouteOptimization", () => ({
   }),
 }));
 
-vi.mock("../../components/routePlanner/usePatientSearch", () => ({
+vi.mock("../../components/hooks/usePatientSearch", () => ({
   usePatientSearch: (args: { enabled: boolean }) => usePatientSearchMock(args),
 }));
 
@@ -367,10 +367,12 @@ describe("RoutePlanner patient selection integration", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
 
-    expect(screen.getByText("1 visit(s) detected")).toBeTruthy();
+    expect(screen.getByText("1 visit queued")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Edit window" })).toBeTruthy();
     expect(screen.queryByText("Include this visit in route")).toBeNull();
-    expect(screen.queryByRole("button", { name: /^Jane Doe$/i })).toBeNull();
+    // Jane Doe button in the search results list should be gone (duplicate prevention);
+    // only the destination row name button (title="Jane Doe") should remain
+    expect(screen.getAllByRole("button", { name: /^Jane Doe$/i })).toHaveLength(1);
   });
 
   it("shows a clear hint when ending point is not selected", () => {
@@ -397,7 +399,7 @@ describe("RoutePlanner patient selection integration", () => {
     render(<RoutePlanner />);
 
     expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "Airport");
-    expect(screen.getByText("1 visit(s) detected")).toBeTruthy();
+    expect(screen.getByText("1 visit queued")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 
@@ -579,7 +581,7 @@ describe("RoutePlanner patient selection integration", () => {
       );
     });
 
-    expect(screen.getByText("1 visit(s) detected")).toBeTruthy();
+    expect(screen.getByText("1 visit queued")).toBeTruthy();
     expect(screen.getByText("New Patient")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Add New Patient" })).toBeNull();
   });
@@ -617,26 +619,17 @@ describe("RoutePlanner patient selection integration", () => {
 
     expect(screen.queryByText(/Suggested leave-by:/)).toBeNull();
     expect(screen.queryByText(/Based on a .+ drive to your first visit\./)).toBeNull();
-    expect(
-      screen.getByText(
-        new RegExp(
-          `Expected start time ${escapeRegExp(janeExpectedStartTimeLabel)}`,
-          "i",
-        ),
-      ),
-    ).toBeTruthy();
+    expect(screen.getByText(/^Expected start$/i).parentElement?.textContent).toContain(janeExpectedStartTimeLabel);
     const janeCard = janeDetailsToggle.closest("div");
     if (!janeCard) {
       throw new Error("Expected Jane Doe result card container");
     }
-    expect(screen.queryByText(/13\.49 km • 13 min from previous stop/i)).toBeNull();
+    expect(screen.queryByText(/13\.49 km/)).toBeNull();
     fireEvent.click(janeDetailsToggle);
-    expect(
-      screen.getByText(/Travel from previous stop: 13\.49 km • 13 min/i),
-    ).toBeTruthy();
-    expect(screen.getByText("Address: 123 Main St")).toBeTruthy();
-    expect(screen.getByText("Visit type: fixed")).toBeTruthy();
-    expect(screen.getByText("Duration: 30 min")).toBeTruthy();
+    expect(screen.getByText(/^Travel$/i).parentElement?.textContent).toContain("13.49 km");
+    expect(screen.getAllByText("123 Main St").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("fixed")).toBeTruthy();
+    expect(screen.getByText(/^Duration$/i).parentElement?.textContent).toContain("30 min");
     const endingPointDetailsToggle = screen.getByRole("button", {
       name: /Toggle details for Ending point/i,
     });
@@ -644,10 +637,10 @@ describe("RoutePlanner patient selection integration", () => {
     if (!endingPointCard) {
       throw new Error("Expected ending point result card container");
     }
-    expect(endingPointCard.textContent).toContain("10 km • 10 min from previous stop");
+    expect(endingPointCard.textContent).toContain("10 km · 10 min from previous stop");
 
     fireEvent.click(endingPointDetailsToggle);
-    expect(screen.getByText("Ending Point.")).toBeTruthy();
+    expect(screen.getByText("Ending point")).toBeTruthy();
   });
 
   it("labels ending point as Home when it matches nurse home address and reveals address on toggle", () => {
@@ -663,11 +656,11 @@ describe("RoutePlanner patient selection integration", () => {
     if (!homeEndingPointCard) {
       throw new Error("Expected home ending point result card container");
     }
-    expect(homeEndingPointCard.textContent).toContain("10 km • 10 min from previous stop");
+    expect(homeEndingPointCard.textContent).toContain("10 km · 10 min from previous stop");
 
     fireEvent.click(homeEndingPointDetailsToggle);
-    expect(screen.getByText("Address: Airport")).toBeTruthy();
-    expect(screen.getByText("Ending Point.")).toBeTruthy();
+    expect(screen.getByText(/^Address$/i).parentElement?.textContent).toContain("Airport");
+    expect(screen.getByText("Ending point")).toBeTruthy();
   });
 
   it("shows expected start time and late warning text from optimized route task timing", () => {
@@ -732,14 +725,7 @@ describe("RoutePlanner patient selection integration", () => {
       hour12: true,
     }).format(new Date("2026-03-14T10:20:00.000Z"));
 
-    expect(
-      screen.getByText(
-        new RegExp(
-          `Expected start time ${escapeRegExp(expectedStartTimeLabel)}`,
-          "i",
-        ),
-      ),
-    ).toBeTruthy();
+    expect(screen.getByText(/^Expected start$/i).parentElement?.textContent).toContain(expectedStartTimeLabel);
     expect(screen.getByText(/Outside preferred window by 20 min/i)).toBeTruthy();
   });
 
@@ -811,13 +797,12 @@ describe("RoutePlanner patient selection integration", () => {
     render(<RoutePlanner />);
 
     fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
-    expect(screen.getByText("1 visit(s) detected")).toBeTruthy();
+    expect(screen.getByText("1 visit queued")).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /Open actions for John Smith/i }));
     fireEvent.click(screen.getByRole("button", { name: /Remove John Smith/i }));
 
-    expect(screen.getByText("0 visit(s) detected")).toBeTruthy();
-    expect(screen.getByText("No destination patients selected yet.")).toBeTruthy();
+    expect(screen.getByText("0 visits queued")).toBeTruthy();
+    expect(screen.getByText("No patients selected yet.")).toBeTruthy();
   });
 
   it("allows optimizing flexible patients without preferred windows", () => {
