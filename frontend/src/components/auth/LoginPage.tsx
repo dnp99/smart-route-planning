@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { responsiveStyles } from "../responsiveStyles";
 import { login, signUp } from "./authService";
 import { setAuthSession } from "./authSession";
 
@@ -75,50 +76,48 @@ const LoginPage = () => {
   };
 
   return (
-    <main className="mt-4 w-full rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6">
-      <div className="w-full">
-        <div className="mb-5 grid gap-3">
-          <div className="flex w-full rounded-2xl bg-slate-100 p-1 dark:bg-slate-800">
-            <button
-              type="button"
-              onClick={() => switchMode("login")}
-              className={[
-                "flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition",
-                mode === "login"
-                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
-              ].join(" ")}
-            >
-              Login
-            </button>
-            <button
-              type="button"
-              onClick={() => switchMode("signup")}
-              className={[
-                "flex-1 rounded-xl px-3 py-2 text-sm font-semibold transition",
-                mode === "signup"
-                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
-                  : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
-              ].join(" ")}
-            >
-              Sign up
-            </button>
-          </div>
-
-          <h1 className="m-0 text-2xl font-bold text-slate-900 dark:text-slate-100">
-            {mode === "signup" ? "Create account" : "Login"}
-          </h1>
+    <main className={responsiveStyles.authViewport}>
+      <section className={responsiveStyles.authCard}>
+        <div className={responsiveStyles.authSegmentedControl}>
+          <button
+            type="button"
+            onClick={() => switchMode("login")}
+            className={[
+              responsiveStyles.authSegmentedButton,
+              mode === "login"
+                ? responsiveStyles.authSegmentedButtonActive
+                : responsiveStyles.authSegmentedButtonInactive,
+            ].join(" ")}
+          >
+            Login
+          </button>
+          <button
+            type="button"
+            onClick={() => switchMode("signup")}
+            className={[
+              responsiveStyles.authSegmentedButton,
+              mode === "signup"
+                ? responsiveStyles.authSegmentedButtonActive
+                : responsiveStyles.authSegmentedButtonInactive,
+            ].join(" ")}
+          >
+            Sign up
+          </button>
         </div>
 
-        <p className="mb-5 mt-2 text-sm text-slate-600 dark:text-slate-300">
+        <h1 className={responsiveStyles.authHeading}>
+          {mode === "signup" ? "Create account" : "Login"}
+        </h1>
+
+        <p className={responsiveStyles.authDescription}>
           {mode === "signup"
             ? "Create your CareFlow account to manage patients and route-planning data."
             : "Sign in to continue managing patients and route-planning data."}
         </p>
 
-        <form className="grid gap-4" onSubmit={handleSubmit}>
+        <form className={responsiveStyles.authForm} onSubmit={handleSubmit}>
           {mode === "signup" && (
-            <label className="grid gap-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <label className={responsiveStyles.authLabel}>
               <span>Display name</span>
               <input
                 type="text"
@@ -130,13 +129,13 @@ const LoginPage = () => {
                   }
                 }}
                 autoComplete="name"
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className={responsiveStyles.authInput}
                 required
               />
             </label>
           )}
 
-          <label className="grid gap-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+          <label className={responsiveStyles.authLabel}>
             <span>Email</span>
             <input
               type="email"
@@ -148,12 +147,12 @@ const LoginPage = () => {
                 }
               }}
               autoComplete="email"
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              className={responsiveStyles.authInput}
               required
             />
           </label>
 
-          <label className="grid gap-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+          <label className={responsiveStyles.authLabel}>
             <span>Password</span>
             <input
               type="password"
@@ -165,7 +164,7 @@ const LoginPage = () => {
                 }
               }}
               autoComplete={mode === "signup" ? "new-password" : "current-password"}
-              className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+              className={responsiveStyles.authInput}
               required
             />
             {mode === "signup" && (
@@ -176,7 +175,7 @@ const LoginPage = () => {
           </label>
 
           {mode === "signup" && (
-            <label className="grid gap-1 text-sm font-semibold text-slate-800 dark:text-slate-200">
+            <label className={responsiveStyles.authLabel}>
               <span>Confirm password</span>
               <input
                 type="password"
@@ -188,22 +187,18 @@ const LoginPage = () => {
                   }
                 }}
                 autoComplete="new-password"
-                className="rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className={responsiveStyles.authInput}
                 required
               />
             </label>
           )}
 
-          {error && (
-            <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
-              {error}
-            </p>
-          )}
+          {error && <p className={responsiveStyles.inlineErrorBanner}>{error}</p>}
 
           <button
             type="submit"
             disabled={isSubmitting}
-            className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
+            className={responsiveStyles.authPrimaryButton}
           >
             {isSubmitting
               ? mode === "signup"
@@ -213,8 +208,36 @@ const LoginPage = () => {
                 ? "Create account"
                 : "Sign in"}
           </button>
+
+          <div className={responsiveStyles.authHelperRow}>
+            {mode === "login" ? (
+              <>
+                <a href="mailto:dpatel1995@yahoo.com" className={responsiveStyles.authHelperLink}>
+                  Forgot password?
+                </a>
+                <button
+                  type="button"
+                  onClick={() => switchMode("signup")}
+                  className={responsiveStyles.authHelperButton}
+                >
+                  Create an account
+                </button>
+              </>
+            ) : (
+              <>
+                <span>Already have an account?</span>
+                <button
+                  type="button"
+                  onClick={() => switchMode("login")}
+                  className={responsiveStyles.authHelperButton}
+                >
+                  Back to sign in
+                </button>
+              </>
+            )}
+          </div>
         </form>
-      </div>
+      </section>
     </main>
   );
 };

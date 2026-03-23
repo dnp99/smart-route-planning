@@ -963,20 +963,38 @@ bg-white border border-slate-200 rounded-2xl shadow-sm
 p-4 sm:p-6
 ```
 
+### Auth width policy
+
+- Keep the global app shell wide (`max-w-7xl`) for header/footer alignment.
+- Login/reset forms should use a narrow focal column: `max-w-xl mx-auto`.
+- Use `max-w-2xl` only when auth content is materially larger (multi-field sign-up, legal copy, or split content).
+- Segmented controls must stay inside the same auth-width container as the form.
+
 ### Auth form baseline
 
 - Field stack: `space-y-4`
 - Label to input gap: `mb-1`
 - Inputs: use input token/state rules from §3 Input Field
 - Primary submit button: full-width by default
-- `sm:w-auto` is allowed only when submit is paired with secondary actions in the same row
+- Auth primary submit remains full-width at desktop unless a specific workflow requires a documented exception
+
+### Auth spacing rhythm
+
+- Segmented control → title: `mt-6`
+- Title → description: `mt-3`
+- Description → first field: `mt-6`
+- Field stack: `space-y-4`
+- Last field → primary button: `mt-5`
+- Helper row (forgot password / mode switch) under password or CTA with `mt-3`
 
 ### Auth-specific rules
 
 - Keep auth content visually narrower than dashboard/data surfaces.
+- Vertically center the auth focal zone within remaining viewport space (between header and footer), not pinned high like dashboard content.
 - Keep one primary CTA per screen section.
 - Use segmented controls/tabs only for closely related mode switches (e.g., Login / Sign up).
 - Auth screens use the same color, spacing, and typography rules as the rest of the system (no separate visual theme).
+- Keep footer visually quiet and separated from auth card with clear breathing room.
 
 ---
 
