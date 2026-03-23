@@ -146,6 +146,8 @@ describe("/api/auth/me route", () => {
         email: "nurse@example.com",
         displayName: "Nurse One",
         homeAddress: null,
+        workingHours: null,
+        breakGapThresholdMinutes: null,
       },
     });
   });
@@ -190,6 +192,8 @@ describe("/api/auth/me route", () => {
         email: "nurse@example.com",
         displayName: "Nurse One",
         homeAddress: "1 Main Street, Toronto, ON",
+        workingHours: null,
+        breakGapThresholdMinutes: null,
       },
     });
   });
@@ -242,7 +246,7 @@ describe("/api/auth/me route", () => {
 
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
-      error: "Profile payload must include homeAddress.",
+      error: "Profile payload must include at least one field to update.",
     });
   });
 
