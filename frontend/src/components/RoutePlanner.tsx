@@ -1,21 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { responsiveStyles } from "./responsiveStyles";
-import type { Patient } from "../../../shared/contracts";
+import type { WeeklyWorkingHours } from "../../../shared/contracts";
 import { usePatientSearch } from "./hooks/usePatientSearch";
 import { useRouteOptimization } from "./hooks/useRouteOptimization";
 import { persistPlanningWindows } from "./routePlanner/routePlannerService";
-import type { SelectedPatientDestination } from "./routePlanner/routePlannerTypes";
-import {
-  patientMatchesSearchQuery,
-  toSelectedPatientDestinations,
-} from "./routePlanner/routePlannerHelpers";
+import { patientMatchesSearchQuery } from "./routePlanner/routePlannerHelpers";
 import {
   buildOptimizeDestinations,
   buildPlanningWindowsToPersist,
   validateRequestDestinations,
 } from "./routePlanner/routePlannerSubmission";
-import type { AddressSuggestion } from "./types";
 import { PatientFormModal } from "./patients/PatientFormModal";
 import {
   type MobilePlannerStep,
@@ -24,19 +19,27 @@ import {
 } from "./routePlanner/routePlannerDraft";
 import { useManualReorder } from "./hooks/useManualReorder";
 import { useCreatePatientForm } from "./hooks/useCreatePatientForm";
+import { useRoutePlannerDestinations } from "./hooks/useRoutePlannerDestinations";
+import { useRoutePlannerAddresses } from "./hooks/useRoutePlannerAddresses";
 import { TripSetupSection } from "./routePlanner/TripSetupSection";
 import { PatientSelectorSection } from "./routePlanner/PatientSelectorSection";
 import { RouteResultSection } from "./routePlanner/RouteResultSection";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
-const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
 
 type RoutePlannerProps = {
   nurseHomeAddress?: string | null;
+  nurseWorkingHours?: WeeklyWorkingHours | null;
+  nurseBreakGapThresholdMinutes?: number | null;
   onOpenAccountSettings?: () => void;
 };
 
-function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RoutePlannerProps) {
+function RoutePlanner({
+  nurseHomeAddress = null,
+  nurseWorkingHours,
+  nurseBreakGapThresholdMinutes,
+  onOpenAccountSettings,
+}: RoutePlannerProps) {
   const initialDraft = useMemo(() => readRoutePlannerDraft(), []);
   const normalizedHomeAddress = nurseHomeAddress?.trim() ?? "";
   const [isMobileViewport, setIsMobileViewport] = useState(() => {
@@ -49,66 +52,52 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
   const [activeMobileStep, setActiveMobileStep] = useState<MobilePlannerStep>(
     initialDraft?.activeMobileStep ?? "trip",
   );
-  const [startAddress, setStartAddress] = useState(
-    initialDraft?.startAddress ??
-      (normalizedHomeAddress.length > 0 ? normalizedHomeAddress : DEFAULT_START_ADDRESS),
-  );
-  const [manualEndAddress, setManualEndAddress] = useState(
-    initialDraft?.manualEndAddress ?? normalizedHomeAddress,
-  );
-  const [startGooglePlaceId, setStartGooglePlaceId] = useState<string | null>(
-    initialDraft?.startGooglePlaceId ?? null,
-  );
-  const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<string | null>(
-    initialDraft?.manualEndGooglePlaceId ?? null,
-  );
 
-  const [startTouched, setStartTouched] = useState(false);
-  const [endTouched, setEndTouched] = useState(false);
+  const {
+    result,
+    error,
+    isLoading,
+    isRecalculating,
+    showOptimizeSuccess,
+    hasAttemptedOptimize,
+    optimizeRoute,
+  } = useRouteOptimization();
 
-  const [destinationSearchQuery, setDestinationSearchQuery] = useState("");
-  const [localValidationError, setLocalValidationError] = useState("");
-  const [selectedDestinations, setSelectedDestinations] = useState<SelectedPatientDestination[]>(
-    initialDraft?.selectedDestinations ?? [],
-  );
-  const [expandedDestinationVisitKeys, setExpandedDestinationVisitKeys] = useState<
-    Record<string, boolean>
-  >({});
-  const [expandedResultTaskIds, setExpandedResultTaskIds] = useState<Record<string, boolean>>({});
-  const [expandedResultEndingStopIds, setExpandedResultEndingStopIds] = useState<
-    Record<string, boolean>
-  >({});
-  const [conflictWarningsDismissed, setConflictWarningsDismissed] = useState(false);
-  const [latenessWarningsDismissed, setLatenessWarningsDismissed] = useState(false);
-  const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
-    (initialDraft?.selectedDestinations?.length ?? 0) === 0,
-  );
-  const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
-    normalizedHomeAddress.length === 0,
-  );
+  const {
+    destinationSearchQuery,
+    setDestinationSearchQuery,
+    selectedDestinations,
+    expandedDestinationVisitKeys,
+    addDestinationPatient,
+    removeDestinationVisit,
+    toggleDestinationDetails,
+    updateDestinationPlanningWindow,
+    setDestinationVisitIncluded,
+    setDestinationPersistPlanningWindow,
+    destinationCount,
+    requestDestinations,
+    selectedDestinationIdSet,
+  } = useRoutePlannerDestinations({ initialDestinations: initialDraft?.selectedDestinations });
 
-  const addDestinationPatient = (patient: Patient) => {
-    const destinations = toSelectedPatientDestinations(patient);
-    if (destinations.length === 0) {
-      return;
-    }
-
-    setSelectedDestinations((current) => {
-      if (current.some((entry) => entry.patientId === patient.id)) {
-        return current;
-      }
-
-      return [...current, ...destinations];
-    });
-    setExpandedDestinationVisitKeys((current) => {
-      const next = { ...current };
-      destinations.forEach((destination) => {
-        next[destination.visitKey] = false;
-      });
-      return next;
-    });
-    setDestinationSearchQuery("");
-  };
+  const {
+    startAddress,
+    manualEndAddress,
+    startGooglePlaceId,
+    manualEndGooglePlaceId,
+    setStartTouched,
+    setEndTouched,
+    handleStartAddressChange,
+    handleStartAddressPick,
+    handleManualEndAddressChange,
+    handleManualEndAddressPick,
+    resolvedEndAddress,
+    resolvedEndGooglePlaceId,
+    canOptimize,
+    hasValidTripAddresses,
+    startFieldError,
+    endFieldError,
+    optimizeEndpointHint,
+  } = useRoutePlannerAddresses({ initialDraft, normalizedHomeAddress, hasAttemptedOptimize });
 
   const {
     locallyCreatedPatients,
@@ -142,21 +131,26 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
   });
 
   const {
-    result,
-    error,
-    isLoading,
-    isRecalculating,
-    showOptimizeSuccess,
-    hasAttemptedOptimize,
-    optimizeRoute,
-  } = useRouteOptimization();
-  const {
     orderedStops: manuallyOrderedStops,
     isStale: isManualOrderStale,
     moveStop,
     canMoveStop,
     resetOrder,
   } = useManualReorder(result);
+
+  const [localValidationError, setLocalValidationError] = useState("");
+  const [expandedResultTaskIds, setExpandedResultTaskIds] = useState<Record<string, boolean>>({});
+  const [expandedResultEndingStopIds, setExpandedResultEndingStopIds] = useState<
+    Record<string, boolean>
+  >({});
+  const [conflictWarningsDismissed, setConflictWarningsDismissed] = useState(false);
+  const [latenessWarningsDismissed, setLatenessWarningsDismissed] = useState(false);
+  const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
+    (initialDraft?.selectedDestinations?.length ?? 0) === 0,
+  );
+  const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
+    normalizedHomeAddress.length === 0,
+  );
 
   // Count of included destinations absent from the current manual-ordered stop list.
   // These were previously unscheduled and will be re-submitted on recalculate.
@@ -214,50 +208,6 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
   }, []);
 
   useEffect(() => {
-    if (initialDraft) {
-      return;
-    }
-
-    if (normalizedHomeAddress.length === 0) {
-      return;
-    }
-
-    if (startAddress.trim().length === 0 || startAddress === DEFAULT_START_ADDRESS) {
-      setStartAddress(normalizedHomeAddress);
-      setStartGooglePlaceId(null);
-    }
-
-    if (manualEndAddress.trim().length === 0) {
-      setManualEndAddress(normalizedHomeAddress);
-      setManualEndGooglePlaceId(null);
-    }
-  }, [initialDraft, manualEndAddress, normalizedHomeAddress, startAddress]);
-
-  useEffect(() => {
-    setExpandedDestinationVisitKeys((current) => {
-      let changed = false;
-      const next: Record<string, boolean> = {};
-
-      selectedDestinations.forEach((destination) => {
-        const existing = current[destination.visitKey];
-        if (existing === undefined) {
-          next[destination.visitKey] = false;
-          changed = true;
-          return;
-        }
-
-        next[destination.visitKey] = existing;
-      });
-
-      if (!changed && Object.keys(current).length !== selectedDestinations.length) {
-        changed = true;
-      }
-
-      return changed ? next : current;
-    });
-  }, [selectedDestinations]);
-
-  useEffect(() => {
     setExpandedResultTaskIds({});
     setExpandedResultEndingStopIds({});
   }, [result]);
@@ -281,13 +231,8 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
     startGooglePlaceId,
   ]);
 
-  const selectedDestinationIdSet = useMemo(
-    () => new Set(selectedDestinations.map((destination) => destination.patientId)),
-    [selectedDestinations],
-  );
-
   const destinationSearchResults = useMemo(() => {
-    const byId = new Map<string, Patient>();
+    const byId = new Map();
     destinationSearchPatients.forEach((patient) => {
       byId.set(patient.id, patient);
     });
@@ -309,13 +254,6 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
     selectedDestinationIdSet,
   ]);
 
-  const resolvedEndAddress = manualEndAddress;
-  const resolvedEndGooglePlaceId = manualEndGooglePlaceId;
-
-  const canOptimize = startAddress.trim().length > 0 && resolvedEndAddress.trim().length > 0;
-
-  const hasValidTripAddresses = canOptimize;
-
   const lastOptimizedSnapshotRef = useRef<string | null>(null);
 
   const currentOptimizeSnapshot = [
@@ -332,105 +270,12 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
     lastOptimizedSnapshotRef.current === null ||
     lastOptimizedSnapshotRef.current !== currentOptimizeSnapshot;
 
-  const optimizeEndpointHint = useMemo(() => {
-    if (manualEndAddress.trim().length === 0) {
-      return "Select an ending point to enable route optimization.";
-    }
-    return undefined;
-  }, [manualEndAddress]);
-
-  const startFieldError =
-    (hasAttemptedOptimize || startTouched) && startAddress.trim().length === 0
-      ? "Starting point is required."
-      : undefined;
-
-  const endFieldError = useMemo(() => {
-    if (!(hasAttemptedOptimize || endTouched)) {
-      return undefined;
-    }
-
-    if (manualEndAddress.trim().length === 0) {
-      return "Ending point is required.";
-    }
-    return undefined;
-  }, [endTouched, hasAttemptedOptimize, manualEndAddress]);
-
   const isHomeAddressMissing = normalizedHomeAddress.length === 0;
 
   useEffect(() => {
     setConflictWarningsDismissed(false);
     setLatenessWarningsDismissed(false);
   }, [result]);
-
-  const requestDestinations = useMemo(() => {
-    return selectedDestinations.filter((destination) => destination.isIncluded);
-  }, [selectedDestinations]);
-
-  const handleStartAddressChange = (value: string) => {
-    setStartAddress(value);
-    setStartGooglePlaceId(null);
-  };
-
-  const handleStartAddressPick = (suggestion: AddressSuggestion) => {
-    setStartAddress(suggestion.displayName);
-    setStartGooglePlaceId(suggestion.placeId);
-  };
-
-  const handleManualEndAddressChange = (value: string) => {
-    setManualEndAddress(value);
-    setManualEndGooglePlaceId(null);
-  };
-
-  const handleManualEndAddressPick = (suggestion: AddressSuggestion) => {
-    setManualEndAddress(suggestion.displayName);
-    setManualEndGooglePlaceId(suggestion.placeId);
-  };
-
-  const updateDestinationPlanningWindow = (
-    visitKey: string,
-    field: "windowStart" | "windowEnd",
-    value: string,
-  ) => {
-    setSelectedDestinations((current) =>
-      current.map((destination) =>
-        destination.visitKey === visitKey
-          ? {
-              ...destination,
-              [field]: value,
-            }
-          : destination,
-      ),
-    );
-  };
-
-  const setDestinationVisitIncluded = (visitKey: string, isIncluded: boolean) => {
-    setSelectedDestinations((current) =>
-      current.map((destination) =>
-        destination.visitKey === visitKey
-          ? {
-              ...destination,
-              isIncluded,
-            }
-          : destination,
-      ),
-    );
-  };
-
-  const setDestinationPersistPlanningWindow = (
-    visitKey: string,
-    persistPlanningWindow: boolean,
-  ) => {
-    setSelectedDestinations((current) =>
-      current.map((destination) =>
-        destination.visitKey === visitKey
-          ? {
-              ...destination,
-              persistPlanningWindow,
-            }
-          : destination,
-      ),
-    );
-  };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -465,6 +310,7 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
       ...(resolvedEndGooglePlaceId ? { endGooglePlaceId: resolvedEndGooglePlaceId } : {}),
       destinations: optimizeDestinations,
       canOptimize,
+      workingHours: nurseWorkingHours ?? null,
     });
   };
 
@@ -526,32 +372,10 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
       canOptimize,
       planningDate,
       preserveOrder: true,
+      workingHours: nurseWorkingHours ?? null,
     });
   };
 
-  const removeDestinationVisit = (visitKey: string) => {
-    setSelectedDestinations((current) => current.filter((entry) => entry.visitKey !== visitKey));
-    setExpandedDestinationVisitKeys((current) => {
-      if (current[visitKey] === undefined) {
-        return current;
-      }
-
-      const next = { ...current };
-      delete next[visitKey];
-      return next;
-    });
-  };
-
-  const toggleDestinationDetails = (visitKey: string) => {
-    setExpandedDestinationVisitKeys((current) => ({
-      ...current,
-      [visitKey]: !(current[visitKey] ?? false),
-    }));
-  };
-
-  const destinationCount = selectedDestinations.filter(
-    (destination) => destination.isIncluded,
-  ).length;
   const isTripStepVisible = !isMobileViewport || activeMobileStep === "trip";
   const isPatientsStepVisible = !isMobileViewport || activeMobileStep === "patients";
   const isReviewStepVisible = !isMobileViewport || activeMobileStep === "review";
@@ -701,6 +525,7 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
               setExpandedResultEndingStopIds((c) => ({ ...c, [stopId]: !c[stopId] }))
             }
             normalizedHomeAddress={normalizedHomeAddress}
+            breakGapThresholdMinutes={nurseBreakGapThresholdMinutes ?? undefined}
           />
         </form>
       </section>

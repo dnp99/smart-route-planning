@@ -24,8 +24,7 @@ export const responsiveStyles = {
   // ── App shell (layout components) ─────────────────────────────────────────
   appShell:
     "flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white dark:bg-none dark:bg-slate-950",
-  appHeader:
-    "sticky top-0 z-30 w-full overflow-x-clip bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
+  appHeader: "sticky top-0 z-30 w-full bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
   appHeaderInner:
     "mx-auto flex w-full max-w-7xl items-center gap-3 px-4 sm:px-6 transition-[padding] duration-300",
   appFooter: "w-full bg-transparent dark:bg-transparent",
@@ -77,6 +76,32 @@ export const responsiveStyles = {
 
   // ── Form layout ────────────────────────────────────────────────────────────
   form: "grid gap-2.5 sm:gap-3",
+
+  // ── Auth layout + form primitives ──────────────────────────────────────────
+  authViewport: "mx-auto flex min-h-[calc(100vh-16rem)] w-full max-w-xl items-center py-6 sm:py-10",
+  authCard:
+    "w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6",
+  authSegmentedControl: "flex w-full rounded-lg bg-slate-100 p-1 dark:bg-slate-800",
+  authSegmentedButton:
+    "flex-1 rounded-md px-3 py-2 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
+  authSegmentedButtonActive:
+    "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100",
+  authSegmentedButtonInactive:
+    "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
+  authHeading: "m-0 mt-6 text-2xl font-semibold text-slate-900 dark:text-slate-100",
+  authDescription: "m-0 mt-3 text-sm text-slate-600 dark:text-slate-300",
+  authForm: "mt-6 grid gap-4",
+  authLabel: "grid gap-1 text-sm font-semibold text-slate-800 dark:text-slate-200",
+  authInput:
+    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+  authPrimaryButton:
+    "mt-5 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60",
+  authHelperRow:
+    "mt-3 flex items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400",
+  authHelperLink:
+    "text-xs font-medium text-blue-600 underline-offset-2 transition hover:underline dark:text-blue-300",
+  authHelperButton:
+    "text-xs font-medium text-blue-600 underline-offset-2 transition hover:underline dark:text-blue-300",
 
   // ── Input ─────────────────────────────────────────────────────────────────
   // bg-white · border-slate-200 · hover:border-slate-300 · focus:ring-blue-100
@@ -236,4 +261,22 @@ export const responsiveStyles = {
   // ── Destination list extras ──────────────────────────────────────────────────
   destinationIndex: "w-6 shrink-0 text-sm font-semibold text-slate-500 dark:text-slate-400",
   panelEmptyText: "m-0 text-sm text-slate-500 dark:text-slate-400",
+
+  // ── Working hours schedule editor ─────────────────────────────────────────────
+  scheduleEditorRow:
+    "grid grid-cols-[3.75rem_1fr] items-start gap-x-2.5 gap-y-1 border-b border-slate-100 py-3.5 last:border-0 dark:border-slate-800 sm:grid-cols-[4.25rem_1fr]",
+  scheduleEditorDayLabel: "pt-1 text-sm font-semibold text-slate-700 dark:text-slate-300",
+  scheduleEditorFields: "flex flex-wrap items-center gap-1.5 sm:gap-2",
+  scheduleEditorTimeInput:
+    "w-28 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium tabular-nums text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-32",
+  scheduleEditorLunchRow:
+    "mt-1.5 flex flex-wrap items-center gap-2 pl-0 text-sm text-slate-600 dark:text-slate-400",
+  scheduleEditorLunchInput:
+    "w-20 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium tabular-nums text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+  scheduleEditorToggle:
+    "h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600",
+  scheduleThresholdRow:
+    "mt-3 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-3 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-400",
+  scheduleThresholdInput:
+    "w-20 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium tabular-nums text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
 };

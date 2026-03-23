@@ -2,7 +2,8 @@
 
 > Single source of truth for visual design in CareFlow.
 > Code implementation lives in [`frontend/src/components/responsiveStyles.ts`](../frontend/src/components/responsiveStyles.ts).
-> All new UI work must use the tokens and component rules defined here — no ad-hoc Tailwind classes.
+> All new UI work must use the tokens and component rules defined here — no ad-hoc Tailwind classes outside documented component specs.
+> Documented component specs are the approved exception layer between tokens and implementation.
 
 ---
 
@@ -23,8 +24,8 @@
 | Brand / Hover | `#1D4ED8` | `blue-700` | Hover state on primary buttons |
 | Status / Fixed BG | `#DBEAFE` | `blue-100` | Fixed visit type pill background |
 | Status / Fixed Text | `#1E40AF` | `blue-800` | Fixed visit type pill text |
-| Status / Flexible BG | `#DCFCE7` | `green-100` | Flexible visit type pill background |
-| Status / Flexible Text | `#166534` | `green-800` | Flexible visit type pill text |
+| Status / Flexible BG | `#D1FAE5` | `emerald-100` | Flexible visit type pill background |
+| Status / Flexible Text | `#047857` | `emerald-700` | Flexible visit type pill text |
 | Warning | `#D97706` | `amber-600` | "Leave By" time value, warning indicators |
 
 **Dark mode:** Every token has a dark-mode counterpart in code. In Figma, use a separate dark-mode frame with `slate-950` canvas and `slate-900` surface.
@@ -44,7 +45,12 @@
 | Label / Small | 12px | Medium | Text/Muted | `text-xs font-medium text-slate-500` |
 | Label / Caps | 11px | Semibold | Text/Muted | `text-[11px] font-semibold uppercase tracking-wide` |
 
-**Rule:** Never introduce a new font size. Map all text to one of the styles above.
+**Rule:** Do not introduce new body or heading sizes outside the defined scale.
+Allowed exceptions for dense UI metadata:
+- `text-[10px]` for timeline chips and compact timestamp metadata
+- `text-[11px]` for pill labels / caps micro-labels
+- `text-[0.95rem]` for compact metric values where `text-sm` is too small and `text-lg` is too large
+- Tracking exceptions (`tracking-[0.1em]`, `tracking-[0.14em]`, `tracking-[0.16em]`) are allowed only for chips, eyebrow labels, and other documented micro-label specs.
 
 ---
 
@@ -82,9 +88,9 @@
 |---|---|---|---|
 | Card | `0 1px 2px rgba(0,0,0,0.05)` | `shadow-sm` | All surface cards |
 | Hover | `0 2px 6px rgba(0,0,0,0.08)` | `shadow` | Card hover state, metric cards |
-| Elevated | `0 4px 12px rgba(0,0,0,0.1)` | `shadow-md` | Header, footer, sticky elements |
+| Elevated | `0 4px 12px rgba(0,0,0,0.1)` | `shadow-md` | Popovers, sticky subpanels, secondary elevated surfaces |
 
-**Rule:** Never stack more than one shadow level. Cards get `shadow-sm`. Elevated chrome (header/footer) gets `shadow-md`.
+**Rule:** Never stack more than one shadow level. Cards get `shadow-sm`. Header/footer use blur-first chrome, while `shadow-md` is reserved for true elevated surfaces.
 
 ---
 
@@ -113,6 +119,8 @@
 - **Horizontal padding:** `px-4 sm:px-6`
 - **Canvas:** `bg-gradient-to-b from-slate-50 to-white` on the outer flex container
 - **Between sections:** `mt-6` or `mt-8`
+- **Width policy:** keep app shell at `max-w-7xl`, but use narrower inner constraints for form/auth and dense data regions when readability benefits.
+- **Footer text baseline:** use low-emphasis text (`text-xs text-slate-500`) and keep footer visually subordinate to page content.
 
 ### Section Block
 
@@ -185,6 +193,20 @@ disabled:opacity-60 disabled:cursor-not-allowed
 Use for: Cancel, Edit trip, Edit patients, Close.
 
 **Rule:** Never put a border on a secondary button. If you need a border, use a ghost/outline variant explicitly.
+
+### Button — Outline (for contextual utility actions)
+
+```
+border border-slate-300
+bg-white text-slate-700
+rounded-xl
+px-3 py-1.5
+text-sm
+hover:bg-slate-50
+disabled:opacity-60 disabled:cursor-not-allowed
+```
+
+Use for: contextual utility actions inside info banners and inline system notices (e.g. "Reset order").
 
 ---
 
@@ -264,6 +286,8 @@ group (for hover-reveal actions)
 - Preferred window: left, pill + time inline
 - Duration: right-aligned
 - Actions: right-aligned, `opacity-0 group-hover:opacity-100`
+- Desktop table rows may use hover-reveal for row actions.
+- Mobile/touch layouts must use always-visible actions or a persistent overflow menu.
 
 **Column widths:**
 
@@ -409,6 +433,7 @@ Inline edit/delete buttons are hidden until row hover:
 ```
 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100
 ```
+See §3 Table for canonical desktop/mobile action behavior.
 
 ---
 
@@ -424,7 +449,7 @@ These are **never** acceptable:
 | Hardcoded spacing not on the 8pt grid | Use token spacing only |
 | More than two font sizes in one card | Map all text to the typography table |
 | Shadows stacked: `shadow + shadow-md` | One shadow level per element |
-| Ad-hoc inline Tailwind classes for color | Use `responsiveStyles` tokens |
+| Ad-hoc inline Tailwind classes outside documented component specs | Use `responsiveStyles` tokens or documented component exceptions |
 | `bg-slate-50` on a focused input | Inputs are always `bg-white` |
 
 ---
@@ -432,7 +457,7 @@ These are **never** acceptable:
 ## 7. Code Rules
 
 - **Every reusable style** lives in [`responsiveStyles.ts`](../frontend/src/components/responsiveStyles.ts)
-- **Components consume tokens** via `responsiveStyles.X`, never write repeated Tailwind strings inline
+- **Components consume tokens** via `responsiveStyles.X`; inline classes are allowed only when explicitly documented in this spec
 - **One-off overrides** (e.g. `pl-9` for icon inset on search) are the only acceptable inline additions
 - **Dark mode** is handled via `dark:` variants inside the token — components never add their own dark variants
 
@@ -447,6 +472,7 @@ These are **never** acceptable:
 | Search input | `searchInput` |
 | Primary button | `primaryButton` |
 | Secondary button | `secondaryButton` |
+| Outline button | `outlineButton` |
 | Visit type pill | inline in `renderVisitTypePill()` (PatientsTable) |
 | Metric card | `resultStatCard` |
 | Metric label | `resultStatLabel` |
@@ -480,7 +506,7 @@ The primary list item in the visit order. Each card represents one scheduled tas
 
 **Rules:**
 - Only one card can be expanded at a time per route result
-- Expanded state uses Blue (`border-blue-200 bg-blue-50/50`) — Blue = selection only (§11)
+- Expanded state uses Blue (`border-blue-200 bg-blue-50/50`) — Blue = selection only (§12)
 - Move controls (`▲ ▼`) are `absolute right-2 top-2`, header row must add `pr-9` to avoid pill overlap
 - Toggle chevron rotates 90° when expanded
 
@@ -569,7 +595,8 @@ dark:border-slate-700 dark:bg-slate-950/40
 **Rules:**
 - Dashed border communicates non-visit, terminus nature
 - `bg-slate-50` is permitted here (exception to the white-card rule) because the card is intentionally de-emphasized
-- Green text (`emerald-700`) for the ETA is success-signal only — matches Green = success semantic in §11
+- Green text (`emerald-700`) for the ETA is success-signal only — matches Green = success semantic in §12
+- Any exception to core surface rules must be explicitly documented at the component level in this spec.
 
 ---
 
@@ -590,13 +617,13 @@ dark:bg-blue-950/20 dark:border-blue-900/50 dark:text-blue-300
 **Rules:**
 - Only used for transient system state (stale route, network status) — not for validation errors
 - Always contains exactly one primary action; secondary action is optional
-- Never used for empty states or errors (use §10 table states / inline error message instead)
+- Never used for empty states or errors (use §11 table states / inline error message instead)
 
 ---
 
 ## 10. State System
 
-Every interactive component must handle all four states consistently.
+Every interactive component must handle all applicable states below consistently.
 
 | State | Visual treatment |
 |---|---|
@@ -604,16 +631,21 @@ Every interactive component must handle all four states consistently.
 | Hover | `border-slate-300` on inputs/panels; `bg-slate-50` on rows; `hover:shadow` on metric cards |
 | Focus | `ring-2 ring-blue-100 border-blue-500` on inputs; `ring-2 ring-blue-500/50` on buttons |
 | Disabled | `opacity-60 cursor-not-allowed` — never remove from DOM |
-| Selected / Active | `border-blue-200 bg-blue-50/50` — see §11 |
+| Selected / Active | `border-blue-200 bg-blue-50/50` — see §12 |
 | Error | `border-red-400` on input; inline `text-red-600` message below |
 | Loading | Skeleton placeholder at the same height as the real element |
 | Empty | Centered `text-slate-500` message inside the container |
 
-**Rule:** Never rely on color alone to communicate state — pair color with border, text, or icon changes.
+**Rule:** Never rely on color alone to communicate state.
+Required non-color companions:
+- Selected = border + tint
+- Error = border + inline message
+- Disabled = opacity + cursor
+- Focus = ring + border
 
 ---
 
-## 10. Table States
+## 11. Table States
 
 All tables must implement every state without layout shift.
 
@@ -646,7 +678,7 @@ text-sm text-red-700
 
 ---
 
-## 11. Selected / Active Pattern
+## 12. Selected / Active Pattern
 
 Used wherever a user makes a selection that persists visually.
 
@@ -671,7 +703,7 @@ dark:border-blue-700/60 dark:bg-blue-950/20
 
 ---
 
-## 12. Page Background Token
+## 13. Page Background Token
 
 ```
 bg-gradient-to-b from-slate-50 to-white
@@ -682,12 +714,12 @@ Applied to the **outermost flex container** (`App.jsx`), not to individual secti
 
 **Rules:**
 - Always use the gradient on the page container — never flat `bg-slate-50` or `bg-white` at page level
-- Do not apply any background to the content wrapper (`max-w-6xl` div) — it must be transparent so the gradient shows through
+- Do not apply any background to the content wrapper div — it must be transparent so the gradient shows through
 - Section cards (`bg-white shadow-sm`) provide the white surface; the gradient is the canvas
 
 ---
 
-## 13. Mobile Rules
+## 14. Mobile Rules
 
 ### Spacing
 | Context | Mobile | Desktop |
@@ -705,7 +737,7 @@ Applied to the **outermost flex container** (`App.jsx`), not to individual secti
 
 ### Typography
 - Use the same type scale at all breakpoints — never scale down below the defined sizes
-- Exception: `text-[10px]` and `text-[11px]` are allowed only for pill labels and timestamp metadata
+- Exceptions follow §1 Typography (pill labels, eyebrow labels, compact metadata, compact metric values)
 
 ### Touch targets
 - All interactive elements minimum `44px` tall on mobile
@@ -714,7 +746,7 @@ Applied to the **outermost flex container** (`App.jsx`), not to individual secti
 
 ---
 
-## 14. Interaction Priority
+## 15. Interaction Priority
 
 Only **one primary action** is allowed per section. All other actions are secondary or tertiary.
 
@@ -722,16 +754,18 @@ Only **one primary action** is allowed per section. All other actions are second
 |---|---|---|---|
 | Primary | Blue filled button | `primaryButton` / `optimizeButton` | Optimize Route, Add Patient, Save |
 | Secondary | Gray filled button (no border) | `secondaryButton` | Cancel, Edit trip, Close |
+| Utility | Neutral outlined button | `outlineButton` (or component-specific documented equivalent) | Contextual system actions inside banners/panels (e.g., Reset order) |
 | Tertiary | Text link | `text-blue-600 hover:underline` | Edit (collapsed panel), "+2 more" |
 
 **Rules:**
 - Primary and secondary buttons never appear side-by-side at equal visual weight — primary must be clearly dominant
+- Utility outlined actions are contextual support actions and must not visually compete with primary CTAs
 - Destructive actions (Delete, Logout) use red text (`text-red-600 hover:bg-red-50`) not a red button
 - Disabled state uses `opacity-60 cursor-not-allowed` — never hide a disabled button
 
 ---
 
-## 15. Component Naming Rules
+## 16. Component Naming Rules
 
 Consistent terminology prevents confusion between developers and design.
 
@@ -772,7 +806,7 @@ Panel / Expanded
 
 ---
 
-## 16. Alert Cards
+## 17. Alert Cards
 
 Used for system-level warnings, conflicts, and risks. Always rendered below the main content area.
 
@@ -812,7 +846,7 @@ rounded-2xl border px-4 py-3 shadow-sm
 
 ---
 
-## 17. Section Headers
+## 18. Section Headers
 
 Every major region of the page uses a consistent header structure.
 
@@ -847,7 +881,7 @@ dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300
 
 ---
 
-## 18. Inline Status Messages (Timeline)
+## 19. Inline Status Messages (Timeline)
 
 Short contextual messages rendered inside stop cards to explain timing outcomes.
 
@@ -866,7 +900,7 @@ Short contextual messages rendered inside stop cards to explain timing outcomes.
 
 ---
 
-## 19. Map Markers
+## 20. Map Markers
 
 Markers on the Leaflet route map must follow timeline color semantics.
 
@@ -878,13 +912,16 @@ Markers on the Leaflet route map must follow timeline color semantics.
 
 **Rules:**
 
-- Marker colors must match their card status — a stop that is "Late" does not get a red marker (red = endpoint only)
+- Marker colors must follow map role semantics, not timing status semantics:
+  - stop = blue
+  - endpoint = red
+  - selected = darker blue
 - Marker labels use initials (e.g. `RR`, `DP+DP`) — match the patient name abbreviation logic
 - Active/selected state is a darker stroke, not a different hue
 
 ---
 
-## 20. Elevation / Depth System
+## 21. Elevation / Depth System
 
 Defines how layers stack visually so nothing feels flat or cluttered.
 
@@ -904,4 +941,138 @@ Defines how layers stack visually so nothing feels flat or cluttered.
 
 ---
 
-*Last updated: 2026-03-21*
+## 22. Auth Page Template
+
+Use this template for login, sign-up, forgot password, and password reset screens.
+
+```
+<app shell>                       ← same page canvas token
+  <header>                        ← standard app header (logged-out variant)
+  <content wrapper>               ← max-w-7xl + horizontal padding
+    <auth container>              ← narrower inner constraint (`max-w-xl mx-auto`)
+      <auth card>                 ← white surface card
+    </auth container>
+  <footer>                        ← standard low-priority footer
+</app shell>
+```
+
+### Auth card baseline
+
+```
+bg-white border border-slate-200 rounded-2xl shadow-sm
+p-4 sm:p-6
+```
+
+### Auth width policy
+
+- Keep the global app shell wide (`max-w-7xl`) for header/footer alignment.
+- Login/reset forms should use a narrow focal column: `max-w-xl mx-auto`.
+- Use `max-w-2xl` only when auth content is materially larger (multi-field sign-up, legal copy, or split content).
+- Segmented controls must stay inside the same auth-width container as the form.
+
+### Auth form baseline
+
+- Field stack: `space-y-4`
+- Label to input gap: `mb-1`
+- Inputs: use input token/state rules from §3 Input Field
+- Primary submit button: full-width by default
+- Auth primary submit remains full-width at desktop unless a specific workflow requires a documented exception
+
+### Auth spacing rhythm
+
+- Segmented control → title: `mt-6`
+- Title → description: `mt-3`
+- Description → first field: `mt-6`
+- Field stack: `space-y-4`
+- Last field → primary button: `mt-5`
+- Helper row (forgot password / mode switch) under password or CTA with `mt-3`
+
+### Auth-specific rules
+
+- Keep auth content visually narrower than dashboard/data surfaces.
+- Vertically center the auth focal zone within remaining viewport space (between header and footer), not pinned high like dashboard content.
+- Keep one primary CTA per screen section.
+- Use segmented controls/tabs only for closely related mode switches (e.g., Login / Sign up).
+- Auth screens use the same color, spacing, and typography rules as the rest of the system (no separate visual theme).
+- Keep footer visually quiet and separated from auth card with clear breathing room.
+
+---
+
+## 23. Modal Component Spec
+
+Modal is the canonical overlay dialog primitive for focused workflows (confirmations, account settings, form subflows).
+
+### Structure
+
+```
+<backdrop>
+  <dialog surface>
+    <header>
+    <body>
+    <footer actions>
+```
+
+### Tokens
+
+- Backdrop: `bg-slate-950/45` at `z-50`
+- Surface: `bg-white border border-slate-200 rounded-2xl shadow-2xl`
+- Mobile behavior: sheet-like bottom presentation is allowed when documented (e.g., rounded top corners)
+- Desktop behavior: centered dialog
+
+### Sizes
+
+| Size | Max width |
+|---|---|
+| Small | `sm:max-w-sm` |
+| Medium (default) | `sm:max-w-xl` |
+| Large | `sm:max-w-2xl` |
+
+### Actions
+
+- Primary action: `primaryButton`
+- Secondary action: `secondaryButton`
+- Utility contextual action (if needed): `outlineButton` or documented equivalent
+- Destructive actions default to red text treatment (`text-red-600 hover:bg-red-50`)
+- A destructive filled primary button is allowed only in irreversible confirmation modals and only when it is the sole primary action
+
+### Accessibility rules
+
+- Use proper dialog semantics (`role="dialog"` or native dialog semantics), with labeled title.
+- Focus must move into the modal on open and return to trigger on close.
+- `Escape` closes dismissible modals.
+- Click-outside behavior is optional and must match workflow risk (disable for destructive/high-risk confirmations when needed).
+- Keep keyboard navigation fully operable for all controls.
+
+### Behavior rules
+
+- One modal stack at a time by default (avoid nested modal flows).
+- Modal body scrolls when content exceeds viewport; header/footer stay readable.
+- Use concise titles and direct action labels.
+- Footer action layout:
+  - Mobile: stacked actions, full-width
+  - Desktop: right-aligned action row with `gap-3`
+
+---
+
+## 24. Segmented Control (Tabs)
+
+Use segmented controls for switching between closely related views in the same local context (e.g., Login / Sign up).
+
+### Base styles
+
+- Container: `bg-slate-100 rounded-lg p-1 flex`
+- Segment button (inactive): `flex-1 text-slate-600`
+- Segment button (active): `bg-white shadow-sm text-slate-900 font-semibold`
+
+### Rules
+
+- Equal-width segments in the same control.
+- Exactly one active segment at a time.
+- No outer border; rely on surface contrast.
+- Include visible focus treatment for keyboard navigation.
+- Use segmented controls for local mode switches, not for top-level app navigation.
+- Top-level navigation must continue using page/tab nav patterns.
+
+---
+
+*Last updated: 2026-03-23*

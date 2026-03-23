@@ -47,7 +47,9 @@ export default defineConfig({
   schema: "./src/db/schema.ts",
   out: "./drizzle",
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "",
+    // Prefer the unpooled (direct) connection for migrations — Neon's pooler
+    // runs PgBouncer in transaction mode and does not reliably apply DDL.
+    url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL ?? "",
   },
   strict: true,
   verbose: true,

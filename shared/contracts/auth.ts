@@ -1,11 +1,33 @@
 const isObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
+export type DaySchedule = {
+  enabled: boolean;
+  start: string; // HH:mm
+  end: string; // HH:mm
+  lunchBreak?: {
+    enabled: boolean;
+    durationMinutes: number;
+  };
+};
+
+export type WeeklyWorkingHours = {
+  monday?: DaySchedule;
+  tuesday?: DaySchedule;
+  wednesday?: DaySchedule;
+  thursday?: DaySchedule;
+  friday?: DaySchedule;
+  saturday?: DaySchedule;
+  sunday?: DaySchedule;
+};
+
 export type AuthUser = {
   id: string;
   email: string;
   displayName: string;
   homeAddress: string | null;
+  workingHours?: WeeklyWorkingHours | null;
+  breakGapThresholdMinutes?: number | null;
 };
 
 export type LoginRequest = {
@@ -31,7 +53,9 @@ export type MeResponse = {
 };
 
 export type UpdateMeRequest = {
-  homeAddress: string;
+  homeAddress?: string;
+  workingHours?: WeeklyWorkingHours | null;
+  breakGapThresholdMinutes?: number | null;
 };
 
 export const isAuthUser = (value: unknown): value is AuthUser => {
@@ -39,12 +63,24 @@ export const isAuthUser = (value: unknown): value is AuthUser => {
     return false;
   }
 
-  return (
-    typeof value.id === "string" &&
-    typeof value.email === "string" &&
-    typeof value.displayName === "string" &&
-    (typeof value.homeAddress === "string" || value.homeAddress === null)
-  );
+  if (
+    typeof value.id !== "string" ||
+    typeof value.email !== "string" ||
+    typeof value.displayName !== "string" ||
+    (typeof value.homeAddress !== "string" && value.homeAddress !== null)
+  ) {
+    return false;
+  }
+
+  if (
+    value.breakGapThresholdMinutes !== undefined &&
+    value.breakGapThresholdMinutes !== null &&
+    typeof value.breakGapThresholdMinutes !== "number"
+  ) {
+    return false;
+  }
+
+  return true;
 };
 
 export const isLoginRequest = (value: unknown): value is LoginRequest => {
@@ -72,7 +108,27 @@ export const isUpdateMeRequest = (value: unknown): value is UpdateMeRequest => {
     return false;
   }
 
-  return typeof value.homeAddress === "string";
+  const hasHomeAddress = value.homeAddress !== undefined;
+  const hasWorkingHours = value.workingHours !== undefined;
+  const hasBreakGap = value.breakGapThresholdMinutes !== undefined;
+
+  if (!hasHomeAddress && !hasWorkingHours && !hasBreakGap) {
+    return false;
+  }
+
+  if (hasHomeAddress && typeof value.homeAddress !== "string") {
+    return false;
+  }
+
+  if (
+    hasBreakGap &&
+    value.breakGapThresholdMinutes !== null &&
+    typeof value.breakGapThresholdMinutes !== "number"
+  ) {
+    return false;
+  }
+
+  return true;
 };
 
 export type UpdatePasswordRequest = {

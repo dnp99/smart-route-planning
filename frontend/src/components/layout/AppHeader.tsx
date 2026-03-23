@@ -1,7 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import nurseQuotes from "../../data/nurseQuotes";
 import { formatNameWords } from "../patients/patientName";
 import { responsiveStyles } from "../responsiveStyles";
+import { useScrollShrink } from "../hooks/useScrollShrink";
+import { useClickOutside } from "../hooks/useClickOutside";
 
 const HEADER_QUOTE_STORAGE_KEY = "careflow.headerQuote";
 
@@ -58,36 +60,15 @@ export default function AppHeader({
   onOpenAccountSettings,
   onLogout,
 }: AppHeaderProps) {
-  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
-  const [headerScrolled, setHeaderScrolled] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen, accountMenuRef] =
+    useClickOutside<HTMLDivElement>();
+  const headerScrolled = useScrollShrink();
   const [headerQuote, setHeaderQuote] = useState<Quote | null>(() => readStoredHeaderQuote());
-  const accountMenuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when logged out
   useEffect(() => {
     if (!isAuthenticated) setIsAccountMenuOpen(false);
-  }, [isAuthenticated]);
-
-  // Click-outside + Escape for account menu
-  useEffect(() => {
-    if (!isAccountMenuOpen) return;
-
-    const handlePointerDown = (event: PointerEvent) => {
-      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
-        setIsAccountMenuOpen(false);
-      }
-    };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setIsAccountMenuOpen(false);
-    };
-
-    document.addEventListener("pointerdown", handlePointerDown);
-    document.addEventListener("keydown", handleKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", handlePointerDown);
-      document.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [isAccountMenuOpen]);
+  }, [isAuthenticated, setIsAccountMenuOpen]);
 
   // Quote management
   useEffect(() => {
@@ -106,13 +87,6 @@ export default function AppHeader({
       return next;
     });
   }, [isAuthenticated]);
-
-  // Scroll shrink
-  useEffect(() => {
-    const handleScroll = () => setHeaderScrolled(window.scrollY > 20);
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
 
   const formattedDisplayName =
     typeof authUser?.displayName === "string" ? formatNameWords(authUser.displayName) : "";

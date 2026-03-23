@@ -1,4 +1,5 @@
 export type {
+  NurseWorkingHoursConstraint,
   OptimizeRouteV2LatLng as LatLng,
   OptimizeRouteV2Request as OptimizeRouteRequestV2,
   OptimizeRouteV2Response as OptimizeRouteResultV2,

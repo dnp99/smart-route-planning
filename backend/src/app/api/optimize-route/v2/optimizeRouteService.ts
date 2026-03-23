@@ -514,6 +514,10 @@ const resolveDepartureContext = async (
     };
   }
 
+  const workStartSeconds = request.nurseWorkingHours
+    ? parseTimeToSeconds(request.nurseWorkingHours.workStart)
+    : undefined;
+
   const firstAnchor = resolveFirstDepartureAnchor(visits, startLocation, resolveTravelSeconds);
   const departureLocalSeconds = firstAnchor
     ? Math.max(
@@ -530,7 +534,7 @@ const resolveDepartureContext = async (
           DEPARTURE_BUFFER_SECONDS,
       )
     : visits.length > 0
-      ? DEFAULT_UNANCHORED_DEPARTURE_LOCAL_SECONDS
+      ? (workStartSeconds ?? DEFAULT_UNANCHORED_DEPARTURE_LOCAL_SECONDS)
       : 0;
 
   const departureTime = toIsoFromPlanningDateAndLocalSeconds(
@@ -799,12 +803,18 @@ const detectWindowConflicts = (
   return warnings;
 };
 
+type LunchContext = {
+  targetLunchStartSeconds: number;
+  lunchDurationSeconds: number;
+};
+
 const orderVisitsByWindowDistanceAndDuration = (
   visits: VisitWithCoords[],
   startLocation: LocationRef,
   departureLocalSeconds: number,
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
   preserveOrder: boolean,
+  lunchContext: LunchContext | undefined,
 ) => {
   if (preserveOrder) {
     const orderedVisits: VisitWithCoords[] = [];
@@ -843,8 +853,30 @@ const orderVisitsByWindowDistanceAndDuration = (
   const unscheduledTasks: UnscheduledTaskV2[] = [];
   let currentLocation = startLocation;
   let currentTimeSeconds = departureLocalSeconds;
+  let lunchTaken = false;
+  let lunchSkippedDueToFixed = false;
 
   while (remaining.length > 0) {
+    // Lunch break logic: insert a time-block at the target lunch window when feasible
+    if (lunchContext && !lunchTaken && currentTimeSeconds >= lunchContext.targetLunchStartSeconds) {
+      const lunchEndSeconds =
+        lunchContext.targetLunchStartSeconds + lunchContext.lunchDurationSeconds;
+      const hasFixedConflict = remaining.some(
+        (v) =>
+          v.windowType === "fixed" &&
+          v.windowStartSeconds < lunchEndSeconds &&
+          v.windowEndSeconds > lunchContext.targetLunchStartSeconds,
+      );
+      if (!hasFixedConflict) {
+        currentTimeSeconds =
+          Math.max(currentTimeSeconds, lunchContext.targetLunchStartSeconds) +
+          lunchContext.lunchDurationSeconds;
+      } else {
+        lunchSkippedDueToFixed = true;
+      }
+      lunchTaken = true;
+    }
+
     const capacityBlockedFlexibleVisitIds = new Set(
       remaining
         .filter((visit) => visit.windowType === "flexible")
@@ -918,6 +950,17 @@ const orderVisitsByWindowDistanceAndDuration = (
               p.slackSeconds < FLEXIBLE_URGENCY_THRESHOLD_SECONDS,
           )
         : [];
+    // Patients with a real preferred window but not yet urgent are anchored above
+    // unconstrained (no-window) patients. The gap-filler mechanism then fills idle
+    // time before the window opens with nearby no-window patients, preventing the
+    // common failure mode where greedy travel-time picks consume the entire day and
+    // the windowed patient's deadline is missed.
+    const windowedFlexibleProjections =
+      !hasFixedRemaining &&
+      lateFlexibleProjections.length === 0 &&
+      urgentFlexibleProjections.length === 0
+        ? projections.filter((p) => p.visit.hasPreferredWindow)
+        : [];
     const primaryProjections =
       lateFixedProjections.length > 0
         ? lateFixedProjections
@@ -927,7 +970,9 @@ const orderVisitsByWindowDistanceAndDuration = (
             ? lateFlexibleProjections
             : urgentFlexibleProjections.length > 0
               ? urgentFlexibleProjections
-              : projections;
+              : windowedFlexibleProjections.length > 0
+                ? windowedFlexibleProjections
+                : projections;
     if (primaryProjections === urgentFlexibleProjections) {
       primaryProjections.sort((a, b) =>
         a.slackSeconds !== b.slackSeconds
@@ -973,6 +1018,7 @@ const orderVisitsByWindowDistanceAndDuration = (
   return {
     orderedVisits: ordered,
     unscheduledTasks,
+    lunchSkippedDueToFixed,
   };
 };
 
@@ -1067,6 +1113,13 @@ export const optimizeRouteV2 = async (
   const endCoords = resolveCoordsOrThrow(coordsByLocationKey, request.end);
   const startLocationKey = resolveLocationKey(request.start);
 
+  const workingHoursStartSeconds = request.nurseWorkingHours
+    ? parseTimeToSeconds(request.nurseWorkingHours.workStart)
+    : undefined;
+  const workingHoursEndSeconds = request.nurseWorkingHours
+    ? parseTimeToSeconds(request.nurseWorkingHours.workEnd)
+    : undefined;
+
   const visitsWithCoords: VisitWithCoords[] = request.visits.map((visit) => {
     const hasPreferredWindow =
       visit.windowStart.trim().length > 0 && visit.windowEnd.trim().length > 0;
@@ -1078,10 +1131,10 @@ export const optimizeRouteV2 = async (
       hasPreferredWindow,
       windowStartSeconds: hasPreferredWindow
         ? parseTimeToSeconds(visit.windowStart)
-        : SYNTHETIC_WINDOW_START_SECONDS,
+        : (workingHoursStartSeconds ?? SYNTHETIC_WINDOW_START_SECONDS),
       windowEndSeconds: hasPreferredWindow
         ? parseTimeToSeconds(visit.windowEnd)
-        : SYNTHETIC_WINDOW_END_SECONDS,
+        : (workingHoursEndSeconds ?? SYNTHETIC_WINDOW_END_SECONDS),
     };
   });
 
@@ -1117,16 +1170,30 @@ export const optimizeRouteV2 = async (
   const departureTimestampMs = departureContext.departureTimestampMs;
   const departureLocalSeconds = departureContext.departureLocalSeconds;
 
-  const { orderedVisits, unscheduledTasks } = orderVisitsByWindowDistanceAndDuration(
-    visitsWithCoords,
-    {
-      coords: startCoords,
-      locationKey: startLocationKey,
-    },
-    departureLocalSeconds,
-    resolveTravelSeconds,
-    request.preserveOrder === true,
-  );
+  let lunchContext: LunchContext | undefined;
+  if (
+    request.nurseWorkingHours?.lunchDurationMinutes &&
+    workingHoursStartSeconds !== undefined &&
+    workingHoursEndSeconds !== undefined
+  ) {
+    const lunchDurationSeconds = request.nurseWorkingHours.lunchDurationMinutes * 60;
+    const targetLunchStartSeconds =
+      (workingHoursStartSeconds + workingHoursEndSeconds) / 2 - lunchDurationSeconds / 2;
+    lunchContext = { targetLunchStartSeconds, lunchDurationSeconds };
+  }
+
+  const { orderedVisits, unscheduledTasks, lunchSkippedDueToFixed } =
+    orderVisitsByWindowDistanceAndDuration(
+      visitsWithCoords,
+      {
+        coords: startCoords,
+        locationKey: startLocationKey,
+      },
+      departureLocalSeconds,
+      resolveTravelSeconds,
+      request.preserveOrder === true,
+      lunchContext,
+    );
   const plannedStops = groupVisitsIntoStops(orderedVisits, {
     address: request.end.address,
     googlePlaceId: request.end.googlePlaceId,
@@ -1207,6 +1274,20 @@ export const optimizeRouteV2 = async (
     (task) => task.reason === "fixed_window_unreachable",
   ).length;
 
+  const lastTaskEndSeconds = (() => {
+    for (let i = orderedStops.length - 1; i >= 0; i--) {
+      const stop = orderedStops[i];
+      if (!stop || stop.isEndingPoint) continue;
+      const lastTask = stop.tasks[stop.tasks.length - 1];
+      if (lastTask) {
+        const endMs = new Date(lastTask.serviceEndTime).getTime();
+        const depMs = departureTimestampMs;
+        return departureLocalSeconds + (endMs - depMs) / 1000;
+      }
+    }
+    return departureLocalSeconds;
+  })();
+
   const warnings: ScheduleWarningV2[] = [...conflictWarnings];
   for (const stop of orderedStops) {
     for (const task of stop.tasks) {
@@ -1233,6 +1314,22 @@ export const optimizeRouteV2 = async (
         });
       }
     }
+  }
+
+  if (lunchSkippedDueToFixed && lunchContext) {
+    warnings.push({
+      type: "lunch_skipped",
+      message: "Lunch was skipped because a patient's fixed window overlapped the lunch period.",
+    });
+  }
+
+  if (workingHoursEndSeconds !== undefined && lastTaskEndSeconds > workingHoursEndSeconds) {
+    const overByMinutes = Math.ceil((lastTaskEndSeconds - workingHoursEndSeconds) / 60);
+    warnings.push({
+      type: "outside_working_hours",
+      overByMinutes,
+      message: `Route extends ${overByMinutes} min past your working hours.`,
+    });
   }
 
   return {

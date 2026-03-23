@@ -119,6 +119,8 @@ function App() {
             element={renderProtectedRoute(
               <RoutePlanner
                 nurseHomeAddress={authUser?.homeAddress ?? null}
+                nurseWorkingHours={authUser?.workingHours ?? null}
+                nurseBreakGapThresholdMinutes={authUser?.breakGapThresholdMinutes ?? null}
                 onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
               />,
             )}

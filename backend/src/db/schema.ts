@@ -4,19 +4,21 @@ import {
   check,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   time,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-
 export const nurses = pgTable("nurses", {
   id: uuid("id").defaultRandom().primaryKey(),
   externalKey: text("external_key").notNull().unique(),
   displayName: text("display_name").notNull(),
   email: text("email").notNull().unique(),
   homeAddress: text("home_address"),
+  workingHours: jsonb("working_hours"),
+  breakGapThresholdMinutes: integer("break_gap_threshold_minutes"),
   passwordHash: text("password_hash").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),

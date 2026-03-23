@@ -1,14 +1,18 @@
-import { useEffect, useState } from "react";
 import AddressAutocompleteInput from "../AddressAutocompleteInput";
 import { responsiveStyles } from "../responsiveStyles";
-import { updatePassword, updateProfileHomeAddress } from "../auth/authService";
-import { clearAuthSession, getAuthToken, setStoredAuthUser } from "../auth/authSession";
+import { useAccountSettings, DAYS } from "../hooks/useAccountSettings";
+import type { WeeklyWorkingHours } from "../../../../shared/contracts";
 
 const MAX_HOME_ADDRESS_LENGTH = 200;
-const MIN_PASSWORD_LENGTH = 8;
 const PROFILE_MODAL_HOME_ADDRESS_ID = "account-settings-home-address";
 
-type AuthUser = { displayName?: string; email?: string; homeAddress?: string } | null;
+type AuthUser = {
+  displayName?: string;
+  email?: string;
+  homeAddress?: string;
+  workingHours?: WeeklyWorkingHours | null;
+  breakGapThresholdMinutes?: number | null;
+} | null;
 
 interface AccountSettingsModalProps {
   isOpen: boolean;
@@ -59,132 +63,47 @@ export default function AccountSettingsModal({
   authUser,
   onHomeAddressSaved,
 }: AccountSettingsModalProps) {
-  const [homeAddressInput, setHomeAddressInput] = useState("");
-  const [accountSettingsError, setAccountSettingsError] = useState("");
-  const [accountSettingsSuccess, setAccountSettingsSuccess] = useState("");
-  const [isSavingAccountSettings, setIsSavingAccountSettings] = useState(false);
-  const [currentPasswordInput, setCurrentPasswordInput] = useState("");
-  const [newPasswordInput, setNewPasswordInput] = useState("");
-  const [confirmPasswordInput, setConfirmPasswordInput] = useState("");
-  const [passwordError, setPasswordError] = useState("");
-  const [passwordSuccess, setPasswordSuccess] = useState("");
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Reset form state when opening
-  useEffect(() => {
-    if (!isOpen) return;
-    setHomeAddressInput(authUser?.homeAddress ?? "");
-    setAccountSettingsError("");
-    setAccountSettingsSuccess("");
-    setCurrentPasswordInput("");
-    setNewPasswordInput("");
-    setConfirmPasswordInput("");
-    setPasswordError("");
-    setPasswordSuccess("");
-    setShowCurrentPassword(false);
-    setShowNewPassword(false);
-    setShowConfirmPassword(false);
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Escape to close
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") handleClose();
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isSavingAccountSettings, isUpdatingPassword]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleClose = () => {
-    if (isSavingAccountSettings || isUpdatingPassword) return;
-    setAccountSettingsError("");
-    setAccountSettingsSuccess("");
-    setPasswordError("");
-    setPasswordSuccess("");
-    onClose();
-  };
-
-  const handleAccountSettingsSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setAccountSettingsError("");
-    setAccountSettingsSuccess("");
-
-    const normalized = homeAddressInput.trim();
-    if (!normalized) {
-      setAccountSettingsError("Home address is required.");
-      return;
-    }
-    if (normalized.length > MAX_HOME_ADDRESS_LENGTH) {
-      setAccountSettingsError("Home address must be 200 characters or fewer.");
-      return;
-    }
-
-    const token = getAuthToken();
-    if (!token || !authUser) {
-      clearAuthSession();
-      return;
-    }
-
-    setIsSavingAccountSettings(true);
-    try {
-      const updated = await updateProfileHomeAddress(token, normalized);
-      setStoredAuthUser(updated.user);
-      onHomeAddressSaved(updated.user);
-      setAccountSettingsSuccess("Account settings saved.");
-    } catch (err) {
-      setAccountSettingsError(
-        err instanceof Error ? err.message : "Unable to update account settings.",
-      );
-    } finally {
-      setIsSavingAccountSettings(false);
-    }
-  };
-
-  const handlePasswordUpdateSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
-    setPasswordError("");
-    setPasswordSuccess("");
-
-    if (!currentPasswordInput.trim()) {
-      setPasswordError("Current password is required.");
-      return;
-    }
-    if (newPasswordInput.length < MIN_PASSWORD_LENGTH) {
-      setPasswordError(`New password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
-      return;
-    }
-    if (newPasswordInput !== confirmPasswordInput) {
-      setPasswordError("Passwords do not match.");
-      return;
-    }
-    if (currentPasswordInput === newPasswordInput) {
-      setPasswordError("New password must differ from current password.");
-      return;
-    }
-
-    const token = getAuthToken();
-    if (!token || !authUser) {
-      clearAuthSession();
-      return;
-    }
-
-    setIsUpdatingPassword(true);
-    try {
-      await updatePassword(token, currentPasswordInput, newPasswordInput);
-      setCurrentPasswordInput("");
-      setNewPasswordInput("");
-      setConfirmPasswordInput("");
-      setPasswordSuccess("Password updated successfully.");
-    } catch (err) {
-      setPasswordError(err instanceof Error ? err.message : "Unable to update password.");
-    } finally {
-      setIsUpdatingPassword(false);
-    }
-  };
+  const {
+    // Home address
+    homeAddressInput,
+    setHomeAddressInput,
+    accountSettingsError,
+    setAccountSettingsError,
+    accountSettingsSuccess,
+    isSavingAccountSettings,
+    handleAccountSettingsSubmit,
+    // Password
+    currentPasswordInput,
+    setCurrentPasswordInput,
+    newPasswordInput,
+    setNewPasswordInput,
+    confirmPasswordInput,
+    setConfirmPasswordInput,
+    passwordError,
+    passwordSuccess,
+    isUpdatingPassword,
+    showCurrentPassword,
+    setShowCurrentPassword,
+    showNewPassword,
+    setShowNewPassword,
+    showConfirmPassword,
+    setShowConfirmPassword,
+    handlePasswordUpdateSubmit,
+    // Schedule
+    scheduleInput,
+    breakGapInput,
+    setBreakGapInput,
+    scheduleError,
+    scheduleSuccess,
+    isSavingSchedule,
+    handleScheduleSubmit,
+    updateDay,
+    updateLunch,
+    // Shared
+    isBusy,
+    handleClose,
+  } = useAccountSettings({ authUser, isOpen, onClose, onSaved: onHomeAddressSaved });
+  const scheduleControlsDisabled = isBusy;
 
   if (!isOpen) return null;
 
@@ -211,7 +130,7 @@ export default function AccountSettingsModal({
           <button
             type="button"
             onClick={handleClose}
-            disabled={isSavingAccountSettings}
+            disabled={isBusy}
             aria-label="Close modal"
             className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
           >
@@ -246,7 +165,6 @@ export default function AccountSettingsModal({
             onChange={(value) => {
               setHomeAddressInput(value.slice(0, MAX_HOME_ADDRESS_LENGTH));
               if (accountSettingsError) setAccountSettingsError("");
-              if (accountSettingsSuccess) setAccountSettingsSuccess("");
             }}
             helperText="Used to prefill default start and ending points in Route Planner."
             disabled={isSavingAccountSettings}
@@ -284,6 +202,142 @@ export default function AccountSettingsModal({
 
         <div className="my-4 border-t border-slate-200 dark:border-slate-800" />
 
+        {/* Working hours section */}
+        <form className="grid gap-3" onSubmit={handleScheduleSubmit}>
+          <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Working hours
+          </p>
+          <p className="m-0 -mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Used to bound route optimization and set lunch break preferences.
+          </p>
+
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900">
+            {DAYS.map(({ key, label }) => {
+              const day = scheduleInput[key]!;
+              return (
+                <div key={key} className={responsiveStyles.scheduleEditorRow}>
+                  <span className={responsiveStyles.scheduleEditorDayLabel}>{label}</span>
+                  <div>
+                    <div className={responsiveStyles.scheduleEditorFields}>
+                      <label className="inline-flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={day.enabled}
+                          onChange={(e) => updateDay(key, { enabled: e.target.checked })}
+                          disabled={scheduleControlsDisabled}
+                          className={responsiveStyles.scheduleEditorToggle}
+                        />
+                        On
+                      </label>
+                      <input
+                        type="time"
+                        value={day.start}
+                        onChange={(e) => updateDay(key, { start: e.target.value })}
+                        disabled={scheduleControlsDisabled || !day.enabled}
+                        step={60}
+                        lang="en-GB"
+                        required={day.enabled}
+                        aria-label={`${label} start time`}
+                        className={responsiveStyles.scheduleEditorTimeInput}
+                      />
+                      <span className="text-xs text-slate-400">to</span>
+                      <input
+                        type="time"
+                        value={day.end}
+                        onChange={(e) => updateDay(key, { end: e.target.value })}
+                        disabled={scheduleControlsDisabled || !day.enabled}
+                        step={60}
+                        lang="en-GB"
+                        required={day.enabled}
+                        aria-label={`${label} end time`}
+                        className={responsiveStyles.scheduleEditorTimeInput}
+                      />
+                    </div>
+
+                    {day.enabled && (
+                      <div className={responsiveStyles.scheduleEditorLunchRow}>
+                        <label className="inline-flex items-center gap-1.5">
+                          <input
+                            type="checkbox"
+                            checked={day.lunchBreak?.enabled ?? false}
+                            onChange={(e) => updateLunch(key, { enabled: e.target.checked })}
+                            disabled={scheduleControlsDisabled}
+                            className={responsiveStyles.scheduleEditorToggle}
+                          />
+                          Lunch
+                        </label>
+                        {day.lunchBreak?.enabled && (
+                          <>
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={day.lunchBreak.durationMinutes}
+                              onChange={(e) =>
+                                updateLunch(key, {
+                                  durationMinutes: Math.max(
+                                    1,
+                                    Math.trunc(Number(e.target.value) || 1),
+                                  ),
+                                })
+                              }
+                              disabled={scheduleControlsDisabled}
+                              aria-label={`${label} lunch duration in minutes`}
+                              className={responsiveStyles.scheduleEditorLunchInput}
+                            />
+                            <span>min</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className={responsiveStyles.scheduleThresholdRow}>
+              <span>Show break card for gaps</span>
+              <span className="text-slate-400">≥</span>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={breakGapInput}
+                onChange={(e) => {
+                  setBreakGapInput(e.target.value);
+                }}
+                disabled={scheduleControlsDisabled}
+                aria-label="Break gap threshold in minutes"
+                className={responsiveStyles.scheduleThresholdInput}
+              />
+              <span>min</span>
+            </div>
+          </div>
+
+          {scheduleError && (
+            <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+              {scheduleError}
+            </p>
+          )}
+          {scheduleSuccess && (
+            <p className="m-0 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+              {scheduleSuccess}
+            </p>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={scheduleControlsDisabled}
+              className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSavingSchedule ? "Saving..." : "Save schedule"}
+            </button>
+          </div>
+        </form>
+
+        <div className="my-4 border-t border-slate-200 dark:border-slate-800" />
+
         <form className="grid gap-3" onSubmit={handlePasswordUpdateSubmit}>
           <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">Security</p>
 
@@ -306,22 +360,10 @@ export default function AccountSettingsModal({
                 ? setShowConfirmPassword
                 : setShowNewPassword;
             const setValue = isCurrent
-              ? (v: string) => {
-                  setCurrentPasswordInput(v);
-                  if (passwordError) setPasswordError("");
-                  if (passwordSuccess) setPasswordSuccess("");
-                }
+              ? (v: string) => setCurrentPasswordInput(v)
               : isConfirm
-                ? (v: string) => {
-                    setConfirmPasswordInput(v);
-                    if (passwordError) setPasswordError("");
-                    if (passwordSuccess) setPasswordSuccess("");
-                  }
-                : (v: string) => {
-                    setNewPasswordInput(v);
-                    if (passwordError) setPasswordError("");
-                    if (passwordSuccess) setPasswordSuccess("");
-                  };
+                ? (v: string) => setConfirmPasswordInput(v)
+                : (v: string) => setNewPasswordInput(v);
             const label = isCurrent
               ? "Current password"
               : isConfirm

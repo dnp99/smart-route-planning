@@ -413,6 +413,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      workingHours: null,
     });
   });
 
@@ -457,6 +458,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      workingHours: null,
     });
   });
 
@@ -500,6 +502,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      workingHours: null,
     });
   });
 
@@ -538,6 +541,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      workingHours: null,
     });
   });
 
@@ -594,6 +598,7 @@ describe("RoutePlanner patient selection integration", () => {
       endGooglePlaceId: "end-place",
       destinations: [],
       canOptimize: true,
+      workingHours: null,
     });
   });
 
@@ -828,6 +833,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      workingHours: null,
     });
   });
 
@@ -887,6 +893,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      workingHours: null,
     });
   });
 
@@ -938,6 +945,7 @@ describe("RoutePlanner patient selection integration", () => {
           },
         ],
         canOptimize: true,
+        workingHours: null,
       });
     });
   });
