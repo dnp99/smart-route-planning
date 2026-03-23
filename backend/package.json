@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "next dev --webpack",
-    "build": "drizzle-kit migrate --config=drizzle.config.ts && next build",
-    "start": "next start",
+    "build": "next build",
+    "build:with-migrate": "drizzle-kit migrate --config=drizzle.config.ts && next build",
+    "start": "npm run db:migrate && next start",
+    "start:nomigrate": "next start",
     "db:generate": "drizzle-kit generate --config=drizzle.config.ts",
     "db:migrate": "drizzle-kit migrate --config=drizzle.config.ts",
     "check:es-compat": "node ../scripts/check-es-compat.mjs src",
