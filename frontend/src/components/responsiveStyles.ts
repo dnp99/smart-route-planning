@@ -264,19 +264,19 @@ export const responsiveStyles = {
 
   // ── Working hours schedule editor ─────────────────────────────────────────────
   scheduleEditorRow:
-    "grid grid-cols-[5rem_1fr] items-start gap-x-3 gap-y-1 border-b border-slate-100 py-3 last:border-0 dark:border-slate-800",
-  scheduleEditorDayLabel: "pt-1 text-sm font-medium text-slate-700 dark:text-slate-300",
-  scheduleEditorFields: "flex flex-wrap items-center gap-2",
+    "grid grid-cols-[3.75rem_1fr] items-start gap-x-2.5 gap-y-1 border-b border-slate-100 py-3.5 last:border-0 dark:border-slate-800 sm:grid-cols-[4.25rem_1fr]",
+  scheduleEditorDayLabel: "pt-1 text-sm font-semibold text-slate-700 dark:text-slate-300",
+  scheduleEditorFields: "flex flex-wrap items-center gap-1.5 sm:gap-2",
   scheduleEditorTimeInput:
-    "w-24 rounded-xl border border-slate-200 bg-white px-2 py-1 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+    "w-28 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium tabular-nums text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:w-32",
   scheduleEditorLunchRow:
-    "mt-1 flex flex-wrap items-center gap-2 pl-0 text-xs text-slate-600 dark:text-slate-400",
+    "mt-1.5 flex flex-wrap items-center gap-2 pl-0 text-sm text-slate-600 dark:text-slate-400",
   scheduleEditorLunchInput:
-    "w-16 rounded-xl border border-slate-200 bg-white px-2 py-1 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+    "w-20 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium tabular-nums text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
   scheduleEditorToggle:
     "h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600",
   scheduleThresholdRow:
-    "mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-400",
+    "mt-3 flex flex-wrap items-center gap-2.5 border-t border-slate-100 pt-3 text-sm text-slate-600 dark:border-slate-800 dark:text-slate-400",
   scheduleThresholdInput:
-    "w-16 rounded-xl border border-slate-200 bg-white px-2 py-1 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+    "w-20 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium tabular-nums text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
 };

@@ -103,6 +103,7 @@ export default function AccountSettingsModal({
     isBusy,
     handleClose,
   } = useAccountSettings({ authUser, isOpen, onClose, onSaved: onHomeAddressSaved });
+  const scheduleControlsDisabled = isBusy;
 
   if (!isOpen) return null;
 
@@ -223,6 +224,7 @@ export default function AccountSettingsModal({
                           type="checkbox"
                           checked={day.enabled}
                           onChange={(e) => updateDay(key, { enabled: e.target.checked })}
+                          disabled={scheduleControlsDisabled}
                           className={responsiveStyles.scheduleEditorToggle}
                         />
                         On
@@ -231,7 +233,10 @@ export default function AccountSettingsModal({
                         type="time"
                         value={day.start}
                         onChange={(e) => updateDay(key, { start: e.target.value })}
-                        disabled={!day.enabled}
+                        disabled={scheduleControlsDisabled || !day.enabled}
+                        step={60}
+                        lang="en-GB"
+                        required={day.enabled}
                         aria-label={`${label} start time`}
                         className={responsiveStyles.scheduleEditorTimeInput}
                       />
@@ -240,7 +245,10 @@ export default function AccountSettingsModal({
                         type="time"
                         value={day.end}
                         onChange={(e) => updateDay(key, { end: e.target.value })}
-                        disabled={!day.enabled}
+                        disabled={scheduleControlsDisabled || !day.enabled}
+                        step={60}
+                        lang="en-GB"
+                        required={day.enabled}
                         aria-label={`${label} end time`}
                         className={responsiveStyles.scheduleEditorTimeInput}
                       />
@@ -253,6 +261,7 @@ export default function AccountSettingsModal({
                             type="checkbox"
                             checked={day.lunchBreak?.enabled ?? false}
                             onChange={(e) => updateLunch(key, { enabled: e.target.checked })}
+                            disabled={scheduleControlsDisabled}
                             className={responsiveStyles.scheduleEditorToggle}
                           />
                           Lunch
@@ -266,9 +275,13 @@ export default function AccountSettingsModal({
                               value={day.lunchBreak.durationMinutes}
                               onChange={(e) =>
                                 updateLunch(key, {
-                                  durationMinutes: parseInt(e.target.value, 10) || 1,
+                                  durationMinutes: Math.max(
+                                    1,
+                                    Math.trunc(Number(e.target.value) || 1),
+                                  ),
                                 })
                               }
+                              disabled={scheduleControlsDisabled}
                               aria-label={`${label} lunch duration in minutes`}
                               className={responsiveStyles.scheduleEditorLunchInput}
                             />
@@ -293,6 +306,7 @@ export default function AccountSettingsModal({
                 onChange={(e) => {
                   setBreakGapInput(e.target.value);
                 }}
+                disabled={scheduleControlsDisabled}
                 aria-label="Break gap threshold in minutes"
                 className={responsiveStyles.scheduleThresholdInput}
               />
@@ -314,7 +328,7 @@ export default function AccountSettingsModal({
           <div className="flex justify-end">
             <button
               type="submit"
-              disabled={isSavingSchedule}
+              disabled={scheduleControlsDisabled}
               className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSavingSchedule ? "Saving..." : "Save schedule"}
