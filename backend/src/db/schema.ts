@@ -11,15 +11,13 @@ import {
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
-import type { WeeklyWorkingHours } from "../../../../shared/contracts";
-
 export const nurses = pgTable("nurses", {
   id: uuid("id").defaultRandom().primaryKey(),
   externalKey: text("external_key").notNull().unique(),
   displayName: text("display_name").notNull(),
   email: text("email").notNull().unique(),
   homeAddress: text("home_address"),
-  workingHours: jsonb("working_hours").$type<WeeklyWorkingHours>(),
+  workingHours: jsonb("working_hours"),
   breakGapThresholdMinutes: integer("break_gap_threshold_minutes"),
   passwordHash: text("password_hash").notNull(),
   isActive: boolean("is_active").notNull().default(true),
