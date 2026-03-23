@@ -4,12 +4,14 @@ import {
   check,
   index,
   integer,
+  jsonb,
   pgTable,
   text,
   time,
   timestamp,
   uuid,
 } from "drizzle-orm/pg-core";
+import type { WeeklyWorkingHours } from "../../../../shared/contracts";
 
 export const nurses = pgTable("nurses", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -17,6 +19,8 @@ export const nurses = pgTable("nurses", {
   displayName: text("display_name").notNull(),
   email: text("email").notNull().unique(),
   homeAddress: text("home_address"),
+  workingHours: jsonb("working_hours").$type<WeeklyWorkingHours>(),
+  breakGapThresholdMinutes: integer("break_gap_threshold_minutes"),
   passwordHash: text("password_hash").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),

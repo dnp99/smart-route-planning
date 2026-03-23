@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { responsiveStyles } from "./responsiveStyles";
-import type { Patient } from "../../../shared/contracts";
+import type { Patient, WeeklyWorkingHours } from "../../../shared/contracts";
 import { usePatientSearch } from "./hooks/usePatientSearch";
 import { useRouteOptimization } from "./hooks/useRouteOptimization";
 import { persistPlanningWindows } from "./routePlanner/routePlannerService";
@@ -33,10 +33,17 @@ const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
 
 type RoutePlannerProps = {
   nurseHomeAddress?: string | null;
+  nurseWorkingHours?: WeeklyWorkingHours | null;
+  nurseBreakGapThresholdMinutes?: number | null;
   onOpenAccountSettings?: () => void;
 };
 
-function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RoutePlannerProps) {
+function RoutePlanner({
+  nurseHomeAddress = null,
+  nurseWorkingHours,
+  nurseBreakGapThresholdMinutes,
+  onOpenAccountSettings,
+}: RoutePlannerProps) {
   const initialDraft = useMemo(() => readRoutePlannerDraft(), []);
   const normalizedHomeAddress = nurseHomeAddress?.trim() ?? "";
   const [isMobileViewport, setIsMobileViewport] = useState(() => {
@@ -465,6 +472,7 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
       ...(resolvedEndGooglePlaceId ? { endGooglePlaceId: resolvedEndGooglePlaceId } : {}),
       destinations: optimizeDestinations,
       canOptimize,
+      workingHours: nurseWorkingHours ?? null,
     });
   };
 
@@ -526,6 +534,7 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
       canOptimize,
       planningDate,
       preserveOrder: true,
+      workingHours: nurseWorkingHours ?? null,
     });
   };
 
@@ -701,6 +710,7 @@ function RoutePlanner({ nurseHomeAddress = null, onOpenAccountSettings }: RouteP
               setExpandedResultEndingStopIds((c) => ({ ...c, [stopId]: !c[stopId] }))
             }
             normalizedHomeAddress={normalizedHomeAddress}
+            breakGapThresholdMinutes={nurseBreakGapThresholdMinutes ?? undefined}
           />
         </form>
       </section>

@@ -38,6 +38,7 @@ type RouteResultSectionProps = {
   expandedResultEndingStopIds: Record<string, boolean>;
   onToggleResultEndingStop: (stopId: string) => void;
   normalizedHomeAddress: string;
+  breakGapThresholdMinutes?: number;
 };
 
 export const RouteResultSection = ({
@@ -75,6 +76,7 @@ export const RouteResultSection = ({
   expandedResultEndingStopIds,
   onToggleResultEndingStop,
   normalizedHomeAddress,
+  breakGapThresholdMinutes,
 }: RouteResultSectionProps) => {
   return (
     <>
@@ -191,6 +193,7 @@ export const RouteResultSection = ({
           expandedResultEndingStopIds={expandedResultEndingStopIds}
           onToggleResultEndingStop={onToggleResultEndingStop}
           normalizedHomeAddress={normalizedHomeAddress}
+          breakGapThresholdMinutes={breakGapThresholdMinutes}
         />
       )}
     </>

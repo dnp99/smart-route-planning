@@ -19,6 +19,7 @@ type OptimizedStopListProps = {
   expandedResultEndingStopIds: Record<string, boolean>;
   onToggleResultEndingStop: (stopId: string) => void;
   normalizedHomeAddress: string;
+  breakGapThresholdMinutes?: number;
 };
 
 export function OptimizedStopList({
@@ -31,7 +32,9 @@ export function OptimizedStopList({
   expandedResultEndingStopIds,
   onToggleResultEndingStop,
   normalizedHomeAddress,
+  breakGapThresholdMinutes,
 }: OptimizedStopListProps) {
+  const effectiveBreakGapThreshold = breakGapThresholdMinutes ?? BREAK_GAP_THRESHOLD_MINUTES;
   // Pre-compute a sequential label per task (1, 2, 3…) across all stops,
   // so multi-task stops don't repeat the same stop number.
   const taskLabels = new Map<string, number>();
@@ -58,7 +61,7 @@ export function OptimizedStopList({
           breakStartMs = prevDepartureMs;
           breakEndMs = nextServiceStartMs - travelMs;
         }
-        const showBreakCard = idleGapMinutes >= BREAK_GAP_THRESHOLD_MINUTES;
+        const showBreakCard = idleGapMinutes >= effectiveBreakGapThreshold;
 
         return (
           <Fragment key={stop.stopId}>
@@ -110,7 +113,7 @@ export function OptimizedStopList({
                       interTaskBreakEndMs = new Date(task.serviceStartTime).getTime();
                       interTaskBreakMinutes = (interTaskBreakEndMs - interTaskBreakStartMs) / 60000;
                     }
-                    const showInterTaskBreak = interTaskBreakMinutes >= BREAK_GAP_THRESHOLD_MINUTES;
+                    const showInterTaskBreak = interTaskBreakMinutes >= effectiveBreakGapThreshold;
 
                     return (
                       <Fragment key={task.visitId}>

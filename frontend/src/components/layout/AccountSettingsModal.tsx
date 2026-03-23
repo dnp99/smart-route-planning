@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react";
 import AddressAutocompleteInput from "../AddressAutocompleteInput";
 import { responsiveStyles } from "../responsiveStyles";
-import { updatePassword, updateProfileHomeAddress } from "../auth/authService";
+import { updatePassword, updateProfileHomeAddress, updateWorkingHours } from "../auth/authService";
 import { clearAuthSession, getAuthToken, setStoredAuthUser } from "../auth/authSession";
+import type { DaySchedule, WeeklyWorkingHours } from "../../../../shared/contracts";
 
 const MAX_HOME_ADDRESS_LENGTH = 200;
 const MIN_PASSWORD_LENGTH = 8;
 const PROFILE_MODAL_HOME_ADDRESS_ID = "account-settings-home-address";
+const DEFAULT_BREAK_GAP_THRESHOLD = 30;
 
-type AuthUser = { displayName?: string; email?: string; homeAddress?: string } | null;
+type AuthUser = {
+  displayName?: string;
+  email?: string;
+  homeAddress?: string;
+  workingHours?: WeeklyWorkingHours | null;
+  breakGapThresholdMinutes?: number | null;
+} | null;
 
 interface AccountSettingsModalProps {
   isOpen: boolean;
@@ -53,6 +61,44 @@ const EyeOffIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const DAYS = [
+  { key: "monday" as const, label: "Mon" },
+  { key: "tuesday" as const, label: "Tue" },
+  { key: "wednesday" as const, label: "Wed" },
+  { key: "thursday" as const, label: "Thu" },
+  { key: "friday" as const, label: "Fri" },
+  { key: "saturday" as const, label: "Sat" },
+  { key: "sunday" as const, label: "Sun" },
+] as const;
+
+type DayKey = (typeof DAYS)[number]["key"];
+
+const DEFAULT_DAY_SCHEDULE: DaySchedule = {
+  enabled: false,
+  start: "09:00",
+  end: "17:00",
+  lunchBreak: { enabled: false, durationMinutes: 30 },
+};
+
+const buildDefaultSchedule = (
+  existing: WeeklyWorkingHours | null | undefined,
+): WeeklyWorkingHours => {
+  const result: WeeklyWorkingHours = {};
+  for (const { key } of DAYS) {
+    const day = existing?.[key];
+    result[key] = {
+      enabled: day?.enabled ?? false,
+      start: day?.start ?? DEFAULT_DAY_SCHEDULE.start,
+      end: day?.end ?? DEFAULT_DAY_SCHEDULE.end,
+      lunchBreak: {
+        enabled: day?.lunchBreak?.enabled ?? false,
+        durationMinutes: day?.lunchBreak?.durationMinutes ?? 30,
+      },
+    };
+  }
+  return result;
+};
+
 export default function AccountSettingsModal({
   isOpen,
   onClose,
@@ -73,6 +119,15 @@ export default function AccountSettingsModal({
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Working hours state
+  const [scheduleInput, setScheduleInput] = useState<WeeklyWorkingHours>(() =>
+    buildDefaultSchedule(null),
+  );
+  const [breakGapInput, setBreakGapInput] = useState<string>(String(DEFAULT_BREAK_GAP_THRESHOLD));
+  const [scheduleError, setScheduleError] = useState("");
+  const [scheduleSuccess, setScheduleSuccess] = useState("");
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+
   // Reset form state when opening
   useEffect(() => {
     if (!isOpen) return;
@@ -87,6 +142,10 @@ export default function AccountSettingsModal({
     setShowCurrentPassword(false);
     setShowNewPassword(false);
     setShowConfirmPassword(false);
+    setScheduleInput(buildDefaultSchedule(authUser?.workingHours));
+    setBreakGapInput(String(authUser?.breakGapThresholdMinutes ?? DEFAULT_BREAK_GAP_THRESHOLD));
+    setScheduleError("");
+    setScheduleSuccess("");
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Escape to close
@@ -97,18 +156,20 @@ export default function AccountSettingsModal({
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isSavingAccountSettings, isUpdatingPassword]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isOpen, isSavingAccountSettings, isUpdatingPassword, isSavingSchedule]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleClose = () => {
-    if (isSavingAccountSettings || isUpdatingPassword) return;
+    if (isSavingAccountSettings || isUpdatingPassword || isSavingSchedule) return;
     setAccountSettingsError("");
     setAccountSettingsSuccess("");
     setPasswordError("");
     setPasswordSuccess("");
+    setScheduleError("");
+    setScheduleSuccess("");
     onClose();
   };
 
-  const handleAccountSettingsSubmit = async (event: React.FormEvent) => {
+  const handleAccountSettingsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setAccountSettingsError("");
     setAccountSettingsSuccess("");
@@ -144,7 +205,7 @@ export default function AccountSettingsModal({
     }
   };
 
-  const handlePasswordUpdateSubmit = async (event: React.FormEvent) => {
+  const handlePasswordUpdateSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPasswordError("");
     setPasswordSuccess("");
@@ -184,6 +245,86 @@ export default function AccountSettingsModal({
     } finally {
       setIsUpdatingPassword(false);
     }
+  };
+
+  const handleScheduleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setScheduleError("");
+    setScheduleSuccess("");
+
+    // Validate each enabled day
+    for (const { key, label } of DAYS) {
+      const day = scheduleInput[key];
+      if (!day?.enabled) continue;
+
+      const startMin = Number(day.start.split(":")[0]) * 60 + Number(day.start.split(":")[1]);
+      const endMin = Number(day.end.split(":")[0]) * 60 + Number(day.end.split(":")[1]);
+
+      if (endMin <= startMin) {
+        setScheduleError(`${label}: end time must be after start time.`);
+        return;
+      }
+
+      if (day.lunchBreak?.enabled) {
+        const dur = day.lunchBreak.durationMinutes;
+        if (!dur || dur < 1 || !Number.isInteger(dur)) {
+          setScheduleError(`${label}: lunch break duration must be a positive whole number.`);
+          return;
+        }
+        if (dur >= endMin - startMin) {
+          setScheduleError(`${label}: lunch break duration must be less than working day length.`);
+          return;
+        }
+      }
+    }
+
+    const parsedBreakGap = parseInt(breakGapInput, 10);
+    if (isNaN(parsedBreakGap) || parsedBreakGap < 1) {
+      setScheduleError("Break card threshold must be a positive number.");
+      return;
+    }
+
+    const token = getAuthToken();
+    if (!token || !authUser) {
+      clearAuthSession();
+      return;
+    }
+
+    setIsSavingSchedule(true);
+    try {
+      const updated = await updateWorkingHours(token, scheduleInput, parsedBreakGap);
+      setStoredAuthUser(updated.user);
+      onHomeAddressSaved(updated.user);
+      setScheduleSuccess("Working hours saved.");
+    } catch (err) {
+      setScheduleError(err instanceof Error ? err.message : "Unable to save working hours.");
+    } finally {
+      setIsSavingSchedule(false);
+    }
+  };
+
+  const updateDay = (key: DayKey, patch: Partial<DaySchedule>) => {
+    setScheduleInput((prev) => ({
+      ...prev,
+      [key]: { ...prev[key], ...patch },
+    }));
+    if (scheduleError) setScheduleError("");
+    if (scheduleSuccess) setScheduleSuccess("");
+  };
+
+  const updateLunch = (key: DayKey, patch: Partial<NonNullable<DaySchedule["lunchBreak"]>>) => {
+    setScheduleInput((prev) => {
+      const day = prev[key]!;
+      return {
+        ...prev,
+        [key]: {
+          ...day,
+          lunchBreak: { ...day.lunchBreak, ...patch } as NonNullable<DaySchedule["lunchBreak"]>,
+        },
+      };
+    });
+    if (scheduleError) setScheduleError("");
+    if (scheduleSuccess) setScheduleSuccess("");
   };
 
   if (!isOpen) return null;
@@ -278,6 +419,131 @@ export default function AccountSettingsModal({
               className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isSavingAccountSettings ? "Saving..." : "Save"}
+            </button>
+          </div>
+        </form>
+
+        <div className="my-4 border-t border-slate-200 dark:border-slate-800" />
+
+        {/* Working hours section */}
+        <form className="grid gap-3" onSubmit={handleScheduleSubmit}>
+          <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
+            Working hours
+          </p>
+          <p className="m-0 -mt-1 text-xs text-slate-500 dark:text-slate-400">
+            Used to bound route optimization and set lunch break preferences.
+          </p>
+
+          <div className="rounded-xl border border-slate-200 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900">
+            {DAYS.map(({ key, label }) => {
+              const day = scheduleInput[key]!;
+              return (
+                <div key={key} className={responsiveStyles.scheduleEditorRow}>
+                  <span className={responsiveStyles.scheduleEditorDayLabel}>{label}</span>
+                  <div>
+                    <div className={responsiveStyles.scheduleEditorFields}>
+                      <label className="inline-flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-300">
+                        <input
+                          type="checkbox"
+                          checked={day.enabled}
+                          onChange={(e) => updateDay(key, { enabled: e.target.checked })}
+                          className={responsiveStyles.scheduleEditorToggle}
+                        />
+                        On
+                      </label>
+                      <input
+                        type="time"
+                        value={day.start}
+                        onChange={(e) => updateDay(key, { start: e.target.value })}
+                        disabled={!day.enabled}
+                        aria-label={`${label} start time`}
+                        className={responsiveStyles.scheduleEditorTimeInput}
+                      />
+                      <span className="text-xs text-slate-400">to</span>
+                      <input
+                        type="time"
+                        value={day.end}
+                        onChange={(e) => updateDay(key, { end: e.target.value })}
+                        disabled={!day.enabled}
+                        aria-label={`${label} end time`}
+                        className={responsiveStyles.scheduleEditorTimeInput}
+                      />
+                    </div>
+
+                    {day.enabled && (
+                      <div className={responsiveStyles.scheduleEditorLunchRow}>
+                        <label className="inline-flex items-center gap-1.5">
+                          <input
+                            type="checkbox"
+                            checked={day.lunchBreak?.enabled ?? false}
+                            onChange={(e) => updateLunch(key, { enabled: e.target.checked })}
+                            className={responsiveStyles.scheduleEditorToggle}
+                          />
+                          Lunch
+                        </label>
+                        {day.lunchBreak?.enabled && (
+                          <>
+                            <input
+                              type="number"
+                              min={1}
+                              step={1}
+                              value={day.lunchBreak.durationMinutes}
+                              onChange={(e) =>
+                                updateLunch(key, {
+                                  durationMinutes: parseInt(e.target.value, 10) || 1,
+                                })
+                              }
+                              aria-label={`${label} lunch duration in minutes`}
+                              className={responsiveStyles.scheduleEditorLunchInput}
+                            />
+                            <span>min</span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className={responsiveStyles.scheduleThresholdRow}>
+              <span>Show break card for gaps</span>
+              <span className="text-slate-400">≥</span>
+              <input
+                type="number"
+                min={1}
+                step={1}
+                value={breakGapInput}
+                onChange={(e) => {
+                  setBreakGapInput(e.target.value);
+                  if (scheduleError) setScheduleError("");
+                  if (scheduleSuccess) setScheduleSuccess("");
+                }}
+                aria-label="Break gap threshold in minutes"
+                className={responsiveStyles.scheduleThresholdInput}
+              />
+              <span>min</span>
+            </div>
+          </div>
+
+          {scheduleError && (
+            <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+              {scheduleError}
+            </p>
+          )}
+          {scheduleSuccess && (
+            <p className="m-0 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+              {scheduleSuccess}
+            </p>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={isSavingSchedule}
+              className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {isSavingSchedule ? "Saving..." : "Save schedule"}
             </button>
           </div>
         </form>

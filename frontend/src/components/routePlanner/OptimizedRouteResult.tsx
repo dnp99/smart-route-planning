@@ -40,6 +40,7 @@ type OptimizedRouteResultProps = {
   expandedResultEndingStopIds: Record<string, boolean>;
   onToggleResultEndingStop: (stopId: string) => void;
   normalizedHomeAddress: string;
+  breakGapThresholdMinutes?: number;
 };
 
 export function OptimizedRouteResult({
@@ -62,6 +63,7 @@ export function OptimizedRouteResult({
   expandedResultEndingStopIds,
   onToggleResultEndingStop,
   normalizedHomeAddress,
+  breakGapThresholdMinutes,
 }: OptimizedRouteResultProps) {
   const displayedOrderedStops = orderedStops ?? result.orderedStops;
   const displayedRouteLegs = routeLegs ?? result.routeLegs;
@@ -323,6 +325,7 @@ export function OptimizedRouteResult({
                   expandedResultEndingStopIds={expandedResultEndingStopIds}
                   onToggleResultEndingStop={onToggleResultEndingStop}
                   normalizedHomeAddress={normalizedHomeAddress}
+                  breakGapThresholdMinutes={breakGapThresholdMinutes}
                 />
               </>
             ) : (

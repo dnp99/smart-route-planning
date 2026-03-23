@@ -4,6 +4,7 @@ import {
   parseMeResponse,
   type LoginResponse,
   type SignupResponse,
+  type WeeklyWorkingHours,
 } from "../../../../shared/contracts";
 import { resolveApiBaseUrl } from "../apiBaseUrl";
 
@@ -98,6 +99,34 @@ export const updateProfileHomeAddress = async (token: string, homeAddress: strin
   const parsed = parseMeResponse(payload);
   if (!parsed) {
     throw new Error("Unexpected profile-update response format.");
+  }
+
+  return parsed;
+};
+
+export const updateWorkingHours = async (
+  token: string,
+  workingHours: WeeklyWorkingHours | null,
+  breakGapThresholdMinutes: number | null,
+) => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ workingHours, breakGapThresholdMinutes }),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(extractApiErrorMessage(payload) ?? "Unable to update working hours.");
+  }
+
+  const parsed = parseMeResponse(payload);
+  if (!parsed) {
+    throw new Error("Unexpected working-hours update response format.");
   }
 
   return parsed;

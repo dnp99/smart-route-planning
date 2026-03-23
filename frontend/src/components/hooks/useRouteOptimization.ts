@@ -3,6 +3,7 @@ import {
   requestOptimizedRoute,
   type OptimizeRouteDestinationInput,
 } from "../routePlanner/routePlannerService";
+import type { WeeklyWorkingHours } from "../../../../shared/contracts";
 import type { OptimizeRouteResponse } from "../types";
 
 const RESULT_SESSION_KEY = "careflow_route_optimization_result";
@@ -26,6 +27,7 @@ type OptimizeRouteInput = {
   planningDate?: string;
   timezone?: string;
   preserveOrder?: boolean;
+  workingHours?: WeeklyWorkingHours | null;
 };
 
 export const useRouteOptimization = () => {
@@ -72,6 +74,7 @@ export const useRouteOptimization = () => {
     planningDate,
     timezone,
     preserveOrder,
+    workingHours,
   }: OptimizeRouteInput) => {
     setError("");
     setResult(null);
@@ -96,6 +99,7 @@ export const useRouteOptimization = () => {
         ...(planningDate !== undefined ? { planningDate } : {}),
         ...(timezone !== undefined ? { timezone } : {}),
         ...(preserveOrder === true ? { preserveOrder: true } : {}),
+        ...(workingHours !== undefined ? { workingHours } : {}),
       });
 
       setResult(optimizedResult);

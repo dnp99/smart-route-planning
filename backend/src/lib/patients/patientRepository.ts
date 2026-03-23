@@ -1,7 +1,11 @@
 import { and, asc, eq, ilike, inArray, or } from "drizzle-orm";
 import { getDb } from "../../db";
 import { nurses, patientVisitWindows, patients } from "../../db/schema";
-import type { CreatePatientRequest, UpdatePatientRequest } from "../../../../shared/contracts";
+import type {
+  CreatePatientRequest,
+  UpdatePatientRequest,
+  WeeklyWorkingHours,
+} from "../../../../shared/contracts";
 
 export class NurseEmailConflictError extends Error {
   constructor(message = "An account with this email already exists.") {
@@ -89,6 +93,24 @@ export const updateNurseHomeAddress = async (nurseId: string, homeAddress: strin
     .update(nurses)
     .set({
       homeAddress,
+      updatedAt: new Date(),
+    })
+    .where(eq(nurses.id, nurseId))
+    .returning();
+
+  return nurse ?? null;
+};
+
+export const updateNurseWorkingHours = async (
+  nurseId: string,
+  workingHours: WeeklyWorkingHours | null | undefined,
+  breakGapThresholdMinutes: number | null | undefined,
+) => {
+  const [nurse] = await getDb()
+    .update(nurses)
+    .set({
+      ...(workingHours !== undefined ? { workingHours } : {}),
+      ...(breakGapThresholdMinutes !== undefined ? { breakGapThresholdMinutes } : {}),
       updatedAt: new Date(),
     })
     .where(eq(nurses.id, nurseId))

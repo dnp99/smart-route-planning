@@ -1,5 +1,10 @@
 import { HttpError } from "../../../../lib/http";
-import type { OptimizeRouteRequestV2, VisitV2, WindowTypeV2 } from "./types";
+import type {
+  NurseWorkingHoursConstraint,
+  OptimizeRouteRequestV2,
+  VisitV2,
+  WindowTypeV2,
+} from "./types";
 
 const MAX_VISITS = 40;
 const MAX_UNIQUE_LOCATIONS = 25;
@@ -199,6 +204,42 @@ const parsePriority = (value: unknown, fieldName: string) => {
 
 const parsePreserveOrder = (value: unknown) => value === true;
 
+const parseNurseWorkingHours = (value: unknown): NurseWorkingHoursConstraint | undefined => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (typeof value !== "object") {
+    throw new HttpError(400, "nurseWorkingHours must be an object.");
+  }
+
+  const candidate = value as Record<string, unknown>;
+  const workStart = parseTime(candidate.workStart, "nurseWorkingHours.workStart");
+  const workEnd = parseTime(candidate.workEnd, "nurseWorkingHours.workEnd");
+
+  if (timeToMinutes(workEnd) <= timeToMinutes(workStart)) {
+    throw new HttpError(400, "nurseWorkingHours.workEnd must be after workStart.");
+  }
+
+  const workingMinutes = timeToMinutes(workEnd) - timeToMinutes(workStart);
+
+  if (candidate.lunchDurationMinutes !== undefined) {
+    const lunchDurationMinutes = parsePositiveInteger(
+      candidate.lunchDurationMinutes,
+      "nurseWorkingHours.lunchDurationMinutes",
+    );
+    if (lunchDurationMinutes >= workingMinutes) {
+      throw new HttpError(
+        400,
+        "nurseWorkingHours.lunchDurationMinutes must be less than the working day length.",
+      );
+    }
+    return { workStart, workEnd, lunchDurationMinutes };
+  }
+
+  return { workStart, workEnd };
+};
+
 const parseVisit = (value: unknown, index: number): VisitV2 => {
   if (typeof value !== "object" || value === null) {
     throw new HttpError(400, `visits[${index}] must be a JSON object.`);
@@ -388,6 +429,7 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteV2Req
   }
 
   const preserveOrder = parsePreserveOrder(payload.preserveOrder);
+  const nurseWorkingHours = parseNurseWorkingHours(payload.nurseWorkingHours);
 
   return {
     planningDate,
@@ -403,5 +445,6 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteV2Req
     },
     visits,
     ...(preserveOrder ? { preserveOrder: true } : {}),
+    ...(nurseWorkingHours !== undefined ? { nurseWorkingHours } : {}),
   };
 };

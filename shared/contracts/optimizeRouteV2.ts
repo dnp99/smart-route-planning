@@ -3,6 +3,12 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 
 export type OptimizeRouteV2WindowType = "fixed" | "flexible";
 
+export type NurseWorkingHoursConstraint = {
+  workStart: string; // HH:mm
+  workEnd: string; // HH:mm
+  lunchDurationMinutes?: number;
+};
+
 export type OptimizeRouteV2LatLng = {
   lat: number;
   lon: number;
@@ -35,6 +41,7 @@ export type OptimizeRouteV2Request = {
   };
   visits: OptimizeRouteV2Visit[];
   preserveOrder?: boolean;
+  nurseWorkingHours?: NurseWorkingHoursConstraint;
 };
 
 export type OptimizeRouteV2TaskResult = {
@@ -88,6 +95,15 @@ export type OptimizeRouteV2ScheduleWarning =
       type: "window_conflict";
       patientIds: [string, string];
       patientNames: [string, string];
+      message: string;
+    }
+  | {
+      type: "outside_working_hours";
+      overByMinutes: number;
+      message: string;
+    }
+  | {
+      type: "lunch_skipped";
       message: string;
     };
 
@@ -259,6 +275,14 @@ const isScheduleWarning = (value: unknown): value is OptimizeRouteV2ScheduleWarn
     return typeof value.patientId === "string" && typeof value.patientName === "string";
   }
 
+  if (value.type === "outside_working_hours") {
+    return typeof value.overByMinutes === "number";
+  }
+
+  if (value.type === "lunch_skipped") {
+    return true;
+  }
+
   return false;
 };
 
@@ -314,6 +338,16 @@ export const isOptimizeRouteV2Request = (payload: unknown): payload is OptimizeR
 
   if (payload.preserveOrder !== undefined && typeof payload.preserveOrder !== "boolean") {
     return false;
+  }
+
+  if (payload.nurseWorkingHours !== undefined) {
+    if (
+      !isObject(payload.nurseWorkingHours) ||
+      typeof payload.nurseWorkingHours.workStart !== "string" ||
+      typeof payload.nurseWorkingHours.workEnd !== "string"
+    ) {
+      return false;
+    }
   }
 
   return true;

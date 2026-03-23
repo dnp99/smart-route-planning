@@ -1,8 +1,10 @@
 import {
   parseListPatientsResponse,
   parseOptimizeRouteV2Response,
+  type NurseWorkingHoursConstraint,
   type OptimizeRouteV2WindowType,
   type PatientVisitWindowInput,
+  type WeeklyWorkingHours,
 } from "../../../../shared/contracts";
 import { requestAuthedJson } from "../auth/authFetch";
 import type { OptimizeRouteResponse } from "../types";
@@ -102,6 +104,51 @@ export type PersistPlanningWindowInput = {
   visitTimeType: OptimizeRouteV2WindowType;
 };
 
+const WEEKDAY_NAMES = [
+  "sunday",
+  "monday",
+  "tuesday",
+  "wednesday",
+  "thursday",
+  "friday",
+  "saturday",
+] as const;
+
+export const resolveWorkingHoursForDate = (
+  workingHours: WeeklyWorkingHours | null | undefined,
+  planningDate: string,
+  timezone: string,
+):
+  | { constraint: NurseWorkingHoursConstraint; dayDisabled: false }
+  | { dayDisabled: true }
+  | null => {
+  if (!workingHours) return null;
+
+  // Determine the weekday in the nurse's timezone for the planning date
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    weekday: "long",
+  }).formatToParts(new Date(`${planningDate}T12:00:00Z`));
+  const weekdayName = parts.find((p) => p.type === "weekday")?.value?.toLowerCase();
+  const dayKey = WEEKDAY_NAMES.find((d) => d === weekdayName);
+  if (!dayKey) return null;
+
+  const daySchedule = workingHours[dayKey];
+  if (!daySchedule) return null;
+
+  if (!daySchedule.enabled) return { dayDisabled: true };
+
+  const constraint: NurseWorkingHoursConstraint = {
+    workStart: daySchedule.start,
+    workEnd: daySchedule.end,
+  };
+  if (daySchedule.lunchBreak?.enabled && daySchedule.lunchBreak.durationMinutes > 0) {
+    constraint.lunchDurationMinutes = daySchedule.lunchBreak.durationMinutes;
+  }
+
+  return { constraint, dayDisabled: false };
+};
+
 type OptimizeRouteRequestInput = {
   startAddress: string;
   startGooglePlaceId?: string | null;
@@ -111,6 +158,7 @@ type OptimizeRouteRequestInput = {
   planningDate?: string;
   timezone?: string;
   preserveOrder?: boolean;
+  workingHours?: WeeklyWorkingHours | null;
 };
 
 export const persistPlanningWindows = async (
@@ -225,10 +273,26 @@ export const requestOptimizedRoute = async ({
   planningDate,
   timezone,
   preserveOrder,
+  workingHours,
 }: OptimizeRouteRequestInput): Promise<OptimizeRouteResponse> => {
   const resolvedTimezone = resolveTimezone(timezone);
   const now = new Date();
   const resolvedPlanningDate = planningDate ?? formatDateInTimeZone(now, resolvedTimezone);
+
+  const workingHoursResult = resolveWorkingHoursForDate(
+    workingHours,
+    resolvedPlanningDate,
+    resolvedTimezone,
+  );
+  if (workingHoursResult?.dayDisabled) {
+    throw new Error(
+      "Your working hours are not configured for this day. Update your schedule in Account settings.",
+    );
+  }
+  const nurseWorkingHours =
+    workingHoursResult && !workingHoursResult.dayDisabled
+      ? workingHoursResult.constraint
+      : undefined;
 
   const visits = destinations.map((destination, index) => {
     const windowStart = normalizeWindowTime(destination.windowStart);
@@ -276,6 +340,7 @@ export const requestOptimizedRoute = async ({
         },
         visits,
         ...(preserveOrder === true ? { preserveOrder: true } : {}),
+        ...(nurseWorkingHours !== undefined ? { nurseWorkingHours } : {}),
       }),
     },
     "Unable to optimize route.",
