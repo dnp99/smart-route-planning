@@ -29,6 +29,12 @@ The backend runs on `http://localhost:3000`.
 
 `npm run db:migrate` applies committed Drizzle migrations.
 
+Production/runtime behavior:
+
+- `npm run build` performs compile-only (`next build`) and does not require database credentials.
+- `npm run start` automatically runs `npm run db:migrate` before starting the server.
+- `npm run start:nomigrate` starts the server without applying migrations (escape hatch).
+
 ## Environment variables
 
 - `ALLOWED_ORIGINS`
