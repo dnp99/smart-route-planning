@@ -24,8 +24,7 @@ export const responsiveStyles = {
   // ── App shell (layout components) ─────────────────────────────────────────
   appShell:
     "flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white dark:bg-none dark:bg-slate-950",
-  appHeader:
-    "sticky top-0 z-30 w-full overflow-x-clip bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
+  appHeader: "sticky top-0 z-30 w-full bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
   appHeaderInner:
     "mx-auto flex w-full max-w-7xl items-center gap-3 px-4 sm:px-6 transition-[padding] duration-300",
   appFooter: "w-full bg-transparent dark:bg-transparent",
