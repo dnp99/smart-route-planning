@@ -1224,8 +1224,24 @@ export const optimizeRouteV2 = async (
   let fixedWindowViolations = 0;
   let totalLateSeconds = 0;
   let totalWaitSeconds = 0;
+  let lunchAppliedInSchedule = false;
 
   const orderedStops = plannedStops.map((stop, index) => {
+    // Apply the lunch gap before traveling to this stop if the nurse has passed the
+    // target lunch time. This mirrors the ordering-phase logic so the gap appears in
+    // the final ISO timestamps.
+    if (
+      lunchContext &&
+      !lunchAppliedInSchedule &&
+      !lunchSkippedDueToFixed &&
+      cursorLocalSeconds >= lunchContext.targetLunchStartSeconds
+    ) {
+      cursorLocalSeconds =
+        Math.max(cursorLocalSeconds, lunchContext.targetLunchStartSeconds) +
+        lunchContext.lunchDurationSeconds;
+      lunchAppliedInSchedule = true;
+    }
+
     const legDurationSeconds = drivingRoute.routeLegs[index]?.durationSeconds ?? 0;
     cursorLocalSeconds += legDurationSeconds;
     const stopArrivalLocalSeconds = cursorLocalSeconds;
