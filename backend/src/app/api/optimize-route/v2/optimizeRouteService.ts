@@ -918,6 +918,17 @@ const orderVisitsByWindowDistanceAndDuration = (
               p.slackSeconds < FLEXIBLE_URGENCY_THRESHOLD_SECONDS,
           )
         : [];
+    // Patients with a real preferred window but not yet urgent are anchored above
+    // unconstrained (no-window) patients. The gap-filler mechanism then fills idle
+    // time before the window opens with nearby no-window patients, preventing the
+    // common failure mode where greedy travel-time picks consume the entire day and
+    // the windowed patient's deadline is missed.
+    const windowedFlexibleProjections =
+      !hasFixedRemaining &&
+      lateFlexibleProjections.length === 0 &&
+      urgentFlexibleProjections.length === 0
+        ? projections.filter((p) => p.visit.hasPreferredWindow)
+        : [];
     const primaryProjections =
       lateFixedProjections.length > 0
         ? lateFixedProjections
@@ -927,7 +938,9 @@ const orderVisitsByWindowDistanceAndDuration = (
             ? lateFlexibleProjections
             : urgentFlexibleProjections.length > 0
               ? urgentFlexibleProjections
-              : projections;
+              : windowedFlexibleProjections.length > 0
+                ? windowedFlexibleProjections
+                : projections;
     if (primaryProjections === urgentFlexibleProjections) {
       primaryProjections.sort((a, b) =>
         a.slackSeconds !== b.slackSeconds
