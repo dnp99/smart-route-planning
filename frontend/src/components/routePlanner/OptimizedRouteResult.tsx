@@ -296,7 +296,7 @@ export function OptimizedRouteResult({
                           <button
                             type="button"
                             onClick={onResetManualOrder}
-                            className="rounded-lg border border-blue-300 bg-white px-2.5 py-1 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950/35 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                            className="rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
                           >
                             Reset order
                           </button>
@@ -306,7 +306,7 @@ export function OptimizedRouteResult({
                             type="button"
                             onClick={onRecalculateManualOrder}
                             disabled={isRecalculatingManualOrder}
-                            className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600"
+                            className="rounded-xl bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600"
                           >
                             {isRecalculatingManualOrder ? "Recalculating..." : "Recalculate times"}
                           </button>
