@@ -35,8 +35,6 @@ type PatientSelectorSectionProps = {
   canOptimize: boolean;
   hasChangedSinceLastOptimize: boolean;
   showOptimizeSuccess: boolean;
-  optimizationObjective: "time" | "distance";
-  onSetOptimizationObjective: (v: "time" | "distance") => void;
 };
 
 export const PatientSelectorSection = ({
@@ -65,8 +63,6 @@ export const PatientSelectorSection = ({
   canOptimize,
   hasChangedSinceLastOptimize,
   showOptimizeSuccess,
-  optimizationObjective,
-  onSetOptimizationObjective,
 }: PatientSelectorSectionProps) => {
   if (!isVisible) return null;
 
@@ -151,42 +147,6 @@ export const PatientSelectorSection = ({
         <p className="m-0 mt-1 truncate text-sm text-slate-600 dark:text-slate-400">
           {previewText}
         </p>
-      )}
-
-      {isContentVisible && !isMobileViewport && (
-        <div className={`mt-3 ${responsiveStyles.objectiveSelectorGroup}`}>
-          {(
-            [
-              {
-                value: "distance",
-                label: "Shortest distance",
-                description: "Efficient driving (default)",
-              },
-              {
-                value: "time",
-                label: "Shortest time",
-                description: "Covers all patients quickly, may zigzag",
-              },
-            ] as const
-          ).map(({ value, label, description }) => (
-            <label key={value} className={responsiveStyles.objectiveSelectorOption}>
-              <input
-                type="radio"
-                name="optimizationObjective"
-                value={value}
-                checked={optimizationObjective === value}
-                onChange={() => onSetOptimizationObjective(value)}
-                className="sr-only"
-              />
-              <div>
-                <p className={`m-0 ${responsiveStyles.objectiveSelectorLabel}`}>{label}</p>
-                <p className={`m-0 ${responsiveStyles.objectiveSelectorDescription}`}>
-                  {description}
-                </p>
-              </div>
-            </label>
-          ))}
-        </div>
       )}
 
       {isContentVisible && (

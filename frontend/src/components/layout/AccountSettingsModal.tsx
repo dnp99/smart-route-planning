@@ -20,6 +20,8 @@ interface AccountSettingsModalProps {
   onClose: () => void;
   authUser: AuthUser;
   onHomeAddressSaved: (updatedUser: AuthUser) => void;
+  optimizationObjective: "time" | "distance";
+  onSetOptimizationObjective: (v: "time" | "distance") => void;
 }
 
 const EyeIcon = ({ className }: { className?: string }) => (
@@ -63,10 +65,12 @@ export default function AccountSettingsModal({
   onClose,
   authUser,
   onHomeAddressSaved,
+  optimizationObjective,
+  onSetOptimizationObjective,
 }: AccountSettingsModalProps) {
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"working-hours" | "security">(
-    "working-hours",
-  );
+  const [activeSettingsTab, setActiveSettingsTab] = useState<
+    "working-hours" | "route" | "security"
+  >("working-hours");
   const {
     // Home address
     homeAddressInput,
@@ -220,6 +224,19 @@ export default function AccountSettingsModal({
               aria-pressed={activeSettingsTab === "working-hours"}
             >
               Working hours
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveSettingsTab("route")}
+              className={[
+                "rounded-md px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
+                activeSettingsTab === "route"
+                  ? "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100"
+                  : "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
+              ].join(" ")}
+              aria-pressed={activeSettingsTab === "route"}
+            >
+              Route
             </button>
             <button
               type="button"
@@ -378,6 +395,52 @@ export default function AccountSettingsModal({
               </button>
             </div>
           </form>
+        )}
+
+        {activeSettingsTab === "route" && (
+          <div className="grid gap-4">
+            <div>
+              <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Optimization objective
+              </p>
+              <p className="m-0 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                Controls how the route optimizer breaks ties once deadlines are satisfied.
+              </p>
+            </div>
+            <div className={responsiveStyles.objectiveSelectorGroup}>
+              {(
+                [
+                  {
+                    value: "distance",
+                    label: "Shortest distance",
+                    description: "Efficient driving — default",
+                  },
+                  {
+                    value: "time",
+                    label: "Shortest time",
+                    description: "Finish the day earlier, may zigzag",
+                  },
+                ] as const
+              ).map(({ value, label, description }) => (
+                <label key={value} className={responsiveStyles.objectiveSelectorOption}>
+                  <input
+                    type="radio"
+                    name="optimizationObjective"
+                    value={value}
+                    checked={optimizationObjective === value}
+                    onChange={() => onSetOptimizationObjective(value)}
+                    className="sr-only"
+                  />
+                  <div>
+                    <p className={`m-0 ${responsiveStyles.objectiveSelectorLabel}`}>{label}</p>
+                    <p className={`m-0 ${responsiveStyles.objectiveSelectorDescription}`}>
+                      {description}
+                    </p>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
         )}
 
         {activeSettingsTab === "security" && (
