@@ -366,7 +366,6 @@ describe("RoutePlanner patient selection integration", () => {
 
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
 
-    expect(screen.getByText("1 visit queued")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Edit window" })).toBeTruthy();
     expect(screen.queryByText("Include this visit in route")).toBeNull();
     // Jane Doe button in the search results list should be gone (duplicate prevention);
@@ -393,7 +392,6 @@ describe("RoutePlanner patient selection integration", () => {
     render(<RoutePlanner />);
 
     expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "Airport");
-    expect(screen.getByText("1 visit queued")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 
@@ -579,7 +577,6 @@ describe("RoutePlanner patient selection integration", () => {
       );
     });
 
-    expect(screen.getByText("1 visit queued")).toBeTruthy();
     expect(screen.getByText("New Patient")).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Add New Patient" })).toBeNull();
   });
@@ -800,11 +797,9 @@ describe("RoutePlanner patient selection integration", () => {
     render(<RoutePlanner />);
 
     fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
-    expect(screen.getByText("1 visit queued")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Remove John Smith/i }));
 
-    expect(screen.queryByText("1 visit queued")).toBeNull();
     expect(screen.getByText("No patients selected yet.")).toBeTruthy();
   });
 

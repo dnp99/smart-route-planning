@@ -109,7 +109,6 @@ describe("RouteResultSection", () => {
     const { rerender } = render(<RouteResultSection {...props} />);
 
     expect(screen.getByRole("button", { name: "Optimize Route" })).toBeTruthy();
-    expect(screen.getByText("1 visit queued")).toBeTruthy();
 
     props.isLoading = true;
     rerender(<RouteResultSection {...props} />);

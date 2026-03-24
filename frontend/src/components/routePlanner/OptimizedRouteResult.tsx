@@ -122,14 +122,16 @@ export function OptimizedRouteResult({
     [result.warnings],
   );
 
-  const { earlyVisitCount, afterHoursVisitCount } = useMemo(() => {
-    if (!workStart || !workEnd) return { earlyVisitCount: 0, afterHoursVisitCount: 0 };
+  const { earlyVisitCount, afterHoursVisitCount, firstAffectedVisitId } = useMemo(() => {
+    if (!workStart || !workEnd)
+      return { earlyVisitCount: 0, afterHoursVisitCount: 0, firstAffectedVisitId: null };
     const [wsH, wsM] = workStart.split(":").map(Number);
     const [weH, weM] = workEnd.split(":").map(Number);
     const workStartMin = wsH * 60 + wsM;
     const workEndMin = weH * 60 + weM;
     let early = 0;
     let afterHours = 0;
+    let firstAffected: string | null = null;
     displayedOrderedStops.forEach((stop) => {
       stop.tasks.forEach((task) => {
         const startMin =
@@ -138,11 +140,20 @@ export function OptimizedRouteResult({
         const endMin =
           new Date(task.serviceEndTime).getHours() * 60 +
           new Date(task.serviceEndTime).getMinutes();
-        if (startMin < workStartMin) early += 1;
-        else if (endMin > workEndMin) afterHours += 1;
+        if (startMin < workStartMin) {
+          early += 1;
+          firstAffected ??= task.visitId;
+        } else if (endMin > workEndMin) {
+          afterHours += 1;
+          firstAffected ??= task.visitId;
+        }
       });
     });
-    return { earlyVisitCount: early, afterHoursVisitCount: afterHours };
+    return {
+      earlyVisitCount: early,
+      afterHoursVisitCount: afterHours,
+      firstAffectedVisitId: firstAffected,
+    };
   }, [displayedOrderedStops, workStart, workEnd]);
 
   const issueCount =
@@ -295,7 +306,14 @@ export function OptimizedRouteResult({
                 </div>
               </div>
               <a
-                href="#route-alerts"
+                href={
+                  firstAffectedVisitId &&
+                  !conflictWarnings.length &&
+                  !latenessWarnings.length &&
+                  result.unscheduledTasks.length === 0
+                    ? `#stop-${firstAffectedVisitId}`
+                    : "#route-alerts"
+                }
                 className="mt-0.5 shrink-0 text-xs font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200"
               >
                 View details

@@ -84,7 +84,7 @@ export const PatientSelectorSection = ({
   return (
     <section className={responsiveStyles.panel}>
       <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
           <h2 className={responsiveStyles.cardTitle}>Patients</h2>
           {destinationCount > 0 && (
             <span className={responsiveStyles.countPill}>{destinationCount}</span>
@@ -101,11 +101,6 @@ export const PatientSelectorSection = ({
               >
                 Add New Patient
               </button>
-            )}
-            {!isMobileViewport && destinationCount > 0 && (
-              <span className={responsiveStyles.visitCountPill}>
-                {destinationCount} visit{destinationCount === 1 ? "" : "s"} queued
-              </span>
             )}
             {!isMobileViewport && (
               <button
