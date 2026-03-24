@@ -28,16 +28,19 @@ type OptimizedStopListProps = {
 
 function isLunchBreak(
   breakStartMs: number,
+  breakDurationMinutes: number,
   lunchStartTime?: string,
   lunchDurationMinutes?: number,
 ): boolean {
   if (!lunchStartTime || !lunchDurationMinutes) return false;
+  // Duration must match configured lunch (±1 min tolerance)
+  if (Math.abs(breakDurationMinutes - lunchDurationMinutes) > 1) return false;
+  // Break must start within ±90 minutes of configured lunch start
   const [lh, lm] = lunchStartTime.split(":").map(Number);
   const lunchStartMin = lh * 60 + lm;
-  const lunchEndMin = lunchStartMin + lunchDurationMinutes;
   const d = new Date(breakStartMs);
   const breakMin = d.getHours() * 60 + d.getMinutes();
-  return breakMin >= lunchStartMin && breakMin < lunchEndMin;
+  return Math.abs(breakMin - lunchStartMin) <= 90;
 }
 
 export function OptimizedStopList({
@@ -85,7 +88,8 @@ export function OptimizedStopList({
         }
         const showBreakCard = idleGapMinutes >= effectiveBreakGapThreshold;
         const isLunch =
-          showBreakCard && isLunchBreak(breakStartMs, lunchStartTime, lunchDurationMinutes);
+          showBreakCard &&
+          isLunchBreak(breakStartMs, idleGapMinutes, lunchStartTime, lunchDurationMinutes);
 
         return (
           <Fragment key={stop.stopId}>
@@ -158,7 +162,12 @@ export function OptimizedStopList({
                     const showInterTaskBreak = interTaskBreakMinutes >= effectiveBreakGapThreshold;
                     const isInterTaskLunch =
                       showInterTaskBreak &&
-                      isLunchBreak(interTaskBreakStartMs, lunchStartTime, lunchDurationMinutes);
+                      isLunchBreak(
+                        interTaskBreakStartMs,
+                        interTaskBreakMinutes,
+                        lunchStartTime,
+                        lunchDurationMinutes,
+                      );
 
                     return (
                       <Fragment key={task.visitId}>
