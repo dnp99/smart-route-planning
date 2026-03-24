@@ -34,14 +34,6 @@ function App() {
   const [authUser, setAuthUser] = useState(() => getAuthUser());
   const [isAuthResolved, setIsAuthResolved] = useState(() => !getAuthToken());
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
-  const [optimizationObjective, setOptimizationObjective] = useState(() => {
-    const stored = localStorage.getItem("careflow.optimizationObjective");
-    return stored === "time" ? "time" : "distance";
-  });
-
-  useEffect(() => {
-    localStorage.setItem("careflow.optimizationObjective", optimizationObjective);
-  }, [optimizationObjective]);
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -64,6 +56,7 @@ function App() {
     return () => { active = false; };
   }, [authToken]);
 
+  const optimizationObjective = authUser?.optimizationObjective ?? "distance";
   const isAuthenticated = Boolean(authToken);
   const defaultProtectedPath = "/patients";
   const renderProtectedRoute = (element) => isAuthenticated ? element : <Navigate to="/login" replace />;
@@ -153,8 +146,6 @@ function App() {
           setAuthUser(updatedUser);
           setStoredAuthUser(updatedUser);
         }}
-        optimizationObjective={optimizationObjective}
-        onSetOptimizationObjective={setOptimizationObjective}
       />
 
       <ScrollToTopButton />

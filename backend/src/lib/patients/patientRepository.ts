@@ -119,6 +119,19 @@ export const updateNurseWorkingHours = async (
   return nurse ?? null;
 };
 
+export const updateNurseOptimizationObjective = async (
+  nurseId: string,
+  optimizationObjective: "time" | "distance" | null,
+) => {
+  const [nurse] = await getDb()
+    .update(nurses)
+    .set({ optimizationObjective, updatedAt: new Date() })
+    .where(eq(nurses.id, nurseId))
+    .returning();
+
+  return nurse ?? null;
+};
+
 export const updateNursePasswordHash = async (nurseId: string, passwordHash: string) => {
   const [nurse] = await getDb()
     .update(nurses)

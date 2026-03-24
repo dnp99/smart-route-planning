@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
-import { updatePassword, updateProfileHomeAddress, updateWorkingHours } from "../auth/authService";
+import {
+  updateOptimizationObjective,
+  updatePassword,
+  updateProfileHomeAddress,
+  updateWorkingHours,
+} from "../auth/authService";
 import { clearAuthSession, getAuthToken, setStoredAuthUser } from "../auth/authSession";
 import type { DaySchedule, WeeklyWorkingHours } from "../../../../shared/contracts";
 
@@ -52,6 +57,7 @@ type AuthUser = {
   homeAddress?: string;
   workingHours?: WeeklyWorkingHours | null;
   breakGapThresholdMinutes?: number | null;
+  optimizationObjective?: "time" | "distance" | null;
 } | null;
 
 type UseAccountSettingsParams = {
@@ -84,6 +90,10 @@ export function useAccountSettings({
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // ── Optimization objective ───────────────────────────────────────────────────
+  const [isSavingObjective, setIsSavingObjective] = useState(false);
+  const [objectiveError, setObjectiveError] = useState("");
+
   // ── Working hours / schedule form ────────────────────────────────────────────
   const [scheduleInput, setScheduleInput] = useState<WeeklyWorkingHours>(() =>
     buildDefaultSchedule(null),
@@ -93,7 +103,8 @@ export function useAccountSettings({
   const [scheduleSuccess, setScheduleSuccess] = useState("");
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
 
-  const isBusy = isSavingAccountSettings || isUpdatingPassword || isSavingSchedule;
+  const isBusy =
+    isSavingAccountSettings || isUpdatingPassword || isSavingSchedule || isSavingObjective;
 
   // Reset all form state when modal opens
   useEffect(() => {
@@ -113,6 +124,7 @@ export function useAccountSettings({
     setBreakGapInput(String(authUser?.breakGapThresholdMinutes ?? DEFAULT_BREAK_GAP_THRESHOLD));
     setScheduleError("");
     setScheduleSuccess("");
+    setObjectiveError("");
   }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Escape to close (re-registers whenever busy state changes)
@@ -278,6 +290,27 @@ export function useAccountSettings({
     }
   };
 
+  const handleOptimizationObjectiveChange = async (value: "time" | "distance") => {
+    const token = getAuthToken();
+    if (!token || !authUser) {
+      clearAuthSession();
+      return;
+    }
+    setObjectiveError("");
+    setIsSavingObjective(true);
+    try {
+      const updated = await updateOptimizationObjective(token, value);
+      setStoredAuthUser(updated.user);
+      onSaved(updated.user);
+    } catch (err) {
+      setObjectiveError(
+        err instanceof Error ? err.message : "Unable to save optimization objective.",
+      );
+    } finally {
+      setIsSavingObjective(false);
+    }
+  };
+
   const updateDay = (key: DayKey, patch: Partial<DaySchedule>) => {
     setScheduleInput((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }));
     if (scheduleError) setScheduleError("");
@@ -335,6 +368,10 @@ export function useAccountSettings({
     handleScheduleSubmit,
     updateDay,
     updateLunch,
+    // Optimization objective
+    isSavingObjective,
+    objectiveError,
+    handleOptimizationObjectiveChange,
     // Shared
     isBusy,
     handleClose,
