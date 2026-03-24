@@ -70,8 +70,8 @@ export function OptimizedStopCard({
     };
   })();
 
-  const isOutsideWorkHours = (() => {
-    if (!workStart || !workEnd) return false;
+  const { isBeforeHours, isAfterHours } = (() => {
+    if (!workStart || !workEnd) return { isBeforeHours: false, isAfterHours: false };
     const [wsH, wsM] = workStart.split(":").map(Number);
     const [weH, weM] = workEnd.split(":").map(Number);
     const workStartMin = wsH * 60 + wsM;
@@ -80,8 +80,12 @@ export function OptimizedStopCard({
     const end = new Date(task.serviceEndTime);
     const startMin = start.getHours() * 60 + start.getMinutes();
     const endMin = end.getHours() * 60 + end.getMinutes();
-    return startMin < workStartMin || endMin > workEndMin;
+    return {
+      isBeforeHours: startMin < workStartMin,
+      isAfterHours: endMin > workEndMin,
+    };
   })();
+  const isOutsideWorkHours = isBeforeHours || isAfterHours;
 
   const visitDurationLabel = formatVisitDurationMinutes(task.serviceDurationMinutes);
 
@@ -137,7 +141,12 @@ export function OptimizedStopCard({
             </span>
           </span>
           <span className="inline-flex shrink-0 items-center gap-1.5">
-            {isOutsideWorkHours && (
+            {isBeforeHours && (
+              <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-700 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
+                Early
+              </span>
+            )}
+            {isAfterHours && (
               <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-700 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
                 After hours
               </span>

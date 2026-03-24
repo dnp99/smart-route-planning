@@ -550,6 +550,8 @@ function RoutePlanner({
             breakGapThresholdMinutes={nurseBreakGapThresholdMinutes ?? undefined}
             workStart={activeWorkingHoursConstraint?.workStart}
             workEnd={activeWorkingHoursConstraint?.workEnd}
+            lunchStartTime={activeWorkingHoursConstraint?.lunchStartTime}
+            lunchDurationMinutes={activeWorkingHoursConstraint?.lunchDurationMinutes}
           />
         </form>
       </section>

@@ -43,6 +43,8 @@ type OptimizedRouteResultProps = {
   breakGapThresholdMinutes?: number;
   workStart?: string;
   workEnd?: string;
+  lunchStartTime?: string;
+  lunchDurationMinutes?: number;
 };
 
 export function OptimizedRouteResult({
@@ -68,6 +70,8 @@ export function OptimizedRouteResult({
   breakGapThresholdMinutes,
   workStart,
   workEnd,
+  lunchStartTime,
+  lunchDurationMinutes,
 }: OptimizedRouteResultProps) {
   const displayedOrderedStops = orderedStops ?? result.orderedStops;
   const displayedRouteLegs = routeLegs ?? result.routeLegs;
@@ -394,6 +398,8 @@ export function OptimizedRouteResult({
                   breakGapThresholdMinutes={breakGapThresholdMinutes}
                   workStart={workStart}
                   workEnd={workEnd}
+                  lunchStartTime={lunchStartTime}
+                  lunchDurationMinutes={lunchDurationMinutes}
                 />
               </>
             ) : (

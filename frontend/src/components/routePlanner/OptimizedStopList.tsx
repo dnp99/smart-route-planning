@@ -22,7 +22,23 @@ type OptimizedStopListProps = {
   breakGapThresholdMinutes?: number;
   workStart?: string;
   workEnd?: string;
+  lunchStartTime?: string;
+  lunchDurationMinutes?: number;
 };
+
+function isLunchBreak(
+  breakStartMs: number,
+  lunchStartTime?: string,
+  lunchDurationMinutes?: number,
+): boolean {
+  if (!lunchStartTime || !lunchDurationMinutes) return false;
+  const [lh, lm] = lunchStartTime.split(":").map(Number);
+  const lunchStartMin = lh * 60 + lm;
+  const lunchEndMin = lunchStartMin + lunchDurationMinutes;
+  const d = new Date(breakStartMs);
+  const breakMin = d.getHours() * 60 + d.getMinutes();
+  return breakMin >= lunchStartMin && breakMin < lunchEndMin;
+}
 
 export function OptimizedStopList({
   orderedStops,
@@ -37,6 +53,8 @@ export function OptimizedStopList({
   breakGapThresholdMinutes,
   workStart,
   workEnd,
+  lunchStartTime,
+  lunchDurationMinutes,
 }: OptimizedStopListProps) {
   const effectiveBreakGapThreshold = breakGapThresholdMinutes ?? BREAK_GAP_THRESHOLD_MINUTES;
   // Pre-compute a sequential label per task (1, 2, 3…) across all stops,
@@ -66,32 +84,52 @@ export function OptimizedStopList({
           breakEndMs = nextServiceStartMs - travelMs;
         }
         const showBreakCard = idleGapMinutes >= effectiveBreakGapThreshold;
+        const isLunch =
+          showBreakCard && isLunchBreak(breakStartMs, lunchStartTime, lunchDurationMinutes);
 
         return (
           <Fragment key={stop.stopId}>
             {showBreakCard && (
               <div className="flex items-center gap-3 py-1">
                 <div className="flex items-center gap-2.5 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
-                    aria-hidden="true"
-                  >
-                    <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
-                    <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
-                    <line x1="6" y1="2" x2="6" y2="4" />
-                    <line x1="10" y1="2" x2="10" y2="4" />
-                    <line x1="14" y1="2" x2="14" y2="4" />
-                  </svg>
+                  {isLunch ? (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+                      <line x1="7" y1="2" x2="7" y2="11" />
+                      <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+                    </svg>
+                  ) : (
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
+                      aria-hidden="true"
+                    >
+                      <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+                      <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+                      <line x1="6" y1="2" x2="6" y2="4" />
+                      <line x1="10" y1="2" x2="10" y2="4" />
+                      <line x1="14" y1="2" x2="14" y2="4" />
+                    </svg>
+                  )}
                   <div className="flex flex-col">
                     <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                      Break · {formatBreakGap(idleGapMinutes)}
+                      {isLunch ? "Lunch" : "Break"} · {formatBreakGap(idleGapMinutes)}
                     </span>
                     <span className="text-xs text-blue-700/90 dark:text-blue-300/90">
                       {isStale ? "~ " : ""}
@@ -118,32 +156,54 @@ export function OptimizedStopList({
                       interTaskBreakMinutes = (interTaskBreakEndMs - interTaskBreakStartMs) / 60000;
                     }
                     const showInterTaskBreak = interTaskBreakMinutes >= effectiveBreakGapThreshold;
+                    const isInterTaskLunch =
+                      showInterTaskBreak &&
+                      isLunchBreak(interTaskBreakStartMs, lunchStartTime, lunchDurationMinutes);
 
                     return (
                       <Fragment key={task.visitId}>
                         {showInterTaskBreak && (
                           <div className="flex items-center gap-3 py-1">
                             <div className="flex items-center gap-2.5 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
-                                aria-hidden="true"
-                              >
-                                <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
-                                <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
-                                <line x1="6" y1="2" x2="6" y2="4" />
-                                <line x1="10" y1="2" x2="10" y2="4" />
-                                <line x1="14" y1="2" x2="14" y2="4" />
-                              </svg>
+                              {isInterTaskLunch ? (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+                                  <line x1="7" y1="2" x2="7" y2="11" />
+                                  <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+                                </svg>
+                              ) : (
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeWidth="2"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
+                                  aria-hidden="true"
+                                >
+                                  <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+                                  <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+                                  <line x1="6" y1="2" x2="6" y2="4" />
+                                  <line x1="10" y1="2" x2="10" y2="4" />
+                                  <line x1="14" y1="2" x2="14" y2="4" />
+                                </svg>
+                              )}
                               <div className="flex flex-col">
                                 <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                                  Break · {formatBreakGap(interTaskBreakMinutes)}
+                                  {isInterTaskLunch ? "Lunch" : "Break"} ·{" "}
+                                  {formatBreakGap(interTaskBreakMinutes)}
                                 </span>
                                 <span className="text-xs text-blue-700/90 dark:text-blue-300/90">
                                   {isStale ? "~ " : ""}

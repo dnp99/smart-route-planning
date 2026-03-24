@@ -43,3 +43,4 @@ backend/next-env.d.ts
 
 # Deployment tooling
 .vercel/
+frontend/coverage/coverage-summary.json
