@@ -4,7 +4,10 @@ import { responsiveStyles } from "./responsiveStyles";
 import type { WeeklyWorkingHours } from "../../../shared/contracts";
 import { usePatientSearch } from "./hooks/usePatientSearch";
 import { useRouteOptimization } from "./hooks/useRouteOptimization";
-import { persistPlanningWindows } from "./routePlanner/routePlannerService";
+import {
+  persistPlanningWindows,
+  resolveWorkingHoursForDate,
+} from "./routePlanner/routePlannerService";
 import { patientMatchesSearchQuery } from "./routePlanner/routePlannerHelpers";
 import {
   buildOptimizeDestinations,
@@ -272,6 +275,18 @@ function RoutePlanner({
 
   const isHomeAddressMissing = normalizedHomeAddress.length === 0;
 
+  const activeWorkingHoursConstraint = useMemo(() => {
+    if (!result || !nurseWorkingHours) return null;
+    const planningDate = result.start.departureTime.slice(0, 10);
+    const resolved = resolveWorkingHoursForDate(
+      nurseWorkingHours,
+      planningDate,
+      Intl.DateTimeFormat().resolvedOptions().timeZone,
+    );
+    if (!resolved || resolved.dayDisabled) return null;
+    return resolved.constraint;
+  }, [result, nurseWorkingHours]);
+
   useEffect(() => {
     setConflictWarningsDismissed(false);
     setLatenessWarningsDismissed(false);
@@ -463,28 +478,35 @@ function RoutePlanner({
             onOpenAccountSettings={onOpenAccountSettings}
           />
 
-          <PatientSelectorSection
-            isVisible={isPatientsStepVisible}
-            isMobileViewport={isMobileViewport}
-            isExpanded={isPatientSearchExpanded}
-            onSetExpanded={setIsPatientSearchExpanded}
-            destinationCount={destinationCount}
-            destinationSearchResults={destinationSearchResults}
-            destinationSearchQuery={destinationSearchQuery}
-            onSearchQueryChange={setDestinationSearchQuery}
-            isSearchLoading={isDestinationSearchLoading}
-            searchError={destinationSearchError ?? ""}
-            createPatientError={createPatientError ?? ""}
-            selectedDestinations={selectedDestinations}
-            expandedDestinationVisitKeys={expandedDestinationVisitKeys}
-            onAddPatient={addDestinationPatient}
-            onOpenCreatePatient={openCreatePatientModal}
-            onToggleDestinationDetails={toggleDestinationDetails}
-            onRemoveDestinationVisit={removeDestinationVisit}
-            onSetDestinationVisitIncluded={setDestinationVisitIncluded}
-            onUpdateDestinationPlanningWindow={updateDestinationPlanningWindow}
-            onSetDestinationPersistPlanningWindow={setDestinationPersistPlanningWindow}
-          />
+          <div className="mt-2">
+            <PatientSelectorSection
+              isVisible={isPatientsStepVisible}
+              isMobileViewport={isMobileViewport}
+              isExpanded={isPatientSearchExpanded}
+              onSetExpanded={setIsPatientSearchExpanded}
+              destinationCount={destinationCount}
+              destinationSearchResults={destinationSearchResults}
+              destinationSearchQuery={destinationSearchQuery}
+              onSearchQueryChange={setDestinationSearchQuery}
+              isSearchLoading={isDestinationSearchLoading}
+              searchError={destinationSearchError ?? ""}
+              createPatientError={createPatientError ?? ""}
+              selectedDestinations={selectedDestinations}
+              expandedDestinationVisitKeys={expandedDestinationVisitKeys}
+              onAddPatient={addDestinationPatient}
+              onOpenCreatePatient={openCreatePatientModal}
+              onToggleDestinationDetails={toggleDestinationDetails}
+              onRemoveDestinationVisit={removeDestinationVisit}
+              onSetDestinationVisitIncluded={setDestinationVisitIncluded}
+              onUpdateDestinationPlanningWindow={updateDestinationPlanningWindow}
+              onSetDestinationPersistPlanningWindow={setDestinationPersistPlanningWindow}
+              hasResult={!!result}
+              isLoading={isLoading}
+              canOptimize={canOptimize}
+              hasChangedSinceLastOptimize={hasChangedSinceLastOptimize}
+              showOptimizeSuccess={showOptimizeSuccess}
+            />
+          </div>
 
           <RouteResultSection
             isMobileViewport={isMobileViewport}
@@ -526,6 +548,8 @@ function RoutePlanner({
             }
             normalizedHomeAddress={normalizedHomeAddress}
             breakGapThresholdMinutes={nurseBreakGapThresholdMinutes ?? undefined}
+            workStart={activeWorkingHoursConstraint?.workStart}
+            workEnd={activeWorkingHoursConstraint?.workEnd}
           />
         </form>
       </section>

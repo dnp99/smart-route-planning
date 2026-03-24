@@ -499,10 +499,18 @@ The primary list item in the visit order. Each card represents one scheduled tas
 
 | State | Styles |
 |---|---|
-| Default | `bg-white border-slate-200 shadow-sm` |
+| Default / On time | `bg-white border-slate-200 shadow-sm` |
+| Late (collapsed) | `bg-white border-red-200 shadow-sm dark:border-red-900/50` |
+| After hours (collapsed, not late) | `bg-white border-amber-200 shadow-sm dark:border-amber-800/50` |
 | Hover | `hover:bg-slate-50` (via toggle button) |
 | Expanded | `border-blue-200 bg-blue-50/50 dark:border-blue-700/60 dark:bg-blue-950/20` + details section visible |
 | Disabled (can't move) | move-control buttons at `opacity-40 cursor-not-allowed` |
+
+**Border priority (collapsed only):**
+
+- Late overrides After hours — red takes precedence
+- Expanded always overrides all — blue = selection, never combine with red/amber
+- Border is a scan hint only; chips carry the primary meaning
 
 **Rules:**
 - Only one card can be expanded at a time per route result
@@ -553,7 +561,7 @@ text-[10px] font-semibold uppercase tracking-[0.1em]
 Represents a non-service idle gap between stops (or between tasks within the same stop) that is ≥ 30 min.
 
 ```
-border border-blue-200 bg-blue-50/80 rounded-2xl
+border border-blue-100 bg-blue-50/40 rounded-2xl
 px-4 py-2 shadow-sm
 dark:border-blue-900/50 dark:bg-blue-950/20
 ```
@@ -582,7 +590,7 @@ dark:border-blue-900/50 dark:bg-blue-950/20
 Visually distinct from visit cards to indicate the route terminus.
 
 ```
-border border-dashed border-slate-300 bg-slate-50 rounded-2xl
+border border-dashed border-slate-300 bg-slate-50/80 rounded-2xl
 px-3 py-2.5
 dark:border-slate-700 dark:bg-slate-950/40
 ```
@@ -594,7 +602,7 @@ dark:border-slate-700 dark:bg-slate-950/40
 
 **Rules:**
 - Dashed border communicates non-visit, terminus nature
-- `bg-slate-50` is permitted here (exception to the white-card rule) because the card is intentionally de-emphasized
+- `bg-slate-50/80` is permitted here (exception to the white-card rule) because the card is intentionally de-emphasized; the `/80` opacity gives slight presence without competing with visit cards
 - Green text (`emerald-700`) for the ETA is success-signal only — matches Green = success semantic in §12
 - Any exception to core surface rules must be explicitly documented at the component level in this spec.
 

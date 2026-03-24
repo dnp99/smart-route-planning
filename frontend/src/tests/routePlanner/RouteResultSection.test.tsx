@@ -98,10 +98,13 @@ describe("RouteResultSection", () => {
     expect(props.onSetActiveMobileStep).toHaveBeenCalledWith("patients");
   });
 
-  it("renders optimize CTA states and warnings/errors", () => {
+  it("renders optimize CTA states and warnings/errors (mobile)", () => {
+    // On desktop the CTA lives in PatientSelectorSection; this test covers mobile.
     const props = buildProps();
+    props.isMobileViewport = true;
     props.isReviewStepVisible = true;
     props.destinationCount = 1;
+    props.activeMobileStep = "review";
 
     const { rerender } = render(<RouteResultSection {...props} />);
 

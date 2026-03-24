@@ -20,6 +20,8 @@ type OptimizedStopListProps = {
   onToggleResultEndingStop: (stopId: string) => void;
   normalizedHomeAddress: string;
   breakGapThresholdMinutes?: number;
+  workStart?: string;
+  workEnd?: string;
 };
 
 export function OptimizedStopList({
@@ -33,6 +35,8 @@ export function OptimizedStopList({
   onToggleResultEndingStop,
   normalizedHomeAddress,
   breakGapThresholdMinutes,
+  workStart,
+  workEnd,
 }: OptimizedStopListProps) {
   const effectiveBreakGapThreshold = breakGapThresholdMinutes ?? BREAK_GAP_THRESHOLD_MINUTES;
   // Pre-compute a sequential label per task (1, 2, 3…) across all stops,
@@ -67,7 +71,7 @@ export function OptimizedStopList({
           <Fragment key={stop.stopId}>
             {showBreakCard && (
               <div className="flex items-center gap-3 py-1">
-                <div className="flex items-center gap-2.5 rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
+                <div className="flex items-center gap-2.5 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     viewBox="0 0 24 24"
@@ -119,7 +123,7 @@ export function OptimizedStopList({
                       <Fragment key={task.visitId}>
                         {showInterTaskBreak && (
                           <div className="flex items-center gap-3 py-1">
-                            <div className="flex items-center gap-2.5 rounded-2xl border border-blue-200 bg-blue-50/80 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
+                            <div className="flex items-center gap-2.5 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
                               <svg
                                 xmlns="http://www.w3.org/2000/svg"
                                 viewBox="0 0 24 24"
@@ -173,6 +177,8 @@ export function OptimizedStopList({
                           onMoveDown={() => onMoveStop?.(stop.stopId, "down")}
                           isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
                           onToggle={() => onToggleResultTask(detailsKey)}
+                          workStart={workStart}
+                          workEnd={workEnd}
                         />
                       </Fragment>
                     );

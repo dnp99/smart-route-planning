@@ -1177,8 +1177,9 @@ export const optimizeRouteV2 = async (
     workingHoursEndSeconds !== undefined
   ) {
     const lunchDurationSeconds = request.nurseWorkingHours.lunchDurationMinutes * 60;
-    const targetLunchStartSeconds =
-      (workingHoursStartSeconds + workingHoursEndSeconds) / 2 - lunchDurationSeconds / 2;
+    const targetLunchStartSeconds = request.nurseWorkingHours.lunchStartTime
+      ? parseTimeToSeconds(request.nurseWorkingHours.lunchStartTime)
+      : (workingHoursStartSeconds + workingHoursEndSeconds) / 2 - lunchDurationSeconds / 2;
     lunchContext = { targetLunchStartSeconds, lunchDurationSeconds };
   }
 

@@ -194,7 +194,7 @@ describe("OptimizedRouteResult", () => {
     expect(screen.queryByText(/Suggested leave-by:/)).toBeNull();
     expect(screen.queryByText(/Scheduling Conflict/)).toBeNull();
     expect(screen.queryByText(/Lateness Warning/)).toBeNull();
-    expect(screen.queryByRole("list", { name: "" })).toBeTruthy();
+    expect(screen.queryAllByRole("list").length).toBeGreaterThan(0);
     expect(screen.queryByText("Home")).toBeNull();
     expect(screen.getByText("patient-fallback")).toBeTruthy();
     expect(screen.queryByText(/ • /)).toBeNull();

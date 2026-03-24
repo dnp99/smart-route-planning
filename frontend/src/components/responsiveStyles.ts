@@ -221,7 +221,7 @@ export const responsiveStyles = {
 
   // ── Panel chevron / inline edit ─────────────────────────────────────────────
   panelChevronButton:
-    "text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300",
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-300",
   inlineEditLink: "text-blue-600 underline-offset-2 hover:underline dark:text-blue-300",
 
   // ── Warning / alert banners ──────────────────────────────────────────────────
@@ -248,7 +248,7 @@ export const responsiveStyles = {
   // ── Submit / optimize ────────────────────────────────────────────────────────
   spinnerWhite: "h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white",
   visitCountPill:
-    "inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400",
+    "inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300",
   optimizeButtonLarge:
     "optimize-route-button inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto",
 

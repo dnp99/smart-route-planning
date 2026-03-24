@@ -234,7 +234,23 @@ const parseNurseWorkingHours = (value: unknown): NurseWorkingHoursConstraint | u
         "nurseWorkingHours.lunchDurationMinutes must be less than the working day length.",
       );
     }
-    return { workStart, workEnd, lunchDurationMinutes };
+
+    let lunchStartTime: string | undefined;
+    if (candidate.lunchStartTime !== undefined) {
+      lunchStartTime = parseTime(candidate.lunchStartTime, "nurseWorkingHours.lunchStartTime");
+      const lunchEndMinutes = timeToMinutes(lunchStartTime) + lunchDurationMinutes;
+      if (
+        timeToMinutes(lunchStartTime) < timeToMinutes(workStart) ||
+        lunchEndMinutes > timeToMinutes(workEnd)
+      ) {
+        throw new HttpError(
+          400,
+          "nurseWorkingHours.lunchStartTime must place the lunch break within working hours.",
+        );
+      }
+    }
+
+    return { workStart, workEnd, lunchStartTime, lunchDurationMinutes };
   }
 
   return { workStart, workEnd };

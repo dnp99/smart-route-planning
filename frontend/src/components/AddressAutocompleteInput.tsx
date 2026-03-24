@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { AddressSuggestion } from "./types";
 import { parseAddressAutocompleteResponse } from "../../../shared/contracts";
 import { requestAuthedJson } from "./auth/authFetch";
@@ -44,12 +44,16 @@ function AddressAutocompleteInput({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedSuggestionName, setSelectedSuggestionName] = useState(value.trim());
+  const userHasTyped = useRef(false);
   const listboxId = useId();
 
   const shouldSearch = value.trim().length >= MIN_QUERY_LENGTH;
   const normalizedValue = value.trim();
+  // Suppress autocomplete when the current value matches what was last selected/confirmed,
+  // OR when the user hasn't started typing yet (value was set programmatically by the parent).
   const shouldSuppressSuggestions =
-    selectedSuggestionName.length > 0 && normalizedValue === selectedSuggestionName;
+    !userHasTyped.current ||
+    (selectedSuggestionName.length > 0 && normalizedValue === selectedSuggestionName);
   const hasVisibleError = Boolean(errorText || error);
 
   useEffect(() => {
@@ -145,6 +149,7 @@ function AddressAutocompleteInput({
           placeholder={placeholder}
           value={value}
           onChange={(event) => {
+            userHasTyped.current = true;
             onChange(event.target.value);
             setSelectedSuggestionName("");
             setIsDropdownOpen(true);

@@ -29,6 +29,12 @@ type PatientSelectorSectionProps = {
     value: string,
   ) => void;
   onSetDestinationPersistPlanningWindow: (visitKey: string, persistPlanningWindow: boolean) => void;
+  // Optimize CTA (desktop only — mobile lives in RouteResultSection footer)
+  hasResult: boolean;
+  isLoading: boolean;
+  canOptimize: boolean;
+  hasChangedSinceLastOptimize: boolean;
+  showOptimizeSuccess: boolean;
 };
 
 export const PatientSelectorSection = ({
@@ -52,39 +58,74 @@ export const PatientSelectorSection = ({
   onSetDestinationVisitIncluded,
   onUpdateDestinationPlanningWindow,
   onSetDestinationPersistPlanningWindow,
+  hasResult,
+  isLoading,
+  canOptimize,
+  hasChangedSinceLastOptimize,
+  showOptimizeSuccess,
 }: PatientSelectorSectionProps) => {
   if (!isVisible) return null;
 
   const isContentVisible = isExpanded || isMobileViewport;
+  const isCollapsedDesktop = !isExpanded && !isMobileViewport;
+
+  // Preview row: first 3 patient names abbreviated (e.g. "Ravi R")
+  const MAX_PREVIEW = 3;
+  const previewNames = selectedDestinations.slice(0, MAX_PREVIEW).map((d) => {
+    const parts = d.patientName.trim().split(/\s+/);
+    return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}` : parts[0];
+  });
+  const extraCount = selectedDestinations.length - previewNames.length;
+  const previewText = previewNames.join(" · ") + (extraCount > 0 ? ` +${extraCount} more` : "");
+
+  const isOptimizeDisabled =
+    isLoading || !canOptimize || (hasResult && !hasChangedSinceLastOptimize);
 
   return (
     <section className={responsiveStyles.panel}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-2">
-          <h2 className={responsiveStyles.cardTitle}>
-            {!isExpanded && !isMobileViewport && destinationCount > 0
-              ? "Added patients"
-              : "Add patient(s)"}
-          </h2>
+          <h2 className={responsiveStyles.cardTitle}>Patients</h2>
           {destinationCount > 0 && (
             <span className={responsiveStyles.countPill}>{destinationCount}</span>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-3">
-          {isContentVisible && (
-            <button
-              type="button"
-              onClick={onOpenCreatePatient}
-              className={responsiveStyles.secondaryButton}
-            >
-              Add New Patient
-            </button>
-          )}
+        <div className="flex shrink-0 items-center">
+          {/* CTA group */}
+          <div className="flex items-center gap-3">
+            {isContentVisible && (
+              <button
+                type="button"
+                onClick={onOpenCreatePatient}
+                className={responsiveStyles.secondaryButton}
+              >
+                Add New Patient
+              </button>
+            )}
+            {!isMobileViewport && destinationCount > 0 && (
+              <span className={responsiveStyles.visitCountPill}>
+                {destinationCount} visit{destinationCount === 1 ? "" : "s"} queued
+              </span>
+            )}
+            {!isMobileViewport && (
+              <button
+                type="submit"
+                disabled={isOptimizeDisabled}
+                className={responsiveStyles.optimizeButtonLarge}
+                data-loading={isLoading ? "true" : "false"}
+                data-success={showOptimizeSuccess ? "true" : "false"}
+              >
+                {isLoading && <span className={responsiveStyles.spinnerWhite} aria-hidden="true" />}
+                {isLoading ? "Optimizing..." : hasResult ? "Re-optimize Route" : "Optimize Route"}
+              </button>
+            )}
+          </div>
+          {/* Collapse control — separated from CTA */}
           <button
             type="button"
             aria-label={isExpanded ? "Collapse patient search" : "Expand patient search"}
             onClick={() => onSetExpanded(!isExpanded)}
-            className={responsiveStyles.panelChevronButton}
+            className={`${responsiveStyles.panelChevronButton} ml-3`}
           >
             <svg
               width="16"
@@ -106,6 +147,12 @@ export const PatientSelectorSection = ({
           </button>
         </div>
       </div>
+
+      {isCollapsedDesktop && selectedDestinations.length > 0 && (
+        <p className="m-0 mt-1 truncate text-sm text-slate-600 dark:text-slate-400">
+          {previewText}
+        </p>
+      )}
 
       {isContentVisible && (
         <div className={responsiveStyles.patientSelectionGrid}>

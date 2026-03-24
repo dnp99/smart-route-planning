@@ -21,6 +21,8 @@ type OptimizedStopCardProps = {
   canMoveDown?: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
+  workStart?: string; // HH:mm
+  workEnd?: string; // HH:mm
 };
 
 // Status system:
@@ -41,6 +43,8 @@ export function OptimizedStopCard({
   canMoveDown = false,
   onMoveUp,
   onMoveDown,
+  workStart,
+  workEnd,
 }: OptimizedStopCardProps) {
   const formattedPatientName = formatNameWords(task.patientName);
   const expectedStartLabel = formatExpectedStartTimeText(task.serviceStartTime, isStale);
@@ -50,11 +54,7 @@ export function OptimizedStopCard({
 
   const status = (() => {
     if (!task.windowStart) {
-      return {
-        chipClass:
-          "border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300",
-        label: "Open window",
-      };
+      return null;
     }
     if (task.lateBySeconds > 0) {
       return {
@@ -70,12 +70,30 @@ export function OptimizedStopCard({
     };
   })();
 
+  const isOutsideWorkHours = (() => {
+    if (!workStart || !workEnd) return false;
+    const [wsH, wsM] = workStart.split(":").map(Number);
+    const [weH, weM] = workEnd.split(":").map(Number);
+    const workStartMin = wsH * 60 + wsM;
+    const workEndMin = weH * 60 + weM;
+    const start = new Date(task.serviceStartTime);
+    const end = new Date(task.serviceEndTime);
+    const startMin = start.getHours() * 60 + start.getMinutes();
+    const endMin = end.getHours() * 60 + end.getMinutes();
+    return startMin < workStartMin || endMin > workEndMin;
+  })();
+
   const visitDurationLabel = formatVisitDurationMinutes(task.serviceDurationMinutes);
 
-  // Active (expanded) card uses blue highlight; collapsed is neutral white
+  // Expanded: always blue selection styling.
+  // Collapsed: highest-priority issue drives the border (late > outside hours > default).
   const cardClass = isExpanded
     ? "border-blue-200 bg-blue-50/50 dark:border-blue-700/60 dark:bg-blue-950/20"
-    : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/40";
+    : task.lateBySeconds > 0
+      ? "border-red-200 bg-white dark:border-red-900/50 dark:bg-slate-900/40"
+      : isOutsideWorkHours
+        ? "border-amber-200 bg-white dark:border-amber-800/50 dark:bg-slate-900/40"
+        : "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900/40";
 
   return (
     <div
@@ -119,11 +137,18 @@ export function OptimizedStopCard({
             </span>
           </span>
           <span className="inline-flex shrink-0 items-center gap-1.5">
-            <span
-              className={`inline-flex items-center rounded-full border px-2 py-0 text-[10px] font-semibold uppercase tracking-[0.1em] ${status.chipClass}`}
-            >
-              {status.label}
-            </span>
+            {isOutsideWorkHours && (
+              <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-700 dark:border-amber-900/70 dark:bg-amber-950/40 dark:text-amber-300">
+                After hours
+              </span>
+            )}
+            {status && (
+              <span
+                className={`inline-flex items-center rounded-full border px-2 py-0 text-[10px] font-semibold uppercase tracking-[0.1em] ${status.chipClass}`}
+              >
+                {status.label}
+              </span>
+            )}
           </span>
         </button>
       </div>
@@ -281,7 +306,7 @@ export function EndingStopCard({
 }: EndingStopCardProps) {
   return (
     // Visually differentiated from patient stops: dashed border + slate-50 bg
-    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40">
+    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40">
       <p className="mb-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400 dark:text-slate-500">
         Final Stop
       </p>
