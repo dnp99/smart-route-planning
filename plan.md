@@ -4,19 +4,15 @@ The repository planning documents are stored under `plans/`.
 
 Files:
 
-- `plans/change-log.md` - implementation history and completed change log
 - `plans/account-settings-and-working-hours-execution-plan.md` - execution plan for account menu/settings and future weekly schedule-aware route constraints
 
 This root file exists to preserve the repository convention that `plan.md` is updated alongside project changes.
 
-## Latest change record
+## Change History
 
-## Latest change addendum
+### Route Planner UX overhaul and component refactor — merged patient panels, collapsible cards, patient info modal, DestinationRow extraction, child component split, hooks moved to `components/hooks/`.
 
-### Change
-Route Planner UX overhaul and component refactor — merged patient panels, collapsible cards, patient info modal, DestinationRow extraction, child component split, hooks moved to `components/hooks/`.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `frontend/src/components/routePlanner/DestinationRow.tsx`
   - `frontend/src/components/routePlanner/TripSetupSection.tsx`
@@ -35,239 +31,219 @@ Route Planner UX overhaul and component refactor — merged patient panels, coll
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `CLAUDE.md`
   - `plan.md`
-  - `plans/change-log.md`
 - Deleted:
   - `frontend/src/components/routePlanner/use*.ts` (all five hooks, relocated to `components/hooks/`)
 
-### Why
+#### Why
 
 - `RoutePlanner.tsx` had grown to ~1100 lines; split into focused child components reduces cognitive load and makes future changes safer.
 - Single patient card reduces visual clutter; collapsible UI reduces screen real estate usage.
 - Hooks now live in a dedicated `components/hooks/` folder, consistent with idiomatic React project structure.
 
-### Verification
+#### Verification
 
 - Frontend:
   - `npm run lint` ✅
   - `npm run test` ✅ (132 tests pass)
 
-### Change
-Updated repository documentation to reflect current API endpoints, frontend architecture splits, and recent UI behavior updates.
+### Updated repository documentation to reflect current API endpoints, frontend architecture splits, and recent UI behavior updates.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `README.md`
   - `frontend/README.md`
   - `DEPLOYMENT.md`
   - `plan.md`
-  - `plans/change-log.md`
 
-### Why
+#### Why
 - Top-level docs were missing newer auth endpoints and recent frontend behavior details.
 - Frontend docs did not mention extracted Route Planner modules now used in production code.
 - Deployment safety checklist still referenced a legacy optimize-route endpoint and obsolete backend env guidance.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
 
-### Change
-Refactored Route Planner by extracting selected-destination rendering into a dedicated component and moving shared destination types to route-planner-specific type modules.
+### Refactored Route Planner by extracting selected-destination rendering into a dedicated component and moving shared destination types to route-planner-specific type modules.
 
-### Files added/updated/deleted
+#### Files
 - Added:
   - `frontend/src/components/routePlanner/SelectedDestinationsSection.tsx`
   - `frontend/src/components/routePlanner/routePlannerTypes.ts`
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `plan.md`
-  - `plans/change-log.md`
 
-### Why
+#### Why
 - `RoutePlanner.tsx` had grown too large and hard to reason about.
 - Extracting the selected-destination card tree and its menu state reduces component complexity and makes future UI changes safer.
 - Shared destination types are now centralized for reuse and cleaner boundaries.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 31 tests)
   - `npm run lint` ✅
 
-### Change
-Refined selected-destination patient card actions with a responsive layout: desktop right-aligned inline actions, and mobile overflow handling for remove.
+### Refined selected-destination patient card actions with a responsive layout: desktop right-aligned inline actions, and mobile overflow handling for remove.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `frontend/src/tests/appRoutes.test.tsx`
   - `plan.md`
-  - `plans/change-log.md`
 
-### Why
+#### Why
 - Requested improved visual hierarchy for destination cards so `Edit window` and `Remove` actions align to the right on desktop.
 - Mobile needed safer destructive UX and less horizontal crowding, so remove is now placed under a per-card overflow action menu.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 31 tests)
   - `npm run lint` ✅
 
-### Change
-Added in-place patient creation to Route Planner destination search so nurses can create and immediately add a missing patient without leaving the planner.
+### Added in-place patient creation to Route Planner destination search so nurses can create and immediately add a missing patient without leaving the planner.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
-  - `plans/change-log.md`
 
-### Why
+#### Why
 - Nurses were forced to navigate to the Patients page to add missing patients, which interrupted planning flow and risked losing context.
 - Route Planner now supports creating a patient directly from the destination search card and auto-selects the new patient as a route destination.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 21 tests)
   - `npm test -- --run src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (2 files, 10 tests)
   - `npm run lint` ✅
 
-### Change
-Removed Route Planner `End mode` (manual vs patient) and standardized trip setup to a single editable ending-point address, with a home-address warning banner when profile home address is missing.
+### Removed Route Planner `End mode` (manual vs patient) and standardized trip setup to a single editable ending-point address, with a home-address warning banner when profile home address is missing.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/App.jsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
-  - `plans/change-log.md`
 
-### Why
+#### Why
 - End-mode selection added complexity without improving primary workflow.
 - Start/end should default automatically from account home address, with manual override always available.
 - When home address is not set, nurses need a clear prompt and direct action to open Account settings.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx src/tests/appRoutes.test.tsx` ✅ (3 files, 30 tests)
   - `npm run lint` ✅
 
-### Change
-Updated optimize-route ending-stop rendering to a clickable card that labels the last stop as `Home` when it matches nurse home address, otherwise shows the ending address.
+### Updated optimize-route ending-stop rendering to a clickable card that labels the last stop as `Home` when it matches nurse home address, otherwise shows the ending address.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
-  - `plans/change-log.md`
 
-### Why
+#### Why
 - Requested UX behavior for the final stop:
   - show `Home` as the clickable title when ending point equals home address
   - otherwise show the ending address as the clickable title
   - keep distance/time summary inside the ending-stop card
 - Clicking the ending-stop title now reveals ending-point details per the requested content rules.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 22 tests)
   - `npm run lint` ✅
 
-### Change
-Moved per-stop travel summary (`X km • Y min from previous stop`) into each patient result card in the optimize-route output.
+### Moved per-stop travel summary (`X km • Y min from previous stop`) into each patient result card in the optimize-route output.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
-  - `plans/change-log.md`
 
-### Why
+#### Why
 - Requested UI adjustment to keep each patient result self-contained by showing distance/time inside the card instead of as a detached line below the list item.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 21 tests)
   - `npm run lint` ✅
 
-### Change
-Updated the Patients page header to show the live patient count as `Patients (X)`.
+### Updated the Patients page header to show the live patient count as `Patients (X)`.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/patients/PatientsPage.tsx`
   - `frontend/src/tests/appRoutes.test.tsx`
   - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - Nurses requested the total count directly in the Patients header for faster visibility without scanning the list.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/appRoutes.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 10 tests)
   - `npm test -- --run src/tests/patients/PatientsPage.test.tsx` ✅ (1 file, 9 tests)
   - `npm run lint` ✅
 
-### Change
-Updated account-settings home-address placeholder text to `Perason Internal Airport`.
+### Updated account-settings home-address placeholder text to `Perason Internal Airport`.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/App.jsx`
   - `plan.md`
 
-### Why
+#### Why
 - Requested wording update for the account-settings home-address input placeholder.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/appRoutes.test.tsx` ✅
   - `npm run lint` ✅
 
-### Change
-Enabled Google Maps address autocomplete for the account-settings home-address field.
+### Enabled Google Maps address autocomplete for the account-settings home-address field.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/App.jsx`
   - `frontend/src/tests/appRoutes.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - Nurses should get the same guided address entry experience in account settings as Route Planner and Patients.
 - Reusing shared autocomplete behavior reduces manual address errors and improves default start/end data quality.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/appRoutes.test.tsx` ✅
   - `npm run lint` ✅
 
-### Change
-Lowered backend coverage thresholds from `90` to `80` in the Vitest coverage config.
+### Lowered backend coverage thresholds from `90` to `80` in the Vitest coverage config.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/vitest.config.ts`
   - `plan.md`
 
-### Why
+#### Why
 - Requested baseline for backend coverage gating is now 80%.
 - This aligns CI/local coverage threshold checks with the current target while coverage-improvement work continues.
 
-### Verification
+#### Verification
 - Backend:
   - `npm run test:coverage` ✅
   - Resulting coverage: statements `93.72%`, branches `86.37%`, functions `97.76%`, lines `93.69%`
 
-### Change
-Increased backend test coverage with targeted branch-path tests across auth routes, auth audit logging, rate limiting, and optimize-route v2 travel matrix parsing/error handling.
+### Increased backend test coverage with targeted branch-path tests across auth routes, auth audit logging, rate limiting, and optimize-route v2 travel matrix parsing/error handling.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/src/app/api/auth/login/route.test.ts`
   - `backend/src/app/api/auth/me/route.test.ts`
@@ -277,7 +253,7 @@ Increased backend test coverage with targeted branch-path tests across auth rout
   - `backend/src/lib/rateLimit/authLoginRateLimit.test.ts`
   - `plan.md`
 
-### Why
+#### Why
 - Backend coverage gaps were concentrated in untested error/edge branches (especially in rate limiting and matrix parsing).
 - Added focused tests for:
   - disallowed CORS preflight origins on auth routes
@@ -287,17 +263,16 @@ Increased backend test coverage with targeted branch-path tests across auth rout
   - additional audit redaction/masking branches
   - matrix response parsing formats and failure modes
 
-### Verification
+#### Verification
 - Backend:
   - `npm test` ✅ (26 files, 312 tests)
   - `npm test -- --run src/lib/rateLimit/authLoginRateLimit.test.ts src/lib/auth/auditLogger.test.ts src/app/api/optimize-route/v2/travelMatrix.test.ts src/app/api/auth/login/route.test.ts src/app/api/auth/signup/route.test.ts src/app/api/auth/me/route.test.ts` ✅ (6 files, 65 tests)
   - `npm run test:coverage` ⚠️ improved but threshold still failing
     - Branch coverage improved from `80.82%` to `86.37%`
 
-### Change
-Implemented Phase 1 and Phase 2 of the account settings plan: account options menu + account settings modal, persisted nurse home-address profile support, and Route Planner default start/end prefill from saved home address.
+### Implemented Phase 1 and Phase 2 of the account settings plan: account options menu + account settings modal, persisted nurse home-address profile support, and Route Planner default start/end prefill from saved home address.
 
-### Files added/updated/deleted
+#### Files
 - Added:
   - `backend/drizzle/0005_last_eternals.sql`
   - `backend/drizzle/meta/0005_snapshot.json`
@@ -327,13 +302,13 @@ Implemented Phase 1 and Phase 2 of the account settings plan: account options me
   - `plans/account-settings-and-working-hours-execution-plan.md`
   - `plan.md`
 
-### Why
+#### Why
 - Product requirements needed account-level options in the header, not a logout-only menu.
 - Nurses need a reusable home base that defaults Route Planner start and ending points.
 - Home address must be persisted in profile APIs so defaults survive sessions/devices.
 - Existing route draft behavior had to remain authoritative to prevent accidental overwrites.
 
-### Verification
+#### Verification
 - Backend tests:
   - `npm test -- --run src/app/api/auth/login/route.test.ts src/app/api/auth/me/route.test.ts src/app/api/auth/signup/route.test.ts src/lib/patients/patientRepository.test.ts` ✅ (4 files, 51 tests)
 - Frontend tests:
@@ -345,141 +320,123 @@ Implemented Phase 1 and Phase 2 of the account settings plan: account options me
   - `backend: npm run build` ✅
   - `frontend: npm run build` ✅
 
-### Change
-Updated the account settings execution plan to include nurse home-address management and Route Planner defaulting of both start/end points from saved home address, with this scope prioritized before weekly schedule work.
+### Updated the account settings execution plan to include nurse home-address management and Route Planner defaulting of both start/end points from saved home address, with this scope prioritized before weekly schedule work.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `plans/account-settings-and-working-hours-execution-plan.md`
   - `plan.md`
 
-### Why
+#### Why
 - Product scope now requires an account-level home address that can be reused as default trip start and end points.
 - Weekly schedule remains future work, but home-address integration is now the next priority and should be delivered first.
 - The execution plan needed explicit phase ordering, API contract updates, and acceptance criteria for this behavior.
 
-### Verification
+#### Verification
 - Documentation:
   - `git diff --check` ✅
 
-### Change
-Added a new execution plan under `plans/` for account options menu, account settings password update flow, and future nurse weekly working-hours integration with optimize-route-v2.
+### Added a new execution plan under `plans/` for account options menu, account settings password update flow, and future nurse weekly working-hours integration with optimize-route-v2.
 
-### Files added/updated/deleted
+#### Files
 - Added:
   - `plans/account-settings-and-working-hours-execution-plan.md`
 - Updated:
   - `plan.md`
 
-### Why
+#### Why
 - Product direction now requires account settings from the header menu and a clear password-update flow for nurses.
 - Route-planning future scope needs a concrete design path for weekly working-hours constraints when patients are flexible/no-window.
 - Capturing this as an execution plan keeps implementation scope, API contract, and acceptance criteria explicit before coding begins.
 
-### Verification
+#### Verification
 - Documentation:
   - `git diff --check` ✅
 
-### Change
-Changed Route Planner destination cards to default to collapsed window details (`Edit window`) when a patient is added.
+### Changed Route Planner destination cards to default to collapsed window details (`Edit window`) when a patient is added.
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - Nurses requested newly added destinations to open in compact mode first, matching the `Edit window` card state instead of expanded details.
 - This reduces visual noise when adding multiple patients and keeps window editing opt-in.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 19 tests)
   - `npm run lint` ✅
 
-## Latest change addendum
+### Updated optimize-route result rendering in Route Planner to a patient-first layout with clickable patient names that reveal details inline.
 
-### Change
-Updated optimize-route result rendering in Route Planner to a patient-first layout with clickable patient names that reveal details inline.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - The existing result rows were address-first and dense; nurses requested a clearer patient-centric summary.
 - Patient names are now interactive so details are available on demand while keeping the default list compact.
 - Expected start time is now visually emphasized on its own line to improve scanability.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅ (2 files, 19 tests)
   - `npm run lint` ✅
 
-## Latest change addendum
+### Deleted `plans/optimize-route-v2-time-first-execution-plan.md` from the plans folder.
 
-### Change
-Deleted `plans/optimize-route-v2-time-first-execution-plan.md` from the plans folder.
-
-### Files added/updated/deleted
+#### Files
 - Deleted:
   - `plans/optimize-route-v2-time-first-execution-plan.md`
 - Updated:
   - `plan.md`
 
-### Why
+#### Why
 - The v2 time-first execution plan is no longer needed in the active planning folder.
 
-### Verification
+#### Verification
 - Documentation:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Deleted `plans/nurse-patient-management-execution-plan.md` from the plans folder.
 
-### Change
-Deleted `plans/nurse-patient-management-execution-plan.md` from the plans folder.
-
-### Files added/updated/deleted
+#### Files
 - Deleted:
   - `plans/nurse-patient-management-execution-plan.md`
 - Updated:
   - `plan.md`
 
-### Why
+#### Why
 - The nurse patient-management execution plan is no longer needed in the active planning folder.
 
-### Verification
+#### Verification
 - Documentation:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Deleted `plans/jwt-authentication-remediation-release-note.md` from the plans folder.
 
-### Change
-Deleted `plans/jwt-authentication-remediation-release-note.md` from the plans folder.
-
-### Files added/updated/deleted
+#### Files
 - Deleted:
   - `plans/jwt-authentication-remediation-release-note.md`
 - Updated:
   - `plan.md`
 
-### Why
+#### Why
 - The release note file is no longer needed in the active planning folder.
 
-### Verification
+#### Verification
 - Documentation:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Deleted completed execution-plan records from `plans/` to keep the active planning folder focused on remaining/open planning artifacts.
 
-### Change
-Deleted completed execution-plan records from `plans/` to keep the active planning folder focused on remaining/open planning artifacts.
-
-### Files added/updated/deleted
+#### Files
 - Deleted:
   - `plans/jwt-authentication-execution-plan.md`
   - `plans/login-flow-hardening-execution-plan.md`
@@ -488,20 +445,17 @@ Deleted completed execution-plan records from `plans/` to keep the active planni
 - Updated:
   - `plan.md`
 
-### Why
+#### Why
 - These documents were already marked `Completed`/`Implemented` and no longer represent active planning work.
 - Keeping completed execution records out of the active plan list reduces noise during planning reviews.
 
-### Verification
+#### Verification
 - Documentation:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Implemented login flow hardening backend controls across auth endpoints, including secure transport enforcement, security headers, distributed-capable auth rate limiting, and redaction-safe audit logging.
 
-### Change
-Implemented login flow hardening backend controls across auth endpoints, including secure transport enforcement, security headers, distributed-capable auth rate limiting, and redaction-safe audit logging.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `backend/src/lib/rateLimit/authLoginRateLimit.ts`
   - `backend/src/lib/rateLimit/authLoginRateLimit.test.ts`
@@ -522,61 +476,52 @@ Implemented login flow hardening backend controls across auth endpoints, includi
   - `plans/login-flow-hardening-execution-plan.md`
   - `plan.md`
 
-### Why
+#### Why
 - Auth hardening requirements were still marked pending and only partially implemented, leaving transport policy, rate-limit consistency, and audit behavior uneven across auth endpoints.
 - This implementation closes the backend scope in the hardening plan and documents the exact controls and environment flags required for production operation.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test -- --run src/app/api/auth/requestGuards.test.ts src/app/api/auth/login/route.test.ts src/app/api/auth/signup/route.test.ts src/app/api/auth/me/route.test.ts src/lib/http.test.ts src/lib/rateLimit/authLoginRateLimit.test.ts src/lib/auth/auditLogger.test.ts` ✅ (7 files, 44 tests)
   - `npm run lint` ✅
   - `npm run build` ✅
 
-## Latest change addendum
+### Closed nurse patient-management follow-up gaps by updating patient-end request behavior in Route Planner and marking the follow-up tracker as completed.
 
-### Change
-Closed nurse patient-management follow-up gaps by updating patient-end request behavior in Route Planner and marking the follow-up tracker as completed.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plans/nurse-patient-management-follow-ups.md`
   - `plan.md`
 
-### Why
+#### Why
 - In patient-end mode, the selected end patient should define the final endpoint only and should not be auto-added as an intermediate optimize destination.
 - The follow-up tracker needed to reflect current behavior and close stale contract-follow-up language now that the planner flow is standardized on v2 contracts.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
   - `npm run lint` ✅
 
-## Latest change addendum
+### Clarified Login Flow Hardening plan status as open/pending so it no longer reads like an implied completed implementation.
 
-### Change
-Clarified Login Flow Hardening plan status as open/pending so it no longer reads like an implied completed implementation.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `plans/login-flow-hardening-execution-plan.md`
   - `plan.md`
 
-### Why
+#### Why
 - Plan review identified ambiguity: the login hardening document looked like an execution artifact even though there was no explicit completion marker.
 - Adding an explicit status keeps planning docs and rollout records consistent.
 
-### Verification
+#### Verification
 - Documentation:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Implemented Optimize Route V2 no-preferred-window autoscheduling so flexible visits can be optimized without manually entering planning window times.
 
-### Change
-Implemented Optimize Route V2 no-preferred-window autoscheduling so flexible visits can be optimized without manually entering planning window times.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/src/app/api/optimize-route/v2/validation.ts`
   - `backend/src/app/api/optimize-route/v2/validation.test.ts`
@@ -586,12 +531,12 @@ Implemented Optimize Route V2 no-preferred-window autoscheduling so flexible vis
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - Route Planner previously blocked optimization for flexible patients without preferred windows, forcing manual time input even when users wanted optimizer-managed placement.
 - Backend now accepts flexible visits with blank `windowStart/windowEnd` and schedules them with synthetic full-day bounds, while preserving strict fixed-window validation.
 - The planner now allows no-window flexible visits, validates only partial-window mistakes, and renders “No preferred window” in results with no preferred-window lateness warning.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test -- --run src/app/api/optimize-route/v2/validation.test.ts src/app/api/optimize-route/v2/optimizeRouteService.test.ts` ✅ (2 files, 36 tests)
   - `npm test -- --run src/app/api/optimize-route/v2/route.test.ts` ✅ (1 file, 8 tests)
@@ -600,304 +545,262 @@ Implemented Optimize Route V2 no-preferred-window autoscheduling so flexible vis
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 17 tests)
   - `npm run lint` ✅
 
-## Latest change addendum
+### Deleted the JWT authentication remediation plan document from `plans/`.
 
-### Change
-Deleted the JWT authentication remediation plan document from `plans/`.
-
-### Files added/updated/deleted
+#### Files
 - Deleted:
   - `plans/jwt-authentication-remediation-plan.md`
 - Updated:
   - `plan.md`
 
-### Why
+#### Why
 - You requested removal of the remediation plan document.
 - The root plan index was updated to avoid listing a deleted file.
 
-### Verification
+#### Verification
 - Documentation:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Moved fixed-window duration validation feedback to the patient modal action area so the message appears alongside the Cancel/Save buttons for both create and edit flows.
 
-### Change
-Moved fixed-window duration validation feedback to the patient modal action area so the message appears alongside the Cancel/Save buttons for both create and edit flows.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/patients/PatientFormModal.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - The fixed-window duration error should be visible at the point of submission so nurses can immediately understand why save is blocked.
 - Keeping this specific error near the action buttons improves clarity while preserving row-level placement for other field-specific errors.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/patients/PatientsPage.test.tsx src/tests/patients/patientForm.validation.test.ts` ✅ (2 files, 13 tests)
   - `npm run lint` ✅
 
-## Latest change addendum
+### Added patient-form UI validation (create and edit flows) to block fixed windows shorter than the configured visit duration, with the same detailed message format used in optimize-route validation.
 
-### Change
-Added patient-form UI validation (create and edit flows) to block fixed windows shorter than the configured visit duration, with the same detailed message format used in optimize-route validation.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/patients/patientForm.ts`
   - `frontend/src/tests/patients/patientForm.validation.test.ts`
   - `frontend/src/tests/patients/PatientsPage.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - Nurses can change preferred window and duration in the patient form; invalid fixed windows should be caught immediately in UI instead of surfacing later during route optimization.
 - Showing the exact required minutes and patient-specific copy improves correction speed and reduces confusion.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/patients/patientForm.validation.test.ts src/tests/patients/PatientsPage.test.tsx` ✅ (2 files, 13 tests)
   - `npm run lint` ✅
 
-## Latest change addendum
+### Updated optimize-route v2 fixed-window validation error copy to include the patient’s actual required visit minutes and append “as per patient’s profile.”
 
-### Change
-Updated optimize-route v2 fixed-window validation error copy to include the patient’s actual required visit minutes and append “as per patient’s profile.”
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/src/app/api/optimize-route/v2/validation.ts`
   - `backend/src/app/api/optimize-route/v2/validation.test.ts`
   - `plan.md`
 
-### Why
+#### Why
 - The previous message did not show the real required duration, so users could not immediately tell the exact minutes causing validation failure.
 - Adding explicit minutes plus profile context makes the error more actionable and understandable in the planner UI.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test -- --run src/app/api/optimize-route/v2/validation.test.ts` ✅ (1 file, 19 tests)
   - `npm run lint` ✅
 
-## Latest change addendum
+### Updated Route Planner overlap messaging to count unique overlap pairs and show the overlap warning in desktop review, not only mobile review.
 
-### Change
-Updated Route Planner overlap messaging to count unique overlap pairs and show the overlap warning in desktop review, not only mobile review.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - The previous overlap counter reported overlapping visits, which showed `2` for a single pair (`A↔B`) and was confusing.
 - Overlap warning visibility was mobile-only, so desktop users had no equivalent warning context before optimizing.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 15 tests)
   - `npm run lint` ✅
 
-## Latest change addendum
+### Added a dedicated execution plan for Route Planner and optimize-route v2 support of flexible patients with no preferred visit windows (no required manual time entry).
 
-### Change
-Added a dedicated execution plan for Route Planner and optimize-route v2 support of flexible patients with no preferred visit windows (no required manual time entry).
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `plans/optimize-route-v2-no-preferred-window-autoscheduling-execution-plan.md`
 - Updated:
   - `plan.md`
 
-### Why
+#### Why
 - The current planner blocks optimization for flexible patients without windows, which adds avoidable workflow friction.
 - A written execution plan is needed before implementation to align contract, validation, scheduler behavior, and UI copy across frontend/backend.
 
-### Verification
+#### Verification
 - Documentation:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Updated route-task line copy to show expected start time for every patient while preserving late-window warning for late tasks.
 
-### Change
-Updated route-task line copy to show expected start time for every patient while preserving late-window warning for late tasks.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
 
-### What changed
+#### What changed
 - Task rows now always include:
   - `Expected start time HH:MM AM/PM` (derived from each task `serviceStartTime`)
 - Late tasks additionally include:
   - `Outside preferred window by X min` (in red)
 - Updated route-planner test coverage to assert both expected-start-time and outside-window text for a late task.
 
-### Why
+#### Why
 - Users requested expected start time visibility for every scheduled patient, not only late tasks.
 - Keeping the late-window warning provides conflict context when a task starts after the preferred window ends.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
 
-## Latest change addendum
+### Fixed optimized-route expected start-time rendering to use local time conversion from the ISO timestamp, preventing UTC hour display in the Route Planner results panel.
 
-### Change
-Fixed optimized-route expected start-time rendering to use local time conversion from the ISO timestamp, preventing UTC hour display in the Route Planner results panel.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - The previous formatter extracted `Txx:yy` directly from the ISO string, so UTC timestamps were shown as local clock times (for example showing `01:00 PM` instead of `09:00 AM` in Toronto).
 - Parsing as a `Date` and formatting with `Intl.DateTimeFormat` keeps `Expected start time` consistent with locale-aware time rendering already used elsewhere in the planner.
 - The updated test now derives its expected label from locale formatting so it remains correct across environments with different timezones.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅ (1 file, 15 tests)
 
-## Latest change addendum
+### Updated optimized-route task rows to show expected start time from scheduler output.
 
-### Change
-Updated optimized-route task rows to show expected start time from scheduler output.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
 
-### What changed
+#### What changed
 - Replaced the late-state suffix text with a scheduler-driven expected start-time suffix:
   - `Expected start time HH:MM AM/PM`
 - Added formatting helper to derive `HH:MM AM/PM` from each task’s `serviceStartTime`.
 - Added/updated route-planner test coverage to assert expected-start-time rendering.
 
-### Why
+#### Why
 - Users asked for schedule clarity in the exact task-line format and preferred expected start time over lateness phrasing.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
 
-## Latest change addendum
+### Styled late-task preferred-window warning text in red within route summary rows.
 
-### Change
-Styled late-task preferred-window warning text in red within route summary rows.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `plan.md`
 
-### What changed
+#### What changed
 - Updated the `Outside preferred window by X min` segment in route-task rows to render with red text (`text-red-600` / `dark:text-red-400`) when `lateBySeconds > 0`.
 - Kept the rest of the task line styling unchanged.
 
-### Why
+#### Why
 - The lateness/conflict indicator should stand out visually from neutral route metadata.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
 
-## Latest change addendum
+### Updated route summary wording for late tasks to use user-friendly preferred-window language.
 
-### Change
-Updated route summary wording for late tasks to use user-friendly preferred-window language.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
 
-### What changed
+#### What changed
 - Updated task-row late-state text in optimized route details:
   - from implicit lateness handling
   - to explicit copy: `Outside preferred window by X min` when `lateBySeconds > 0`.
 - Added route-planner test coverage to verify the new copy appears for a task with non-zero `lateBySeconds`.
 
-### Why
+#### Why
 - “Late” phrasing was less clear in overlapping-window scenarios.
 - Preferred-window wording better matches planner intent and is easier for nurses to interpret.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
 
-## Latest change addendum
+### Improved route-planner validation messages by naming the patients that caused window-validation failures.
 
-### Change
-Improved route-planner validation messages by naming the patients that caused window-validation failures.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
 
-### What changed
+#### What changed
 - Added patient-name list formatting for submit-time validation errors.
 - Updated missing-window error to include affected patient names.
 - Updated invalid window-order error to include affected patient names.
 - Updated route-planner tests to assert the new patient-specific validation message.
 
-### Why
+#### Why
 - Generic validation copy made it hard for users to identify which selected patient needed a window fix.
 - Patient-specific errors reduce confusion and speed up correction.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
 
-## Latest change addendum
+### Cleared the destination patient search input after selecting a patient in Route Planner.
 
-### Change
-Cleared the destination patient search input after selecting a patient in Route Planner.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `plan.md`
 
-### What changed
+#### What changed
 - Updated `addDestinationPatient` to reset `destinationSearchQuery` to an empty string immediately after a patient is added.
 - This clears the typed search text so users can quickly search for the next patient without manually deleting prior input.
 
-### Why
+#### Why
 - After selecting a destination patient, the search query remained in the input and created friction for adding multiple patients.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
 
-## Latest change addendum
+### Added route-planner trip draft persistence so planning selections survive navigation to `/patients` and back.
 
-### Change
-Added route-planner trip draft persistence so planning selections survive navigation to `/patients` and back.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
 
-### What changed
+#### What changed
 - Added a typed local draft model for the route planner and persisted it in browser `localStorage`.
 - Hydrated planner state from saved draft on mount, including:
   - start/end address + place IDs
@@ -909,44 +812,38 @@ Added route-planner trip draft persistence so planning selections survive naviga
 - Added a remount test to verify selected trip state is restored and can be submitted after returning to route planner.
 - Added localStorage cleanup in route-planner test setup/teardown to keep tests isolated.
 
-### Why
+#### Why
 - Nurses could lose in-progress trip planning when leaving route planner to add a missing patient.
 - Draft persistence removes the need to reselect all destinations after switching pages.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅
   - `npm run build` ✅
 
-## Latest change addendum
+### Fixed a mobile route-planner runtime crash by restoring overlap helper state used by the review step summary.
 
-### Change
-Fixed a mobile route-planner runtime crash by restoring overlap helper state used by the review step summary.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `plan.md`
 
-### What changed
+#### What changed
 - Restored the missing `windowsOverlap` helper used in overlap computations.
 - Restored computed `overlappingVisitCount` for selected request destinations so the mobile review card can render overlap warnings without runtime errors.
 
-### Why
+#### Why
 - The mobile review step referenced `overlappingVisitCount` but the corresponding helper/computation was removed, causing `ReferenceError` at runtime.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx` ✅
 
-## Latest change addendum
+### Allowed overlapping persisted patient visit windows by removing overlap rejection in backend patient payload validation and frontend patient form validation.
 
-### Change
-Allowed overlapping persisted patient visit windows by removing overlap rejection in backend patient payload validation and frontend patient form validation.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `frontend/src/tests/patients/patientForm.validation.test.ts`
 - Updated:
@@ -955,18 +852,18 @@ Allowed overlapping persisted patient visit windows by removing overlap rejectio
   - `frontend/src/components/patients/patientForm.ts`
   - `plan.md`
 
-### What changed
+#### What changed
 - Removed backend overlap enforcement for `visitWindows` so create/update patient payloads no longer throw on overlapping time windows.
 - Kept existing window format and same-day ordering validation (`HH:MM` and `end > start`) unchanged.
 - Removed frontend patient form overlap validation errors (`Visit windows must not overlap` and per-row overlap errors) so overlapping windows can be submitted and persisted.
 - Added a new frontend test file to assert overlap-allowed behavior in `validateForm` while preserving `end > start` validation.
 - Updated backend patient validation test to assert overlapping windows are accepted.
 
-### Why
+#### Why
 - Route-planning and persistence behavior now needs to support overlapping visit windows end-to-end, including saved patient records.
 - Rejecting overlap at patient save time conflicted with the intended scheduling workflow.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test -- --run src/lib/patients/patientValidation.test.ts` ✅
   - `npm run lint` ✅
@@ -976,18 +873,15 @@ Allowed overlapping persisted patient visit windows by removing overlap rejectio
   - `npm run lint` ✅
   - `npm run build` ✅
 
-## Latest change addendum
+### Implemented a mobile-focused route planner UX pass with a step-based flow, collapsible destination cards, and a sticky optimize action bar.
 
-### Change
-Implemented a mobile-focused route planner UX pass with a step-based flow, collapsible destination cards, and a sticky optimize action bar.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/components/responsiveStyles.ts`
   - `plan.md`
 
-### What changed
+#### What changed
 - Added a mobile step navigator (`Trip`, `Patients`, `Review`) and gated planner sections by active step on small screens.
 - Added mobile “continue” actions between steps while keeping desktop fully expanded.
 - Added per-destination details toggles so destination cards can collapse/expand their planning-window controls.
@@ -995,22 +889,19 @@ Implemented a mobile-focused route planner UX pass with a step-based flow, colla
 - Added sticky mobile optimize footer treatment so the optimize CTA stays reachable while scrolling.
 - Kept desktop behavior and optimize payload logic unchanged.
 
-### Why
+#### Why
 - The planner form had become too long and dense on phones, which made route setup and optimization harder to complete efficiently.
 - A step-based mobile flow and collapsible destination controls reduce cognitive load and scrolling overhead without changing backend contract behavior.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
   - `npm test -- --run src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx src/tests/integration/patientsRoutePlanner.integration.test.tsx` ✅
   - `npm run build` ✅
 
-## Latest change addendum
+### Wired manual route-planner start and end autocomplete selections to carry Google place ids through the optimize-route request so manual addresses can use place-aware geocoding instead of plain text alone.
 
-### Change
-Wired manual route-planner start and end autocomplete selections to carry Google place ids through the optimize-route request so manual addresses can use place-aware geocoding instead of plain text alone.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `shared/contracts/optimizeRoute.ts`
   - `frontend/src/components/RoutePlanner.tsx`
@@ -1026,11 +917,11 @@ Wired manual route-planner start and end autocomplete selections to carry Google
   - `backend/src/app/api/optimize-route/route.test.ts`
   - `plan.md`
 
-### Why
+#### Why
 - The route planner already exposed address autocomplete for manual start and end inputs, but it discarded the selected suggestion `placeId` and only sent plain address strings to the backend.
 - Forwarding manual place ids lets optimize-route geocode those endpoints with Google Places when available, which avoids failures like the Snow Goose Lane case.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test -- --run src/app/api/optimize-route/validation.test.ts src/app/api/optimize-route/optimizeRouteService.test.ts src/app/api/optimize-route/route.test.ts` ✅
   - `npm run lint` ✅
@@ -1042,22 +933,19 @@ Wired manual route-planner start and end autocomplete selections to carry Google
 - Repo:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Added a Google Places text-search fallback for route geocoding so manual or legacy addresses without a stored place id can still resolve when Nominatim returns no match.
 
-### Change
-Added a Google Places text-search fallback for route geocoding so manual or legacy addresses without a stored place id can still resolve when Nominatim returns no match.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/src/app/api/optimize-route/geocoding.ts`
   - `backend/src/app/api/optimize-route/geocoding.test.ts`
   - `plan.md`
 
-### Why
+#### Why
 - Some saved patient addresses were entered manually or predated place-id capture, so they still relied on Nominatim-only text geocoding.
 - Falling back to Google Places text search makes route optimization more resilient for incomplete-but-real addresses like `6625 snow goose lane`.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test -- --run src/app/api/optimize-route/geocoding.test.ts` ✅
   - `npm run lint` ✅
@@ -1065,22 +953,19 @@ Added a Google Places text-search fallback for route geocoding so manual or lega
 - Repo:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Hardened Google Routes leg parsing to accept stringified `distanceMeters` values so route optimization no longer fails when the distance field arrives in string form.
 
-### Change
-Hardened Google Routes leg parsing to accept stringified `distanceMeters` values so route optimization no longer fails when the distance field arrives in string form.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/src/app/api/optimize-route/routing.ts`
   - `backend/src/app/api/optimize-route/routing.test.ts`
   - `plan.md`
 
-### Why
+#### Why
 - The route parser previously required `distanceMeters` to be a JSON number and threw `Google Routes returned an invalid distance.` for any other shape.
 - Accepting numeric strings makes the parser more tolerant of real-world API payloads while keeping invalid non-numeric distance values rejected.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test -- --run src/app/api/optimize-route/routing.test.ts` ✅
   - `npm run lint` ✅
@@ -1088,12 +973,9 @@ Hardened Google Routes leg parsing to accept stringified `distanceMeters` values
 - Repo:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Updated route optimization geocoding to prefer stored Google place ids for patient destinations and fall back to text geocoding only when a place-details lookup cannot be resolved.
 
-### Change
-Updated route optimization geocoding to prefer stored Google place ids for patient destinations and fall back to text geocoding only when a place-details lookup cannot be resolved.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/src/app/api/optimize-route/geocoding.ts`
   - `backend/src/app/api/optimize-route/geocoding.test.ts`
@@ -1101,11 +983,11 @@ Updated route optimization geocoding to prefer stored Google place ids for patie
   - `backend/src/app/api/optimize-route/optimizeRouteService.test.ts`
   - `plan.md`
 
-### Why
+#### Why
 - The route optimizer was ignoring `googlePlaceId` even though patient destinations already carry it from address autocomplete, so incomplete street-only addresses could fail text geocoding.
 - Using place ids first makes saved patient locations more reliable while preserving the existing Nominatim fallback for addresses that do not have a stored place id.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test -- --run src/app/api/optimize-route/geocoding.test.ts src/app/api/optimize-route/optimizeRouteService.test.ts` ✅
   - `npm run lint` ✅
@@ -1113,21 +995,18 @@ Updated route optimization geocoding to prefer stored Google place ids for patie
 - Repo:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Expanded the login/signup content to use the full auth card width so the segmented control, headings, fields, and button spread across the same shell width as the header.
 
-### Change
-Expanded the login/signup content to use the full auth card width so the segmented control, headings, fields, and button spread across the same shell width as the header.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/auth/LoginPage.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - The previous alignment pass widened the auth card shell, but the inner content was still capped to a narrow centered column and did not visually match the wider container.
 - Letting the inner content fill the card keeps the unauthenticated page balanced and makes the login/signup switcher align with the wider shell.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/auth/LoginPage.test.tsx src/tests/appRoutes.test.tsx` ✅
   - `npm run lint` ✅
@@ -1135,21 +1014,18 @@ Expanded the login/signup content to use the full auth card width so the segment
 - Repo:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Aligned the unauthenticated shell by making the login/signup card span the same outer width as the header while keeping the form controls constrained to a readable inner column.
 
-### Change
-Aligned the unauthenticated shell by making the login/signup card span the same outer width as the header while keeping the form controls constrained to a readable inner column.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/auth/LoginPage.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - The header already spans the full app shell width, but the auth card was capped to a much narrower outer width, which made the unauthenticated layout feel visually misaligned.
 - Matching the outer card width to the header keeps the page shell consistent without making the login form itself uncomfortably wide.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/auth/LoginPage.test.tsx src/tests/appRoutes.test.tsx` ✅
   - `npm run lint` ✅
@@ -1157,35 +1033,29 @@ Aligned the unauthenticated shell by making the login/signup card span the same 
 - Repo:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Changed the post-auth frontend landing route so successful login and signup redirect nurses to `/patients` instead of `/route-planner`.
 
-### Change
-Changed the post-auth frontend landing route so successful login and signup redirect nurses to `/patients` instead of `/route-planner`.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/App.jsx`
   - `frontend/src/components/auth/LoginPage.tsx`
   - `frontend/src/tests/auth/LoginPage.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - The patients workspace is the primary landing page after authentication, so the default protected route and explicit login redirect should both open `/patients`.
 - Keeping the default route and login-page navigation aligned avoids inconsistent post-auth behavior across direct login, signup, and root-path navigation.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test -- --run src/tests/auth/LoginPage.test.tsx src/tests/appRoutes.test.tsx` ✅
   - `npm run build` ✅
 - Repo:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Added a frontend Vercel SPA rewrite so browser refreshes on protected routes like `/patients` and `/route-planner` resolve back to the React app instead of returning a hosted `404`.
 
-### Change
-Added a frontend Vercel SPA rewrite so browser refreshes on protected routes like `/patients` and `/route-planner` resolve back to the React app instead of returning a hosted `404`.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `frontend/vercel.json`
 - Updated:
@@ -1193,21 +1063,20 @@ Added a frontend Vercel SPA rewrite so browser refreshes on protected routes lik
   - `DEPLOYMENT.md`
   - `plan.md`
 
-### Why
+#### Why
 - The frontend uses `BrowserRouter`, so deep links work inside the client app but need a hosting rewrite for direct page loads and refreshes on Vercel.
 - Without the rewrite, Vercel tries to resolve `/patients` as a static file path and returns `404 Not Found` before React can boot.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run build` ✅
 - Configuration:
   - `python3 -m json.tool frontend/vercel.json` ✅
   - `git diff --check` ✅
 
-### Change
-Implemented end-to-end JWT authentication with login-gated frontend access and backend route protection across all business endpoints.
+### Implemented end-to-end JWT authentication with login-gated frontend access and backend route protection across all business endpoints.
 
-### Files added/updated/deleted
+#### Files
 - Added:
   - `plans/jwt-authentication-execution-plan.md`
   - `shared/contracts/auth.ts`
@@ -1250,13 +1119,13 @@ Implemented end-to-end JWT authentication with login-gated frontend access and b
   - `DEPLOYMENT.md`
   - `plan.md`
 
-### Why
+#### Why
 - Users now must authenticate before seeing patient or route-planner data.
 - Backend business endpoints now enforce JWT bearer authentication uniformly.
 - Authenticated nurse identity now scopes patient operations instead of env-based default-nurse request context.
 - Added auth contracts and tests to keep frontend/backend behavior aligned and verifiable.
 
-### Verification
+#### Verification
 - LSP diagnostics on modified implementation files: ✅ no errors.
 - Backend:
   - `npm test` ✅ (19 files, 168 tests)
@@ -1269,10 +1138,9 @@ Implemented end-to-end JWT authentication with login-gated frontend access and b
   - `npm run lint` ✅
   - `npm run build` ✅
 
-### Change
-Completed backend-first nurse/patient work by fixing patient update semantics and extending optimize-route backend support to accept patient-linked `destinations[]` payloads (while preserving legacy `addresses[]` compatibility).
+### Completed backend-first nurse/patient work by fixing patient update semantics and extending optimize-route backend support to accept patient-linked `destinations[]` payloads (while preserving legacy `addresses[]` compatibility).
 
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `shared/contracts/optimizeRoute.ts`
   - `backend/src/app/api/optimize-route/types.ts`
@@ -1288,13 +1156,13 @@ Completed backend-first nurse/patient work by fixing patient update semantics an
   - `backend/README.md`
   - `plan.md`
 
-### Why
+#### Why
 - `googlePlaceId` could not be explicitly cleared to `null` during patient updates due to nullish-coalescing fallback behavior.
 - Backend optimize-route needed to support patient-linked destination objects for the nurse/patient execution plan while keeping existing frontend calls functional during phased rollout.
 - Backend startup/setup needed a deterministic default-nurse seed path; migration now seeds `default-nurse` idempotently and docs/scripts now include migration execution.
 - Address updates now clear stale `googlePlaceId` when place metadata is omitted, preventing mismatched address/place-id persistence.
 
-### Verification
+#### Verification
 - LSP diagnostics on all modified TypeScript files: ✅ no diagnostics
 - Backend:
   - `npm test` ✅ (14 files, 142 tests)
@@ -1305,52 +1173,41 @@ Completed backend-first nurse/patient work by fixing patient update semantics an
   - `npm run lint` ✅
   - `npm run build` ✅
 
-For full implementation history, see `plans/change-log.md`.
+### Added a dedicated remediation plan for the current JWT-auth branch issues covering unsafe migration sequencing, legacy nurse identity preservation, and duplicate-signup race handling.
 
-## Latest change addendum
-
-### Change
-Added a dedicated remediation plan for the current JWT-auth branch issues covering unsafe migration sequencing, legacy nurse identity preservation, and duplicate-signup race handling.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `plans/jwt-authentication-remediation-plan.md`
 - Updated:
   - `plan.md`
 
-### Why
+#### Why
 - The current auth branch needs a concrete follow-up plan before implementation because the first rollout path can break on legacy `nurses` rows, orphan existing patient visibility behind a new nurse id, and surface duplicate-signup races as `500` errors.
 - The remediation document captures the recommended phased upgrade path, bootstrap strategy, rollout order, and acceptance criteria in one place under `plans/`.
 
-### Verification
+#### Verification
 - Documentation-only change.
 - Runtime verification not run.
 
-## Latest change addendum
+### Reduced backend test coverage thresholds from 100% to 90%.
 
-### Change
-Reduced backend test coverage thresholds from 100% to 90%.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/vitest.config.ts`
   - `plan.md`
 
-### Why
+#### Why
 - The requested backend quality gate is 90% minimum coverage instead of 100%.
 
-### Verification
+#### Verification
 - LSP diagnostics:
   - `backend/vitest.config.ts` ✅ no diagnostics
 - Backend coverage run:
   - `npm run test:coverage` ✅ passes with thresholds at 90%
 
-## Latest change addendum
+### Implemented phase-1 frontend routing and Patients UI surface (`/patients` and `/route-planner`) with patient search/list/create/edit/delete flows backed by the new patient APIs.
 
-### Change
-Implemented phase-1 frontend routing and Patients UI surface (`/patients` and `/route-planner`) with patient search/list/create/edit/delete flows backed by the new patient APIs.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `frontend/src/components/patients/PatientsPage.tsx`
   - `frontend/src/components/patients/patientService.ts`
@@ -1366,23 +1223,20 @@ Implemented phase-1 frontend routing and Patients UI surface (`/patients` and `/
   - `frontend/package-lock.json`
   - `plan.md`
 
-### Why
+#### Why
 - Add locked client-side navigation and dedicated patient-management page before route-planner patient-selection integration.
 - Provide typed frontend API access for patient CRUD/search and keep behavior consistent with backend phase-1 contract.
 - Extend autocomplete component with suggestion metadata callbacks so patient forms can capture `googlePlaceId` when available.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test` ✅ (9 files, 29 tests)
   - `npm run lint` ✅
   - `npm run build` ✅
 
-## Latest change addendum
+### Completed route-planner phase-1 patient integration by replacing free-text destination workflow with saved-patient selection, adding manual-vs-patient end mode, and submitting patient-linked `destinations[]` to optimize-route.
 
-### Change
-Completed route-planner phase-1 patient integration by replacing free-text destination workflow with saved-patient selection, adding manual-vs-patient end mode, and submitting patient-linked `destinations[]` to optimize-route.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `frontend/src/components/routePlanner/usePatientSearch.ts`
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
@@ -1396,11 +1250,11 @@ Completed route-planner phase-1 patient integration by replacing free-text desti
   - `frontend/vitest.config.ts`
   - `plan.md`
 
-### Why
+#### Why
 - Route-planner destinations now need patient identity preservation (`patientId`, `patientName`, `googlePlaceId`) for deterministic UI mapping and backend parity with the nurse/patient execution plan.
 - End-point selection now supports explicit mode switching so nurses can choose either manual end address input or a saved patient end address before optimizing.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test` ✅ (10 files, 32 tests)
   - `npm run lint` ✅
@@ -1410,12 +1264,9 @@ Completed route-planner phase-1 patient integration by replacing free-text desti
   - `npm run lint` ✅
   - `npm run build` ✅
 
-## Latest change addendum
+### Filled remaining phase-1 frontend automated test gaps from the nurse/patient execution plan, including patients-page validation/search/duplicate coverage, route-planner destination-removal coverage, and integration-style cross-page lifecycle coverage.
 
-### Change
-Filled remaining phase-1 frontend automated test gaps from the nurse/patient execution plan, including patients-page validation/search/duplicate coverage, route-planner destination-removal coverage, and integration-style cross-page lifecycle coverage.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `frontend/src/tests/patients/PatientsPage.addressAutocomplete.test.tsx`
   - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
@@ -1424,25 +1275,22 @@ Filled remaining phase-1 frontend automated test gaps from the nurse/patient exe
   - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - Close plan-specified automated coverage for:
   - patients-page search and validation behaviors,
   - duplicate-name disambiguation behavior,
   - route-planner destination removal behavior,
   - integration lifecycle and `/patients` → `/route-planner` handoff behavior.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test` ✅ (12 files, 39 tests)
   - `npm run lint` ✅
   - `npm run build` ✅
 
-## Latest change addendum
+### Aligned the CareFlow branding update with a responsive patients-page refactor and finalized the breaking optimize-route contract update so patient-linked destinations are required end to end.
 
-### Change
-Aligned the CareFlow branding update with a responsive patients-page refactor and finalized the breaking optimize-route contract update so patient-linked destinations are required end to end.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `frontend/src/components/patients/PatientFormModal.tsx`
   - `frontend/src/components/patients/PatientsTable.tsx`
@@ -1470,100 +1318,85 @@ Aligned the CareFlow branding update with a responsive patients-page refactor an
   - `frontend/src/tests/routePlanner/routePlannerService.test.ts`
   - `plan.md`
 
-### Why
+#### Why
 - The optimize-route contract needed to match the locked execution plan by removing legacy `addresses[]` support and preserving patient identity for end-point routing.
 - The patients page had grown too large and was not responsive enough; splitting it into modal/table/form helper modules makes the UI easier to maintain and better on mobile.
 - The product name and browser/title branding were updated from `Navigate Easy` to `CareFlow` to fit the wider nurse-operations scope.
 - Shared shell spacing was normalized so the app header and page content align consistently.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test` ✅ (12 files, 40 tests)
 - Backend:
   - `npm test` ✅ (14 files, 141 tests)
 
-## Latest change addendum
+### Added a future-work note for the remaining nurse/patient execution-plan gaps and the intentional Patients-page UX deviation.
 
-### Change
-Added a future-work note for the remaining nurse/patient execution-plan gaps and the intentional Patients-page UX deviation.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `plans/nurse-patient-management-follow-ups.md`
 - Updated:
   - `plan.md`
 
-### Why
+#### Why
 - Preserve a concrete record of what is still not fully aligned with `plans/nurse-patient-management-execution-plan.md`.
 - Make the remaining route-contract and request-behavior gaps explicit for a future pass.
 - Record that the current patients-page modal/table UX is an intentional divergence from the original split-panel page plan.
 
-### Verification
+#### Verification
 - Documentation-only change
 - No code paths changed
 
-## Latest change addendum
+### Added a deferred Vercel database setup checklist for enabling deployed patient-management functionality later.
 
-### Change
-Added a deferred Vercel database setup checklist for enabling deployed patient-management functionality later.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `plans/vercel-database-setup-checklist.md`
 - Updated:
   - `plan.md`
 
-### Why
+#### Why
 - The deployed patient feature cannot work until a Postgres database and required Vercel environment variables exist.
 - A simple checklist reduces the chance of missing schema, seed, or env configuration steps when this is picked up later.
 
-### Verification
+#### Verification
 - Documentation-only change
 - No code paths changed
 
-## Latest change addendum
+### Polished Patients-page and Route Planner UI consistency with shared card, search, and panel treatments for a cleaner local demo experience.
 
-### Change
-Polished Patients-page and Route Planner UI consistency with shared card, search, and panel treatments for a cleaner local demo experience.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/RoutePlanner.tsx`
   - `frontend/src/components/patients/PatientsPage.tsx`
   - `frontend/src/components/responsiveStyles.ts`
   - `plan.md`
 
-### Why
+#### Why
 - The Patients page and Route Planner had started to diverge in spacing, panel treatment, and search/list styling, which made the demo feel inconsistent even though the workflows were related.
 - Consolidating shared surface, panel, and input styles improves mobile and desktop presentation without depending on backend or database setup.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test` ✅
 
-## Latest change addendum
+### Removed the extra wrapper and inner card styling around the Patients search-and-list surface to reduce unnecessary mobile padding.
 
-### Change
-Removed the extra wrapper and inner card styling around the Patients search-and-list surface to reduce unnecessary mobile padding.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/patients/PatientsPage.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - The additional wrapper around the patient search bar and list was unnecessary and added extra padding in mobile layouts.
 
-### Verification
+#### Verification
 - UI-only structural change
 - Tests not rerun
 
-## Latest change addendum
+### Repaired the backend migration pipeline by switching to Drizzle-managed migration output, generating baseline metadata, and replacing the hand-written initial SQL migration with a committed Drizzle baseline.
 
-### Change
-Repaired the backend migration pipeline by switching to Drizzle-managed migration output, generating baseline metadata, and replacing the hand-written initial SQL migration with a committed Drizzle baseline.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `backend/drizzle/0000_swift_shiver_man.sql`
   - `backend/drizzle/meta/0000_snapshot.json`
@@ -1577,90 +1410,62 @@ Repaired the backend migration pipeline by switching to Drizzle-managed migratio
 - Deleted:
   - `backend/src/db/migrations/0000_create_nurses_and_patients.sql`
 
-### Why
+#### Why
 - `drizzle-kit migrate` could not run because the repository was missing Drizzle migration metadata such as `meta/_journal.json`.
 - Moving to a Drizzle-managed migration folder makes future schema changes generate and apply consistently.
 - The baseline migration now includes the `pgcrypto` extension and default nurse seed so first-time database setup works through `db:migrate`.
 
-### Verification
+#### Verification
 - Backend:
   - `npm run db:generate` ✅
 
-## Latest change addendum
+### Removed the completed Vercel database setup checklist planning document now that the Neon/Vercel setup and migration flow are implemented.
 
-### Change
-Recorded the completed CareFlow UI polish and Drizzle migration-pipeline repair in `plans/change-log.md`.
-
-### Files added/updated/deleted
-- Updated:
-  - `plans/change-log.md`
-  - `plan.md`
-
-### Why
-- The repository keeps `plans/change-log.md` as the implementation history for completed work, so the recent UI and migration changes needed to be added there explicitly.
-
-### Verification
-- Documentation-only change
-
-## Latest change addendum
-
-### Change
-Removed the completed Vercel database setup checklist planning document now that the Neon/Vercel setup and migration flow are implemented.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `plan.md`
 - Deleted:
   - `plans/vercel-database-setup-checklist.md`
 
-### Why
+#### Why
 - The checklist had served its purpose and no longer represents pending work.
 
-### Verification
+#### Verification
 - Documentation-only change
 
-## Latest change addendum
+### Updated the default seeded nurse display name from `Default Nurse` to `Nicole Su` and made the seed path update existing rows idempotently.
 
-### Change
-Updated the default seeded nurse display name from `Default Nurse` to `Nicole Su` and made the seed path update existing rows idempotently.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/src/db/seed-default-nurse.ts`
   - `backend/drizzle/0000_swift_shiver_man.sql`
   - `plan.md`
 
-### Why
+#### Why
 - New and existing environments should use the real default nurse display name instead of the placeholder seed value.
 
-### Verification
+#### Verification
 - Code change only
 - Tests not rerun
 
-## Latest change addendum
+### Restricted the auth bootstrap migration so only `default-nurse` receives the seeded development password instead of backfilling passwords for every existing nurse.
 
-### Change
-Restricted the auth bootstrap migration so only `default-nurse` receives the seeded development password instead of backfilling passwords for every existing nurse.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/drizzle/0001_useful_skaar.sql`
   - `plan.md`
 
-### Why
+#### Why
 - The previous migration assigned the same known password to any nurse missing credentials, which is too broad even for bootstrap behavior.
 - The branch now limits credential seeding to the intended default nurse account.
 
-### Verification
+#### Verification
 - Migration SQL only
 - Tests not rerun
 
-## Latest change addendum
+### Implemented frontend startup session validation and backend login rate limiting for the JWT authentication flow.
 
-### Change
-Implemented frontend startup session validation and backend login rate limiting for the JWT authentication flow.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `backend/src/app/api/auth/requestGuards.ts`
   - `backend/src/app/api/auth/requestGuards.test.ts`
@@ -1674,22 +1479,19 @@ Implemented frontend startup session validation and backend login rate limiting 
   - `frontend/src/tests/integration/patientsRoutePlanner.integration.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - The app previously trusted any locally stored token on startup without confirming that it still mapped to a valid authenticated nurse session.
 - The login endpoint needed basic brute-force protection to match the rate-limit posture already used on the other public-facing backend endpoints.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test` ✅ (20 files, 171 tests)
 - Frontend:
   - `npm test` ✅ (12 files, 42 tests)
 
-## Latest change addendum
+### Removed the remaining default-nurse bootstrap path so auth and patient access now assume real nurse accounts already exist in the database.
 
-### Change
-Removed the remaining default-nurse bootstrap path so auth and patient access now assume real nurse accounts already exist in the database.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/drizzle/0000_swift_shiver_man.sql`
   - `backend/drizzle/0001_useful_skaar.sql`
@@ -1704,22 +1506,19 @@ Removed the remaining default-nurse bootstrap path so auth and patient access no
   - `backend/src/lib/patients/nurseContext.ts`
   - `backend/src/lib/patients/nurseContext.test.ts`
 
-### Why
+#### Why
 - Production should not depend on or create a special fallback nurse account.
 - JWT-authenticated nurse identity is now the only supported path for patient access, and nurse records are expected to be provisioned explicitly.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test` ✅ (19 files, 164 tests)
 - Frontend:
   - `npm test` ✅ (12 files, 42 tests)
 
-## Latest change addendum
+### Retired the one-time legacy nurse bootstrap tooling and removed stale rollout documentation after the JWT remediation rollout was fully completed.
 
-### Change
-Retired the one-time legacy nurse bootstrap tooling and removed stale rollout documentation after the JWT remediation rollout was fully completed.
-
-### Files added/updated/deleted
+#### Files
 - Deleted:
   - `backend/scripts/bootstrap-legacy-nurse.mjs`
   - `backend/src/db/bootstrapLegacyNurse.test.ts`
@@ -1730,45 +1529,39 @@ Retired the one-time legacy nurse bootstrap tooling and removed stale rollout do
   - `DEPLOYMENT.md`
   - `plan.md`
 
-### Why
+#### Why
 - Phase F is deployed and verified, so the one-time bootstrap path is no longer part of the supported runtime or operator workflow.
 - Removing the retired command, env vars, and rollout-specific instructions keeps the backend docs aligned with the finalized auth model.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test` ✅
   - `npm run lint` ✅
 - Documentation:
   - `git diff --check` ✅
 
-## Latest change addendum
+### Published a short release note for the JWT remediation rollout and marked the remediation plan closed after Phase F was deployed and verified.
 
-### Change
-Published a short release note for the JWT remediation rollout and marked the remediation plan closed after Phase F was deployed and verified.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `plans/jwt-authentication-remediation-release-note.md`
 - Updated:
   - `plans/jwt-authentication-remediation-plan.md`
   - `plan.md`
 
-### Why
+#### Why
 - The remediation work is fully deployed, so the planning docs should now reflect a closed status and provide a concise release summary for future reference.
 - Recording the closeout keeps the repository plan log aligned with the production rollout state.
 
-### Verification
+#### Verification
 - Documentation:
   - `git diff --check` ✅
 - Rollout status:
   - Phase F deployed and verified in production ✅ (operator-confirmed)
 
-## Latest change addendum
+### Added end-to-end nurse sign-up functionality so users can create an account and immediately enter the authenticated app flow.
 
-### Change
-Added end-to-end nurse sign-up functionality so users can create an account and immediately enter the authenticated app flow.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `backend/src/app/api/auth/signup/route.ts`
   - `backend/src/app/api/auth/signup/route.test.ts`
@@ -1786,41 +1579,35 @@ Added end-to-end nurse sign-up functionality so users can create an account and 
   - `backend/README.md`
   - `plan.md`
 
-### Why
+#### Why
 - Authentication now needs an explicit account-creation flow because the application no longer bootstraps a default nurse account automatically.
 - New signups should be able to receive a JWT immediately and continue into the protected patient and route-planner experience without a separate admin step.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test` ✅ (20 files, 170 tests)
 - Frontend:
   - `npm test` ✅ (14 files, 45 tests)
 
-## Latest change addendum
+### Polished the frontend auth experience by adding sign-up password confirmation and clearer login/sign-up helper copy.
 
-### Change
-Polished the frontend auth experience by adding sign-up password confirmation and clearer login/sign-up helper copy.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/components/auth/LoginPage.tsx`
   - `frontend/src/tests/auth/LoginPage.test.tsx`
   - `plan.md`
 
-### Why
+#### Why
 - New signups should get immediate feedback before submitting mismatched credentials.
 - The auth form copy should better distinguish between signing in and creating a new CareFlow account.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm test` ✅ (14 files, 46 tests)
 
-## Latest change addendum
+### Added a one-time legacy nurse bootstrap command that upgrades the original nurse row in place, preserving patient ownership while preparing upgraded environments for JWT login.
 
-### Change
-Added a one-time legacy nurse bootstrap command that upgrades the original nurse row in place, preserving patient ownership while preparing upgraded environments for JWT login.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `backend/scripts/bootstrap-legacy-nurse.mjs`
   - `backend/src/db/bootstrapLegacyNurse.test.ts`
@@ -1831,22 +1618,19 @@ Added a one-time legacy nurse bootstrap command that upgrades the original nurse
   - `DEPLOYMENT.md`
   - `plan.md`
 
-### Why
+#### Why
 - Upgraded environments need an operator-safe way to attach auth credentials to the existing legacy nurse row instead of creating a replacement nurse account with a new `id`.
 - The bootstrap command preserves the original nurse id so existing patient rows remain visible after login and gives production rollout docs a concrete step before auth goes live.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test` ✅
   - `npm run lint` ✅
   - `npm run build` ✅
 
-## Latest change addendum
+### Prepared Phase F by adding the final auth-constraint migration (`nurses.email` and `nurses.password_hash` back to `NOT NULL`) and removing the temporary runtime guards that only existed for the transitional null-auth rollout.
 
-### Change
-Prepared Phase F by adding the final auth-constraint migration (`nurses.email` and `nurses.password_hash` back to `NOT NULL`) and removing the temporary runtime guards that only existed for the transitional null-auth rollout.
-
-### Files added/updated/deleted
+#### Files
 - Added:
   - `backend/drizzle/0002_worthless_spirit.sql`
   - `backend/drizzle/meta/0002_snapshot.json`
@@ -1864,11 +1648,11 @@ Prepared Phase F by adding the final auth-constraint migration (`nurses.email` a
   - `DEPLOYMENT.md`
   - `plan.md`
 
-### Why
+#### Why
 - All durable environments are expected to be backfilled before the final cleanup step, so the schema can once again enforce non-null auth fields at the database layer.
 - Removing the transitional null checks simplifies auth runtime behavior and ensures the database, ORM schema, and application assumptions are aligned again.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test` ✅
   - `npm run lint` ✅
@@ -1876,12 +1660,9 @@ Prepared Phase F by adding the final auth-constraint migration (`nurses.email` a
 - Deployment note:
   - final migration should only be deployed after `select id, external_key, email, password_hash from nurses where email is null or password_hash is null;` returns zero rows in each durable environment.
 
-## Latest change addendum
+### Implemented Phase E signup hardening by mapping database unique-email conflicts to deterministic `409 Conflict` responses, including the concurrent-signup race path.
 
-### Change
-Implemented Phase E signup hardening by mapping database unique-email conflicts to deterministic `409 Conflict` responses, including the concurrent-signup race path.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/src/lib/patients/patientRepository.ts`
   - `backend/src/lib/patients/patientRepository.test.ts`
@@ -1889,11 +1670,11 @@ Implemented Phase E signup hardening by mapping database unique-email conflicts 
   - `backend/src/app/api/auth/signup/route.test.ts`
   - `plan.md`
 
-### Why
+#### Why
 - Signup already returned `409` when a duplicate email was found before insert, but concurrent duplicate requests could still race and surface as generic `500` errors.
 - The repository now translates database unique-constraint failures into a dedicated conflict error so the signup route can return the intended `409` consistently.
 
-### Verification
+#### Verification
 - Production smoke test (unauthenticated):
   - `POST /api/auth/login` with invalid credentials ✅ `401`
   - `GET /api/auth/me` without token ✅ `401`
@@ -1903,12 +1684,9 @@ Implemented Phase E signup hardening by mapping database unique-email conflicts 
   - `npm run lint` ✅
   - `npm run build` ✅
 
-## Latest change addendum
+### Reworked the auth schema rollout into a transitional migration by keeping `nurses.email` and `nurses.password_hash` nullable for legacy rows, then hardened auth runtime checks so un-bootstrapped nurse rows are rejected safely.
 
-### Change
-Reworked the auth schema rollout into a transitional migration by keeping `nurses.email` and `nurses.password_hash` nullable for legacy rows, then hardened auth runtime checks so un-bootstrapped nurse rows are rejected safely.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `backend/src/db/schema.ts`
   - `backend/drizzle/0001_useful_skaar.sql`
@@ -1923,30 +1701,63 @@ Reworked the auth schema rollout into a transitional migration by keeping `nurse
   - `backend/README.md`
   - `plan.md`
 
-### Why
+#### Why
 - The previous auth migration could fail on any upgraded database that already contained legacy `nurses` rows because it added nullable columns and then immediately enforced `NOT NULL`.
 - Keeping the auth columns nullable during the transitional phase lets the schema upgrade succeed first, while runtime guards make sure incomplete legacy rows cannot authenticate until the planned bootstrap/backfill step is added.
 
-### Verification
+#### Verification
 - Backend:
   - `npm test` ✅
   - `npm run lint` ✅
   - `npm run build` ✅
 
-## Latest change addendum
+### Removed the synchronous auth-resolution state update from the app startup effect so the frontend lint rule for `set-state-in-effect` passes cleanly.
 
-### Change
-Removed the synchronous auth-resolution state update from the app startup effect so the frontend lint rule for `set-state-in-effect` passes cleanly.
-
-### Files added/updated/deleted
+#### Files
 - Updated:
   - `frontend/src/App.jsx`
   - `plan.md`
 
-### Why
+#### Why
 - The session bootstrap effect should not call `setState` synchronously when no token is present.
 - The auth-change listener and async `/api/auth/me` validation already cover the necessary resolution paths.
 
-### Verification
+#### Verification
 - Frontend:
   - `npm run lint` ✅
+
+### Added optimization objective selector — nurses can now choose between shortest distance and shortest time when optimizing a route
+
+#### Files
+
+- Updated:
+  - `shared/contracts/optimizeRouteV2.ts`
+  - `backend/src/app/api/optimize-route/v2/validation.ts`
+  - `backend/src/app/api/optimize-route/v2/validation.test.ts`
+  - `backend/src/app/api/optimize-route/v2/optimizeRouteService.ts`
+  - `backend/src/app/api/optimize-route/v2/route.test.ts`
+  - `frontend/src/components/routePlanner/routePlannerService.ts`
+  - `frontend/src/components/hooks/useRouteOptimization.ts`
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/components/routePlanner/PatientSelectorSection.tsx`
+  - `frontend/src/components/responsiveStyles.ts`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `README.md`
+  - `backend/README.md`
+  - `frontend/README.md`
+  - `plan.md`
+- Deleted:
+  - `plans/optimization-objective-selector.md`
+
+#### Why
+
+- Nurses with tight schedules sometimes prefer to finish the day earlier even if it means slightly more driving, while others prefer fuel efficiency. The previous algorithm always used distance as the final tiebreaker with no way to change this.
+- The new `optimizationObjective` request field (`"distance"` | `"time"`, default `"distance"`) controls priorities 4–5 of the scoring function: `"distance"` minimises idle wait then travel separately; `"time"` minimises their combined total so the route ends earlier.
+
+#### Verification
+
+- Backend:
+  - `npm test -- --run src/app/api/optimize-route/v2/validation.test.ts src/app/api/optimize-route/v2/route.test.ts` ✅
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run test` ✅

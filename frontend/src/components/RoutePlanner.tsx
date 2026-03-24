@@ -35,6 +35,7 @@ type RoutePlannerProps = {
   nurseWorkingHours?: WeeklyWorkingHours | null;
   nurseBreakGapThresholdMinutes?: number | null;
   onOpenAccountSettings?: () => void;
+  optimizationObjective?: "time" | "distance";
 };
 
 function RoutePlanner({
@@ -42,6 +43,7 @@ function RoutePlanner({
   nurseWorkingHours,
   nurseBreakGapThresholdMinutes,
   onOpenAccountSettings,
+  optimizationObjective = "distance",
 }: RoutePlannerProps) {
   const initialDraft = useMemo(() => readRoutePlannerDraft(), []);
   const normalizedHomeAddress = nurseHomeAddress?.trim() ?? "";
@@ -326,6 +328,7 @@ function RoutePlanner({
       destinations: optimizeDestinations,
       canOptimize,
       workingHours: nurseWorkingHours ?? null,
+      optimizationObjective,
     });
   };
 
@@ -388,6 +391,7 @@ function RoutePlanner({
       planningDate,
       preserveOrder: true,
       workingHours: nurseWorkingHours ?? null,
+      optimizationObjective,
     });
   };
 
@@ -505,6 +509,7 @@ function RoutePlanner({
               canOptimize={canOptimize}
               hasChangedSinceLastOptimize={hasChangedSinceLastOptimize}
               showOptimizeSuccess={showOptimizeSuccess}
+              optimizationObjective={optimizationObjective}
             />
           </div>
 

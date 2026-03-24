@@ -28,6 +28,7 @@ type OptimizeRouteInput = {
   timezone?: string;
   preserveOrder?: boolean;
   workingHours?: WeeklyWorkingHours | null;
+  optimizationObjective?: "time" | "distance";
 };
 
 export const useRouteOptimization = () => {
@@ -75,6 +76,7 @@ export const useRouteOptimization = () => {
     timezone,
     preserveOrder,
     workingHours,
+    optimizationObjective,
   }: OptimizeRouteInput) => {
     setError("");
     setResult(null);
@@ -100,6 +102,7 @@ export const useRouteOptimization = () => {
         ...(timezone !== undefined ? { timezone } : {}),
         ...(preserveOrder === true ? { preserveOrder: true } : {}),
         ...(workingHours !== undefined ? { workingHours } : {}),
+        ...(optimizationObjective !== undefined ? { optimizationObjective } : {}),
       });
 
       setResult(optimizedResult);

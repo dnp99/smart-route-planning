@@ -2,12 +2,12 @@
 
 ## Status
 
-- In progress
+- Complete
 - Phase 1: Implemented
 - Phase 2: Implemented
 - Phase 3: Implemented
-- Phase 4: Pending
-- Last updated: 2026-03-20 (lunch break changed to durationMinutes — nurse enters minutes, optimizer picks slot)
+- Phase 4: Implemented
+- Last updated: 2026-03-24 (Phase 4 verified complete — weekly schedule editor, backend persistence, optimizer integration all live)
 
 ## Objective
 
@@ -381,4 +381,3 @@ When the computed route has a gap of more than a configurable threshold (default
 - Deliver Phase 1 and Phase 2 first so nurses get home-base defaults in Route Planner before weekly schedule work.
 - Deliver Phase 3 after profile baseline is in place.
 - Gate Phase 4 behind schema + API readiness.
-- Update `plans/change-log.md` after each completed phase.

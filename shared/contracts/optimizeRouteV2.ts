@@ -43,6 +43,7 @@ export type OptimizeRouteV2Request = {
   visits: OptimizeRouteV2Visit[];
   preserveOrder?: boolean;
   nurseWorkingHours?: NurseWorkingHoursConstraint;
+  optimizationObjective?: "time" | "distance";
 };
 
 export type OptimizeRouteV2TaskResult = {
@@ -349,6 +350,14 @@ export const isOptimizeRouteV2Request = (payload: unknown): payload is OptimizeR
     ) {
       return false;
     }
+  }
+
+  if (
+    payload.optimizationObjective !== undefined &&
+    payload.optimizationObjective !== "time" &&
+    payload.optimizationObjective !== "distance"
+  ) {
+    return false;
   }
 
   return true;

@@ -96,11 +96,13 @@ Example runtime override:
 - `start`: `{ address, googlePlaceId? }`
 - `end`: `{ address, googlePlaceId? }`
 - `visits[]`: `{ visitId, patientId, patientName, address, windowStart, windowEnd, windowType, serviceDurationMinutes, googlePlaceId?, priority? }`
+- `optimizationObjective?: "distance" | "time"` — defaults to `"distance"`
 
 Notes:
 
 - `start.departureTime` is optional and typically omitted by frontend.
 - Backend computes departure dynamically when omitted (earliest first-stop anchor with travel-time + buffer).
+- `"distance"` minimizes idle wait first, then travel time separately. `"time"` minimizes combined wait + travel, finishing the day earlier at the cost of slightly more driving.
 
 ## Route optimizer scheduling logic
 
@@ -133,6 +135,8 @@ Within the pool, each candidate is scored across 5 dimensions (lower = better):
 | 4 | `totalWaitSeconds` | Idle wait time at stops |
 | 5 | `totalTravelSeconds` | Total drive time (distance proxy) |
 
+Priorities 4–5 are objective-dependent: `"distance"` (default) minimises wait then travel separately; `"time"` minimises their sum.
+
 The beam search evaluates 2 steps ahead across the top 8 candidates, so lateness from future steps folds back into the current decision.
 
 ### Step 3 — Gap filler
@@ -150,4 +154,3 @@ After a candidate is selected, if it has > 30 min of idle wait before its window
 - [Backend guide](backend/README.md)
 - [Frontend guide](frontend/README.md)
 - [Deployment notes](DEPLOYMENT.md)
-- [Implementation log](plans/change-log.md)

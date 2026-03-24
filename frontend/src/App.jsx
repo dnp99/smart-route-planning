@@ -34,6 +34,14 @@ function App() {
   const [authUser, setAuthUser] = useState(() => getAuthUser());
   const [isAuthResolved, setIsAuthResolved] = useState(() => !getAuthToken());
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
+  const [optimizationObjective, setOptimizationObjective] = useState(() => {
+    const stored = localStorage.getItem("careflow.optimizationObjective");
+    return stored === "time" ? "time" : "distance";
+  });
+
+  useEffect(() => {
+    localStorage.setItem("careflow.optimizationObjective", optimizationObjective);
+  }, [optimizationObjective]);
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -122,6 +130,7 @@ function App() {
                 nurseWorkingHours={authUser?.workingHours ?? null}
                 nurseBreakGapThresholdMinutes={authUser?.breakGapThresholdMinutes ?? null}
                 onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+                optimizationObjective={optimizationObjective}
               />,
             )}
           />
@@ -144,6 +153,8 @@ function App() {
           setAuthUser(updatedUser);
           setStoredAuthUser(updatedUser);
         }}
+        optimizationObjective={optimizationObjective}
+        onSetOptimizationObjective={setOptimizationObjective}
       />
 
       <ScrollToTopButton />

@@ -245,6 +245,13 @@ export const responsiveStyles = {
   stepCheckIcon: "shrink-0 text-green-600 dark:text-green-400",
   stepNumberBadge: "text-[0.6rem] font-bold opacity-50",
 
+  // ── Optimization objective selector ─────────────────────────────────────────
+  objectiveSelectorGroup: "flex gap-3 sm:gap-4",
+  objectiveSelectorOption:
+    "flex flex-1 cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200 px-3 py-2.5 transition hover:border-slate-300 has-[:checked]:border-blue-200 has-[:checked]:bg-blue-50/50 dark:border-slate-700 dark:hover:border-slate-600 dark:has-[:checked]:border-blue-800 dark:has-[:checked]:bg-blue-950/30",
+  objectiveSelectorLabel: "text-xs font-semibold text-slate-800 dark:text-slate-100",
+  objectiveSelectorDescription: "mt-0.5 text-xs text-slate-500 dark:text-slate-400",
+
   // ── Submit / optimize ────────────────────────────────────────────────────────
   spinnerWhite: "h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white",
   visitCountPill:

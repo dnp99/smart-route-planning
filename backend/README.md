@@ -206,6 +206,8 @@ Within the pool, each candidate is scored across 5 dimensions (lower = better):
 | 4 | `totalWaitSeconds` | Idle wait time at stops |
 | 5 | `totalTravelSeconds` | Total drive time (distance proxy) |
 
+Priorities 4–5 are objective-dependent: `"distance"` (default) minimises wait then travel separately; `"time"` minimises their sum.
+
 The beam search evaluates 2 steps ahead across the top 8 candidates, so lateness from future steps folds back into the current decision.
 
 ### Step 3 — Gap filler
@@ -214,6 +216,7 @@ After a candidate is selected, if it has > 30 min of idle wait before its window
 
 ### Key properties
 
+- The `optimizationObjective` field (`"distance"` or `"time"`, default `"distance"`) only affects priority 4–5 tiebreaking — it never overrides deadline pressure.
 - Distance is the **last** tiebreaker — it never overrides deadline pressure.
 - The gap filler can only **insert**, never displace a selected candidate.
 - Flexible patients within 90 min of their deadline are elevated to a priority pool and sorted by tightest deadline first (EDF), so they are picked before going late rather than after.

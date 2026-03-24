@@ -204,6 +204,11 @@ const parsePriority = (value: unknown, fieldName: string) => {
 
 const parsePreserveOrder = (value: unknown) => value === true;
 
+const parseOptimizationObjective = (value: unknown): "time" | "distance" => {
+  if (value === "time") return "time";
+  return "distance";
+};
+
 const parseNurseWorkingHours = (value: unknown): NurseWorkingHoursConstraint | undefined => {
   if (value === undefined || value === null) {
     return undefined;
@@ -446,6 +451,7 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteV2Req
 
   const preserveOrder = parsePreserveOrder(payload.preserveOrder);
   const nurseWorkingHours = parseNurseWorkingHours(payload.nurseWorkingHours);
+  const optimizationObjective = parseOptimizationObjective(payload.optimizationObjective);
 
   return {
     planningDate,
@@ -462,5 +468,6 @@ export const parseAndValidateBody = (body: unknown): ValidatedOptimizeRouteV2Req
     visits,
     ...(preserveOrder ? { preserveOrder: true } : {}),
     ...(nurseWorkingHours !== undefined ? { nurseWorkingHours } : {}),
+    optimizationObjective,
   };
 };

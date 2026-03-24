@@ -111,6 +111,7 @@ describe("optimize-route v2 request validation", () => {
           priority: 1,
         },
       ],
+      optimizationObjective: "distance",
     });
   });
 

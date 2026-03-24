@@ -412,6 +412,7 @@ describe("RoutePlanner patient selection integration", () => {
       ],
       canOptimize: true,
       workingHours: null,
+      optimizationObjective: "distance",
     });
   });
 
@@ -457,6 +458,7 @@ describe("RoutePlanner patient selection integration", () => {
       ],
       canOptimize: true,
       workingHours: null,
+      optimizationObjective: "distance",
     });
   });
 
@@ -501,6 +503,7 @@ describe("RoutePlanner patient selection integration", () => {
       ],
       canOptimize: true,
       workingHours: null,
+      optimizationObjective: "distance",
     });
   });
 
@@ -540,6 +543,7 @@ describe("RoutePlanner patient selection integration", () => {
       ],
       canOptimize: true,
       workingHours: null,
+      optimizationObjective: "distance",
     });
   });
 
@@ -596,6 +600,7 @@ describe("RoutePlanner patient selection integration", () => {
       destinations: [],
       canOptimize: true,
       workingHours: null,
+      optimizationObjective: "distance",
     });
   });
 
@@ -829,6 +834,7 @@ describe("RoutePlanner patient selection integration", () => {
       ],
       canOptimize: true,
       workingHours: null,
+      optimizationObjective: "distance",
     });
   });
 
@@ -889,6 +895,7 @@ describe("RoutePlanner patient selection integration", () => {
       ],
       canOptimize: true,
       workingHours: null,
+      optimizationObjective: "distance",
     });
   });
 
@@ -941,6 +948,7 @@ describe("RoutePlanner patient selection integration", () => {
         ],
         canOptimize: true,
         workingHours: null,
+        optimizationObjective: "distance",
       });
     });
   });

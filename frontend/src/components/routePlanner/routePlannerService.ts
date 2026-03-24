@@ -162,6 +162,7 @@ type OptimizeRouteRequestInput = {
   timezone?: string;
   preserveOrder?: boolean;
   workingHours?: WeeklyWorkingHours | null;
+  optimizationObjective?: "time" | "distance";
 };
 
 export const persistPlanningWindows = async (
@@ -277,6 +278,7 @@ export const requestOptimizedRoute = async ({
   timezone,
   preserveOrder,
   workingHours,
+  optimizationObjective,
 }: OptimizeRouteRequestInput): Promise<OptimizeRouteResponse> => {
   const resolvedTimezone = resolveTimezone(timezone);
   const now = new Date();
@@ -344,6 +346,7 @@ export const requestOptimizedRoute = async ({
         visits,
         ...(preserveOrder === true ? { preserveOrder: true } : {}),
         ...(nurseWorkingHours !== undefined ? { nurseWorkingHours } : {}),
+        ...(optimizationObjective === "time" ? { optimizationObjective: "time" } : {}),
       }),
     },
     "Unable to optimize route.",

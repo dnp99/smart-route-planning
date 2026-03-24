@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   persistPlanningWindows,
   requestOptimizedRoute,
+  resolveWorkingHoursForDate,
 } from "../../components/routePlanner/routePlannerService";
 import { setAuthSession } from "../../components/auth/authSession";
 
@@ -693,6 +694,186 @@ describe("requestOptimizedRoute", () => {
           visitTimeType: "fixed",
         },
       ],
+    });
+  });
+});
+
+describe("resolveWorkingHoursForDate", () => {
+  // 2026-03-13 is a Friday in America/Toronto
+  const FRIDAY_DATE = "2026-03-13";
+  const TIMEZONE = "America/Toronto";
+
+  const enabledFriday = {
+    enabled: true,
+    start: "08:00",
+    end: "17:00",
+  };
+
+  it("returns null when workingHours is null", () => {
+    expect(resolveWorkingHoursForDate(null, FRIDAY_DATE, TIMEZONE)).toBeNull();
+  });
+
+  it("returns null when workingHours is undefined", () => {
+    expect(resolveWorkingHoursForDate(undefined, FRIDAY_DATE, TIMEZONE)).toBeNull();
+  });
+
+  it("returns null when the planning date's weekday is not in workingHours", () => {
+    // Friday is missing from this schedule
+    const result = resolveWorkingHoursForDate({ monday: enabledFriday }, FRIDAY_DATE, TIMEZONE);
+    expect(result).toBeNull();
+  });
+
+  it("returns { dayDisabled: true } when the day is marked disabled", () => {
+    const result = resolveWorkingHoursForDate(
+      { friday: { enabled: false, start: "08:00", end: "17:00" } },
+      FRIDAY_DATE,
+      TIMEZONE,
+    );
+    expect(result).toEqual({ dayDisabled: true });
+  });
+
+  it("returns constraint without lunch when lunchBreak is absent", () => {
+    const result = resolveWorkingHoursForDate({ friday: enabledFriday }, FRIDAY_DATE, TIMEZONE);
+    expect(result).toEqual({
+      dayDisabled: false,
+      constraint: { workStart: "08:00", workEnd: "17:00" },
+    });
+  });
+
+  it("returns constraint with lunchDurationMinutes and lunchStartTime when lunchBreak is fully configured", () => {
+    const result = resolveWorkingHoursForDate(
+      {
+        friday: {
+          ...enabledFriday,
+          lunchBreak: { enabled: true, startTime: "12:00", durationMinutes: 30 },
+        },
+      },
+      FRIDAY_DATE,
+      TIMEZONE,
+    );
+    expect(result).toEqual({
+      dayDisabled: false,
+      constraint: {
+        workStart: "08:00",
+        workEnd: "17:00",
+        lunchDurationMinutes: 30,
+        lunchStartTime: "12:00",
+      },
+    });
+  });
+
+  it("returns constraint with lunchDurationMinutes but no lunchStartTime when startTime is empty", () => {
+    const result = resolveWorkingHoursForDate(
+      {
+        friday: {
+          ...enabledFriday,
+          lunchBreak: { enabled: true, startTime: "", durationMinutes: 45 },
+        },
+      },
+      FRIDAY_DATE,
+      TIMEZONE,
+    );
+    expect(result).toEqual({
+      dayDisabled: false,
+      constraint: {
+        workStart: "08:00",
+        workEnd: "17:00",
+        lunchDurationMinutes: 45,
+      },
+    });
+  });
+
+  it("skips lunch fields when lunchBreak is disabled", () => {
+    const result = resolveWorkingHoursForDate(
+      {
+        friday: {
+          ...enabledFriday,
+          lunchBreak: { enabled: false, startTime: "12:00", durationMinutes: 30 },
+        },
+      },
+      FRIDAY_DATE,
+      TIMEZONE,
+    );
+    expect(result).toEqual({
+      dayDisabled: false,
+      constraint: { workStart: "08:00", workEnd: "17:00" },
+    });
+  });
+});
+
+describe("requestOptimizedRoute — working hours integration", () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    window.localStorage.clear();
+    setAuthSession("test-token", {
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      homeAddress: null,
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    window.localStorage.clear();
+  });
+
+  it("throws when the planning date falls on a disabled working day", async () => {
+    // 2026-03-13 is a Friday — mark Friday as disabled
+    await expect(
+      requestOptimizedRoute({
+        startAddress: "Start",
+        endAddress: "End",
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        destinations: [],
+        workingHours: { friday: { enabled: false, start: "08:00", end: "17:00" } },
+      }),
+    ).rejects.toThrow("Your working hours are not configured for this day");
+
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("includes optimizationObjective in request body when set to 'time'", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        start: {
+          address: "Start",
+          coords: { lat: 43.1, lon: -79.1 },
+          departureTime: "2026-03-13T07:30:00-04:00",
+        },
+        end: { address: "End", coords: { lat: 43.2, lon: -79.2 } },
+        orderedStops: [],
+        routeLegs: [],
+        unscheduledTasks: [],
+        metrics: {
+          fixedWindowViolations: 0,
+          totalLateSeconds: 0,
+          totalWaitSeconds: 0,
+          totalDistanceMeters: 0,
+          totalDistanceKm: 0,
+          totalDurationSeconds: 0,
+        },
+        algorithmVersion: "v2.1.0",
+      }),
+    } as Response);
+
+    await requestOptimizedRoute({
+      startAddress: "Start",
+      endAddress: "End",
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      destinations: [],
+      optimizationObjective: "time",
+    });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse(String(init.body))).toMatchObject({
+      optimizationObjective: "time",
     });
   });
 });

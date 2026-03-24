@@ -375,7 +375,11 @@ const addScores = (left: ProjectionScore, right: ProjectionScore): ProjectionSco
   totalTravelSeconds: left.totalTravelSeconds + right.totalTravelSeconds,
 });
 
-const compareScores = (left: ProjectionScore, right: ProjectionScore) => {
+const compareScores = (
+  left: ProjectionScore,
+  right: ProjectionScore,
+  objective: "time" | "distance",
+) => {
   if (left.fixedLateCount !== right.fixedLateCount) {
     return left.fixedLateCount - right.fixedLateCount;
   }
@@ -386,6 +390,14 @@ const compareScores = (left: ProjectionScore, right: ProjectionScore) => {
 
   if (left.totalLateSeconds !== right.totalLateSeconds) {
     return left.totalLateSeconds - right.totalLateSeconds;
+  }
+
+  if (objective === "time") {
+    return (
+      left.totalWaitSeconds +
+      left.totalTravelSeconds -
+      (right.totalWaitSeconds + right.totalTravelSeconds)
+    );
   }
 
   if (left.totalWaitSeconds !== right.totalWaitSeconds) {
@@ -585,6 +597,7 @@ const evaluateFutureBestScore = (
   fromTimeSeconds: number,
   depth: number,
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+  objective: "time" | "distance",
 ): ProjectionScore => {
   if (depth <= 0 || remainingVisits.length === 0) {
     return ZERO_SCORE;
@@ -601,7 +614,7 @@ const evaluateFutureBestScore = (
   });
 
   projectedCandidates.sort((left, right) => {
-    const scoreComparison = compareScores(left.immediateScore, right.immediateScore);
+    const scoreComparison = compareScores(left.immediateScore, right.immediateScore, objective);
     if (scoreComparison !== 0) {
       return scoreComparison;
     }
@@ -626,6 +639,7 @@ const evaluateFutureBestScore = (
       projection.serviceEndSeconds,
       depth - 1,
       resolveTravelSeconds,
+      objective,
     );
 
     return {
@@ -634,12 +648,16 @@ const evaluateFutureBestScore = (
     };
   });
 
-  futureCandidates.sort(compareVisitProjections);
+  futureCandidates.sort((left, right) => compareVisitProjections(left, right, objective));
   return futureCandidates[0]?.score ?? ZERO_SCORE;
 };
 
-const compareVisitProjections = (left: VisitProjection, right: VisitProjection) => {
-  const scoreComparison = compareScores(left.score, right.score);
+const compareVisitProjections = (
+  left: VisitProjection,
+  right: VisitProjection,
+  objective: "time" | "distance",
+) => {
+  const scoreComparison = compareScores(left.score, right.score, objective);
   if (scoreComparison !== 0) {
     return scoreComparison;
   }
@@ -674,8 +692,16 @@ type GapFillerCandidate = {
   gapUtilizationSeconds: number;
 };
 
-const compareGapFillerCandidates = (left: GapFillerCandidate, right: GapFillerCandidate) => {
-  const projectionScoreComparison = compareScores(left.projection.score, right.projection.score);
+const compareGapFillerCandidates = (
+  left: GapFillerCandidate,
+  right: GapFillerCandidate,
+  objective: "time" | "distance",
+) => {
+  const projectionScoreComparison = compareScores(
+    left.projection.score,
+    right.projection.score,
+    objective,
+  );
   if (projectionScoreComparison !== 0) {
     return projectionScoreComparison;
   }
@@ -700,6 +726,7 @@ const maybeSelectGapFiller = (
   projections: VisitProjection[],
   currentTimeSeconds: number,
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+  objective: "time" | "distance",
 ) => {
   if (selectedProjection.waitSeconds < IDLE_GAP_FILL_THRESHOLD_SECONDS) {
     return selectedProjection;
@@ -763,7 +790,7 @@ const maybeSelectGapFiller = (
     return selectedProjection;
   }
 
-  fillers.sort(compareGapFillerCandidates);
+  fillers.sort((left, right) => compareGapFillerCandidates(left, right, objective));
   return fillers[0]?.projection ?? selectedProjection;
 };
 
@@ -815,6 +842,7 @@ const orderVisitsByWindowDistanceAndDuration = (
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
   preserveOrder: boolean,
   lunchContext: LunchContext | undefined,
+  objective: "time" | "distance",
 ) => {
   if (preserveOrder) {
     const orderedVisits: VisitWithCoords[] = [];
@@ -926,6 +954,7 @@ const orderVisitsByWindowDistanceAndDuration = (
         projected.serviceEndSeconds,
         LOOKAHEAD_DEPTH - 1,
         resolveTravelSeconds,
+        objective,
       );
 
       return {
@@ -980,7 +1009,7 @@ const orderVisitsByWindowDistanceAndDuration = (
           : a.travelSeconds - b.travelSeconds,
       );
     } else {
-      primaryProjections.sort(compareVisitProjections);
+      primaryProjections.sort((left, right) => compareVisitProjections(left, right, objective));
     }
     const firstProjection = primaryProjections[0];
     if (!firstProjection) {
@@ -992,6 +1021,7 @@ const orderVisitsByWindowDistanceAndDuration = (
       projections,
       currentTimeSeconds,
       resolveTravelSeconds,
+      objective,
     );
     if (!selected) {
       throw new HttpError(500, "Unable to select next visit.");
@@ -1194,6 +1224,7 @@ export const optimizeRouteV2 = async (
       resolveTravelSeconds,
       request.preserveOrder === true,
       lunchContext,
+      request.optimizationObjective ?? "distance",
     );
   const plannedStops = groupVisitsIntoStops(orderedVisits, {
     address: request.end.address,
