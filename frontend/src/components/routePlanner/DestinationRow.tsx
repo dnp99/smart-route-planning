@@ -123,7 +123,7 @@ export const DestinationRow = ({
 
   return (
     <li
-      className={`rounded-xl border border-transparent px-2 py-1 text-sm text-slate-900 dark:border-transparent dark:text-slate-200 ${destination.isIncluded ? "" : "opacity-60"}`}
+      className={`flex min-h-14 flex-col justify-center rounded-xl border border-transparent px-2 py-2 text-sm text-slate-900 dark:border-transparent dark:text-slate-200 ${destination.isIncluded ? "" : "opacity-60"}`}
     >
       <div className="flex items-center gap-2">
         <span className={responsiveStyles.destinationIndex}>{index + 1}.</span>

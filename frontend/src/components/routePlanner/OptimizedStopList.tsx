@@ -108,9 +108,11 @@ export function OptimizedStopList({
                       className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
                       aria-hidden="true"
                     >
-                      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
-                      <line x1="7" y1="2" x2="7" y2="11" />
-                      <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+                      <path d="M3 11h18" />
+                      <path d="M3 7h18" />
+                      <path d="M3 15h18" />
+                      <path d="M5 19h14a2 2 0 0 0 2-2v-1H3v1a2 2 0 0 0 2 2z" />
+                      <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2" />
                     </svg>
                   ) : (
                     <svg
@@ -186,9 +188,11 @@ export function OptimizedStopList({
                                   className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
                                   aria-hidden="true"
                                 >
-                                  <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
-                                  <line x1="7" y1="2" x2="7" y2="11" />
-                                  <path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+                                  <path d="M3 11h18" />
+                                  <path d="M3 7h18" />
+                                  <path d="M3 15h18" />
+                                  <path d="M5 19h14a2 2 0 0 0 2-2v-1H3v1a2 2 0 0 0 2 2z" />
+                                  <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2" />
                                 </svg>
                               ) : (
                                 <svg
