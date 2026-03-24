@@ -180,7 +180,7 @@ export const responsiveStyles = {
   visitTypePillFlexible:
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200",
   countPill:
-    "rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700 dark:border-blue-900/70 dark:bg-blue-950/20 dark:text-blue-300 sm:text-sm",
+    "rounded-full bg-slate-200 px-3 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200 sm:text-sm",
 
   // ── Optimize CTA ──────────────────────────────────────────────────────────
   optimizeButton:

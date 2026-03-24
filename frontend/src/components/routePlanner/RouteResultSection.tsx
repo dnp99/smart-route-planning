@@ -152,9 +152,6 @@ export const RouteResultSection = ({
 
       {isMobileViewport && isReviewStepVisible && (
         <div className={responsiveStyles.stickyFooter}>
-          <span className={responsiveStyles.visitCountPill}>
-            {destinationCount} visit{destinationCount === 1 ? "" : "s"} queued
-          </span>
           <button
             type="submit"
             disabled={isLoading || !canOptimize || (!!result && !hasChangedSinceLastOptimize)}

@@ -226,29 +226,34 @@ export function OptimizedStopList({
                             </div>
                           </div>
                         )}
-                        <OptimizedStopCard
-                          task={task}
-                          stop={stop}
-                          stopLabel={String(taskLabels.get(task.visitId) ?? stopIndex + 1)}
-                          isStale={isStale}
-                          showMoveControls={taskIndex === 0}
-                          canMoveUp={
-                            taskIndex === 0 &&
-                            typeof canMoveStop === "function" &&
-                            canMoveStop(stop.stopId, "up")
-                          }
-                          canMoveDown={
-                            taskIndex === 0 &&
-                            typeof canMoveStop === "function" &&
-                            canMoveStop(stop.stopId, "down")
-                          }
-                          onMoveUp={() => onMoveStop?.(stop.stopId, "up")}
-                          onMoveDown={() => onMoveStop?.(stop.stopId, "down")}
-                          isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
-                          onToggle={() => onToggleResultTask(detailsKey)}
-                          workStart={workStart}
-                          workEnd={workEnd}
-                        />
+                        <div
+                          id={`stop-${task.visitId}`}
+                          className="rounded-2xl target:ring-2 target:ring-amber-400 target:ring-offset-2"
+                        >
+                          <OptimizedStopCard
+                            task={task}
+                            stop={stop}
+                            stopLabel={String(taskLabels.get(task.visitId) ?? stopIndex + 1)}
+                            isStale={isStale}
+                            showMoveControls={taskIndex === 0}
+                            canMoveUp={
+                              taskIndex === 0 &&
+                              typeof canMoveStop === "function" &&
+                              canMoveStop(stop.stopId, "up")
+                            }
+                            canMoveDown={
+                              taskIndex === 0 &&
+                              typeof canMoveStop === "function" &&
+                              canMoveStop(stop.stopId, "down")
+                            }
+                            onMoveUp={() => onMoveStop?.(stop.stopId, "up")}
+                            onMoveDown={() => onMoveStop?.(stop.stopId, "down")}
+                            isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
+                            onToggle={() => onToggleResultTask(detailsKey)}
+                            workStart={workStart}
+                            workEnd={workEnd}
+                          />
+                        </div>
                       </Fragment>
                     );
                   })}
