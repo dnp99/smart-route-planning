@@ -172,21 +172,43 @@ export const DestinationRow = ({
                 ? "No preferred window. Optimizer will auto-schedule unless you set one:"
                 : "Adjust planning window (plan-only unless saved):"}
             </p>
-            <div className="mt-1 grid grid-cols-1 gap-2 sm:grid-cols-2">
-              <input
-                type="time"
-                aria-label={`${destination.patientName} start`}
-                value={destination.windowStart}
-                onChange={(e) => onUpdateWindow("windowStart", e.target.value)}
-                className={responsiveStyles.timeInput}
-              />
-              <input
-                type="time"
-                aria-label={`${destination.patientName} end`}
-                value={destination.windowEnd}
-                onChange={(e) => onUpdateWindow("windowEnd", e.target.value)}
-                className={responsiveStyles.timeInput}
-              />
+            <div className="mt-1 flex items-center gap-2">
+              <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
+                <input
+                  type="time"
+                  aria-label={`${destination.patientName} start`}
+                  value={destination.windowStart}
+                  onChange={(e) => onUpdateWindow("windowStart", e.target.value)}
+                  className={responsiveStyles.timeInput}
+                />
+                <input
+                  type="time"
+                  aria-label={`${destination.patientName} end`}
+                  value={destination.windowEnd}
+                  onChange={(e) => onUpdateWindow("windowEnd", e.target.value)}
+                  className={responsiveStyles.timeInput}
+                />
+              </div>
+              {(destination.windowStart || destination.windowEnd) && (
+                <button
+                  type="button"
+                  aria-label="Clear window"
+                  onClick={() => {
+                    onUpdateWindow("windowStart", "");
+                    onUpdateWindow("windowEnd", "");
+                  }}
+                  className="shrink-0 rounded-lg p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path
+                      d="M2 2l10 10M12 2L2 12"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </button>
+              )}
             </div>
             <label className={responsiveStyles.visitWindowCheckboxLabel}>
               <input
