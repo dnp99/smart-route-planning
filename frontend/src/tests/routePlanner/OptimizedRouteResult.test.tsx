@@ -104,6 +104,11 @@ describe("OptimizedRouteResult", () => {
               patientId: "patient-4",
               message: "Second patient is also late.",
             },
+            {
+              type: "outside_working_hours",
+              overByMinutes: 480,
+              message: "Route extends 480 min past your working hours.",
+            },
           ],
           unscheduledTasks: [
             {
@@ -136,6 +141,7 @@ describe("OptimizedRouteResult", () => {
     expect(screen.getByText("Scheduling Conflict")).toBeTruthy();
     expect(screen.getByText("Lateness Warnings")).toBeTruthy();
     expect(screen.getByText("Two fixed windows overlap.")).toBeTruthy();
+    expect(screen.getByText("Route extends 8 hrs past your working hours.")).toBeTruthy();
     expect(screen.getByText("Route Map Mock")).toBeTruthy();
     expect(screen.getByText("Unscheduled Visits (1)")).toBeTruthy();
     expect(screen.getByText("Jamie Doe")).toBeTruthy();

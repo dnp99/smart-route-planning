@@ -3,7 +3,7 @@ import type { OptimizeRouteResponse } from "../types";
 import { responsiveStyles } from "../responsiveStyles";
 import RouteMap from "../RouteMap";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlannerUtils";
-import { expectedStartTimeFormatter } from "./routePlannerResultUtils";
+import { expectedStartTimeFormatter, formatVisitDurationMinutes } from "./routePlannerResultUtils";
 import { formatNameWords } from "../patients/patientName";
 import { OptimizedStopList } from "./OptimizedStopList";
 
@@ -19,6 +19,17 @@ const compactDisplayCopy = (value: string) =>
     .trim()
     .replace(/\s+/g, " ")
     .replace(/[A-Za-z]{18,}/g, (segment) => `${segment.slice(0, 12)}...`);
+
+const resolveWarningMessage = (warning: NonNullable<OptimizeRouteResponse["warnings"]>[number]) => {
+  if (warning.type === "outside_working_hours") {
+    const overByLabel = formatVisitDurationMinutes(warning.overByMinutes);
+    if (overByLabel) {
+      return `Route extends ${overByLabel} past your working hours.`;
+    }
+  }
+
+  return warning.message;
+};
 
 type OptimizedRouteResultProps = {
   result: OptimizeRouteResponse;
@@ -210,19 +221,22 @@ export function OptimizedRouteResult({
               {makeDismissButton(onDismissLatenessWarnings)}
             </div>
             <ul className="m-0 mt-2 space-y-2 pl-0">
-              {latenessWarnings.map((warning) => (
-                <li
-                  key={
-                    warning.type === "window_conflict"
-                      ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}`
-                      : `${warning.type}:${warning.patientId}`
-                  }
-                  className="list-none rounded-xl border border-red-200/80 bg-white/70 px-3 py-2 text-xs leading-5 text-red-900 shadow-sm dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-100"
-                  title={warning.message}
-                >
-                  {compactDisplayCopy(warning.message)}
-                </li>
-              ))}
+              {latenessWarnings.map((warning) => {
+                const warningMessage = resolveWarningMessage(warning);
+                return (
+                  <li
+                    key={
+                      warning.type === "window_conflict"
+                        ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}`
+                        : `${warning.type}:${warning.patientId}`
+                    }
+                    className="list-none rounded-xl border border-red-200/80 bg-white/70 px-3 py-2 text-xs leading-5 text-red-900 shadow-sm dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-100"
+                    title={warningMessage}
+                  >
+                    {compactDisplayCopy(warningMessage)}
+                  </li>
+                );
+              })}
             </ul>
           </div>
         )}
