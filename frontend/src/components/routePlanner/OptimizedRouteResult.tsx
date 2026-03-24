@@ -121,10 +121,36 @@ export function OptimizedRouteResult({
     () => result.warnings?.filter((w) => w.type !== "window_conflict") ?? [],
     [result.warnings],
   );
+
+  const { earlyVisitCount, afterHoursVisitCount } = useMemo(() => {
+    if (!workStart || !workEnd) return { earlyVisitCount: 0, afterHoursVisitCount: 0 };
+    const [wsH, wsM] = workStart.split(":").map(Number);
+    const [weH, weM] = workEnd.split(":").map(Number);
+    const workStartMin = wsH * 60 + wsM;
+    const workEndMin = weH * 60 + weM;
+    let early = 0;
+    let afterHours = 0;
+    displayedOrderedStops.forEach((stop) => {
+      stop.tasks.forEach((task) => {
+        const startMin =
+          new Date(task.serviceStartTime).getHours() * 60 +
+          new Date(task.serviceStartTime).getMinutes();
+        const endMin =
+          new Date(task.serviceEndTime).getHours() * 60 +
+          new Date(task.serviceEndTime).getMinutes();
+        if (startMin < workStartMin) early += 1;
+        else if (endMin > workEndMin) afterHours += 1;
+      });
+    });
+    return { earlyVisitCount: early, afterHoursVisitCount: afterHours };
+  }, [displayedOrderedStops, workStart, workEnd]);
+
   const issueCount =
     (conflictWarnings.length > 0 && !conflictWarningsDismissed ? 1 : 0) +
     (latenessWarnings.length > 0 && !latenessWarningsDismissed ? 1 : 0) +
-    (result.unscheduledTasks.length > 0 ? 1 : 0);
+    (result.unscheduledTasks.length > 0 ? 1 : 0) +
+    (earlyVisitCount > 0 ? 1 : 0) +
+    (afterHoursVisitCount > 0 ? 1 : 0);
 
   const warningsSection =
     result.warnings && result.warnings.length > 0 ? (
@@ -246,6 +272,17 @@ export function OptimizedRouteResult({
                       <li className="text-sm text-amber-800 dark:text-amber-200">
                         • {latenessWarnings.length} late{" "}
                         {latenessWarnings.length === 1 ? "visit" : "visits"}
+                      </li>
+                    )}
+                    {earlyVisitCount > 0 && (
+                      <li className="text-sm text-amber-800 dark:text-amber-200">
+                        • {earlyVisitCount} early {earlyVisitCount === 1 ? "visit" : "visits"}
+                      </li>
+                    )}
+                    {afterHoursVisitCount > 0 && (
+                      <li className="text-sm text-amber-800 dark:text-amber-200">
+                        • {afterHoursVisitCount} after-hours{" "}
+                        {afterHoursVisitCount === 1 ? "visit" : "visits"}
                       </li>
                     )}
                     {result.unscheduledTasks.length > 0 && (
