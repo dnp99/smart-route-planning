@@ -384,10 +384,11 @@ text-blue-600 font-medium underline underline-offset-2 cursor-pointer
 
       [Trip Setup panel]         ← responsiveStyles.panel (white card)
       [Patient Search panel]     ← responsiveStyles.panel
-      [Selected Destinations]    ← responsiveStyles.destinationList
+        [Patients label + count badge]  ← countPill: slate-200 bg, slate-700 text, font-bold
+        [Selected Destinations]  ← responsiveStyles.destinationList
+          [DestinationRow]       ← min-h-14 to align with two-line search results
 
       [Footer row]
-        [Visits queued pill]     ← neutral, muted
         [Optimize Route button]  ← bg-blue-600 primary
     </form>
 
@@ -481,7 +482,7 @@ These are **never** acceptable:
 | Optimize button | `optimizeButton` |
 | Google Maps button | `googleMapsButton` |
 | Destination list | `destinationList` |
-| Count/status pill | `countPill` |
+| Count/status pill (e.g. Patients badge) | `countPill` — `bg-slate-200 text-slate-700 font-bold rounded-full` |
 
 ---
 
@@ -568,11 +569,13 @@ dark:border-blue-900/50 dark:bg-blue-950/20
 
 **Layout:**
 ```
-[☕ icon]  Break · Xh Ym
-           HH:MM AM – HH:MM AM
+[icon]  Lunch · Xh Ym        ← sandwich icon when isLunch
+[icon]  Break · Xh Ym        ← coffee-cup icon otherwise
+        HH:MM AM – HH:MM AM
 ```
 
-- Icon: coffee-cup SVG, `h-4 w-4 text-blue-600`
+- Lunch icon: sandwich SVG (`h-4 w-4 text-blue-600`) — shown when `isLunch === true`
+- Break icon: coffee-cup SVG (`h-4 w-4 text-blue-600`) — shown otherwise
 - Duration label: `text-sm font-semibold text-blue-800`
 - Time range: `text-xs text-blue-700/90`
 - Prefix `~ ` when `isStale === true`
@@ -626,6 +629,44 @@ dark:bg-blue-950/20 dark:border-blue-900/50 dark:text-blue-300
 - Only used for transient system state (stale route, network status) — not for validation errors
 - Always contains exactly one primary action; secondary action is optional
 - Never used for empty states or errors (use §11 table states / inline error message instead)
+
+---
+
+### 9f. Issues Summary Banner
+
+Amber warning banner shown at the top of the route result when one or more issue types are present.
+
+```
+border border-amber-200 bg-amber-50/70 rounded-xl
+px-4 py-3
+dark:border-amber-900/70 dark:bg-amber-950/20
+```
+
+**Layout:**
+```
+[⚠ icon]  N issues found
+           • X scheduling conflicts
+           • X late visits
+           • X early visits
+           • X after-hours visits
+           • X unscheduled visits
+                                        [View details →]
+```
+
+- Issue count: `text-sm font-semibold text-amber-900`
+- Bullet lines: `text-sm text-amber-800`
+- "View details" link: `text-xs font-medium text-amber-700 underline underline-offset-2`
+
+**"View details" scroll target:**
+
+- When the only issues are early/after-hours visits → scrolls to `#stop-{firstAffectedVisitId}` in the timeline list; the target stop receives a CSS `:target` amber ring highlight (`ring-2 ring-amber-400 ring-offset-2`)
+- When conflicts, lateness warnings, or unscheduled visits are present → scrolls to `#route-alerts` where alert cards are rendered
+
+**Rules:**
+
+- Show only when `issueCount > 0`; hide entirely when all issues are resolved/dismissed
+- Each issue type contributes at most 1 to `issueCount` (group count, not individual items)
+- "View details" link is always present when the banner is visible — never omit it
 
 ---
 
