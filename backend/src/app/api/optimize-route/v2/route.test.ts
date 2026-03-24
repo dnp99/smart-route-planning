@@ -254,6 +254,7 @@ describe("optimize-route v2 route handler", () => {
             serviceDurationMinutes: 20,
           },
         ],
+        optimizationObjective: "distance",
       },
       "test-key",
     );
@@ -317,6 +318,7 @@ describe("optimize-route v2 route handler", () => {
             serviceDurationMinutes: 20,
           },
         ],
+        optimizationObjective: "distance",
       },
       "test-key",
     );

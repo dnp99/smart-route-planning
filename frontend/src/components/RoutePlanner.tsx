@@ -148,6 +148,9 @@ function RoutePlanner({
   >({});
   const [conflictWarningsDismissed, setConflictWarningsDismissed] = useState(false);
   const [latenessWarningsDismissed, setLatenessWarningsDismissed] = useState(false);
+  const [optimizationObjective, setOptimizationObjective] = useState<"time" | "distance">(
+    "distance",
+  );
   const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
     (initialDraft?.selectedDestinations?.length ?? 0) === 0,
   );
@@ -326,6 +329,7 @@ function RoutePlanner({
       destinations: optimizeDestinations,
       canOptimize,
       workingHours: nurseWorkingHours ?? null,
+      optimizationObjective,
     });
   };
 
@@ -388,6 +392,7 @@ function RoutePlanner({
       planningDate,
       preserveOrder: true,
       workingHours: nurseWorkingHours ?? null,
+      optimizationObjective,
     });
   };
 
@@ -505,6 +510,8 @@ function RoutePlanner({
               canOptimize={canOptimize}
               hasChangedSinceLastOptimize={hasChangedSinceLastOptimize}
               showOptimizeSuccess={showOptimizeSuccess}
+              optimizationObjective={optimizationObjective}
+              onSetOptimizationObjective={setOptimizationObjective}
             />
           </div>
 
