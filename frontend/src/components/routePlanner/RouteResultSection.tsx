@@ -41,6 +41,8 @@ type RouteResultSectionProps = {
   breakGapThresholdMinutes?: number;
   workStart?: string;
   workEnd?: string;
+  lunchStartTime?: string;
+  lunchDurationMinutes?: number;
 };
 
 export const RouteResultSection = ({
@@ -81,6 +83,8 @@ export const RouteResultSection = ({
   breakGapThresholdMinutes,
   workStart,
   workEnd,
+  lunchStartTime,
+  lunchDurationMinutes,
 }: RouteResultSectionProps) => {
   return (
     <>
@@ -198,6 +202,8 @@ export const RouteResultSection = ({
           breakGapThresholdMinutes={breakGapThresholdMinutes}
           workStart={workStart}
           workEnd={workEnd}
+          lunchStartTime={lunchStartTime}
+          lunchDurationMinutes={lunchDurationMinutes}
         />
       )}
     </>
