@@ -6,6 +6,7 @@ export type OptimizeRouteV2WindowType = "fixed" | "flexible";
 export type NurseWorkingHoursConstraint = {
   workStart: string; // HH:mm
   workEnd: string; // HH:mm
+  lunchStartTime?: string; // HH:mm
   lunchDurationMinutes?: number;
 };
 

@@ -144,6 +144,9 @@ export const resolveWorkingHoursForDate = (
   };
   if (daySchedule.lunchBreak?.enabled && daySchedule.lunchBreak.durationMinutes > 0) {
     constraint.lunchDurationMinutes = daySchedule.lunchBreak.durationMinutes;
+    if (daySchedule.lunchBreak.startTime) {
+      constraint.lunchStartTime = daySchedule.lunchBreak.startTime;
+    }
   }
 
   return { constraint, dayDisabled: false };

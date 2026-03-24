@@ -304,6 +304,14 @@ export default function AccountSettingsModal({
                           {day.lunchBreak?.enabled && (
                             <>
                               <input
+                                type="time"
+                                value={day.lunchBreak.startTime ?? "12:00"}
+                                onChange={(e) => updateLunch(key, { startTime: e.target.value })}
+                                disabled={scheduleControlsDisabled}
+                                aria-label={`${label} lunch start time`}
+                                className={responsiveStyles.scheduleEditorTimeInput}
+                              />
+                              <input
                                 type="number"
                                 min={1}
                                 step={1}

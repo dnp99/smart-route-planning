@@ -7,6 +7,7 @@ export type DaySchedule = {
   end: string; // HH:mm
   lunchBreak?: {
     enabled: boolean;
+    startTime: string; // HH:mm
     durationMinutes: number;
   };
 };

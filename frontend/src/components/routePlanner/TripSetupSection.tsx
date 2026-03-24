@@ -47,11 +47,17 @@ export const TripSetupSection = ({
     return (
       <section className={responsiveStyles.panel}>
         <div className="flex items-start justify-between gap-3 sm:items-center">
-          <p className="m-0 min-w-0 flex-1 text-sm text-slate-700 dark:text-slate-300">
+          <p className="m-0 min-w-0 flex-1 text-sm dark:text-slate-300">
             <span className="break-words">
-              {startAddress} <span className="text-slate-400">→</span> {resolvedEndAddress}
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {startAddress}
+              </span>{" "}
+              <span className="text-slate-400">→</span>{" "}
+              <span className="font-semibold text-slate-900 dark:text-slate-100">
+                {resolvedEndAddress}
+              </span>
             </span>{" "}
-            —{" "}
+            <span className="text-slate-400">—</span>{" "}
             <button
               type="button"
               onClick={() => onSetExpanded(true)}

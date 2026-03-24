@@ -23,7 +23,7 @@ const DEFAULT_DAY_SCHEDULE: DaySchedule = {
   enabled: false,
   start: "09:00",
   end: "17:00",
-  lunchBreak: { enabled: false, durationMinutes: 30 },
+  lunchBreak: { enabled: false, startTime: "12:00", durationMinutes: 30 },
 };
 
 export const buildDefaultSchedule = (
@@ -38,6 +38,7 @@ export const buildDefaultSchedule = (
       end: day?.end ?? DEFAULT_DAY_SCHEDULE.end,
       lunchBreak: {
         enabled: day?.lunchBreak?.enabled ?? false,
+        startTime: day?.lunchBreak?.startTime ?? "12:00",
         durationMinutes: day?.lunchBreak?.durationMinutes ?? 30,
       },
     };
@@ -239,6 +240,15 @@ export function useAccountSettings({
         if (dur >= endMin - startMin) {
           setScheduleError(`${label}: lunch break duration must be less than working day length.`);
           return;
+        }
+        const lunchStart = day.lunchBreak.startTime;
+        if (lunchStart) {
+          const lunchStartMin =
+            Number(lunchStart.split(":")[0]) * 60 + Number(lunchStart.split(":")[1]);
+          if (lunchStartMin < startMin || lunchStartMin + dur > endMin) {
+            setScheduleError(`${label}: lunch break must fall within working hours.`);
+            return;
+          }
         }
       }
     }

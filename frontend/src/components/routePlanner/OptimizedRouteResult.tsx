@@ -41,6 +41,8 @@ type OptimizedRouteResultProps = {
   onToggleResultEndingStop: (stopId: string) => void;
   normalizedHomeAddress: string;
   breakGapThresholdMinutes?: number;
+  workStart?: string;
+  workEnd?: string;
 };
 
 export function OptimizedRouteResult({
@@ -64,6 +66,8 @@ export function OptimizedRouteResult({
   onToggleResultEndingStop,
   normalizedHomeAddress,
   breakGapThresholdMinutes,
+  workStart,
+  workEnd,
 }: OptimizedRouteResultProps) {
   const displayedOrderedStops = orderedStops ?? result.orderedStops;
   const displayedRouteLegs = routeLegs ?? result.routeLegs;
@@ -105,77 +109,84 @@ export function OptimizedRouteResult({
     </button>
   );
 
+  const conflictWarnings = useMemo(
+    () => result.warnings?.filter((w) => w.type === "window_conflict") ?? [],
+    [result.warnings],
+  );
+  const latenessWarnings = useMemo(
+    () => result.warnings?.filter((w) => w.type !== "window_conflict") ?? [],
+    [result.warnings],
+  );
+  const issueCount =
+    (conflictWarnings.length > 0 && !conflictWarningsDismissed ? 1 : 0) +
+    (latenessWarnings.length > 0 && !latenessWarningsDismissed ? 1 : 0) +
+    (result.unscheduledTasks.length > 0 ? 1 : 0);
+
   const warningsSection =
-    result.warnings && result.warnings.length > 0
-      ? (() => {
-          const conflictWarnings = result.warnings.filter((w) => w.type === "window_conflict");
-          const latenessWarnings = result.warnings.filter((w) => w.type !== "window_conflict");
-          return (
-            <section className="mt-5 grid gap-3 lg:grid-cols-2">
-              {conflictWarnings.length > 0 && !conflictWarningsDismissed && (
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/30">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
-                        Exceptions
-                      </p>
-                      <p className="m-0 mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">
-                        Scheduling {conflictWarnings.length === 1 ? "Conflict" : "Conflicts"}
-                      </p>
-                    </div>
-                    {makeDismissButton(onDismissConflictWarnings)}
-                  </div>
-                  <ul className="m-0 mt-2 space-y-2 pl-0">
-                    {conflictWarnings.map((warning) => (
-                      <li
-                        key={
-                          warning.type === "window_conflict"
-                            ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}`
-                            : `${warning.type}:${warning.patientId}`
-                        }
-                        className="list-none rounded-xl border border-amber-200/80 bg-white/70 px-3 py-2 text-xs leading-5 text-amber-900 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100"
-                        title={warning.message}
-                      >
-                        {compactDisplayCopy(warning.message)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {latenessWarnings.length > 0 && !latenessWarningsDismissed && (
-                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 shadow-sm dark:border-red-900/70 dark:bg-red-950/30">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-red-700 dark:text-red-300">
-                        Timing risk
-                      </p>
-                      <p className="m-0 mt-1 text-sm font-semibold text-red-900 dark:text-red-100">
-                        Lateness {latenessWarnings.length === 1 ? "Warning" : "Warnings"}
-                      </p>
-                    </div>
-                    {makeDismissButton(onDismissLatenessWarnings)}
-                  </div>
-                  <ul className="m-0 mt-2 space-y-2 pl-0">
-                    {latenessWarnings.map((warning) => (
-                      <li
-                        key={
-                          warning.type === "window_conflict"
-                            ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}`
-                            : `${warning.type}:${warning.patientId}`
-                        }
-                        className="list-none rounded-xl border border-red-200/80 bg-white/70 px-3 py-2 text-xs leading-5 text-red-900 shadow-sm dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-100"
-                        title={warning.message}
-                      >
-                        {compactDisplayCopy(warning.message)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </section>
-          );
-        })()
-      : null;
+    result.warnings && result.warnings.length > 0 ? (
+      <section className="mt-5 grid gap-3 lg:grid-cols-2">
+        {conflictWarnings.length > 0 && !conflictWarningsDismissed && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/30">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+                  Exceptions
+                </p>
+                <p className="m-0 mt-1 text-sm font-semibold text-amber-900 dark:text-amber-100">
+                  Scheduling {conflictWarnings.length === 1 ? "Conflict" : "Conflicts"}
+                </p>
+              </div>
+              {makeDismissButton(onDismissConflictWarnings)}
+            </div>
+            <ul className="m-0 mt-2 space-y-2 pl-0">
+              {conflictWarnings.map((warning) => (
+                <li
+                  key={
+                    warning.type === "window_conflict"
+                      ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}`
+                      : `${warning.type}:${warning.patientId}`
+                  }
+                  className="list-none rounded-xl border border-amber-200/80 bg-white/70 px-3 py-2 text-xs leading-5 text-amber-900 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100"
+                  title={warning.message}
+                >
+                  {compactDisplayCopy(warning.message)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+        {latenessWarnings.length > 0 && !latenessWarningsDismissed && (
+          <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 shadow-sm dark:border-red-900/70 dark:bg-red-950/30">
+            <div className="flex items-start justify-between gap-2">
+              <div>
+                <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-red-700 dark:text-red-300">
+                  Timing risk
+                </p>
+                <p className="m-0 mt-1 text-sm font-semibold text-red-900 dark:text-red-100">
+                  Lateness {latenessWarnings.length === 1 ? "Warning" : "Warnings"}
+                </p>
+              </div>
+              {makeDismissButton(onDismissLatenessWarnings)}
+            </div>
+            <ul className="m-0 mt-2 space-y-2 pl-0">
+              {latenessWarnings.map((warning) => (
+                <li
+                  key={
+                    warning.type === "window_conflict"
+                      ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}`
+                      : `${warning.type}:${warning.patientId}`
+                  }
+                  className="list-none rounded-xl border border-red-200/80 bg-white/70 px-3 py-2 text-xs leading-5 text-red-900 shadow-sm dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-100"
+                  title={warning.message}
+                >
+                  {compactDisplayCopy(warning.message)}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+    ) : null;
 
   return (
     <section className="mt-6 border-t border-slate-200 pt-6 dark:border-slate-800">
@@ -195,6 +206,61 @@ export function OptimizedRouteResult({
               </p>
             </div>
           </div>
+
+          {issueCount > 0 && (
+            <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 dark:border-amber-900/70 dark:bg-amber-950/20">
+              <div className="flex items-start gap-2">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="mt-[2px] shrink-0 text-amber-600 dark:text-amber-400"
+                >
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+                <div>
+                  <p className="m-0 text-sm font-semibold text-amber-900 dark:text-amber-100">
+                    {issueCount} {issueCount === 1 ? "issue" : "issues"} found
+                  </p>
+                  <ul className="m-0 mt-1 list-none space-y-0.5 p-0">
+                    {conflictWarnings.length > 0 && !conflictWarningsDismissed && (
+                      <li className="text-sm text-amber-800 dark:text-amber-200">
+                        • {conflictWarnings.length} scheduling{" "}
+                        {conflictWarnings.length === 1 ? "conflict" : "conflicts"}
+                      </li>
+                    )}
+                    {latenessWarnings.length > 0 && !latenessWarningsDismissed && (
+                      <li className="text-sm text-amber-800 dark:text-amber-200">
+                        • {latenessWarnings.length} late{" "}
+                        {latenessWarnings.length === 1 ? "visit" : "visits"}
+                      </li>
+                    )}
+                    {result.unscheduledTasks.length > 0 && (
+                      <li className="text-sm text-amber-800 dark:text-amber-200">
+                        • {result.unscheduledTasks.length} unscheduled{" "}
+                        {result.unscheduledTasks.length === 1 ? "visit" : "visits"}
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              </div>
+              <a
+                href="#route-alerts"
+                className="mt-0.5 shrink-0 text-xs font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200"
+              >
+                View details
+              </a>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
             <div className={responsiveStyles.resultStatCard}>
@@ -326,6 +392,8 @@ export function OptimizedRouteResult({
                   onToggleResultEndingStop={onToggleResultEndingStop}
                   normalizedHomeAddress={normalizedHomeAddress}
                   breakGapThresholdMinutes={breakGapThresholdMinutes}
+                  workStart={workStart}
+                  workEnd={workEnd}
                 />
               </>
             ) : (
@@ -400,44 +468,46 @@ export function OptimizedRouteResult({
         </div>
       </div>
 
-      {warningsSection}
+      <div id="route-alerts">
+        {warningsSection}
 
-      {result.unscheduledTasks.length > 0 && (
-        <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/20">
-          <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
-            Exceptions
-          </p>
-          <h3 className="m-0 mt-1 text-sm font-semibold text-amber-900 dark:text-amber-200">
-            Unscheduled Visits ({result.unscheduledTasks.length})
-          </h3>
-          <p className="mb-2 mt-1 text-xs text-amber-800 dark:text-amber-300">
-            These visits could not be placed in the optimized route.
-          </p>
-          <ul className="m-0 space-y-2 pl-4 sm:pl-5">
-            {result.unscheduledTasks.map((task) => (
-              <li key={task.visitId} className="text-sm text-amber-900 dark:text-amber-200">
-                <p className="m-0 font-medium">
-                  {task.patientName
-                    ? compactDisplayCopy(formatNameWords(task.patientName))
-                    : task.patientId}
-                </p>
-                {task.address && (
-                  <p className="m-0 text-xs text-amber-800 dark:text-amber-300">{task.address}</p>
-                )}
-                {task.windowStart && task.windowEnd && (
-                  <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
-                    {task.windowStart} - {task.windowEnd}
-                    {task.windowType ? ` • ${task.windowType}` : ""}
+        {result.unscheduledTasks.length > 0 && (
+          <section className="mt-5 rounded-2xl border border-amber-200 bg-amber-50/70 p-4 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/20">
+            <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-amber-700 dark:text-amber-300">
+              Exceptions
+            </p>
+            <h3 className="m-0 mt-1 text-sm font-semibold text-amber-900 dark:text-amber-200">
+              Unscheduled Visits ({result.unscheduledTasks.length})
+            </h3>
+            <p className="mb-2 mt-1 text-xs text-amber-800 dark:text-amber-300">
+              These visits could not be placed in the optimized route.
+            </p>
+            <ul className="m-0 space-y-2 pl-4 sm:pl-5">
+              {result.unscheduledTasks.map((task) => (
+                <li key={task.visitId} className="text-sm text-amber-900 dark:text-amber-200">
+                  <p className="m-0 font-medium">
+                    {task.patientName
+                      ? compactDisplayCopy(formatNameWords(task.patientName))
+                      : task.patientId}
                   </p>
-                )}
-                <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
-                  Reason: {unscheduledReasonLabels[task.reason]}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+                  {task.address && (
+                    <p className="m-0 text-xs text-amber-800 dark:text-amber-300">{task.address}</p>
+                  )}
+                  {task.windowStart && task.windowEnd && (
+                    <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
+                      {task.windowStart} - {task.windowEnd}
+                      {task.windowType ? ` • ${task.windowType}` : ""}
+                    </p>
+                  )}
+                  <p className="m-0 text-xs text-amber-800 dark:text-amber-300">
+                    Reason: {unscheduledReasonLabels[task.reason]}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+      </div>
     </section>
   );
 }

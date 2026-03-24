@@ -39,6 +39,8 @@ type RouteResultSectionProps = {
   onToggleResultEndingStop: (stopId: string) => void;
   normalizedHomeAddress: string;
   breakGapThresholdMinutes?: number;
+  workStart?: string;
+  workEnd?: string;
 };
 
 export const RouteResultSection = ({
@@ -77,6 +79,8 @@ export const RouteResultSection = ({
   onToggleResultEndingStop,
   normalizedHomeAddress,
   breakGapThresholdMinutes,
+  workStart,
+  workEnd,
 }: RouteResultSectionProps) => {
   return (
     <>
@@ -142,10 +146,8 @@ export const RouteResultSection = ({
         </section>
       )}
 
-      {isReviewStepVisible && (
-        <div
-          className={`${responsiveStyles.footerRow} ${isMobileViewport ? responsiveStyles.stickyFooter : ""}`}
-        >
+      {isMobileViewport && isReviewStepVisible && (
+        <div className={responsiveStyles.stickyFooter}>
           <span className={responsiveStyles.visitCountPill}>
             {destinationCount} visit{destinationCount === 1 ? "" : "s"} queued
           </span>
@@ -194,6 +196,8 @@ export const RouteResultSection = ({
           onToggleResultEndingStop={onToggleResultEndingStop}
           normalizedHomeAddress={normalizedHomeAddress}
           breakGapThresholdMinutes={breakGapThresholdMinutes}
+          workStart={workStart}
+          workEnd={workEnd}
         />
       )}
     </>

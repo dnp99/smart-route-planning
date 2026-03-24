@@ -804,7 +804,7 @@ describe("RoutePlanner patient selection integration", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Remove John Smith/i }));
 
-    expect(screen.getByText("0 visits queued")).toBeTruthy();
+    expect(screen.queryByText("1 visit queued")).toBeNull();
     expect(screen.getByText("No patients selected yet.")).toBeTruthy();
   });
 

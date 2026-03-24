@@ -108,7 +108,11 @@ const validateWorkingHours = (value: unknown): WeeklyWorkingHours | null => {
           `workingHours.${day}.lunchBreak.durationMinutes must be less than working day length.`,
         );
       }
-      daySchedule.lunchBreak = { enabled: lb.enabled, durationMinutes: lb.durationMinutes };
+      daySchedule.lunchBreak = {
+        enabled: lb.enabled,
+        startTime: typeof lb.startTime === "string" ? lb.startTime : "12:00",
+        durationMinutes: lb.durationMinutes,
+      };
     }
 
     result[day] = daySchedule;
