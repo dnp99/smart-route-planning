@@ -20,7 +20,7 @@ import {
   type TravelMatrixNode,
 } from "./travelMatrix";
 
-const ALGORITHM_VERSION = "v2.5.1-edf-tier";
+const ALGORITHM_VERSION = "v2.5.2-edf-tier";
 const FIXED_LATE_TOLERANCE_SECONDS = 15 * 60;
 const FLEXIBLE_LATE_TOLERANCE_SECONDS = 60 * 60;
 const FLEXIBLE_URGENCY_THRESHOLD_SECONDS = 90 * 60;
@@ -704,6 +704,24 @@ const compareGapFillerCandidates = (
   );
   if (projectionScoreComparison !== 0) {
     return projectionScoreComparison;
+  }
+
+  // When scores tie, prefer urgent candidates (window closing soon) before optimising
+  // for gap efficiency — otherwise a no-window patient can displace a visit whose
+  // deadline expires before the fixed anchor's window opens.
+  const leftUrgent =
+    left.projection.visit.hasPreferredWindow &&
+    left.projection.slackSeconds < FLEXIBLE_URGENCY_THRESHOLD_SECONDS;
+  const rightUrgent =
+    right.projection.visit.hasPreferredWindow &&
+    right.projection.slackSeconds < FLEXIBLE_URGENCY_THRESHOLD_SECONDS;
+  if (leftUrgent !== rightUrgent) {
+    return leftUrgent ? -1 : 1;
+  }
+  if (leftUrgent && rightUrgent) {
+    if (left.projection.slackSeconds !== right.projection.slackSeconds) {
+      return left.projection.slackSeconds - right.projection.slackSeconds;
+    }
   }
 
   if (left.gapUtilizationSeconds !== right.gapUtilizationSeconds) {
