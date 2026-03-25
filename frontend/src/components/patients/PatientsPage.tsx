@@ -4,7 +4,7 @@ import type { AddressSuggestion } from "../types";
 import { responsiveStyles } from "../responsiveStyles";
 import ConfirmDialog from "../modals/ConfirmDialog";
 import type { Patient, VisitTimeType } from "../../../../shared/contracts";
-import { PatientFormModal } from "./PatientFormModal";
+import { PatientFormModal } from "../modals/PatientFormModal";
 import { PatientsTable } from "./PatientsTable";
 import {
   EMPTY_FORM,

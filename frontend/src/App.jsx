@@ -18,7 +18,7 @@ import PatientsPage from "./components/patients/PatientsPage";
 import { responsiveStyles } from "./components/responsiveStyles";
 import AppHeader from "./components/layout/AppHeader";
 import AppFooter from "./components/layout/AppFooter";
-import AccountSettingsModal from "./components/layout/AccountSettingsModal";
+import AccountSettingsModal from "./components/modals/AccountSettingsModal";
 import ScrollToTopButton from "./components/layout/ScrollToTopButton";
 
 const resolveTabClassName = ({ isActive }) =>
@@ -51,15 +51,30 @@ function App() {
     if (!authToken) return;
     let active = true;
     void fetchMe(authToken)
-      .then((result) => { if (active) { setAuthUser(result.user); setIsAuthResolved(true); } })
-      .catch(() => { if (active) { clearAuthSession(); setAuthToken(null); setAuthUser(null); setIsAuthResolved(true); } });
-    return () => { active = false; };
+      .then((result) => {
+        if (active) {
+          setAuthUser(result.user);
+          setIsAuthResolved(true);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          clearAuthSession();
+          setAuthToken(null);
+          setAuthUser(null);
+          setIsAuthResolved(true);
+        }
+      });
+    return () => {
+      active = false;
+    };
   }, [authToken]);
 
   const optimizationObjective = authUser?.optimizationObjective ?? "distance";
   const isAuthenticated = Boolean(authToken);
   const defaultProtectedPath = "/patients";
-  const renderProtectedRoute = (element) => isAuthenticated ? element : <Navigate to="/login" replace />;
+  const renderProtectedRoute = (element) =>
+    isAuthenticated ? element : <Navigate to="/login" replace />;
 
   if (!isAuthResolved) {
     return (
@@ -86,7 +101,22 @@ function App() {
             <NavLink to="/patients" aria-label="Patients" className={resolveTabClassName}>
               {({ isActive }) => (
                 <>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={["h-4 w-4 shrink-0", isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500"].join(" ")}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className={[
+                      "h-4 w-4 shrink-0",
+                      isActive
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
+                    ].join(" ")}
+                  >
                     <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" />
                     <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
                     <circle cx="20" cy="10" r="2" />
@@ -98,7 +128,22 @@ function App() {
             <NavLink to="/route-planner" aria-label="Route Planner" className={resolveTabClassName}>
               {({ isActive }) => (
                 <>
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={["h-4 w-4 shrink-0", isActive ? "text-blue-600 dark:text-blue-400" : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500"].join(" ")}>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className={[
+                      "h-4 w-4 shrink-0",
+                      isActive
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
+                    ].join(" ")}
+                  >
                     <circle cx="3" cy="6" r="2" />
                     <circle cx="21" cy="6" r="2" />
                     <circle cx="12" cy="18" r="2" />
@@ -113,7 +158,12 @@ function App() {
           </nav>
         )}
         <Routes>
-          <Route path="/login" element={isAuthenticated ? <Navigate to={defaultProtectedPath} replace /> : <LoginPage />} />
+          <Route
+            path="/login"
+            element={
+              isAuthenticated ? <Navigate to={defaultProtectedPath} replace /> : <LoginPage />
+            }
+          />
           <Route path="/patients" element={renderProtectedRoute(<PatientsPage />)} />
           <Route
             path="/route-planner"
@@ -131,8 +181,14 @@ function App() {
           <Route path="/legal/privacy" element={<PrivacyPage />} />
           <Route path="/legal/license" element={<LicensePage />} />
           <Route path="/legal/trademark" element={<TrademarkPage />} />
-          <Route path="/" element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />} />
-          <Route path="*" element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />} />
+          <Route
+            path="/"
+            element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
+          />
+          <Route
+            path="*"
+            element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
+          />
         </Routes>
       </div>
 

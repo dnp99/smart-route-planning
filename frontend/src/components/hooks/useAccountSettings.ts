@@ -98,6 +98,9 @@ export function useAccountSettings({
   const [scheduleInput, setScheduleInput] = useState<WeeklyWorkingHours>(() =>
     buildDefaultSchedule(null),
   );
+  const [breakGapEnabled, setBreakGapEnabled] = useState<boolean>(
+    authUser?.breakGapThresholdMinutes != null,
+  );
   const [breakGapInput, setBreakGapInput] = useState<string>(String(DEFAULT_BREAK_GAP_THRESHOLD));
   const [scheduleError, setScheduleError] = useState("");
   const [scheduleSuccess, setScheduleSuccess] = useState("");
@@ -121,6 +124,7 @@ export function useAccountSettings({
     setShowNewPassword(false);
     setShowConfirmPassword(false);
     setScheduleInput(buildDefaultSchedule(authUser?.workingHours));
+    setBreakGapEnabled(authUser?.breakGapThresholdMinutes != null);
     setBreakGapInput(String(authUser?.breakGapThresholdMinutes ?? DEFAULT_BREAK_GAP_THRESHOLD));
     setScheduleError("");
     setScheduleSuccess("");
@@ -265,8 +269,11 @@ export function useAccountSettings({
       }
     }
 
-    const parsedBreakGap = parseInt(breakGapInput, 10);
-    if (isNaN(parsedBreakGap) || parsedBreakGap < 1) {
+    const parsedBreakGap = breakGapEnabled ? parseInt(breakGapInput, 10) : null;
+    if (
+      breakGapEnabled &&
+      (parsedBreakGap === null || isNaN(parsedBreakGap) || parsedBreakGap < 1)
+    ) {
       setScheduleError("Break card threshold must be a positive number.");
       return;
     }
@@ -360,6 +367,8 @@ export function useAccountSettings({
     handlePasswordUpdateSubmit,
     // Schedule
     scheduleInput,
+    breakGapEnabled,
+    setBreakGapEnabled,
     breakGapInput,
     setBreakGapInput,
     scheduleError,

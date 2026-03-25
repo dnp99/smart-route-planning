@@ -84,6 +84,7 @@ describe("OptimizedStopList", () => {
     render(
       <OptimizedStopList
         orderedStops={stops}
+        breakGapThresholdMinutes={30}
         expandedResultTaskIds={{ "visit-1": true }}
         onToggleResultTask={onToggleTask}
         expandedResultEndingStopIds={{ "ending:stop-4": true }}
@@ -132,6 +133,7 @@ describe("OptimizedStopList", () => {
     render(
       <OptimizedStopList
         orderedStops={stops}
+        breakGapThresholdMinutes={30}
         expandedResultTaskIds={{}}
         onToggleResultTask={() => undefined}
         expandedResultEndingStopIds={{}}
@@ -178,6 +180,7 @@ describe("OptimizedStopList", () => {
     render(
       <OptimizedStopList
         orderedStops={stops}
+        breakGapThresholdMinutes={30}
         expandedResultTaskIds={{}}
         onToggleResultTask={() => undefined}
         expandedResultEndingStopIds={{}}
@@ -216,6 +219,7 @@ describe("OptimizedStopList", () => {
     render(
       <OptimizedStopList
         orderedStops={stops}
+        breakGapThresholdMinutes={30}
         expandedResultTaskIds={{}}
         onToggleResultTask={() => undefined}
         expandedResultEndingStopIds={{}}
@@ -225,5 +229,44 @@ describe("OptimizedStopList", () => {
     );
 
     expect(screen.getByText(/Break · 30m/)).toBeTruthy();
+  });
+
+  it("does not render break cards when break reminders are disabled", () => {
+    const stops: OrderedStop[] = [
+      buildStop({
+        stopId: "stop-disabled-a",
+        departureTime: "2026-03-20T09:00:00-04:00",
+      }),
+      buildStop({
+        stopId: "stop-disabled-b",
+        address: "20 Second Avenue",
+        arrivalTime: "2026-03-20T11:15:00-04:00",
+        departureTime: "2026-03-20T11:45:00-04:00",
+        durationFromPreviousSeconds: 900,
+        tasks: [
+          buildTask({
+            visitId: "visit-disabled",
+            patientName: "jamie doe",
+            address: "20 Second Avenue",
+            serviceStartTime: "2026-03-20T11:30:00-04:00",
+            serviceEndTime: "2026-03-20T12:00:00-04:00",
+          }),
+        ],
+      }),
+    ];
+
+    render(
+      <OptimizedStopList
+        orderedStops={stops}
+        breakGapThresholdMinutes={null}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+      />,
+    );
+
+    expect(screen.queryByText(/Break ·/)).toBeNull();
   });
 });
