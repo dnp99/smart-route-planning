@@ -6,7 +6,7 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 
 - Requires authenticated access for patient and route-planner workflows.
 - Manages patient records and visit windows.
-- Optimizes daily visits with time windows, travel distance/time, and visit duration.
+- Optimizes daily visits with time windows, travel distance/time, and visit duration; planning date defaults to tomorrow and is configurable per session.
 - Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
 - Persists the optimized route result in sessionStorage so tab switches don't lose the result.

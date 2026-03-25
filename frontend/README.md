@@ -7,7 +7,7 @@ This folder contains the Vite + React frontend for CareFlow.
 - Collect starting point, ending point, and intermediate destinations.
 - Require login before allowing access to patient and route-planner pages.
 - Fetch Google Places-backed address suggestions from the backend autocomplete endpoint.
-- Submit route optimization requests to the backend with a selectable optimization objective (`"distance"` or `"time"`).
+- Submit route optimization requests to the backend with a selectable optimization objective (`"distance"` or `"time"`) and a configurable planning date (defaults to tomorrow).
 - Render the optimized route with Leaflet.
 - Support manual stop reordering with recalculated ETA flow.
 - Persist optimization result in sessionStorage across tab switches; clear on auth change.

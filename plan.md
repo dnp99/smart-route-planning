@@ -10,6 +10,34 @@ This root file exists to preserve the repository convention that `plan.md` is up
 
 ## Change History
 
+### Added configurable planning date to Route Planner — defaults to tomorrow, persists in draft, drives working-hours resolution for the selected day
+
+#### Files
+
+- Updated:
+  - `frontend/src/components/RoutePlanner.tsx`
+  - `frontend/src/components/responsiveStyles.ts`
+  - `frontend/src/components/routePlanner/TripSetupSection.tsx`
+  - `frontend/src/components/routePlanner/routePlannerDraft.ts`
+  - `frontend/src/tests/routePlanner/RoutePlanner.patientSelection.test.tsx`
+  - `docs/design-system.md`
+  - `README.md`
+  - `frontend/README.md`
+  - `plan.md`
+
+#### Why
+
+- Nurses plan for the next day but the planner always sent today's date, causing the wrong weekday's working hours to be applied.
+- A `<input type="date">` in Trip Setup lets the nurse pick any date; the default is tomorrow.
+- In the collapsed panel state the date input stays visible and editable (to the left of the chevron) so the nurse never has to expand the panel just to change the date.
+- The selected date is persisted in the localStorage draft and included in the "changed since last optimize" snapshot so stale-result detection works correctly.
+
+#### Verification
+
+- Frontend:
+  - `npm run lint` ✅
+  - `npm run test` ✅ (157 tests pass)
+
 ### Route Planner UX overhaul and component refactor — merged patient panels, collapsible cards, patient info modal, DestinationRow extraction, child component split, hooks moved to `components/hooks/`.
 
 #### Files
