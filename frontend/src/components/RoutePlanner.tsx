@@ -570,6 +570,7 @@ function RoutePlanner({
             workEnd={activeWorkingHoursConstraint?.workEnd}
             lunchStartTime={activeWorkingHoursConstraint?.lunchStartTime}
             lunchDurationMinutes={activeWorkingHoursConstraint?.lunchDurationMinutes}
+            planningDate={planningDate}
           />
         </form>
       </section>

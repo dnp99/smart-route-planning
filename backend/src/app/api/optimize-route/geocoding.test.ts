@@ -128,7 +128,6 @@ describe("geocoding helpers", () => {
         body: JSON.stringify({
           textQuery: "6625 snow goose lane",
           regionCode: "CA",
-          includedRegionCodes: ["CA"],
         }),
         cache: "no-store",
         signal: expect.any(AbortSignal),
@@ -302,6 +301,101 @@ describe("geocoding helpers", () => {
     const assertion = expect(promise).rejects.toMatchObject({
       status: 503,
       message: "Geocoding service is currently unavailable.",
+    });
+
+    await vi.advanceTimersByTimeAsync(8000);
+    await assertion;
+  });
+
+  it("falls back to text search when place details returns 429", async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, status: 429 } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          places: [{ location: { latitude: 43.6, longitude: -79.4 } }],
+        }),
+      } as Response);
+
+    const result = await geocodeTargetsSequentially(
+      [{ address: "Address A", googlePlaceId: "place-429" }],
+      "google-key",
+    );
+
+    expect(result).toEqual([{ address: "Address A", coords: { lat: 43.6, lon: -79.4 } }]);
+  });
+
+  it("falls back to text search when place details returns unexpected error", async () => {
+    fetchMock
+      .mockResolvedValueOnce({ ok: false, status: 500 } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          places: [{ location: { latitude: 43.7, longitude: -79.5 } }],
+        }),
+      } as Response);
+
+    const result = await geocodeTargetsSequentially(
+      [{ address: "Address B", googlePlaceId: "place-500" }],
+      "google-key",
+    );
+
+    expect(result).toEqual([{ address: "Address B", coords: { lat: 43.7, lon: -79.5 } }]);
+  });
+
+  it("falls back to text search when place details response has no location field", async () => {
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({}),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          places: [{ location: { latitude: 43.8, longitude: -79.6 } }],
+        }),
+      } as Response);
+
+    const result = await geocodeTargetsSequentially(
+      [{ address: "Address C", googlePlaceId: "place-noloc" }],
+      "google-key",
+    );
+
+    expect(result).toEqual([{ address: "Address C", coords: { lat: 43.8, lon: -79.6 } }]);
+  });
+
+  it("aborts timed-out Google text search requests", async () => {
+    vi.useFakeTimers();
+    fetchMock
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      } as Response)
+      .mockImplementationOnce((_, init?: RequestInit) => {
+        const signal = init?.signal;
+        return new Promise((_, reject) => {
+          signal?.addEventListener("abort", () => {
+            reject(new Error("aborted"));
+          });
+        });
+      });
+
+    const promise = geocodeTargetsSequentially([{ address: "Address D" }], "google-key");
+    const assertion = expect(promise).rejects.toMatchObject({
+      status: 503,
+      message: "Place lookup service is currently unavailable.",
     });
 
     await vi.advanceTimersByTimeAsync(8000);

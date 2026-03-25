@@ -43,6 +43,7 @@ type RouteResultSectionProps = {
   workEnd?: string;
   lunchStartTime?: string;
   lunchDurationMinutes?: number;
+  planningDate: string;
 };
 
 export const RouteResultSection = ({
@@ -85,6 +86,7 @@ export const RouteResultSection = ({
   workEnd,
   lunchStartTime,
   lunchDurationMinutes,
+  planningDate,
 }: RouteResultSectionProps) => {
   return (
     <>
@@ -201,6 +203,7 @@ export const RouteResultSection = ({
           workEnd={workEnd}
           lunchStartTime={lunchStartTime}
           lunchDurationMinutes={lunchDurationMinutes}
+          planningDate={planningDate}
         />
       )}
     </>
