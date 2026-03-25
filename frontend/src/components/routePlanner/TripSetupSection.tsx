@@ -20,6 +20,8 @@ type TripSetupSectionProps = {
   onStartBlur: () => void;
   onEndBlur: () => void;
   onOpenAccountSettings?: () => void;
+  planningDate: string;
+  onPlanningDateChange: (date: string) => void;
 };
 
 export const TripSetupSection = ({
@@ -40,13 +42,15 @@ export const TripSetupSection = ({
   onStartBlur,
   onEndBlur,
   onOpenAccountSettings,
+  planningDate,
+  onPlanningDateChange,
 }: TripSetupSectionProps) => {
   if (!isVisible) return null;
 
   if (!isExpanded && !isMobileViewport) {
     return (
       <section className={responsiveStyles.panel}>
-        <div className="flex items-start justify-between gap-3 sm:items-center">
+        <div className="flex items-center gap-3">
           <p className="m-0 min-w-0 flex-1 text-sm dark:text-slate-300">
             <span className="break-words">
               <span className="font-semibold text-slate-900 dark:text-slate-100">
@@ -66,6 +70,15 @@ export const TripSetupSection = ({
               Edit
             </button>
           </p>
+          <input
+            id="planningDate"
+            type="date"
+            value={planningDate}
+            onChange={(e) => onPlanningDateChange(e.target.value)}
+            className={`${responsiveStyles.dateInput} w-auto shrink-0`}
+            aria-label="Planning date"
+            required
+          />
           <button
             type="button"
             aria-label="Expand trip setup"
@@ -172,6 +185,22 @@ export const TripSetupSection = ({
           errorText={endFieldError}
           required
         />
+        <div className="grid gap-1">
+          <label
+            htmlFor="planningDate"
+            className="text-sm font-semibold text-slate-800 dark:text-slate-200"
+          >
+            Planning date
+          </label>
+          <input
+            id="planningDate"
+            type="date"
+            value={planningDate}
+            onChange={(e) => onPlanningDateChange(e.target.value)}
+            className={responsiveStyles.dateInput}
+            required
+          />
+        </div>
       </div>
     </section>
   );

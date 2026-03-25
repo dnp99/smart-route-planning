@@ -12,6 +12,7 @@ export type RoutePlannerDraft = {
   manualEndGooglePlaceId: string | null;
   activeMobileStep: MobilePlannerStep;
   selectedDestinations: SelectedPatientDestination[];
+  planningDate?: string;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -112,6 +113,7 @@ export const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
       manualEndGooglePlaceId: parsed.manualEndGooglePlaceId,
       activeMobileStep: parsed.activeMobileStep,
       selectedDestinations,
+      ...(typeof parsed.planningDate === "string" ? { planningDate: parsed.planningDate } : {}),
     };
   } catch {
     return null;

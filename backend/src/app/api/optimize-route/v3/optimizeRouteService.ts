@@ -401,6 +401,7 @@ const compareScores = (
   }
 
   if (objective === "time") {
+    // Finish sooner: minimize total elapsed time (wait + travel combined)
     return (
       left.totalWaitSeconds +
       left.totalTravelSeconds -
@@ -408,11 +409,12 @@ const compareScores = (
     );
   }
 
-  if (left.totalWaitSeconds !== right.totalWaitSeconds) {
-    return left.totalWaitSeconds - right.totalWaitSeconds;
+  // Less driving: minimize travel first, accept more wait in exchange for fewer km
+  if (left.totalTravelSeconds !== right.totalTravelSeconds) {
+    return left.totalTravelSeconds - right.totalTravelSeconds;
   }
 
-  return left.totalTravelSeconds - right.totalTravelSeconds;
+  return left.totalWaitSeconds - right.totalWaitSeconds;
 };
 
 const compareFixedLateness = (left: ProjectionScore, right: ProjectionScore) => {
@@ -1214,8 +1216,8 @@ const buildPenalty = (
   const objectiveSeconds =
     objective === "time"
       ? evaluation.score.totalWaitSeconds + evaluation.score.totalTravelSeconds
-      : evaluation.score.totalWaitSeconds * PLANNING_DAY_END_SECONDS +
-        evaluation.score.totalTravelSeconds;
+      : evaluation.score.totalTravelSeconds * PLANNING_DAY_END_SECONDS +
+        evaluation.score.totalWaitSeconds;
 
   return (
     evaluation.score.fixedLateCount * 1_000_000_000_000 +

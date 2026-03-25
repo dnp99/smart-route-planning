@@ -30,6 +30,15 @@ import { RouteResultSection } from "./routePlanner/RouteResultSection";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 
+const defaultPlanningDate = (): string => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const year = tomorrow.getFullYear();
+  const month = String(tomorrow.getMonth() + 1).padStart(2, "0");
+  const day = String(tomorrow.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 type RoutePlannerProps = {
   nurseHomeAddress?: string | null;
   nurseWorkingHours?: WeeklyWorkingHours | null;
@@ -47,6 +56,9 @@ function RoutePlanner({
 }: RoutePlannerProps) {
   const initialDraft = useMemo(() => readRoutePlannerDraft(), []);
   const normalizedHomeAddress = nurseHomeAddress?.trim() ?? "";
+  const [planningDate, setPlanningDate] = useState<string>(
+    initialDraft?.planningDate ?? defaultPlanningDate(),
+  );
   const [isMobileViewport, setIsMobileViewport] = useState(() => {
     if (typeof window === "undefined" || typeof window.matchMedia !== "function") {
       return false;
@@ -226,11 +238,13 @@ function RoutePlanner({
       manualEndGooglePlaceId,
       activeMobileStep,
       selectedDestinations,
+      planningDate,
     });
   }, [
     activeMobileStep,
     manualEndAddress,
     manualEndGooglePlaceId,
+    planningDate,
     selectedDestinations,
     startAddress,
     startGooglePlaceId,
@@ -262,6 +276,7 @@ function RoutePlanner({
   const lastOptimizedSnapshotRef = useRef<string | null>(null);
 
   const currentOptimizeSnapshot = [
+    planningDate,
     startAddress,
     resolvedEndAddress,
     selectedDestinations
@@ -279,7 +294,6 @@ function RoutePlanner({
 
   const activeWorkingHoursConstraint = useMemo(() => {
     if (!result || !nurseWorkingHours) return null;
-    const planningDate = result.start.departureTime.slice(0, 10);
     const resolved = resolveWorkingHoursForDate(
       nurseWorkingHours,
       planningDate,
@@ -287,7 +301,7 @@ function RoutePlanner({
     );
     if (!resolved || resolved.dayDisabled) return null;
     return resolved.constraint;
-  }, [result, nurseWorkingHours]);
+  }, [result, nurseWorkingHours, planningDate]);
 
   useEffect(() => {
     setConflictWarningsDismissed(false);
@@ -327,6 +341,7 @@ function RoutePlanner({
       ...(resolvedEndGooglePlaceId ? { endGooglePlaceId: resolvedEndGooglePlaceId } : {}),
       destinations: optimizeDestinations,
       canOptimize,
+      planningDate,
       workingHours: nurseWorkingHours ?? null,
       optimizationObjective,
     });
@@ -336,10 +351,6 @@ function RoutePlanner({
     if (!result || !isManualOrderStale) {
       return;
     }
-
-    // Extract the planning date from the result's departure time. The ISO string
-    // encodes the local planning timezone, so the date portion is correct as-is.
-    const planningDate = result.start.departureTime.slice(0, 10);
 
     const destinationsInManualOrder = manuallyOrderedStops
       .filter((stop) => !stop.isEndingPoint && stop.tasks.length > 0)
@@ -480,6 +491,8 @@ function RoutePlanner({
             onStartBlur={() => setStartTouched(true)}
             onEndBlur={() => setEndTouched(true)}
             onOpenAccountSettings={onOpenAccountSettings}
+            planningDate={planningDate}
+            onPlanningDateChange={setPlanningDate}
           />
 
           <div className="mt-2">

@@ -244,11 +244,15 @@ describe("optimizeRouteV3 service", () => {
 
     const call = mockedBuildDrivingRoute.mock.calls[0];
     const passedOrderedStops = call?.[1] ?? [];
+    // "distance" objective minimises travel seconds first.
+    // B (near start) → C (near start, wait until 11:00) → D → A (D and A are
+    // co-located at ~43.70/-79.70) drives far fewer km than the alternative
+    // B → A → C → D which makes two 11 km round-trips.
     expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
       "Address B",
-      "Address A",
       "Address C",
       "Address D",
+      "Address A",
       "End",
     ]);
   });
@@ -270,12 +274,8 @@ describe("optimizeRouteV3 service", () => {
     const matrix = buildDenseTravelMatrix(
       ["Start", "A", "B", "C", "D", "End"],
       [
-        2366, 654, 2046, 958, 2373,
-        1072, 1051, 1312, 664, 600,
-        2022, 2458, 2328, 1315, 234,
-        2415, 2107, 524, 1785, 1209,
-        233, 1494, 2374, 1812, 1218,
-        1616, 841, 1500, 315, 2075,
+        2366, 654, 2046, 958, 2373, 1072, 1051, 1312, 664, 600, 2022, 2458, 2328, 1315, 234, 2415,
+        2107, 524, 1785, 1209, 233, 1494, 2374, 1812, 1218, 1616, 841, 1500, 315, 2075,
       ],
     );
     mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(matrix);
@@ -1825,7 +1825,7 @@ describe("optimizeRouteV3 service", () => {
       { address: startAddress, coords: { lat: 43.58, lon: -79.71 } },
       { address: shanaaz.address, coords: { lat: 43.61, lon: -79.74 } },
       { address: nasim.address, coords: { lat: 43.58, lon: -79.73 } },
-      { address: dindyal.address, coords: { lat: 43.60, lon: -79.72 } },
+      { address: dindyal.address, coords: { lat: 43.6, lon: -79.72 } },
       { address: catherine.address, coords: { lat: 43.62, lon: -79.76 } },
       { address: ian.address, coords: { lat: 43.61, lon: -79.75 } },
       { address: startAddress, coords: { lat: 43.58, lon: -79.71 } },
