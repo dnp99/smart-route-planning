@@ -39,12 +39,13 @@ The fundamental remaining weakness is the **one-pass constructive nature**: once
 
 ### Hard constraints (infinite penalty)
 - A fixed-window visit that cannot be reached before its `windowEnd` → `unscheduledTasks` with `fixed_window_unreachable`. The existing `detectWindowConflicts` pairwise pre-check runs unchanged before the solver.
-- Working-hours capacity overflow → `insufficient_day_capacity` (unchanged).
+- Planning-day overflow (`PLANNING_DAY_END_SECONDS`) → `insufficient_day_capacity` (unchanged).
 
 ### Soft constraints (penalty in objective)
 - Fixed-window lateness: lexicographically dominant (primary sort key).
 - Flexible-window lateness: secondary penalty.
 - Lunch block: treated as a phantom stop with zero travel cost inserted at `targetLunchStartSeconds`. The solver does not move it; `evaluateSchedule` pauses the time cursor when it passes the lunch window.
+- Working-hours overtime is soft (warning-level), consistent with existing `outside_working_hours` behavior.
 
 ### Scalar penalty function for ILS
 
@@ -115,10 +116,18 @@ export const solveVRP = (
   orderedVisits: VisitWithCoords[];
   unscheduledTasks: UnscheduledTaskV2[];
   lunchSkippedDueToFixed?: boolean;
+  diagnostics: {
+    penalty: number;
+    fixedLateCount: number;
+    fixedLateSeconds: number;
+    totalLateSeconds: number;
+    totalWaitSeconds: number;
+    totalTravelSeconds: number;
+  };
 }
 ```
 
-Identical signature to `orderVisitsByWindowDistanceAndDuration`. Only the call site in `optimizeRouteService.ts` changes.
+Near-identical signature to `orderVisitsByWindowDistanceAndDuration` with one addition: `diagnostics` for shadow-mode comparison and observability.
 
 ### ILS loop (ils.ts)
 
@@ -126,6 +135,7 @@ Identical signature to `orderVisitsByWindowDistanceAndDuration`. Only the call s
 bestSolution ← construct(visits)           // greedy seed
 bestEval     ← evaluate(bestSolution)
 currentSolution ← bestSolution
+currentEval  ← bestEval
 
 repeat until timeLimitMs exceeded:
   localSolution ← localSearch(currentSolution)   // 2-opt then Or-opt until no improvement
@@ -148,7 +158,7 @@ Deterministic acceptance (no SA-style random acceptance) for reproducibility and
 
 ### Neighbourhood move feasibility pre-check
 
-Before fully evaluating a 2-opt or Or-opt move, check: does this move cause any fixed-window visit to become unreachable? Check via `TravelDurationMatrix`. Moves that increase `fixedLateCount` above the current solution are rejected unless the current solution already has violations. This is O(n) per move; all moves together are O(n³) = 8,000 operations at n=20.
+Before fully evaluating a 2-opt or Or-opt move, check: does this move cause any fixed-window visit to become unreachable? Check via `TravelDurationMatrix`. Moves that create a clearly dominated state (e.g., fixedLateCount increase + no travel improvement) are skipped. Temporary worsening is still allowed for diversification. This is O(n) per move; all moves together are O(n³) in the worst case at n=20.
 
 ### Double-bridge perturbation constraint
 
@@ -174,7 +184,7 @@ The double-bridge operates only on the flexible/unconstrained visit subsequence 
 - `evaluateFutureBestScore()` — beam lookahead replaced by actual local search
 - `maybeSelectGapFiller()` — Or-opt structurally handles the same case
 - `planGapWindowSequence()` — Or-opt makes this unnecessary
-- The `primaryProjections` EDF-tier dispatch cascade — replaced by scalar penalty in `evaluate.ts`
+- Note: keep the EDF-tier dispatch in `construct.ts` for seed generation; scalar penalty is used in `evaluate.ts` + ILS search, not as a full replacement for seed logic.
 
 Net change: `optimizeRouteService.ts` loses ~450 lines; gains a `solveVRP()` call. Solver module adds ~350 lines across 5 focused files.
 
@@ -190,7 +200,7 @@ Net change: `optimizeRouteService.ts` loses ~450 lines; gains a `solveVRP()` cal
 | Final route polylines (Google API) | ~1,000–2,000 ms |
 | **Total** | well within 6 s |
 
-The `timeLimitMs` is checked with `performance.now()` at the top of every ILS iteration. Even 5 iterations (greedy seed + 4 restart cycles) produce materially better results than greedy alone at n ≤ 20.
+The `timeLimitMs` is checked with `performance.now()` at the top of every ILS iteration. Target is consistent sub-second CPU for n ≤ 20, verified with benchmarks on representative scenarios (not assumed from asymptotics alone).
 
 ---
 
@@ -213,9 +223,9 @@ When `optimizationEngine` is unset (production), run both algorithms and log the
 
 ```typescript
 const greedyResult = orderVisitsByWindowDistanceAndDuration(...);
-const ilsResult    = solveVRP(..., { timeLimitMs: 500 });
+const ilsResult    = solveVRP(..., 500);
 
-if (ilsResult.penalty < greedyPenalty) {
+if (ilsResult.diagnostics.penalty < greedyPenalty) {
   console.info("[solver-shadow] ILS improved", { delta, fixedLateCountGreedy, fixedLateCountIls });
 }
 // return greedyResult to callers
@@ -223,7 +233,8 @@ if (ilsResult.penalty < greedyPenalty) {
 
 ### Step 3 — Test suite parity
 
-Before shadow mode, all existing tests must pass against both code paths. Add a test utility that runs the same scenario through both and asserts `ils.metrics.fixedWindowViolations <= greedy.metrics.fixedWindowViolations`.
+Before shadow mode, all existing tests must pass against both code paths. Add a test utility that runs the same scenario through both and asserts ILS is no worse on fixed-window violations and penalty:
+`ils.diagnostics.fixedLateCount <= greedyFixedLateCount` and `ils.diagnostics.penalty <= greedyPenalty` on parity scenarios.
 
 Audit the test file for index-based ordering assertions (e.g. "Patient A is at index 2") — these should be relaxed to property assertions ("no fixed window violation") before cutover.
 
@@ -242,6 +253,7 @@ After 2 weeks of shadow logs showing ILS equal-or-better on all constraint dimen
 | Double-bridge disrupts fixed-window ordering | Perturbation is constrained to the flexible subsequence between fixed anchors. |
 | Scalar penalty collapses lexicographic priority | Weight magnitudes ensure no amount of travel reduction compensates for one additional fixed violation. Unit test verifies against `compareScores` on known pairs. |
 | Lunch block interacts unexpectedly with Or-opt | Lunch is not a moveable visit — it is a time-block evaluated inside `evaluateSchedule()`. Or-opt only moves `VisitWithCoords` items. |
+| Move filtering over-prunes neighbourhood and blocks escapes | Only reject obviously dominated moves; allow controlled temporary worsening to keep ILS effective. |
 | Test suite tied to specific greedy orderings | Audit and relax index-based assertions before cutover. |
 
 ---
