@@ -38,18 +38,29 @@ const loadEnvFile = (relativePath: string) => {
   });
 };
 
+// Capture explicitly-passed env vars before loading files so file-loaded values
+// don't silently override a DATABASE_URL passed on the command line.
+const explicitDatabaseUrl = process.env.DATABASE_URL;
+const explicitDatabaseUrlUnpooled = process.env.DATABASE_URL_UNPOOLED;
+
 // Drizzle Kit does not auto-load .env.local, so load env files explicitly.
 loadEnvFile(".env.local");
 loadEnvFile(".env");
+
+// Prefer the unpooled (direct) connection for migrations — Neon's pooler runs
+// PgBouncer in transaction mode and does not reliably apply DDL.
+// Only use DATABASE_URL_UNPOOLED from env files when DATABASE_URL was not
+// explicitly overridden on the command line (otherwise it routes to the wrong
+// Neon branch).
+const migrationUrl = explicitDatabaseUrlUnpooled
+  ?? (explicitDatabaseUrl ? explicitDatabaseUrl : (process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL ?? ""));
 
 export default defineConfig({
   dialect: "postgresql",
   schema: "./src/db/schema.ts",
   out: "./drizzle",
   dbCredentials: {
-    // Prefer the unpooled (direct) connection for migrations — Neon's pooler
-    // runs PgBouncer in transaction mode and does not reliably apply DDL.
-    url: process.env.DATABASE_URL_UNPOOLED ?? process.env.DATABASE_URL ?? "",
+    url: migrationUrl,
   },
   strict: true,
   verbose: true,

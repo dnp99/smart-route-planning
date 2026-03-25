@@ -20,7 +20,7 @@ import {
   type TravelMatrixNode,
 } from "./travelMatrix";
 
-const ALGORITHM_VERSION = "v2.5.2-edf-tier";
+const ALGORITHM_VERSION = "v2.5.3-edf-tier";
 const FIXED_LATE_TOLERANCE_SECONDS = 15 * 60;
 const FLEXIBLE_LATE_TOLERANCE_SECONDS = 60 * 60;
 const FLEXIBLE_URGENCY_THRESHOLD_SECONDS = 90 * 60;
@@ -697,18 +697,9 @@ const compareGapFillerCandidates = (
   right: GapFillerCandidate,
   objective: "time" | "distance",
 ) => {
-  const projectionScoreComparison = compareScores(
-    left.projection.score,
-    right.projection.score,
-    objective,
-  );
-  if (projectionScoreComparison !== 0) {
-    return projectionScoreComparison;
-  }
-
-  // When scores tie, prefer urgent candidates (window closing soon) before optimising
-  // for gap efficiency — otherwise a no-window patient can displace a visit whose
-  // deadline expires before the fixed anchor's window opens.
+  // Urgency takes absolute priority over score — a no-window patient always has
+  // zero late penalty so it will otherwise always outscore an urgent windowed
+  // patient, causing the deadline to be missed even when the gap filler runs.
   const leftUrgent =
     left.projection.visit.hasPreferredWindow &&
     left.projection.slackSeconds < FLEXIBLE_URGENCY_THRESHOLD_SECONDS;
@@ -722,6 +713,15 @@ const compareGapFillerCandidates = (
     if (left.projection.slackSeconds !== right.projection.slackSeconds) {
       return left.projection.slackSeconds - right.projection.slackSeconds;
     }
+  }
+
+  const projectionScoreComparison = compareScores(
+    left.projection.score,
+    right.projection.score,
+    objective,
+  );
+  if (projectionScoreComparison !== 0) {
+    return projectionScoreComparison;
   }
 
   if (left.gapUtilizationSeconds !== right.gapUtilizationSeconds) {
