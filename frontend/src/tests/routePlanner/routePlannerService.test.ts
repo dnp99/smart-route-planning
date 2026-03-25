@@ -57,6 +57,7 @@ describe("requestOptimizedRoute", () => {
   });
 
   it("returns optimize-route v2 payload when response is valid", async () => {
+    vi.stubEnv("VITE_ENABLE_ILS_OPTIMIZER", "false");
     const payload = buildValidResponse();
 
     fetchMock.mockResolvedValue({
@@ -159,6 +160,7 @@ describe("requestOptimizedRoute", () => {
   });
 
   it("includes manual start and end place ids when provided", async () => {
+    vi.stubEnv("VITE_ENABLE_ILS_OPTIMIZER", "false");
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => buildValidResponse(),

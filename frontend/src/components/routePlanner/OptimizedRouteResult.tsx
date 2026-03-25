@@ -1,5 +1,6 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import type { OptimizeRouteResponse } from "../types";
+import { exportRouteImage } from "./routeImageExport";
 import { responsiveStyles } from "../responsiveStyles";
 import RouteMap from "../RouteMap";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlannerUtils";
@@ -56,6 +57,7 @@ type OptimizedRouteResultProps = {
   workEnd?: string;
   lunchStartTime?: string;
   lunchDurationMinutes?: number;
+  planningDate: string;
 };
 
 export function OptimizedRouteResult({
@@ -83,7 +85,22 @@ export function OptimizedRouteResult({
   workEnd,
   lunchStartTime,
   lunchDurationMinutes,
+  planningDate,
 }: OptimizedRouteResultProps) {
+  const [isSavingImage, setIsSavingImage] = useState(false);
+
+  const handleSaveImage = async () => {
+    setIsSavingImage(true);
+    try {
+      await exportRouteImage(result, planningDate, {
+        breakGapThresholdMinutes,
+        lunchStartTime,
+        lunchDurationMinutes,
+      });
+    } finally {
+      setIsSavingImage(false);
+    }
+  };
   const displayedOrderedStops = orderedStops ?? result.orderedStops;
   const displayedRouteLegs = routeLegs ?? result.routeLegs;
   const googleMapsTripUrl = useMemo(
@@ -411,9 +428,38 @@ export function OptimizedRouteResult({
                   Visit order
                 </h3>
               </div>
-              <span className="inline-flex items-center whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
-                {scheduledStopCount} stop{scheduledStopCount === 1 ? "" : "s"}
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                  {scheduledStopCount} stop{scheduledStopCount === 1 ? "" : "s"}
+                </span>
+                {hasIntermediateStops && (
+                  <button
+                    type="button"
+                    onClick={handleSaveImage}
+                    disabled={isSavingImage}
+                    className={`${responsiveStyles.secondaryButton} flex items-center gap-1.5 disabled:cursor-not-allowed disabled:opacity-60`}
+                    aria-label="Save route as image"
+                  >
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                    >
+                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <polyline points="7 10 12 15 17 10" />
+                      <line x1="12" y1="15" x2="12" y2="3" />
+                    </svg>
+                    {isSavingImage ? "Saving…" : "Save as image"}
+                  </button>
+                )}
+              </div>
             </div>
 
             {hasIntermediateStops ? (

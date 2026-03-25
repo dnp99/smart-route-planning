@@ -51,6 +51,7 @@ const buildProps = () => ({
   onToggleResultEndingStop: vi.fn(),
   normalizedHomeAddress: "",
   breakGapThresholdMinutes: 30,
+  planningDate: "2026-03-26",
 });
 
 describe("RouteResultSection", () => {

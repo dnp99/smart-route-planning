@@ -132,6 +132,7 @@ describe("OptimizedRouteResult", () => {
         expandedResultEndingStopIds={{}}
         onToggleResultEndingStop={() => undefined}
         normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
       />,
     );
 
@@ -194,6 +195,7 @@ describe("OptimizedRouteResult", () => {
         expandedResultEndingStopIds={{}}
         onToggleResultEndingStop={() => undefined}
         normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
       />,
     );
 

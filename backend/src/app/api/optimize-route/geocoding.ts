@@ -165,7 +165,6 @@ const geocodeGoogleTextSearch = async (address: string, apiKey: string): Promise
       body: JSON.stringify({
         textQuery: address,
         regionCode: "CA",
-        includedRegionCodes: ["CA"],
       }),
       cache: "no-store",
       signal: controller.signal,

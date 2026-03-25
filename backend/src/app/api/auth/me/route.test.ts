@@ -1,10 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpError } from "../../../../lib/http";
 
-const { requireAuthMock, findNurseByIdMock, updateNurseHomeAddressMock } = vi.hoisted(() => ({
+const {
+  requireAuthMock,
+  findNurseByIdMock,
+  updateNurseHomeAddressMock,
+  updateNurseWorkingHoursMock,
+  updateNurseOptimizationObjectiveMock,
+} = vi.hoisted(() => ({
   requireAuthMock: vi.fn(),
   findNurseByIdMock: vi.fn(),
   updateNurseHomeAddressMock: vi.fn(),
+  updateNurseWorkingHoursMock: vi.fn(),
+  updateNurseOptimizationObjectiveMock: vi.fn(),
 }));
 
 vi.mock("../../../../lib/auth/requireAuth", () => ({
@@ -14,6 +22,8 @@ vi.mock("../../../../lib/auth/requireAuth", () => ({
 vi.mock("../../../../lib/patients/patientRepository", () => ({
   findNurseById: findNurseByIdMock,
   updateNurseHomeAddress: updateNurseHomeAddressMock,
+  updateNurseWorkingHours: updateNurseWorkingHoursMock,
+  updateNurseOptimizationObjective: updateNurseOptimizationObjectiveMock,
 }));
 
 import { GET, OPTIONS, PATCH } from "./route";
@@ -28,6 +38,8 @@ describe("/api/auth/me route", () => {
     requireAuthMock.mockReset();
     findNurseByIdMock.mockReset();
     updateNurseHomeAddressMock.mockReset();
+    updateNurseWorkingHoursMock.mockReset();
+    updateNurseOptimizationObjectiveMock.mockReset();
     requireAuthMock.mockResolvedValue({
       nurseId: "nurse-1",
       email: "nurse@example.com",
@@ -315,6 +327,207 @@ describe("/api/auth/me route", () => {
           "content-type": "application/json",
         },
         body: JSON.stringify({ homeAddress: "1 Main Street, Toronto, ON" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized." });
+  });
+
+  it("updates working hours and breakGapThresholdMinutes", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+    });
+    updateNurseWorkingHoursMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+      breakGapThresholdMinutes: 30,
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({
+          workingHours: {
+            monday: { enabled: true, start: "08:00", end: "17:00" },
+          },
+          breakGapThresholdMinutes: 30,
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateNurseWorkingHoursMock).toHaveBeenCalledWith(
+      "nurse-1",
+      { monday: { enabled: true, start: "08:00", end: "17:00" } },
+      30,
+    );
+  });
+
+  it("clears breakGapThresholdMinutes when set to null", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+    });
+    updateNurseWorkingHoursMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+      breakGapThresholdMinutes: null,
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ breakGapThresholdMinutes: null }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateNurseWorkingHoursMock).toHaveBeenCalledWith("nurse-1", undefined, null);
+  });
+
+  it("returns 400 for invalid breakGapThresholdMinutes", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ breakGapThresholdMinutes: -5 }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "breakGapThresholdMinutes must be a positive integer or null.",
+    });
+  });
+
+  it("returns 400 for invalid workingHours structure", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({
+          workingHours: { monday: "invalid" },
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "workingHours.monday must be an object.",
+    });
+  });
+
+  it("returns 401 when working hours update target no longer exists", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+    });
+    updateNurseWorkingHoursMock.mockResolvedValue(null);
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ breakGapThresholdMinutes: 30 }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized." });
+  });
+
+  it("updates optimizationObjective", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+    });
+    updateNurseOptimizationObjectiveMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+      optimizationObjective: "time",
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ optimizationObjective: "time" }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateNurseOptimizationObjectiveMock).toHaveBeenCalledWith("nurse-1", "time");
+  });
+
+  it("returns 400 when optimizationObjective payload fails contract validation", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+    });
+
+    // "invalid" is rejected by isUpdateMeRequest before reaching the route handler
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ optimizationObjective: "invalid" }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Profile payload must include at least one field to update.",
+    });
+  });
+
+  it("returns 401 when optimizationObjective update target no longer exists", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+    });
+    updateNurseOptimizationObjectiveMock.mockResolvedValue(null);
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({ optimizationObjective: "distance" }),
       }),
     );
 
