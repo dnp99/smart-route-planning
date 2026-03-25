@@ -9,6 +9,7 @@ interface ConfirmDialogProps {
   title?: string;
   confirmLabel?: string;
   confirmLoadingLabel?: string;
+  confirmVariant?: "destructive" | "primary";
 }
 
 export default function ConfirmDialog({
@@ -19,7 +20,13 @@ export default function ConfirmDialog({
   title,
   confirmLabel = "Confirm",
   confirmLoadingLabel = "Loading...",
+  confirmVariant = "destructive",
 }: ConfirmDialogProps) {
+  const confirmButtonClassName =
+    confirmVariant === "primary"
+      ? responsiveStyles.primaryButton
+      : responsiveStyles.destructiveButton;
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && !isLoading) onCancel();
@@ -51,7 +58,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             disabled={isLoading}
-            className={responsiveStyles.destructiveButton}
+            className={confirmButtonClassName}
           >
             {isLoading ? confirmLoadingLabel : confirmLabel}
           </button>

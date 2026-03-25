@@ -8,12 +8,12 @@ import type {
   FormMode,
   PatientFormValues,
   PatientFormVisitWindow,
-} from "./patientForm";
+} from "../patients/patientForm";
 import {
   MAX_VISIT_DURATION_MINUTES,
   MIN_VISIT_DURATION_MINUTES,
   getPatientDisplayName,
-} from "./patientForm";
+} from "../patients/patientForm";
 
 type PatientFormModalProps = {
   formMode: FormMode;

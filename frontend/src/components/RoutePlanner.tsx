@@ -14,7 +14,7 @@ import {
   buildPlanningWindowsToPersist,
   validateRequestDestinations,
 } from "./routePlanner/routePlannerSubmission";
-import { PatientFormModal } from "./patients/PatientFormModal";
+import { PatientFormModal } from "./modals/PatientFormModal";
 import {
   type MobilePlannerStep,
   readRoutePlannerDraft,

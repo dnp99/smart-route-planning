@@ -312,7 +312,7 @@ describe("App routing", () => {
     fireEvent.change(screen.getByRole("textbox", { name: /home address/i }), {
       target: { value: "1 Main Street, Toronto, ON" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
 
     await waitFor(() => {
       expect(updateProfileHomeAddressMock).toHaveBeenCalledWith(

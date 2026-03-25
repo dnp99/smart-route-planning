@@ -2,7 +2,6 @@ import { Fragment } from "react";
 import type { OrderedStop } from "../types";
 import { OptimizedStopCard, EndingStopCard } from "./OptimizedStopCard";
 import {
-  BREAK_GAP_THRESHOLD_MINUTES,
   expectedStartTimeFormatter,
   formatBreakGap,
   addressesMatch,
@@ -19,7 +18,7 @@ type OptimizedStopListProps = {
   expandedResultEndingStopIds: Record<string, boolean>;
   onToggleResultEndingStop: (stopId: string) => void;
   normalizedHomeAddress: string;
-  breakGapThresholdMinutes?: number;
+  breakGapThresholdMinutes?: number | null;
   workStart?: string;
   workEnd?: string;
   lunchStartTime?: string;
@@ -59,7 +58,7 @@ export function OptimizedStopList({
   lunchStartTime,
   lunchDurationMinutes,
 }: OptimizedStopListProps) {
-  const effectiveBreakGapThreshold = breakGapThresholdMinutes ?? BREAK_GAP_THRESHOLD_MINUTES;
+  const effectiveBreakGapThreshold = breakGapThresholdMinutes ?? null;
   // Pre-compute a sequential label per task (1, 2, 3…) across all stops,
   // so multi-task stops don't repeat the same stop number.
   const taskLabels = new Map<string, number>();
@@ -86,7 +85,8 @@ export function OptimizedStopList({
           breakStartMs = prevDepartureMs;
           breakEndMs = nextServiceStartMs - travelMs;
         }
-        const showBreakCard = idleGapMinutes >= effectiveBreakGapThreshold;
+        const showBreakCard =
+          effectiveBreakGapThreshold !== null && idleGapMinutes >= effectiveBreakGapThreshold;
         const isLunch =
           showBreakCard &&
           isLunchBreak(breakStartMs, idleGapMinutes, lunchStartTime, lunchDurationMinutes);
@@ -161,7 +161,9 @@ export function OptimizedStopList({
                       interTaskBreakEndMs = new Date(task.serviceStartTime).getTime();
                       interTaskBreakMinutes = (interTaskBreakEndMs - interTaskBreakStartMs) / 60000;
                     }
-                    const showInterTaskBreak = interTaskBreakMinutes >= effectiveBreakGapThreshold;
+                    const showInterTaskBreak =
+                      effectiveBreakGapThreshold !== null &&
+                      interTaskBreakMinutes >= effectiveBreakGapThreshold;
                     const isInterTaskLunch =
                       showInterTaskBreak &&
                       isLunchBreak(

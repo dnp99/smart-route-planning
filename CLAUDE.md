@@ -53,8 +53,21 @@ npm run test   # Vitest unit tests (or: node_modules/.bin/vitest run)
 
 Never push with failing lint or tests.
 
+## Database migrations (mandatory)
+
+Never create Drizzle migration files manually. Drizzle validates a chain of snapshot metadata and content hashes — hand-crafted files are silently skipped by `drizzle-kit migrate`, breaking the DB without any error.
+
+Correct workflow for every schema change:
+
+1. Update `backend/src/db/schema.ts`
+2. `cd backend && npm run db:generate` — connects to the real DB, diffs the schema, and writes the SQL file + a properly-chained snapshot with correct hashes
+3. `npm run db:migrate` — applies the pending migration
+
+`npm run db:generate` requires a live `DATABASE_URL`. If the environment doesn't have one, ask the user to run step 2 themselves.
+
 ## Stack
 
 - Frontend: React + TypeScript, Vite, Tailwind CSS
+- Backend: Next.js API routes, Drizzle ORM, PostgreSQL (Neon)
 - Shared contracts: `shared/contracts`
 - Style tokens: `frontend/src/components/responsiveStyles.ts`

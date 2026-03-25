@@ -565,7 +565,7 @@ This root file exists to preserve the repository convention that `plan.md` is up
 
 #### Files
 - Updated:
-  - `frontend/src/components/patients/PatientFormModal.tsx`
+  - `frontend/src/components/modals/PatientFormModal.tsx`
   - `plan.md`
 
 #### Why
@@ -1292,7 +1292,7 @@ This root file exists to preserve the repository convention that `plan.md` is up
 
 #### Files
 - Added:
-  - `frontend/src/components/patients/PatientFormModal.tsx`
+  - `frontend/src/components/modals/PatientFormModal.tsx`
   - `frontend/src/components/patients/PatientsTable.tsx`
   - `frontend/src/components/patients/patientForm.ts`
 - Updated:
