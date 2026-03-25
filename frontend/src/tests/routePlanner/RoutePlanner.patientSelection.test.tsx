@@ -411,6 +411,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      planningDate: expect.any(String),
       workingHours: null,
       optimizationObjective: "distance",
     });
@@ -457,6 +458,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      planningDate: expect.any(String),
       workingHours: null,
       optimizationObjective: "distance",
     });
@@ -502,6 +504,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      planningDate: expect.any(String),
       workingHours: null,
       optimizationObjective: "distance",
     });
@@ -542,6 +545,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      planningDate: expect.any(String),
       workingHours: null,
       optimizationObjective: "distance",
     });
@@ -599,6 +603,7 @@ describe("RoutePlanner patient selection integration", () => {
       endGooglePlaceId: "end-place",
       destinations: [],
       canOptimize: true,
+      planningDate: expect.any(String),
       workingHours: null,
       optimizationObjective: "distance",
     });
@@ -833,6 +838,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      planningDate: expect.any(String),
       workingHours: null,
       optimizationObjective: "distance",
     });
@@ -894,6 +900,7 @@ describe("RoutePlanner patient selection integration", () => {
         },
       ],
       canOptimize: true,
+      planningDate: expect.any(String),
       workingHours: null,
       optimizationObjective: "distance",
     });
@@ -947,6 +954,7 @@ describe("RoutePlanner patient selection integration", () => {
           },
         ],
         canOptimize: true,
+        planningDate: expect.any(String),
         workingHours: null,
         optimizationObjective: "distance",
       });
