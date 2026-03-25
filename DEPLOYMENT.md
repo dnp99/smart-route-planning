@@ -1,4 +1,4 @@
-# Navigate Easy Deployment Strategy
+# CareFlow Deployment Strategy
 
 ## 1) Target architecture
 
@@ -90,12 +90,12 @@ Runs on PR and push:
 1. Frontend: `npm ci`, `npm run lint`, `npm run build`
 2. Backend: `npm ci`, `npm run lint`, `npm run build`
 
-### Deploy workflow (`.github/workflows/deploy.yml`)
+### Deploy workflow
 
-- On `develop` push: deploy **staging** frontend + backend to Vercel
-- On `main` push: deploy **production** frontend + backend to Vercel
+The repository currently includes CI only (`.github/workflows/ci.yml`).
+Deployment is currently done manually in Vercel per environment.
 
-Deploy workflow should be gated by CI success using branch protection rules:
+If you add a deploy workflow later (for example `.github/workflows/deploy.yml`), gate it by CI success using branch protection rules:
 
 - Require `CI / Frontend lint + build`
 - Require `CI / Backend lint + build`
