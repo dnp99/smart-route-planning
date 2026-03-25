@@ -203,14 +203,16 @@ function FitToRoute({ points }: FitToRouteProps) {
       return;
     }
 
-    if (points.length === 1) {
-      map.setView(points[0], 13);
-      return;
-    }
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+      if (points.length === 1) {
+        map.setView(points[0], 13);
+        return;
+      }
+      map.fitBounds(points, { padding: [36, 36] });
+    }, 0);
 
-    map.fitBounds(points, {
-      padding: [36, 36],
-    });
+    return () => clearTimeout(timer);
   }, [map, points]);
 
   return null;
