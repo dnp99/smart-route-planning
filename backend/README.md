@@ -4,7 +4,8 @@ This folder contains the Next.js backend for CareFlow.
 
 ## Responsibilities
 
-- Expose `POST /api/optimize-route/v2` for route optimization.
+- Expose `POST /api/optimize-route/v2` for the current route optimization flow.
+- Expose `POST /api/optimize-route/v3` as the feature-flagged seeded ILS engine path.
 - Expose `GET /api/address-autocomplete` for address suggestions.
 - Expose auth endpoints for signup, login, current-user identity, and password updates.
 - Geocode addresses through Google Places API.
@@ -79,7 +80,7 @@ Production/runtime behavior:
   - Optional but recommended contact email used in fallback Nominatim geocoding requests.
   - Example: `you@example.com`.
 - `OPTIMIZE_ROUTE_API_KEY`
-  - Optional shared secret for `POST /api/optimize-route/v2`.
+  - Optional shared secret for `POST /api/optimize-route/v2` and `POST /api/optimize-route/v3`.
   - When set, requests must include header `x-optimize-route-key`.
 - `OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS`
   - Optional.
@@ -89,6 +90,15 @@ Production/runtime behavior:
   - Optional.
   - Optimize-route rate-limit window in milliseconds.
   - Default: `60000`.
+- `OPTIMIZE_ROUTE_V3_SHADOW_COMPARE`
+  - Optional.
+  - When `true`, `POST /api/optimize-route/v3` logs seed-vs-ILS diagnostics to the server console for rollout comparison.
+  - Does not change the response payload.
+- `OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE`
+  - Optional.
+  - Decimal between `0` and `1` used to sample `POST /api/optimize-route/v3` shadow comparison logs.
+  - Default: `1`.
+  - Example: `0.1` logs roughly 10% of requests with deterministic sampling by request ID.
 
 Example local file:
 
@@ -110,6 +120,8 @@ ALLOWED_ORIGINS=http://localhost:5173
 OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
 OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS=30
 OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS=60000
+OPTIMIZE_ROUTE_V3_SHADOW_COMPARE=false
+OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
 ```
 
 ## API endpoints
@@ -175,6 +187,11 @@ Authentication behavior:
   - Requires `Authorization: Bearer <token>`
   - See request/response shape below
   - Enforces per-client in-memory rate limiting
+- `POST /api/optimize-route/v3`
+  - Requires `Authorization: Bearer <token>`
+  - Same request/response contract as `v2` during the rollout phase
+  - Reserved for the feature-flagged ILS engine path
+  - Enforces the same API-key and per-client rate-limit rules as `v2`
 
 ### Address autocomplete
 

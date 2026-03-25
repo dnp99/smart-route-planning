@@ -52,7 +52,7 @@ const timeToMinutes = (value: string) => {
 
 const validateWorkingHours = (value: unknown): WeeklyWorkingHours | null => {
   if (value === null) return null;
-  if (typeof value !== "object" || value === null) {
+  if (typeof value !== "object") {
     throw new HttpError(400, "workingHours must be an object or null.");
   }
 

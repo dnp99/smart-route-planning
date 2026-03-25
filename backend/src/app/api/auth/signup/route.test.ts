@@ -300,6 +300,9 @@ describe("/api/auth/signup route", () => {
         email: "nurse@example.com",
         displayName: "Nurse One",
         homeAddress: null,
+        workingHours: null,
+        breakGapThresholdMinutes: null,
+        optimizationObjective: null,
       },
     });
     expect(updateNurseLastLoginAtMock).toHaveBeenCalledWith("nurse-2");
