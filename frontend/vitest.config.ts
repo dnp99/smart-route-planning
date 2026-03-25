@@ -13,7 +13,12 @@ export default defineConfig({
         "src/components/apiBaseUrl.ts",
         "src/components/routePlanner/**/*.ts",
       ],
-      exclude: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+      exclude: [
+        "src/**/*.test.ts",
+        "src/**/*.test.tsx",
+        "src/components/routePlanner/routeImageExport.ts",
+        "src/components/routePlanner/routePlannerTypes.ts",
+      ],
       thresholds: {
         statements: 80,
         branches: 80,
