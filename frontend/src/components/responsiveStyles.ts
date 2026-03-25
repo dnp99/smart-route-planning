@@ -134,10 +134,10 @@ export const responsiveStyles = {
   patientColumnLabel:
     "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400",
   patientSearchContainer:
-    "grid gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3",
+    "flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3 md:h-[26rem]",
 
   // ── Selectable list (patient search results) ───────────────────────────────
-  selectableList: "m-0 max-h-72 list-none space-y-2 overflow-y-auto p-0",
+  selectableList: "m-0 min-h-0 flex-1 list-none space-y-2 overflow-y-auto p-0",
   selectableItemButton:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm transition hover:bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900",
 
@@ -147,7 +147,7 @@ export const responsiveStyles = {
 
   // ── Destination list ───────────────────────────────────────────────────────
   destinationList:
-    "max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3",
+    "overflow-y-auto rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3 md:h-[26rem]",
   destinationItem:
     "flex flex-col gap-2.5 text-sm text-slate-900 dark:text-slate-200 md:flex-row md:items-start md:justify-between md:gap-3",
   destinationItemBody: "flex min-w-0 flex-1 items-start gap-2.5 sm:gap-3",
