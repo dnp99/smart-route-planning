@@ -9,6 +9,7 @@ import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/ht
 import {
   findNurseById,
   updateNurseHomeAddress,
+  updateNurseOptimizationObjective,
   updateNurseWorkingHours,
 } from "../../../../lib/patients/patientRepository";
 import { requireSecureAuthTransport } from "../requestGuards";
@@ -23,6 +24,7 @@ const toAuthUser = (value: {
   homeAddress?: string | null;
   workingHours?: WeeklyWorkingHours | null;
   breakGapThresholdMinutes?: number | null;
+  optimizationObjective?: string | null;
 }): AuthUser => ({
   id: value.id,
   email: value.email,
@@ -30,6 +32,10 @@ const toAuthUser = (value: {
   homeAddress: value.homeAddress ?? null,
   workingHours: value.workingHours ?? null,
   breakGapThresholdMinutes: value.breakGapThresholdMinutes ?? null,
+  optimizationObjective:
+    value.optimizationObjective === "time" || value.optimizationObjective === "distance"
+      ? value.optimizationObjective
+      : null,
 });
 
 const parseHhMm = (value: unknown, fieldName: string): string => {
@@ -186,6 +192,7 @@ export async function GET(request: Request) {
           homeAddress: nurse.homeAddress,
           workingHours: nurse.workingHours as WeeklyWorkingHours | null | undefined,
           breakGapThresholdMinutes: nurse.breakGapThresholdMinutes,
+          optimizationObjective: nurse.optimizationObjective,
         }),
       },
       { headers: corsHeaders },
@@ -265,6 +272,21 @@ export async function PATCH(request: Request) {
       nurse = updated;
     }
 
+    if (payload.optimizationObjective !== undefined) {
+      const obj = payload.optimizationObjective;
+      if (obj !== null && obj !== "time" && obj !== "distance") {
+        throw new HttpError(400, 'optimizationObjective must be "time", "distance", or null.');
+      }
+      const updated = await updateNurseOptimizationObjective(
+        auth.nurseId,
+        obj as "time" | "distance" | null,
+      );
+      if (!updated || !updated.isActive) {
+        return NextResponse.json({ error: "Unauthorized." }, { status: 401, headers: corsHeaders });
+      }
+      nurse = updated;
+    }
+
     return NextResponse.json(
       {
         user: toAuthUser({
@@ -274,6 +296,7 @@ export async function PATCH(request: Request) {
           homeAddress: nurse.homeAddress,
           workingHours: nurse.workingHours as WeeklyWorkingHours | null | undefined,
           breakGapThresholdMinutes: nurse.breakGapThresholdMinutes,
+          optimizationObjective: nurse.optimizationObjective,
         }),
       },
       { headers: corsHeaders },

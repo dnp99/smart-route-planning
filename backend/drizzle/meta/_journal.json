@@ -50,6 +50,13 @@
       "when": 1742688000000,
       "tag": "0006_working_hours",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1742774400000,
+      "tag": "0007_optimization_objective",
+      "breakpoints": true
     }
   ]
 }

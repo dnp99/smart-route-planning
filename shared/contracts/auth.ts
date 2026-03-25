@@ -29,6 +29,7 @@ export type AuthUser = {
   homeAddress: string | null;
   workingHours?: WeeklyWorkingHours | null;
   breakGapThresholdMinutes?: number | null;
+  optimizationObjective?: "time" | "distance" | null;
 };
 
 export type LoginRequest = {
@@ -57,6 +58,7 @@ export type UpdateMeRequest = {
   homeAddress?: string;
   workingHours?: WeeklyWorkingHours | null;
   breakGapThresholdMinutes?: number | null;
+  optimizationObjective?: "time" | "distance" | null;
 };
 
 export const isAuthUser = (value: unknown): value is AuthUser => {
@@ -77,6 +79,15 @@ export const isAuthUser = (value: unknown): value is AuthUser => {
     value.breakGapThresholdMinutes !== undefined &&
     value.breakGapThresholdMinutes !== null &&
     typeof value.breakGapThresholdMinutes !== "number"
+  ) {
+    return false;
+  }
+
+  if (
+    value.optimizationObjective !== undefined &&
+    value.optimizationObjective !== null &&
+    value.optimizationObjective !== "time" &&
+    value.optimizationObjective !== "distance"
   ) {
     return false;
   }
@@ -112,8 +123,9 @@ export const isUpdateMeRequest = (value: unknown): value is UpdateMeRequest => {
   const hasHomeAddress = value.homeAddress !== undefined;
   const hasWorkingHours = value.workingHours !== undefined;
   const hasBreakGap = value.breakGapThresholdMinutes !== undefined;
+  const hasOptimizationObjective = value.optimizationObjective !== undefined;
 
-  if (!hasHomeAddress && !hasWorkingHours && !hasBreakGap) {
+  if (!hasHomeAddress && !hasWorkingHours && !hasBreakGap && !hasOptimizationObjective) {
     return false;
   }
 
@@ -125,6 +137,15 @@ export const isUpdateMeRequest = (value: unknown): value is UpdateMeRequest => {
     hasBreakGap &&
     value.breakGapThresholdMinutes !== null &&
     typeof value.breakGapThresholdMinutes !== "number"
+  ) {
+    return false;
+  }
+
+  if (
+    hasOptimizationObjective &&
+    value.optimizationObjective !== null &&
+    value.optimizationObjective !== "time" &&
+    value.optimizationObjective !== "distance"
   ) {
     return false;
   }

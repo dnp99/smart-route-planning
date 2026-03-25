@@ -132,6 +132,33 @@ export const updateWorkingHours = async (
   return parsed;
 };
 
+export const updateOptimizationObjective = async (
+  token: string,
+  optimizationObjective: "time" | "distance" | null,
+) => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ optimizationObjective }),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(extractApiErrorMessage(payload) ?? "Unable to update optimization objective.");
+  }
+
+  const parsed = parseMeResponse(payload);
+  if (!parsed) {
+    throw new Error("Unexpected optimization-objective update response format.");
+  }
+
+  return parsed;
+};
+
 export const updatePassword = async (
   token: string,
   currentPassword: string,

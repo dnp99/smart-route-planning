@@ -13,6 +13,7 @@ type AuthUser = {
   homeAddress?: string;
   workingHours?: WeeklyWorkingHours | null;
   breakGapThresholdMinutes?: number | null;
+  optimizationObjective?: "time" | "distance" | null;
 } | null;
 
 interface AccountSettingsModalProps {
@@ -20,8 +21,6 @@ interface AccountSettingsModalProps {
   onClose: () => void;
   authUser: AuthUser;
   onHomeAddressSaved: (updatedUser: AuthUser) => void;
-  optimizationObjective: "time" | "distance";
-  onSetOptimizationObjective: (v: "time" | "distance") => void;
 }
 
 const EyeIcon = ({ className }: { className?: string }) => (
@@ -65,8 +64,6 @@ export default function AccountSettingsModal({
   onClose,
   authUser,
   onHomeAddressSaved,
-  optimizationObjective,
-  onSetOptimizationObjective,
 }: AccountSettingsModalProps) {
   const [activeSettingsTab, setActiveSettingsTab] = useState<
     "working-hours" | "route" | "security"
@@ -107,6 +104,10 @@ export default function AccountSettingsModal({
     handleScheduleSubmit,
     updateDay,
     updateLunch,
+    // Optimization objective
+    isSavingObjective,
+    objectiveError,
+    handleOptimizationObjectiveChange,
     // Shared
     isBusy,
     handleClose,
@@ -427,8 +428,9 @@ export default function AccountSettingsModal({
                     type="radio"
                     name="optimizationObjective"
                     value={value}
-                    checked={optimizationObjective === value}
-                    onChange={() => onSetOptimizationObjective(value)}
+                    checked={(authUser?.optimizationObjective ?? "distance") === value}
+                    onChange={() => handleOptimizationObjectiveChange(value)}
+                    disabled={isSavingObjective}
                     className="sr-only"
                   />
                   <div>
@@ -440,6 +442,11 @@ export default function AccountSettingsModal({
                 </label>
               ))}
             </div>
+            {objectiveError && (
+              <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+                {objectiveError}
+              </p>
+            )}
           </div>
         )}
 

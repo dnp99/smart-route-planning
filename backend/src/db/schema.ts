@@ -19,6 +19,7 @@ export const nurses = pgTable("nurses", {
   homeAddress: text("home_address"),
   workingHours: jsonb("working_hours"),
   breakGapThresholdMinutes: integer("break_gap_threshold_minutes"),
+  optimizationObjective: text("optimization_objective"),
   passwordHash: text("password_hash").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
