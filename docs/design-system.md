@@ -231,6 +231,10 @@ States:
 
 **Rule:** Inputs are always `bg-white`. Never `bg-slate-50` for an active input.
 
+#### Date input (`dateInput`)
+
+Native `<input type="date">` used in the Trip Setup panel for planning date selection. Uses `rounded-xl` with the same border/focus/hover rules as other inputs but `py-2` (compact) instead of `py-2.5`. In the **collapsed** panel state the input renders inline (`w-auto shrink-0`) to the left of the chevron so the date remains editable without expanding.
+
 #### Clear button (search inputs)
 
 When a search input has a non-empty value, show a × button inside the right edge:
@@ -383,6 +387,8 @@ text-blue-600 font-medium underline underline-offset-2 cursor-pointer
       [Mobile step nav]          ← only on mobile
 
       [Trip Setup panel]         ← responsiveStyles.panel (white card)
+        Expanded:  2-col grid (Starting point, Ending point, Planning date)
+        Collapsed: address summary + inline date input + chevron
       [Patient Search panel]     ← responsiveStyles.panel
         [Patients label + count badge]  ← countPill: slate-200 bg, slate-700 text, font-bold
         [Selected Destinations]  ← responsiveStyles.destinationList
@@ -471,6 +477,7 @@ These are **never** acceptable:
 | Page section card | `section` |
 | Input panel (collapsible) | `panel` |
 | Search input | `searchInput` |
+| Date input | `dateInput` |
 | Primary button | `primaryButton` |
 | Secondary button | `secondaryButton` |
 | Outline button | `outlineButton` |
