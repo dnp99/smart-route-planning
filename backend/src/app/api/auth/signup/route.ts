@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { isSignupRequest, type AuthUser } from "../../../../../../shared/contracts";
+import {
+  isSignupRequest,
+  type AuthUser,
+  type WeeklyWorkingHours,
+} from "../../../../../../shared/contracts";
 import { signAccessToken } from "../../../../lib/auth/jwt";
 import { hashPassword } from "../../../../lib/auth/password";
 import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
@@ -16,11 +20,20 @@ const toAuthUser = (value: {
   email: string;
   displayName: string;
   homeAddress?: string | null;
+  workingHours?: WeeklyWorkingHours | null;
+  breakGapThresholdMinutes?: number | null;
+  optimizationObjective?: string | null;
 }): AuthUser => ({
   id: value.id,
   email: value.email,
   displayName: value.displayName,
   homeAddress: value.homeAddress ?? null,
+  workingHours: value.workingHours ?? null,
+  breakGapThresholdMinutes: value.breakGapThresholdMinutes ?? null,
+  optimizationObjective:
+    value.optimizationObjective === "time" || value.optimizationObjective === "distance"
+      ? value.optimizationObjective
+      : null,
 });
 
 const validateSignupPayload = (body: unknown) => {
@@ -135,6 +148,9 @@ export const POST = async (request: Request) => {
           email: nurse.email,
           displayName: nurse.displayName,
           homeAddress: nurse.homeAddress,
+          workingHours: nurse.workingHours as WeeklyWorkingHours | null | undefined,
+          breakGapThresholdMinutes: nurse.breakGapThresholdMinutes,
+          optimizationObjective: nurse.optimizationObjective,
         }),
       },
       { status: 201, headers: corsHeaders },
