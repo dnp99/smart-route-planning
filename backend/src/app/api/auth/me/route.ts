@@ -114,9 +114,23 @@ const validateWorkingHours = (value: unknown): WeeklyWorkingHours | null => {
           `workingHours.${day}.lunchBreak.durationMinutes must be less than working day length.`,
         );
       }
+      const lunchStartTime =
+        lb.startTime === undefined
+          ? "12:00"
+          : parseHhMm(lb.startTime, `workingHours.${day}.lunchBreak.startTime`);
+      const lunchStartMinutes = timeToMinutes(lunchStartTime);
+      if (
+        lunchStartMinutes < timeToMinutes(start) ||
+        lunchStartMinutes + lb.durationMinutes > timeToMinutes(end)
+      ) {
+        throw new HttpError(
+          400,
+          `workingHours.${day}.lunchBreak.startTime must place lunch within working hours.`,
+        );
+      }
       daySchedule.lunchBreak = {
         enabled: lb.enabled,
-        startTime: typeof lb.startTime === "string" ? lb.startTime : "12:00",
+        startTime: lunchStartTime,
         durationMinutes: lb.durationMinutes,
       };
     }

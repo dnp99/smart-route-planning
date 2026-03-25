@@ -75,6 +75,12 @@ Production/runtime behavior:
   - Production (`NODE_ENV=production`) enforces HTTPS automatically.
 - `GOOGLE_MAPS_API_KEY`
   - Required for Google driving route distance, duration, route geometry, and address suggestions.
+- `NOMINATIM_CONTACT_EMAIL`
+  - Optional but recommended contact email used in fallback Nominatim geocoding requests.
+  - Example: `you@example.com`.
+- `OPTIMIZE_ROUTE_API_KEY`
+  - Optional shared secret for `POST /api/optimize-route/v2`.
+  - When set, requests must include header `x-optimize-route-key`.
 - `OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS`
   - Optional.
   - Max optimize-route requests per client within the rate-limit window.
@@ -99,7 +105,9 @@ AUTH_LOGIN_RATE_LIMIT_LOCKOUT_SECONDS=30
 # Optional local/proxy transport hardening override:
 # AUTH_ENFORCE_HTTPS=true
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
+NOMINATIM_CONTACT_EMAIL=you@example.com
 ALLOWED_ORIGINS=http://localhost:5173
+OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
 OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS=30
 OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS=60000
 ```

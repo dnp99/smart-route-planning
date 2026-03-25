@@ -2,6 +2,7 @@ import { HttpError } from "../../../lib/http";
 import type { GeocodedStop, LatLng } from "./types";
 
 const GEOCODE_TIMEOUT_MS = 8000;
+const DEFAULT_NOMINATIM_USER_AGENT = "careflow/1.0";
 
 type GeocodeTarget = {
   address: string;
@@ -23,6 +24,11 @@ const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const normalizeAddressKey = (address: string) => address.trim().toLowerCase();
 
+const resolveNominatimContactEmail = () => {
+  const value = process.env.NOMINATIM_CONTACT_EMAIL?.trim();
+  return value && value.length > 0 ? value : undefined;
+};
+
 const parseCoords = (latitude: unknown, longitude: unknown): LatLng => {
   const lat = Number(latitude);
   const lon = Number(longitude);
@@ -38,12 +44,16 @@ const parseCoords = (latitude: unknown, longitude: unknown): LatLng => {
 };
 
 const geocodeAddress = async (address: string): Promise<LatLng> => {
+  const nominatimContactEmail = resolveNominatimContactEmail();
   const query = new URLSearchParams({
     q: address,
     format: "jsonv2",
     limit: "1",
     countrycodes: "ca",
   });
+  if (nominatimContactEmail) {
+    query.set("email", nominatimContactEmail);
+  }
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => {
@@ -55,7 +65,9 @@ const geocodeAddress = async (address: string): Promise<LatLng> => {
   try {
     response = await fetch(`https://nominatim.openstreetmap.org/search?${query}`, {
       headers: {
-        "User-Agent": "navigate-easy/1.0 (contact: support@navigate-easy.local)",
+        "User-Agent": nominatimContactEmail
+          ? `${DEFAULT_NOMINATIM_USER_AGENT} (${nominatimContactEmail})`
+          : DEFAULT_NOMINATIM_USER_AGENT,
         Accept: "application/json",
       },
       cache: "no-store",
