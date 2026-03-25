@@ -689,7 +689,7 @@ describe("optimizeRouteV2 service", () => {
       "google-key",
     );
 
-    expect(result.algorithmVersion).toBe("v2.5.1-edf-tier");
+    expect(result.algorithmVersion).toBe("v2.5.4-edf-tier");
     expect(result.orderedStops).toHaveLength(2);
     expect(result.orderedStops[0].tasks).toHaveLength(2);
     expect(result.orderedStops[0].tasks[0].visitId).toBe("fixed-am");
@@ -765,7 +765,7 @@ describe("optimizeRouteV2 service", () => {
     );
 
     expect(result.unscheduledTasks).toEqual([]);
-    expect(result.algorithmVersion).toBe("v2.5.1-edf-tier/preserved");
+    expect(result.algorithmVersion).toBe("v2.5.4-edf-tier/preserved");
     expect(result.orderedStops.map((stop) => stop.tasks[0]?.visitId)).toEqual([
       "visit-c",
       "visit-a",

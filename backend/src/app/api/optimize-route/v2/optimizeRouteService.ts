@@ -20,7 +20,7 @@ import {
   type TravelMatrixNode,
 } from "./travelMatrix";
 
-const ALGORITHM_VERSION = "v2.5.3-edf-tier";
+const ALGORITHM_VERSION = "v2.5.4-edf-tier";
 const FIXED_LATE_TOLERANCE_SECONDS = 15 * 60;
 const FLEXIBLE_LATE_TOLERANCE_SECONDS = 60 * 60;
 const FLEXIBLE_URGENCY_THRESHOLD_SECONDS = 90 * 60;
@@ -692,6 +692,69 @@ type GapFillerCandidate = {
   gapUtilizationSeconds: number;
 };
 
+// Plans the full sequence of visits that fit within the idle gap before a fixed
+// anchor, rather than picking one visit at a time. Uses nearest-neighbour with
+// urgency-first ordering so that tight-window visits (e.g. Nasim 09:00-11:00)
+// are served before wide-window or no-window visits (e.g. Dindyal 08:30-13:00,
+// Catherine no-window) without leaving any of them stranded after the anchor.
+const planGapWindowSequence = (
+  anchor: VisitWithCoords,
+  projections: VisitProjection[],
+  currentTimeSeconds: number,
+  currentLocation: LocationRef,
+  resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+): VisitWithCoords[] => {
+  const sequence: VisitWithCoords[] = [];
+  const remaining = projections
+    .filter((p) => p.visit.visitId !== anchor.visitId && p.lateBySeconds === 0)
+    .map((p) => p.visit);
+
+  let loc: LocationRef = currentLocation;
+  let time = currentTimeSeconds;
+
+  while (remaining.length > 0) {
+    const feasible = remaining
+      .map((visit) => projectVisit(visit, loc, time, resolveTravelSeconds))
+      .filter((p) => {
+        if (p.lateBySeconds > 0) return false;
+        if (p.waitSeconds > IDLE_GAP_FILLER_MAX_WAIT_SECONDS) return false;
+        const anchorReturnTravel = resolveTravelSeconds(p.visit, anchor);
+        const anchorArrival = p.serviceEndSeconds + anchorReturnTravel;
+        return anchorArrival <= anchor.windowStartSeconds - IDLE_GAP_RETURN_BUFFER_SECONDS;
+      });
+
+    if (feasible.length === 0) break;
+
+    // Urgency-first: visits whose window closes soon come before wide/no-window visits
+    const urgent = feasible.filter(
+      (p) =>
+        p.visit.hasPreferredWindow &&
+        p.slackSeconds >= 0 &&
+        p.slackSeconds < FLEXIBLE_URGENCY_THRESHOLD_SECONDS,
+    );
+    const pool = urgent.length > 0 ? urgent : feasible;
+
+    // Within the pool: EDF (least slack first), then nearest travel
+    pool.sort((a, b) => {
+      const aSlack = a.visit.hasPreferredWindow ? a.slackSeconds : Number.MAX_SAFE_INTEGER;
+      const bSlack = b.visit.hasPreferredWindow ? b.slackSeconds : Number.MAX_SAFE_INTEGER;
+      return aSlack !== bSlack ? aSlack - bSlack : a.travelSeconds - b.travelSeconds;
+    });
+
+    const next = pool[0];
+    if (!next) break;
+
+    sequence.push(next.visit);
+    loc = { coords: next.visit.coords, locationKey: next.visit.locationKey };
+    time = next.serviceEndSeconds;
+
+    const idx = remaining.findIndex((v) => v.visitId === next.visit.visitId);
+    if (idx >= 0) remaining.splice(idx, 1);
+  }
+
+  return sequence;
+};
+
 const compareGapFillerCandidates = (
   left: GapFillerCandidate,
   right: GapFillerCandidate,
@@ -901,6 +964,10 @@ const orderVisitsByWindowDistanceAndDuration = (
   let currentTimeSeconds = departureLocalSeconds;
   let lunchTaken = false;
   let lunchSkippedDueToFixed = false;
+  // Gap window planning: pre-planned visit sequence for the idle gap before a
+  // fixed anchor. Populated once per anchor; drained visit-by-visit each iteration.
+  let gapQueue: VisitWithCoords[] = [];
+  let gapQueueAnchorId: string | null = null;
 
   while (remaining.length > 0) {
     // Lunch break logic: insert a time-block at the target lunch window when feasible
@@ -1034,13 +1101,50 @@ const orderVisitsByWindowDistanceAndDuration = (
       throw new HttpError(500, "Unable to evaluate route candidates.");
     }
 
-    const selected = maybeSelectGapFiller(
-      firstProjection,
-      projections,
-      currentTimeSeconds,
-      resolveTravelSeconds,
-      objective,
-    );
+    // Gap window planning: when a large gap exists before a fixed anchor, plan
+    // the full sequence of gap visits once rather than picking one at a time.
+    // This prevents visits with wide windows (e.g. Dindyal 08:30-13:00) from
+    // being stranded after the anchor because a greedy one-at-a-time picker
+    // chose geometrically closer visits on each individual iteration.
+    if (
+      hasFixedRemaining &&
+      firstProjection.waitSeconds >= IDLE_GAP_FILL_THRESHOLD_SECONDS &&
+      firstProjection.visit.visitId !== gapQueueAnchorId
+    ) {
+      gapQueueAnchorId = firstProjection.visit.visitId;
+      gapQueue = planGapWindowSequence(
+        firstProjection.visit,
+        projections,
+        currentTimeSeconds,
+        currentLocation,
+        resolveTravelSeconds,
+      );
+    }
+
+    // Drain pre-planned gap sequence when available; skip stale entries (visits
+    // removed from remaining by capacity checks or previous unscheduling).
+    let selected: VisitProjection | undefined;
+    while (gapQueue.length > 0) {
+      const queued = gapQueue[0];
+      if (queued && remaining.some((v) => v.visitId === queued.visitId)) {
+        selected = projections.find((p) => p.visit.visitId === queued.visitId);
+        gapQueue.shift();
+        break;
+      }
+      gapQueue.shift();
+    }
+
+    // Fall back to single-pick gap-filler / regular selection if queue is empty
+    if (!selected) {
+      selected = maybeSelectGapFiller(
+        firstProjection,
+        projections,
+        currentTimeSeconds,
+        resolveTravelSeconds,
+        objective,
+      );
+    }
+
     if (!selected) {
       throw new HttpError(500, "Unable to select next visit.");
     }
