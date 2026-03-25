@@ -595,7 +595,7 @@ const projectVisit = (
   const serviceEndSeconds = serviceStartSeconds + visit.serviceDurationMinutes * 60;
   const waitSeconds = Math.max(0, serviceStartSeconds - arrivalSeconds);
   const lateBySeconds = visit.hasPreferredWindow
-    ? computeMinuteAlignedLateBySeconds(serviceStartSeconds, visit.windowEndSeconds)
+    ? Math.max(0, serviceStartSeconds - visit.windowEndSeconds)
     : 0;
   const slackSeconds = visit.windowEndSeconds - serviceEndSeconds;
 
@@ -1207,7 +1207,10 @@ const orderVisitsByWindowDistanceAndDuration = (
   };
 };
 
-const buildPenalty = (evaluation: Omit<ScheduleEvaluation, "penalty">, objective: "time" | "distance") => {
+const buildPenalty = (
+  evaluation: Omit<ScheduleEvaluation, "penalty">,
+  objective: "time" | "distance",
+) => {
   const objectiveSeconds =
     objective === "time"
       ? evaluation.score.totalWaitSeconds + evaluation.score.totalTravelSeconds
@@ -1259,7 +1262,12 @@ const evaluateOrderedVisits = (
       lunchTaken = true;
     }
 
-    const projection = projectVisit(visit, currentLocation, currentTimeSeconds, resolveTravelSeconds);
+    const projection = projectVisit(
+      visit,
+      currentLocation,
+      currentTimeSeconds,
+      resolveTravelSeconds,
+    );
     score = addScores(score, scoreProjection(projection));
     currentLocation = {
       coords: visit.coords,
@@ -1408,10 +1416,7 @@ const isGloballyMovableFlexibleBlock = (
   moveLength: number,
 ) => {
   const movingVisits = orderedVisits.slice(fromIndex, fromIndex + moveLength);
-  if (
-    movingVisits.length === 0 ||
-    movingVisits.some((visit) => visit.windowType === "fixed")
-  ) {
+  if (movingVisits.length === 0 || movingVisits.some((visit) => visit.windowType === "fixed")) {
     return false;
   }
 
@@ -1426,7 +1431,7 @@ const isGloballyMovableFlexibleBlock = (
     (previousVisit &&
       previousVisit.windowType === "flexible" &&
       previousVisit.hasPreferredWindow) ||
-      (nextVisit && nextVisit.windowType === "flexible" && nextVisit.hasPreferredWindow),
+    (nextVisit && nextVisit.windowType === "flexible" && nextVisit.hasPreferredWindow),
   );
 };
 
@@ -1511,12 +1516,7 @@ const localSearchSweep = (
             return { orderedVisits: bestOrder, evaluation: bestEvaluation };
           }
 
-          const candidateOrder = reverseSegmentWindow(
-            bestOrder,
-            segment,
-            startOffset,
-            endOffset,
-          );
+          const candidateOrder = reverseSegmentWindow(bestOrder, segment, startOffset, endOffset);
           const candidateEvaluation = evaluateOrderedVisits(
             candidateOrder,
             startLocation,
@@ -1545,7 +1545,11 @@ const localSearchSweep = (
 
       for (let moveLength = 1; moveLength <= Math.min(3, segmentLength - 1); moveLength += 1) {
         for (let fromOffset = 0; fromOffset + moveLength <= segmentLength; fromOffset += 1) {
-          for (let insertOffset = 0; insertOffset <= segmentLength - moveLength; insertOffset += 1) {
+          for (
+            let insertOffset = 0;
+            insertOffset <= segmentLength - moveLength;
+            insertOffset += 1
+          ) {
             if (insertOffset === fromOffset) {
               continue;
             }
@@ -1635,10 +1639,7 @@ const perturbFlexibleSegment = (
   return replaceRange(orderedVisits, segment, replacement);
 };
 
-const perturbFlexibleBlockGlobally = (
-  orderedVisits: VisitWithCoords[],
-  iteration: number,
-) => {
+const perturbFlexibleBlockGlobally = (orderedVisits: VisitWithCoords[], iteration: number) => {
   const candidates: Array<{ fromIndex: number; moveLength: number }> = [];
 
   for (let moveLength = 1; moveLength <= 3; moveLength += 1) {
@@ -1793,7 +1794,12 @@ const promoteNoWindowBeforeLateFixedAnchors = (
         continue;
       }
 
-      const candidateOrder = relocateFlexibleVisitGlobally(bestOrder, fixedIndex + 1, 1, fixedIndex);
+      const candidateOrder = relocateFlexibleVisitGlobally(
+        bestOrder,
+        fixedIndex + 1,
+        1,
+        fixedIndex,
+      );
       const candidateEvaluation = evaluateOrderedVisits(
         candidateOrder,
         startLocation,
@@ -1870,7 +1876,11 @@ const solveRouteWithIls = (
   let bestEvaluation = seedEvaluation;
   const deadlineMs = Date.now() + ILS_TIME_LIMIT_MS;
 
-  for (let iteration = 0; iteration < MAX_ILS_ITERATIONS && Date.now() < deadlineMs; iteration += 1) {
+  for (
+    let iteration = 0;
+    iteration < MAX_ILS_ITERATIONS && Date.now() < deadlineMs;
+    iteration += 1
+  ) {
     const segments = buildFlexibleSegmentRanges(bestOrder);
     const candidateStart =
       iteration === 0
@@ -1917,12 +1927,7 @@ const solveRouteWithIls = (
     objective,
     deadlineMs,
   );
-  if (
-    compareFixedLateness(
-      promotedNoWindowResult.evaluation.score,
-      bestEvaluation.score,
-    ) < 0
-  ) {
+  if (compareFixedLateness(promotedNoWindowResult.evaluation.score, bestEvaluation.score) < 0) {
     bestOrder = promotedNoWindowResult.orderedVisits;
     bestEvaluation = promotedNoWindowResult.evaluation;
   }
