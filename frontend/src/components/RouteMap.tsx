@@ -221,6 +221,7 @@ function FitToRoute({ points }: FitToRouteProps) {
 type RouteMapCanvasProps = {
   defaultCenter: [number, number];
   polylinePoints: Array<[number, number]>;
+  fitPoints: Array<[number, number]>;
   routePoints: RoutePoint[];
   className: string;
 };
@@ -250,6 +251,7 @@ const createRouteMarkerIcon = (point: RoutePoint) => {
 function RouteMapCanvas({
   defaultCenter,
   polylinePoints,
+  fitPoints,
   routePoints,
   className,
 }: RouteMapCanvasProps) {
@@ -260,7 +262,7 @@ function RouteMapCanvas({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      <FitToRoute points={polylinePoints} />
+      <FitToRoute points={fitPoints} />
 
       <Polyline positions={polylinePoints} color="#0f172a" weight={8} opacity={0.18} />
       <Polyline positions={polylinePoints} color="#2563eb" weight={5} opacity={0.95} />
@@ -356,6 +358,18 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
     return routePoints.map((point) => [point.lat, point.lon]);
   }, [routeLegs, routePoints]);
 
+  const fitPoints = useMemo<Array<[number, number]>>(() => {
+    const patientPoints = routePoints
+      .filter((point) => point.markerVariant === "stop" && point.isEndingPoint !== true)
+      .map((point) => [point.lat, point.lon] as [number, number]);
+
+    if (patientPoints.length > 0) {
+      return patientPoints;
+    }
+
+    return polylinePoints;
+  }, [polylinePoints, routePoints]);
+
   const hasStartCoords = isFiniteNumber(start?.coords?.lat) && isFiniteNumber(start?.coords?.lon);
   const hasStopCoords = orderedStops.some(
     (stop) => isFiniteNumber(stop?.coords?.lat) && isFiniteNumber(stop?.coords?.lon),
@@ -427,6 +441,7 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
           <RouteMapCanvas
             defaultCenter={defaultCenter}
             polylinePoints={polylinePoints}
+            fitPoints={fitPoints}
             routePoints={routePoints}
             className={responsiveStyles.map}
           />
@@ -454,6 +469,7 @@ function RouteMap({ start, orderedStops, routeLegs }: RouteMapProps) {
             <RouteMapCanvas
               defaultCenter={defaultCenter}
               polylinePoints={polylinePoints}
+              fitPoints={fitPoints}
               routePoints={routePoints}
               className="h-full min-h-[24rem] w-full overflow-hidden rounded-xl border border-slate-700"
             />
