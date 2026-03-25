@@ -1,5 +1,17 @@
 # Route Optimizer — Option 3: ILS Solver Plan
 
+## Status
+
+- Complete
+- Implemented in production code path via `/api/optimize-route/v3`
+- Last updated: 2026-03-25
+
+## Completion Notes
+
+- The ILS strategy is implemented with a seeded greedy constructor plus iterative local-search refinement.
+- Frontend supports endpoint switching via `VITE_ENABLE_ILS_OPTIMIZER`.
+- Final implementation details differ from the original draft structure (monolithic `v3/optimizeRouteService.ts` instead of `v2/solver/*` modules), which is the reason for the follow-up refactor plan.
+
 ## What the current algorithm is
 
 The current algorithm is not a simple greedy nearest-neighbour. It is a **priority-tiered constructive heuristic with 2-step beam lookahead and a gap-filler post-pass** (now with gap window planning in v2.5.4):
