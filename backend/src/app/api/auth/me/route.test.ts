@@ -148,6 +148,7 @@ describe("/api/auth/me route", () => {
         homeAddress: null,
         workingHours: null,
         breakGapThresholdMinutes: null,
+        optimizationObjective: null,
       },
     });
   });
@@ -194,6 +195,7 @@ describe("/api/auth/me route", () => {
         homeAddress: "1 Main Street, Toronto, ON",
         workingHours: null,
         breakGapThresholdMinutes: null,
+        optimizationObjective: null,
       },
     });
   });
