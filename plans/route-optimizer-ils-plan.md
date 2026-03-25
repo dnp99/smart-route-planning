@@ -206,20 +206,41 @@ The `timeLimitMs` is checked with `performance.now()` at the top of every ILS it
 
 ## Migration strategy
 
-### Step 1 — Feature flag
+### Step 0 — Feature flag first (endpoint split)
 
-Add optional `optimizationEngine?: "greedy" | "ils"` to the validated request (or read from env var). Default: `"greedy"`.
+Roll out ILS behind a frontend-controlled endpoint flag before any solver cutover logic.
+
+- FF OFF (default): frontend calls existing `POST /api/optimize-route/v2` (current greedy behavior).
+- FF ON: frontend calls new `POST /api/optimize-route/v3` (ILS engine path).
+- Keep request/response contract compatible with v2 in the first iteration so the frontend render path does not fork.
+- Do not multiplex solver choice inside one endpoint for initial rollout. Endpoint split keeps rollback instant and low-risk.
+
+Frontend flag behavior:
 
 ```typescript
-const result =
-  request.optimizationEngine === "ils"
-    ? solveVRP(...)
-    : orderVisitsByWindowDistanceAndDuration(...);
+const optimizeRoutePath = isIlsEnabled ? "/api/optimize-route/v3" : "/api/optimize-route/v2";
 ```
 
-### Step 2 — Shadow mode
+`isIlsEnabled` source (choose one and keep it stable):
+- `VITE_ENABLE_ILS_OPTIMIZER=true|false` (build-time env), or
+- runtime-injected config (for no-redeploy toggles).
 
-When `optimizationEngine` is unset (production), run both algorithms and log the comparison. Return the greedy result; accumulate ILS quality evidence:
+Acceptance criteria for Step 0:
+- With FF OFF, request payloads and responses are unchanged from today.
+- With FF ON, only endpoint path changes; UI parsing and rendering remains unchanged.
+- Turning FF OFF is an immediate rollback to known-good behavior.
+
+### Step 1 — Backend v3 wiring
+
+Implement `POST /api/optimize-route/v3` as the ILS route. Keep `/v2` untouched.
+
+- `/v2`: existing `orderVisitsByWindowDistanceAndDuration` flow.
+- `/v3`: new `solveVRP` flow.
+- Shared validation/contracts remain in `shared/contracts` to prevent frontend divergence.
+
+### Step 2 — Shadow mode (v3-internal, optional)
+
+Inside `/v3`, optionally run both algorithms and log comparison while returning the selected engine result for that endpoint:
 
 ```typescript
 const greedyResult = orderVisitsByWindowDistanceAndDuration(...);
@@ -228,7 +249,7 @@ const ilsResult    = solveVRP(..., 500);
 if (ilsResult.diagnostics.penalty < greedyPenalty) {
   console.info("[solver-shadow] ILS improved", { delta, fixedLateCountGreedy, fixedLateCountIls });
 }
-// return greedyResult to callers
+// return endpoint-selected result to caller
 ```
 
 ### Step 3 — Test suite parity
@@ -240,7 +261,7 @@ Audit the test file for index-based ordering assertions (e.g. "Patient A is at i
 
 ### Step 4 — Cutover
 
-After 2 weeks of shadow logs showing ILS equal-or-better on all constraint dimensions, flip the default to `"ils"` via env var. Remove the greedy branch in the subsequent PR.
+After 2 weeks of shadow logs showing ILS equal-or-better on all constraint dimensions, flip the frontend FF default to ON for targeted cohorts, then globally. Keep `/v2` available until stable.
 
 ---
 

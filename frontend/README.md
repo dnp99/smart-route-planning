@@ -34,6 +34,13 @@ The frontend reads its API base URL from `VITE_API_BASE_URL` first, then falls b
 
 If the value is not provided, it defaults to `http://localhost:3000`.
 
+Route optimizer engine selection is controlled by `VITE_ENABLE_ILS_OPTIMIZER`:
+
+- unset / `false`: calls `POST /api/optimize-route/v2`
+- `true`: calls `POST /api/optimize-route/v3`
+
+The `v3` path keeps the same response contract as `v2`.
+
 Example:
 
 ```bash

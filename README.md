@@ -39,6 +39,7 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
   - `DELETE /api/patients/:id`
 - Route planning:
   - `POST /api/optimize-route/v2` (current planner flow)
+- `POST /api/optimize-route/v3` (feature-flagged seeded ILS path; contract-compatible with `v2`)
 - Address suggestions:
   - `GET /api/address-autocomplete?query=...`
 
@@ -103,6 +104,12 @@ Notes:
 - `start.departureTime` is optional and typically omitted by frontend.
 - Backend computes departure dynamically when omitted (earliest first-stop anchor with travel-time + buffer).
 - `"distance"` minimizes idle wait first, then travel time separately. `"time"` minimizes combined wait + travel, finishing the day earlier at the cost of slightly more driving.
+
+## ILS feature flag
+
+The frontend defaults to `POST /api/optimize-route/v2`.
+
+Set `VITE_ENABLE_ILS_OPTIMIZER=true` to route optimization requests to `POST /api/optimize-route/v3` instead. The `v3` path keeps the same request/response contract as `v2` so the UI render path does not change.
 
 ## Route optimizer scheduling logic
 

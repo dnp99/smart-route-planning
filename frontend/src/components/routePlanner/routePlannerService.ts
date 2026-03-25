@@ -7,6 +7,7 @@ import {
   type WeeklyWorkingHours,
 } from "../../../../shared/contracts";
 import { requestAuthedJson } from "../auth/authFetch";
+import { resolveOptimizeRoutePath } from "./optimizeRouteEndpoint";
 import type { OptimizeRouteResponse } from "../types";
 
 const DEFAULT_SERVICE_DURATION_MINUTES = 20;
@@ -324,9 +325,10 @@ export const requestOptimizedRoute = async ({
   });
 
   const visitById = new Map(visits.map((visit) => [visit.visitId, visit]));
+  const optimizeRoutePath = resolveOptimizeRoutePath();
 
   const payload = await requestAuthedJson(
-    "/api/optimize-route/v2",
+    optimizeRoutePath,
     {
       method: "POST",
       headers: {

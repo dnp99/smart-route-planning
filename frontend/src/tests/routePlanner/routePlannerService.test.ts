@@ -52,6 +52,7 @@ describe("requestOptimizedRoute", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
     window.localStorage.clear();
   });
 
@@ -134,6 +135,27 @@ describe("requestOptimizedRoute", () => {
     const headers = new Headers(init.headers);
     expect(headers.get("Content-Type")).toBe("application/json");
     expect(headers.get("Authorization")).toBe("Bearer test-token");
+  });
+
+  it("calls optimize-route v3 when ILS flag is enabled", async () => {
+    vi.stubEnv("VITE_ENABLE_ILS_OPTIMIZER", "true");
+
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => buildValidResponse(),
+    } as Response);
+
+    await requestOptimizedRoute({
+      startAddress: "Start",
+      endAddress: "End",
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      destinations: [],
+    });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const [url] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://api.example.com/api/optimize-route/v3");
   });
 
   it("includes manual start and end place ids when provided", async () => {
