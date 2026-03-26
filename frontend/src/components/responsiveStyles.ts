@@ -205,11 +205,12 @@ export const responsiveStyles = {
   // label: text-xs text-slate-500   value: text-lg font-semibold text-slate-900
   resultStatsGrid: "mt-4 grid w-full gap-3 sm:grid-cols-2",
   resultStatCard:
-    "rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm transition hover:shadow dark:border-slate-700/80 dark:bg-slate-950/60 sm:px-3 sm:py-3",
+    "route-result-stat-card rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm transition hover:shadow dark:border-slate-700/80 dark:bg-slate-950/60 sm:px-3 sm:py-3",
   resultStatLabel: "text-xs font-medium text-slate-500 dark:text-slate-400",
   resultStatValue:
     "mt-0.5 text-[0.95rem] font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-lg",
   resultStatMeta: "mt-0.5 text-xs text-slate-500 dark:text-slate-400 sm:text-sm",
+  resultStatCardFlash: "motion-reduce:animate-none",
   resultEndpoints:
     "mt-4 grid gap-3 rounded-2xl bg-slate-100/80 p-3 dark:bg-slate-900/55 sm:grid-cols-2",
   resultEndpointCard:
@@ -253,6 +254,12 @@ export const responsiveStyles = {
     "flex flex-1 cursor-pointer items-start gap-2.5 rounded-xl border border-slate-200 px-3 py-2.5 transition hover:border-slate-300 has-[:checked]:border-blue-400 has-[:checked]:bg-blue-50/80 dark:border-slate-700 dark:hover:border-slate-600 dark:has-[:checked]:border-blue-600 dark:has-[:checked]:bg-blue-900/25",
   objectiveSelectorLabel: "text-xs font-semibold text-slate-800 dark:text-slate-100",
   objectiveSelectorDescription: "mt-0.5 text-xs text-slate-500 dark:text-slate-400",
+  segmentedControlContainer: "inline-flex rounded-lg bg-slate-100 p-1 dark:bg-slate-800",
+  segmentedControlButtonBase: "rounded-md px-2.5 py-1 text-xs transition",
+  segmentedControlButtonActive:
+    "bg-white text-slate-900 shadow-sm font-semibold dark:bg-slate-900 dark:text-slate-100",
+  segmentedControlButtonInactive:
+    "text-slate-600 hover:text-slate-800 dark:text-slate-300 dark:hover:text-slate-100",
 
   // ── Submit / optimize ────────────────────────────────────────────────────────
   spinnerWhite: "h-4 w-4 animate-spin rounded-full border-2 border-white/70 border-t-white",
@@ -260,6 +267,33 @@ export const responsiveStyles = {
     "inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300",
   optimizeButtonLarge:
     "optimize-route-button inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto",
+  routeSkeletonSection: "mt-6 border-t border-slate-200 pt-6 dark:border-slate-800",
+  routeSkeletonDispatch:
+    "grid gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:rounded-[28px] sm:p-4",
+  routeSkeletonHeader: "grid gap-3",
+  routeSkeletonTimelineMap:
+    "mt-5 flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)]",
+  routeSkeletonCard:
+    "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:rounded-[28px] sm:p-4",
+  routeSkeletonStatsGrid: "grid grid-cols-2 gap-2 xl:grid-cols-4",
+  routeSkeletonSplitHeader: "flex items-start justify-between gap-3",
+  routeSkeletonCardHeader: "grid gap-2",
+  routeSkeletonTimelineList: "mt-4 grid gap-3",
+  routeSkeletonMapStack: "mt-4 grid gap-3",
+  routeSkeletonPulse:
+    "route-loading-skeleton motion-reduce:animate-none rounded-xl bg-slate-200/80 dark:bg-slate-700/70",
+  routeSkeletonTitle: "h-3.5 w-28",
+  routeSkeletonHeading: "h-7 w-52",
+  routeSkeletonBody: "h-4 w-full max-w-2xl",
+  routeSkeletonBodyShort: "h-4 w-2/3",
+  routeSkeletonWarning: "h-20 w-full",
+  routeSkeletonStat: "h-28 w-full",
+  routeSkeletonTimelineHeader: "h-6 w-36",
+  routeSkeletonTimelineAction: "h-8 w-28",
+  routeSkeletonTimelineItem: "h-24 w-full",
+  routeSkeletonMapAction: "h-10 w-full",
+  routeSkeletonMapNote: "h-4 w-44",
+  routeSkeletonMapCanvas: "h-56 w-full sm:h-[min(70vh,600px)] sm:min-h-64",
 
   // ── Visit window form ────────────────────────────────────────────────────────
   visitWindowCheckboxLabel:

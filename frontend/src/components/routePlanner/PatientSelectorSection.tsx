@@ -35,6 +35,9 @@ type PatientSelectorSectionProps = {
   canOptimize: boolean;
   hasChangedSinceLastOptimize: boolean;
   showOptimizeSuccess: boolean;
+  optimizationObjective: "time" | "distance";
+  defaultOptimizationObjective: "time" | "distance";
+  onOptimizationObjectiveChange: (value: "time" | "distance") => void;
 };
 
 export const PatientSelectorSection = ({
@@ -63,23 +66,63 @@ export const PatientSelectorSection = ({
   canOptimize,
   hasChangedSinceLastOptimize,
   showOptimizeSuccess,
+  optimizationObjective,
+  defaultOptimizationObjective,
+  onOptimizationObjectiveChange,
 }: PatientSelectorSectionProps) => {
   if (!isVisible) return null;
 
   const isContentVisible = isExpanded || isMobileViewport;
   const isCollapsedDesktop = !isExpanded && !isMobileViewport;
 
-  // Preview row: first 3 patient names abbreviated (e.g. "Ravi R")
+  // Preview row: first 3 unique patient names abbreviated (e.g. "Ravi R")
+  const uniquePreviewDestinations = selectedDestinations.filter((destination, index, all) => {
+    return all.findIndex((candidate) => candidate.patientId === destination.patientId) === index;
+  });
   const MAX_PREVIEW = 3;
-  const previewNames = selectedDestinations.slice(0, MAX_PREVIEW).map((d) => {
+  const previewNames = uniquePreviewDestinations.slice(0, MAX_PREVIEW).map((d) => {
     const parts = d.patientName.trim().split(/\s+/);
     return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}` : parts[0];
   });
-  const extraCount = selectedDestinations.length - previewNames.length;
+  const extraCount = uniquePreviewDestinations.length - previewNames.length;
   const previewText = previewNames.join(" · ") + (extraCount > 0 ? ` +${extraCount} more` : "");
 
   const isOptimizeDisabled =
     isLoading || !canOptimize || (hasResult && !hasChangedSinceLastOptimize);
+  const defaultObjectiveLabel =
+    defaultOptimizationObjective === "distance" ? "Less driving" : "Finish sooner";
+  const routePreferenceControl = (
+    <div
+      className={responsiveStyles.segmentedControlContainer}
+      aria-label={`Route preference (default: ${defaultObjectiveLabel})`}
+      title={`Route preference (default: ${defaultObjectiveLabel})`}
+    >
+      <button
+        type="button"
+        onClick={() => onOptimizationObjectiveChange("distance")}
+        aria-pressed={optimizationObjective === "distance"}
+        className={`${responsiveStyles.segmentedControlButtonBase} ${
+          optimizationObjective === "distance"
+            ? responsiveStyles.segmentedControlButtonActive
+            : responsiveStyles.segmentedControlButtonInactive
+        }`}
+      >
+        Less driving
+      </button>
+      <button
+        type="button"
+        onClick={() => onOptimizationObjectiveChange("time")}
+        aria-pressed={optimizationObjective === "time"}
+        className={`${responsiveStyles.segmentedControlButtonBase} ${
+          optimizationObjective === "time"
+            ? responsiveStyles.segmentedControlButtonActive
+            : responsiveStyles.segmentedControlButtonInactive
+        }`}
+      >
+        Finish sooner
+      </button>
+    </div>
+  );
 
   return (
     <section className={responsiveStyles.panel}>
@@ -102,6 +145,8 @@ export const PatientSelectorSection = ({
                 Add New Patient
               </button>
             )}
+            {isContentVisible && routePreferenceControl}
+            {isCollapsedDesktop && routePreferenceControl}
             {!isMobileViewport && (
               <button
                 type="submit"
@@ -150,85 +195,87 @@ export const PatientSelectorSection = ({
       )}
 
       {isContentVisible && (
-        <div className={responsiveStyles.patientSelectionGrid}>
-          <div className="grid gap-2">
-            <p className={responsiveStyles.patientColumnLabel}>
-              Search patients ({destinationSearchResults.length})
-            </p>
-            <div className={responsiveStyles.patientSearchContainer}>
-              {createPatientError && (
-                <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
-              )}
-              <div className="relative">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-                >
-                  <circle cx="11" cy="11" r="8" />
-                  <path d="m21 21-4.35-4.35" />
-                </svg>
-                <input
-                  id="destination-patient-search"
-                  type="search"
-                  aria-label="Destination patient search"
-                  value={destinationSearchQuery}
-                  onChange={(e) => onSearchQueryChange(e.target.value)}
-                  placeholder="Search saved patients by first or last name"
-                  className={`${responsiveStyles.searchInput} pl-9 sm:pl-10`}
-                />
+        <>
+          <div className={responsiveStyles.patientSelectionGrid}>
+            <div className="grid gap-2">
+              <p className={responsiveStyles.patientColumnLabel}>
+                Search patients ({destinationSearchResults.length})
+              </p>
+              <div className={responsiveStyles.patientSearchContainer}>
+                {createPatientError && (
+                  <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
+                )}
+                <div className="relative">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                  >
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.35-4.35" />
+                  </svg>
+                  <input
+                    id="destination-patient-search"
+                    type="search"
+                    aria-label="Destination patient search"
+                    value={destinationSearchQuery}
+                    onChange={(e) => onSearchQueryChange(e.target.value)}
+                    placeholder="Search saved patients by first or last name"
+                    className={`${responsiveStyles.searchInput} pl-9 sm:pl-10`}
+                  />
+                </div>
+                {isSearchLoading && (
+                  <p className={responsiveStyles.panelEmptyText}>Loading patients…</p>
+                )}
+                {searchError && (
+                  <p className="m-0 text-xs text-amber-700 dark:text-amber-300">{searchError}</p>
+                )}
+                {destinationSearchResults.length > 0 && (
+                  <ul className={responsiveStyles.selectableList}>
+                    {destinationSearchResults.map((patient) => {
+                      const patientName = formatPatientNameFromParts(
+                        patient.firstName,
+                        patient.lastName,
+                      );
+                      return (
+                        <li key={patient.id}>
+                          <button
+                            type="button"
+                            onClick={() => onAddPatient(patient)}
+                            className={responsiveStyles.selectableItemButton}
+                          >
+                            <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
+                              {patientName}
+                            </p>
+                            <p className="m-0 text-slate-600 dark:text-slate-300">
+                              {patient.address}
+                            </p>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
               </div>
-              {isSearchLoading && (
-                <p className={responsiveStyles.panelEmptyText}>Loading patients…</p>
-              )}
-              {searchError && (
-                <p className="m-0 text-xs text-amber-700 dark:text-amber-300">{searchError}</p>
-              )}
-              {destinationSearchResults.length > 0 && (
-                <ul className={responsiveStyles.selectableList}>
-                  {destinationSearchResults.map((patient) => {
-                    const patientName = formatPatientNameFromParts(
-                      patient.firstName,
-                      patient.lastName,
-                    );
-                    return (
-                      <li key={patient.id}>
-                        <button
-                          type="button"
-                          onClick={() => onAddPatient(patient)}
-                          className={responsiveStyles.selectableItemButton}
-                        >
-                          <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
-                            {patientName}
-                          </p>
-                          <p className="m-0 text-slate-600 dark:text-slate-300">
-                            {patient.address}
-                          </p>
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
             </div>
-          </div>
 
-          <SelectedDestinationsSection
-            selectedDestinations={selectedDestinations}
-            expandedDestinationVisitKeys={expandedDestinationVisitKeys}
-            onToggleDestinationDetails={onToggleDestinationDetails}
-            onRemoveDestinationVisit={onRemoveDestinationVisit}
-            onSetDestinationVisitIncluded={onSetDestinationVisitIncluded}
-            onUpdateDestinationPlanningWindow={onUpdateDestinationPlanningWindow}
-            onSetDestinationPersistPlanningWindow={onSetDestinationPersistPlanningWindow}
-          />
-        </div>
+            <SelectedDestinationsSection
+              selectedDestinations={selectedDestinations}
+              expandedDestinationVisitKeys={expandedDestinationVisitKeys}
+              onToggleDestinationDetails={onToggleDestinationDetails}
+              onRemoveDestinationVisit={onRemoveDestinationVisit}
+              onSetDestinationVisitIncluded={onSetDestinationVisitIncluded}
+              onUpdateDestinationPlanningWindow={onUpdateDestinationPlanningWindow}
+              onSetDestinationPersistPlanningWindow={onSetDestinationPersistPlanningWindow}
+            />
+          </div>
+        </>
       )}
     </section>
   );

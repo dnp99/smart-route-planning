@@ -86,6 +86,7 @@ describe("useRouteOptimization", () => {
     expect(result.current.result).toEqual(payload);
     expect(result.current.error).toBe("");
     expect(result.current.showOptimizeSuccess).toBe(true);
+    expect(result.current.showOptimizeFlash).toBe(true);
     expect(result.current.isLoading).toBe(false);
     expect(mockedRequestOptimizedRoute).toHaveBeenCalledWith({
       startAddress: "Start",
@@ -104,7 +105,13 @@ describe("useRouteOptimization", () => {
     });
 
     await act(async () => {
-      await vi.advanceTimersByTimeAsync(750);
+      await vi.advanceTimersByTimeAsync(650);
+    });
+
+    expect(result.current.showOptimizeFlash).toBe(false);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(100);
     });
 
     expect(result.current.showOptimizeSuccess).toBe(false);

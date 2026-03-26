@@ -69,6 +69,9 @@ function RoutePlanner({
   const [activeMobileStep, setActiveMobileStep] = useState<MobilePlannerStep>(
     initialDraft?.activeMobileStep ?? "trip",
   );
+  const [plannerOptimizationObjective, setPlannerOptimizationObjective] = useState<
+    "time" | "distance"
+  >(optimizationObjective);
 
   const {
     result,
@@ -76,6 +79,7 @@ function RoutePlanner({
     isLoading,
     isRecalculating,
     showOptimizeSuccess,
+    showOptimizeFlash,
     hasAttemptedOptimize,
     optimizeRoute,
   } = useRouteOptimization();
@@ -277,6 +281,7 @@ function RoutePlanner({
 
   const currentOptimizeSnapshot = [
     planningDate,
+    plannerOptimizationObjective,
     startAddress,
     resolvedEndAddress,
     selectedDestinations
@@ -307,6 +312,10 @@ function RoutePlanner({
     setConflictWarningsDismissed(false);
     setLatenessWarningsDismissed(false);
   }, [result]);
+
+  useEffect(() => {
+    setPlannerOptimizationObjective(optimizationObjective);
+  }, [optimizationObjective]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -343,7 +352,7 @@ function RoutePlanner({
       canOptimize,
       planningDate,
       workingHours: nurseWorkingHours ?? null,
-      optimizationObjective,
+      optimizationObjective: plannerOptimizationObjective,
     });
   };
 
@@ -402,7 +411,7 @@ function RoutePlanner({
       planningDate,
       preserveOrder: true,
       workingHours: nurseWorkingHours ?? null,
-      optimizationObjective,
+      optimizationObjective: plannerOptimizationObjective,
     });
   };
 
@@ -522,7 +531,9 @@ function RoutePlanner({
               canOptimize={canOptimize}
               hasChangedSinceLastOptimize={hasChangedSinceLastOptimize}
               showOptimizeSuccess={showOptimizeSuccess}
-              optimizationObjective={optimizationObjective}
+              optimizationObjective={plannerOptimizationObjective}
+              defaultOptimizationObjective={optimizationObjective}
+              onOptimizationObjectiveChange={setPlannerOptimizationObjective}
             />
           </div>
 
@@ -540,6 +551,7 @@ function RoutePlanner({
             result={result}
             hasChangedSinceLastOptimize={hasChangedSinceLastOptimize}
             showOptimizeSuccess={showOptimizeSuccess}
+            showOptimizeFlash={showOptimizeFlash}
             optimizeEndpointHint={optimizeEndpointHint}
             localValidationError={localValidationError}
             optimizeError={error ?? ""}

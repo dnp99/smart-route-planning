@@ -208,4 +208,28 @@ describe("OptimizedRouteResult", () => {
     expect(screen.queryByText(/ • /)).toBeNull();
     expect(screen.getByText("Reason: The visit window is invalid.")).toBeTruthy();
   });
+
+  it("applies success flash state to metric cards only when requested", () => {
+    render(
+      <OptimizedRouteResult
+        result={buildResult()}
+        conflictWarningsDismissed={true}
+        onDismissConflictWarnings={() => undefined}
+        latenessWarningsDismissed={true}
+        onDismissLatenessWarnings={() => undefined}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
+        showOptimizeFlash={true}
+      />,
+    );
+
+    const statCards = screen.getAllByText(/Driving Time|Distance|Scheduled Stops|Leave By/i);
+    statCards.forEach((label) => {
+      expect(label.parentElement?.getAttribute("data-success")).toBe("true");
+    });
+  });
 });
