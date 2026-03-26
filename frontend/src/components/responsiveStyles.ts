@@ -111,6 +111,28 @@ export const responsiveStyles = {
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:px-4 sm:py-1.5",
   dateInput:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+  dateInputTrigger:
+    "flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 cursor-pointer",
+  dateInputTriggerCompact:
+    "flex w-36 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 cursor-pointer",
+  calendarPopover:
+    "absolute z-50 mt-1 rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-900",
+  calendarNav: "flex items-center justify-between pb-2",
+  calendarNavButton:
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200",
+  calendarMonthLabel: "text-sm font-semibold text-slate-900 dark:text-slate-100",
+  calendarGrid: "text-sm",
+  calendarHeadCell: "w-9 pb-1 text-center text-xs font-medium text-slate-400 dark:text-slate-500",
+  calendarDayBase: "inline-flex h-9 w-9 items-center justify-center rounded-lg text-sm transition",
+  calendarDayDefault:
+    "text-slate-700 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+  calendarDaySelected: "bg-blue-600 font-semibold text-white hover:bg-blue-700",
+  calendarDayToday: "font-semibold text-blue-600 dark:text-blue-400",
+  calendarDayDisabled: "text-slate-300 cursor-not-allowed dark:text-slate-600",
+  calendarFooter:
+    "mt-2 flex items-center justify-end border-t border-slate-100 pt-2 dark:border-slate-800",
+  calendarFooterLink:
+    "text-xs font-medium text-blue-600 hover:text-blue-700 cursor-pointer dark:text-blue-400 dark:hover:text-blue-300",
 
   // ── Buttons ───────────────────────────────────────────────────────────────
   // Primary: bg-blue-600 text-white hover:bg-blue-700

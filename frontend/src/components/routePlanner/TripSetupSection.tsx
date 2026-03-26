@@ -1,4 +1,5 @@
 import AddressAutocompleteInput from "../AddressAutocompleteInput";
+import { DatePicker } from "../DatePicker";
 import { responsiveStyles } from "../responsiveStyles";
 import type { AddressSuggestion } from "../types";
 
@@ -70,14 +71,12 @@ export const TripSetupSection = ({
               Edit
             </button>
           </p>
-          <input
+          <DatePicker
             id="planningDate"
-            type="date"
             value={planningDate}
-            onChange={(e) => onPlanningDateChange(e.target.value)}
-            className="w-36 shrink-0 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
-            aria-label="Planning date"
-            required
+            onChange={onPlanningDateChange}
+            compact
+            ariaLabel="Planning date"
           />
           <button
             type="button"
@@ -109,28 +108,40 @@ export const TripSetupSection = ({
       <div className={responsiveStyles.cardHeader}>
         <div className="flex items-center justify-between gap-2">
           <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
-          {!isMobileViewport && startAddress.length > 0 && resolvedEndAddress.length > 0 && (
-            <button
-              type="button"
-              aria-label="Collapse trip setup"
-              onClick={() => onSetExpanded(false)}
-              className={responsiveStyles.panelChevronButton}
-            >
-              <svg
-                width="16"
-                height="16"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              Planning date
+            </span>
+            <DatePicker
+              id="planningDate"
+              value={planningDate}
+              onChange={onPlanningDateChange}
+              compact
+              ariaLabel="Planning date"
+            />
+            {!isMobileViewport && startAddress.length > 0 && resolvedEndAddress.length > 0 && (
+              <button
+                type="button"
+                aria-label="Collapse trip setup"
+                onClick={() => onSetExpanded(false)}
+                className={responsiveStyles.panelChevronButton}
               >
-                <polyline points="18 15 12 9 6 15" />
-              </svg>
-            </button>
-          )}
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <polyline points="18 15 12 9 6 15" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
         <p className={responsiveStyles.cardDescription}>
           Define where the nurse starts and how the route should end.
@@ -185,22 +196,6 @@ export const TripSetupSection = ({
           errorText={endFieldError}
           required
         />
-        <div className="grid gap-1">
-          <label
-            htmlFor="planningDate"
-            className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-          >
-            Planning date
-          </label>
-          <input
-            id="planningDate"
-            type="date"
-            value={planningDate}
-            onChange={(e) => onPlanningDateChange(e.target.value)}
-            className={responsiveStyles.dateInput}
-            required
-          />
-        </div>
       </div>
     </section>
   );
