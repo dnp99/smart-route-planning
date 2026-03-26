@@ -4,9 +4,15 @@ import { RouteResultSection } from "../../components/routePlanner/RouteResultSec
 import type { OptimizeRouteResponse } from "../../components/types";
 
 vi.mock("../../components/routePlanner/OptimizedRouteResult", () => ({
-  OptimizedRouteResult: ({ breakGapThresholdMinutes }: { breakGapThresholdMinutes?: number }) => (
+  OptimizedRouteResult: ({
+    breakGapThresholdMinutes,
+    showOptimizeFlash,
+  }: {
+    breakGapThresholdMinutes?: number;
+    showOptimizeFlash?: boolean;
+  }) => (
     <div data-testid="optimized-route-result">
-      Optimized Route Result {String(breakGapThresholdMinutes ?? "")}
+      Optimized Route Result {String(breakGapThresholdMinutes ?? "")} {String(showOptimizeFlash)}
     </div>
   ),
 }));
@@ -29,6 +35,7 @@ const buildProps = () => ({
   result: null as OptimizeRouteResponse | null,
   hasChangedSinceLastOptimize: true,
   showOptimizeSuccess: false,
+  showOptimizeFlash: false,
   optimizeEndpointHint: "",
   localValidationError: "",
   optimizeError: "",
@@ -114,10 +121,13 @@ describe("RouteResultSection", () => {
     props.isLoading = true;
     rerender(<RouteResultSection {...props} />);
     expect(screen.getByRole("button", { name: "Optimizing..." })).toBeTruthy();
+    expect(screen.getByTestId("optimized-route-skeleton")).toBeTruthy();
+    expect(screen.queryByTestId("optimized-route-result")).toBeNull();
 
     props.isLoading = false;
     props.result = { mock: true } as unknown as OptimizeRouteResponse;
     props.hasChangedSinceLastOptimize = false;
+    props.showOptimizeFlash = true;
     props.optimizeEndpointHint = "Endpoint hint";
     props.localValidationError = "Local warning";
     props.optimizeError = "Optimize failure";
@@ -129,5 +139,6 @@ describe("RouteResultSection", () => {
     expect(screen.getByText("Local warning")).toBeTruthy();
     expect(screen.getByText("Optimize failure")).toBeTruthy();
     expect(screen.getByTestId("optimized-route-result")).toBeTruthy();
+    expect(screen.getByText(/true$/)).toBeTruthy();
   });
 });

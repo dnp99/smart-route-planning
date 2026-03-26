@@ -240,7 +240,7 @@ export const PatientsTable = ({
   const [openWindowsPopoverKey, setOpenWindowsPopoverKey] = useState<string | null>(null);
   const windowsPopoverRef = useRef<HTMLDivElement | null>(null);
   const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
-  const [sortField, setSortField] = useState<SortField>(null);
+  const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [windowFilter, setWindowFilter] = useState<WindowFilter>("all");
 

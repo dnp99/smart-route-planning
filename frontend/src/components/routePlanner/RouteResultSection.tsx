@@ -17,6 +17,7 @@ type RouteResultSectionProps = {
   result: OptimizeRouteResponse | null;
   hasChangedSinceLastOptimize: boolean;
   showOptimizeSuccess: boolean;
+  showOptimizeFlash: boolean;
   optimizeEndpointHint?: string;
   localValidationError: string;
   optimizeError: string;
@@ -46,6 +47,90 @@ type RouteResultSectionProps = {
   planningDate: string;
 };
 
+const OptimizedRouteSkeleton = () => (
+  <section
+    className={responsiveStyles.routeSkeletonSection}
+    aria-label="Optimizing route"
+    data-testid="optimized-route-skeleton"
+  >
+    <div className={responsiveStyles.routeSkeletonDispatch}>
+      <div className={responsiveStyles.routeSkeletonHeader}>
+        <div
+          className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTitle}`}
+        />
+        <div
+          className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonHeading}`}
+        />
+        <div
+          className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonBody}`}
+        />
+        <div
+          className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonBodyShort}`}
+        />
+      </div>
+      <div
+        className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonWarning}`}
+      />
+      <div className={responsiveStyles.routeSkeletonStatsGrid}>
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div
+            key={`route-stat-skeleton-${index}`}
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonStat}`}
+          />
+        ))}
+      </div>
+    </div>
+
+    <div className={responsiveStyles.routeSkeletonTimelineMap}>
+      <section className={responsiveStyles.routeSkeletonCard}>
+        <div className={responsiveStyles.routeSkeletonSplitHeader}>
+          <div className={responsiveStyles.routeSkeletonCardHeader}>
+            <div
+              className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTitle}`}
+            />
+            <div
+              className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineHeader}`}
+            />
+          </div>
+          <div
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineAction}`}
+          />
+        </div>
+        <div className={responsiveStyles.routeSkeletonTimelineList}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={`route-timeline-skeleton-${index}`}
+              className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineItem}`}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className={responsiveStyles.routeSkeletonCard}>
+        <div className={responsiveStyles.routeSkeletonCardHeader}>
+          <div
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTitle}`}
+          />
+          <div
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineHeader}`}
+          />
+        </div>
+        <div className={responsiveStyles.routeSkeletonMapStack}>
+          <div
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonMapAction}`}
+          />
+          <div
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonMapNote}`}
+          />
+          <div
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonMapCanvas}`}
+          />
+        </div>
+      </section>
+    </div>
+  </section>
+);
+
 export const RouteResultSection = ({
   isMobileViewport,
   activeMobileStep,
@@ -60,6 +145,7 @@ export const RouteResultSection = ({
   result,
   hasChangedSinceLastOptimize,
   showOptimizeSuccess,
+  showOptimizeFlash,
   optimizeEndpointHint,
   localValidationError,
   optimizeError,
@@ -177,7 +263,9 @@ export const RouteResultSection = ({
 
       {optimizeError && <p className={responsiveStyles.formErrorBanner}>{optimizeError}</p>}
 
-      {result && (
+      {isLoading && <OptimizedRouteSkeleton />}
+
+      {result && !isLoading && (
         <OptimizedRouteResult
           result={result}
           orderedStops={orderedStops}
@@ -204,6 +292,7 @@ export const RouteResultSection = ({
           lunchStartTime={lunchStartTime}
           lunchDurationMinutes={lunchDurationMinutes}
           planningDate={planningDate}
+          showOptimizeFlash={showOptimizeFlash}
         />
       )}
     </>

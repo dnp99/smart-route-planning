@@ -49,6 +49,7 @@ export const useRouteOptimization = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [showOptimizeSuccess, setShowOptimizeSuccess] = useState(false);
+  const [showOptimizeFlash, setShowOptimizeFlash] = useState(false);
   const [hasAttemptedOptimize, setHasAttemptedOptimize] = useState(false);
 
   useEffect(() => {
@@ -65,6 +66,20 @@ export const useRouteOptimization = () => {
     };
   }, [showOptimizeSuccess]);
 
+  useEffect(() => {
+    if (!showOptimizeFlash) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setShowOptimizeFlash(false);
+    }, 650);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [showOptimizeFlash]);
+
   const optimizeRoute = async ({
     startAddress,
     startGooglePlaceId,
@@ -80,6 +95,7 @@ export const useRouteOptimization = () => {
   }: OptimizeRouteInput) => {
     setError("");
     setResult(null);
+    setShowOptimizeFlash(false);
     setHasAttemptedOptimize(true);
 
     if (!canOptimize) {
@@ -107,6 +123,7 @@ export const useRouteOptimization = () => {
 
       setResult(optimizedResult);
       setShowOptimizeSuccess(true);
+      setShowOptimizeFlash(true);
     } catch (apiError) {
       setError(apiError instanceof Error ? apiError.message : "Something went wrong.");
     } finally {
@@ -121,6 +138,7 @@ export const useRouteOptimization = () => {
     isLoading,
     isRecalculating,
     showOptimizeSuccess,
+    showOptimizeFlash,
     hasAttemptedOptimize,
     optimizeRoute,
   };

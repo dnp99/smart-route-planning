@@ -7,6 +7,7 @@ const { routeOptimizationState } = vi.hoisted(() => ({
     error: "",
     isLoading: false,
     showOptimizeSuccess: false,
+    showOptimizeFlash: false,
     hasAttemptedOptimize: false,
   },
 }));
@@ -32,6 +33,7 @@ vi.mock("../../components/hooks/useRouteOptimization", () => ({
     error: routeOptimizationState.error,
     isLoading: routeOptimizationState.isLoading,
     showOptimizeSuccess: routeOptimizationState.showOptimizeSuccess,
+    showOptimizeFlash: routeOptimizationState.showOptimizeFlash,
     hasAttemptedOptimize: routeOptimizationState.hasAttemptedOptimize,
     optimizeRoute: optimizeRouteMock,
   }),
@@ -308,6 +310,7 @@ describe("RoutePlanner patient selection integration", () => {
     routeOptimizationState.error = "";
     routeOptimizationState.isLoading = false;
     routeOptimizationState.showOptimizeSuccess = false;
+    routeOptimizationState.showOptimizeFlash = false;
     routeOptimizationState.hasAttemptedOptimize = false;
     usePatientSearchMock.mockReset();
     usePatientSearchMock.mockImplementation(({ enabled }: { query: string; enabled: boolean }) => ({

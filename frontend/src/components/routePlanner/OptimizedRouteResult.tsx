@@ -58,6 +58,7 @@ type OptimizedRouteResultProps = {
   lunchStartTime?: string;
   lunchDurationMinutes?: number;
   planningDate: string;
+  showOptimizeFlash?: boolean;
 };
 
 export function OptimizedRouteResult({
@@ -86,6 +87,7 @@ export function OptimizedRouteResult({
   lunchStartTime,
   lunchDurationMinutes,
   planningDate,
+  showOptimizeFlash = false,
 }: OptimizedRouteResultProps) {
   const [isSavingImage, setIsSavingImage] = useState(false);
 
@@ -353,7 +355,10 @@ export function OptimizedRouteResult({
           )}
 
           <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
-            <div className={responsiveStyles.resultStatCard}>
+            <div
+              className={`${responsiveStyles.resultStatCard} ${responsiveStyles.resultStatCardFlash}`}
+              data-success={showOptimizeFlash ? "true" : "false"}
+            >
               <p className={responsiveStyles.resultStatLabel}>Driving Time</p>
               <p className={responsiveStyles.resultStatValue}>
                 {formatDuration(result.metrics.totalDurationSeconds)}
@@ -362,7 +367,10 @@ export function OptimizedRouteResult({
                 Total driving time, excludes traffic
               </p>
             </div>
-            <div className={responsiveStyles.resultStatCard}>
+            <div
+              className={`${responsiveStyles.resultStatCard} ${responsiveStyles.resultStatCardFlash}`}
+              data-success={showOptimizeFlash ? "true" : "false"}
+            >
               <p className={responsiveStyles.resultStatLabel}>Distance</p>
               <p className={responsiveStyles.resultStatValue}>
                 {result.metrics.totalDistanceKm} km
@@ -371,7 +379,10 @@ export function OptimizedRouteResult({
                 Total planned driving distance
               </p>
             </div>
-            <div className={responsiveStyles.resultStatCard}>
+            <div
+              className={`${responsiveStyles.resultStatCard} ${responsiveStyles.resultStatCardFlash}`}
+              data-success={showOptimizeFlash ? "true" : "false"}
+            >
               <p className={responsiveStyles.resultStatLabel}>Scheduled Stops</p>
               <p className={responsiveStyles.resultStatValue}>{scheduledStopCount}</p>
               <p className={`${responsiveStyles.resultStatMeta} hidden sm:block`}>
@@ -380,7 +391,10 @@ export function OptimizedRouteResult({
                   : "All visits currently scheduled"}
               </p>
             </div>
-            <div className={responsiveStyles.resultStatCard}>
+            <div
+              className={`${responsiveStyles.resultStatCard} ${responsiveStyles.resultStatCardFlash}`}
+              data-success={showOptimizeFlash ? "true" : "false"}
+            >
               <p className={`${responsiveStyles.resultStatLabel} flex items-center gap-1`}>
                 Leave By
                 <span className="group relative inline-flex">
