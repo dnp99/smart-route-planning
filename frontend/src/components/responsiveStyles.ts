@@ -107,6 +107,8 @@ export const responsiveStyles = {
   // bg-white · border-slate-200 · hover:border-slate-300 · focus:ring-blue-100
   searchInput:
     "w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:px-4 sm:py-3",
+  searchInputCompact:
+    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:px-4 sm:py-1.5",
   dateInput:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
 
@@ -137,6 +139,8 @@ export const responsiveStyles = {
     "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400",
   patientSearchContainer:
     "flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3 md:h-[26rem]",
+  secondaryIconButton:
+    "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
 
   // ── Selectable list (patient search results) ───────────────────────────────
   selectableList: "m-0 min-h-0 flex-1 list-none space-y-2 overflow-y-auto p-0",
@@ -226,6 +230,8 @@ export const responsiveStyles = {
   panelChevronButton:
     "inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-300",
   inlineEditLink: "text-blue-600 underline-offset-2 hover:underline dark:text-blue-300",
+  collapsedPreviewButton:
+    "inline rounded bg-transparent p-0 text-sm font-medium text-blue-600 underline-offset-2 transition hover:underline dark:text-blue-300",
 
   // ── Warning / alert banners ──────────────────────────────────────────────────
   warningBannerAmber:

@@ -342,6 +342,7 @@ function RoutePlanner({
     }
 
     lastOptimizedSnapshotRef.current = currentOptimizeSnapshot;
+    setIsPatientSearchExpanded(false);
 
     await optimizeRoute({
       startAddress,

@@ -85,7 +85,7 @@ export const PatientSelectorSection = ({
     return parts.length > 1 ? `${parts[0]} ${parts[parts.length - 1][0]}` : parts[0];
   });
   const extraCount = uniquePreviewDestinations.length - previewNames.length;
-  const previewText = previewNames.join(" · ") + (extraCount > 0 ? ` +${extraCount} more` : "");
+  const previewNamesText = previewNames.join(" · ");
 
   const isOptimizeDisabled =
     isLoading || !canOptimize || (hasResult && !hasChangedSinceLastOptimize);
@@ -134,17 +134,7 @@ export const PatientSelectorSection = ({
           )}
         </div>
         <div className="flex shrink-0 items-center">
-          {/* CTA group */}
           <div className="flex items-center gap-3">
-            {isContentVisible && (
-              <button
-                type="button"
-                onClick={onOpenCreatePatient}
-                className={responsiveStyles.secondaryButton}
-              >
-                Add New Patient
-              </button>
-            )}
             {isContentVisible && routePreferenceControl}
             {isCollapsedDesktop && routePreferenceControl}
             {!isMobileViewport && (
@@ -190,7 +180,19 @@ export const PatientSelectorSection = ({
 
       {isCollapsedDesktop && selectedDestinations.length > 0 && (
         <p className="m-0 mt-1 truncate text-sm text-slate-600 dark:text-slate-400">
-          {previewText}
+          {previewNamesText}
+          {extraCount > 0 && (
+            <>
+              {" "}
+              <button
+                type="button"
+                onClick={() => onSetExpanded(true)}
+                className={responsiveStyles.collapsedPreviewButton}
+              >
+                +{extraCount} more
+              </button>
+            </>
+          )}
         </p>
       )}
 
@@ -205,30 +207,54 @@ export const PatientSelectorSection = ({
                 {createPatientError && (
                   <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
                 )}
-                <div className="relative">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                    className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                <div className="flex items-center gap-2">
+                  <div className="relative flex-1">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="m21 21-4.35-4.35" />
+                    </svg>
+                    <input
+                      id="destination-patient-search"
+                      type="search"
+                      aria-label="Destination patient search"
+                      value={destinationSearchQuery}
+                      onChange={(e) => onSearchQueryChange(e.target.value)}
+                      placeholder="Search saved patients by first or last name"
+                      className={`${responsiveStyles.searchInputCompact} pl-9 sm:pl-10`}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={onOpenCreatePatient}
+                    aria-label="Add New Patient"
+                    className={`${responsiveStyles.secondaryIconButton} sm:h-auto sm:w-auto sm:px-3 sm:py-1.5`}
                   >
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="m21 21-4.35-4.35" />
-                  </svg>
-                  <input
-                    id="destination-patient-search"
-                    type="search"
-                    aria-label="Destination patient search"
-                    value={destinationSearchQuery}
-                    onChange={(e) => onSearchQueryChange(e.target.value)}
-                    placeholder="Search saved patients by first or last name"
-                    className={`${responsiveStyles.searchInput} pl-9 sm:pl-10`}
-                  />
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="h-5 w-5 sm:hidden"
+                    >
+                      <path d="M12 5v14" />
+                      <path d="M5 12h14" />
+                    </svg>
+                    <span className="hidden sm:inline">Add New Patient</span>
+                  </button>
                 </div>
                 {isSearchLoading && (
                   <p className={responsiveStyles.panelEmptyText}>Loading patients…</p>
