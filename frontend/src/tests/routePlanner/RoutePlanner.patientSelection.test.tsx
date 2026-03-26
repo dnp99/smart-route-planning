@@ -383,6 +383,25 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByRole("button", { name: "Optimize Route" })).toHaveProperty("disabled", true);
   });
 
+  it("expands collapsed patients card when +N more is clicked", () => {
+    render(<RoutePlanner />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Mina Lee/i })[0]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Collapse patient search" }));
+
+    const moreButton = screen.getByRole("button", { name: "+1 more" });
+    expect(moreButton).toBeTruthy();
+
+    fireEvent.click(moreButton);
+
+    expect(screen.getByLabelText("Destination patient search")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "+1 more" })).toBeNull();
+  });
+
   it("restores draft selections after remounting route planner", () => {
     const { unmount } = render(<RoutePlanner />);
 
