@@ -16,7 +16,6 @@ export default defineConfig({
       exclude: [
         "src/**/*.test.ts",
         "src/**/*.test.tsx",
-        "src/components/routePlanner/routeImageExport.ts",
         "src/components/routePlanner/routePlannerTypes.ts",
       ],
       thresholds: {
