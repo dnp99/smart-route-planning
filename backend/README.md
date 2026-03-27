@@ -4,8 +4,8 @@ This folder contains the Next.js backend for CareFlow.
 
 ## Responsibilities
 
-- Expose `POST /api/optimize-route/v2` for the current route optimization flow.
-- Expose `POST /api/optimize-route/v3` as the feature-flagged seeded ILS engine path.
+- Expose `POST /api/optimize-route/v3` for the current production route optimization flow.
+- Keep `POST /api/optimize-route/v2` available as a legacy compatibility / rollback path.
 - Expose `GET /api/address-autocomplete` for address suggestions.
 - Expose auth endpoints for signup, login, current-user identity, and password updates.
 - Geocode addresses through Google Places API.
@@ -92,7 +92,7 @@ Production/runtime behavior:
   - Default: `60000`.
 - `OPTIMIZE_ROUTE_V3_SHADOW_COMPARE`
   - Optional.
-  - When `true`, `POST /api/optimize-route/v3` logs seed-vs-ILS diagnostics to the server console for rollout comparison.
+  - When `true`, `POST /api/optimize-route/v3` logs seed-vs-ILS diagnostics to the server console.
   - Does not change the response payload.
 - `OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE`
   - Optional.
@@ -183,15 +183,15 @@ Authentication behavior:
 
 ### Route planning
 
-- `POST /api/optimize-route/v2`
-  - Requires `Authorization: Bearer <token>`
-  - See request/response shape below
-  - Enforces per-client in-memory rate limiting
 - `POST /api/optimize-route/v3`
   - Requires `Authorization: Bearer <token>`
-  - Same request/response contract as `v2` during the rollout phase
-  - Reserved for the feature-flagged ILS engine path
-  - Enforces the same API-key and per-client rate-limit rules as `v2`
+  - Current production optimizer endpoint
+  - Same request/response contract as `v2`
+  - Enforces per-client in-memory rate limiting and optional API-key protection
+- `POST /api/optimize-route/v2`
+  - Requires `Authorization: Bearer <token>`
+  - Legacy compatibility / rollback endpoint
+  - Enforces the same API-key and per-client rate-limit rules as `v3`
 
 ### Address autocomplete
 
@@ -200,9 +200,9 @@ Authentication behavior:
   - Returns up to 5 suggestions
   - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
 
-## Route optimizer — v2 scheduling logic
+## Route optimizer — v3 (production) scheduling logic
 
-`POST /api/optimize-route/v2` uses a greedy beam search (depth 2, beam width 8) with priority tiers and EDF candidate selection.
+`POST /api/optimize-route/v3` uses a greedy beam-search seed (depth 2, beam width 8) with priority tiers and EDF candidate selection, then applies deterministic seeded ILS refinement with fixed-window safety guards.
 
 ### Step 1 — Candidate pool selection
 
@@ -241,7 +241,7 @@ After a candidate is selected, if it has > 30 min of idle wait before its window
 
 ### Key properties
 
-- The `optimizationObjective` field (`"distance"` or `"time"`, default `"distance"`) only affects priority 4–5 tiebreaking — it never overrides deadline pressure.
+- The `optimizationObjective` field (`"distance"` or `"time"`, default `"distance"`) controls the final objective tradeoff after fixed-window safety and lateness priorities are enforced.
 - Distance is the **last** tiebreaker — it never overrides deadline pressure.
 - The gap filler can only **insert**, never displace a selected candidate.
 - Flexible patients within 90 min of their deadline are elevated to a priority pool and sorted by tightest deadline first (EDF), so they are picked before going late rather than after.
@@ -258,7 +258,9 @@ The optimizer returns an optional `warnings[]` array:
 
 ## Key files
 
-- `src/app/api/optimize-route/v2/optimizeRouteService.ts` — core scheduling algorithm
+- `src/app/api/optimize-route/v3/optimizeRouteService.ts` — production scheduling algorithm (greedy seed + seeded ILS)
+- `src/app/api/optimize-route/v3/route.ts` — v3 endpoint wiring
+- `src/app/api/optimize-route/v2/optimizeRouteService.ts` — legacy scheduling algorithm
 - `src/app/api/optimize-route/v2/travelMatrix.ts` — Google Routes travel duration matrix
 - `src/app/api/optimize-route/v2/validation.ts` — request validation
 - `src/app/api/optimize-route/v2/types.ts` — internal types

@@ -7,7 +7,7 @@ This folder contains the Vite + React frontend for CareFlow.
 - Collect starting point, ending point, and intermediate destinations.
 - Require login before allowing access to patient and route-planner pages.
 - Fetch Google Places-backed address suggestions from the backend autocomplete endpoint.
-- Submit route optimization requests to the backend with a selectable optimization objective (`"distance"` or `"time"`) and a configurable planning date (defaults to tomorrow).
+- Submit route optimization requests to the backend (production path: `POST /api/optimize-route/v3`) with a selectable optimization objective (`"distance"` or `"time"`) and a configurable planning date (defaults to tomorrow).
 - Render the optimized route with Leaflet.
 - Support manual stop reordering with recalculated ETA flow.
 - Persist optimization result in sessionStorage across tab switches; clear on auth change.
@@ -36,8 +36,8 @@ If the value is not provided, it defaults to `http://localhost:3000`.
 
 Route optimizer engine selection is controlled by `VITE_ENABLE_ILS_OPTIMIZER`:
 
-- unset / `false`: calls `POST /api/optimize-route/v2`
-- `true`: calls `POST /api/optimize-route/v3`
+- `true`: calls `POST /api/optimize-route/v3` (current production endpoint)
+- unset / `false`: calls `POST /api/optimize-route/v2` (legacy fallback)
 
 The `v3` path keeps the same response contract as `v2`.
 
