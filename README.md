@@ -38,8 +38,8 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
   - `PATCH /api/patients/:id`
   - `DELETE /api/patients/:id`
 - Route planning:
-  - `POST /api/optimize-route/v2` (current planner flow)
-- `POST /api/optimize-route/v3` (feature-flagged seeded ILS path; contract-compatible with `v2`)
+  - `POST /api/optimize-route/v3` (current production planner flow)
+  - `POST /api/optimize-route/v2` (legacy compatibility / rollback path)
 - Address suggestions:
   - `GET /api/address-autocomplete?query=...`
 
@@ -88,9 +88,9 @@ Example runtime override:
 </script>
 ```
 
-## V2 planning request shape
+## Planning request shape
 
-`POST /api/optimize-route/v2` expects:
+`POST /api/optimize-route/v3` expects:
 
 - `planningDate` (`YYYY-MM-DD`)
 - `timezone` (IANA timezone, example `America/Toronto`)
@@ -103,17 +103,27 @@ Notes:
 
 - `start.departureTime` is optional and typically omitted by frontend.
 - Backend computes departure dynamically when omitted (earliest first-stop anchor with travel-time + buffer).
-- `"distance"` minimizes idle wait first, then travel time separately. `"time"` minimizes combined wait + travel, finishing the day earlier at the cost of slightly more driving.
+- `"distance"` prioritizes less driving with bounded idle-gap tradeoffs.
+- `"time"` prioritizes finishing sooner (combined wait + travel), with safeguards so it does not lose to an earlier equally-safe alternative when one exists.
 
-## ILS feature flag
+## Optimizer endpoint selection
 
-The frontend defaults to `POST /api/optimize-route/v2`.
+Current production endpoint is `POST /api/optimize-route/v3`.
 
-Set `VITE_ENABLE_ILS_OPTIMIZER=true` to route optimization requests to `POST /api/optimize-route/v3` instead. The `v3` path keeps the same request/response contract as `v2` so the UI render path does not change.
+Frontend still supports rollback routing:
 
-## Route optimizer scheduling logic
+- `VITE_ENABLE_ILS_OPTIMIZER=true` -> `POST /api/optimize-route/v3` (recommended / prod)
+- unset / `false` -> `POST /api/optimize-route/v2` (legacy fallback)
 
-`POST /api/optimize-route/v2` uses a greedy beam search (depth 2, beam width 8) with priority tiers and EDF candidate selection.
+`v3` and `v2` keep the same request/response contract, so UI render paths remain compatible.
+For production parity, set `VITE_ENABLE_ILS_OPTIMIZER=true` in deployed frontend environments.
+
+## Route optimizer scheduling logic (v3 production)
+
+`POST /api/optimize-route/v3` runs in two stages:
+
+1. Greedy seeded construction (depth 2, beam width 8) with window-aware priority tiers.
+2. Deterministic seeded ILS refinement (request-id-seeded perturbations) under fixed-window safety guards.
 
 ### Step 1 — Candidate pool selection
 
@@ -122,15 +132,25 @@ At each step, the algorithm selects from a prioritised pool:
 ```text
 Any FIXED patients remaining?
 ├── YES
-│   ├── Any FIXED already late?  → Pool: late fixed patients only
-│   └── None late               → Pool: all fixed patients
+│   ├── Any FIXED already late?
+│   │   └── Pool: late fixed patients only
+│   └── None late
+│       └── Pool: near-due fixed patients only
+│           - time mode: fixed with wait <= 30 min
+│           - distance mode: fixed with wait <= 45 min
+│       (if none are near-due, fall through to flexible tiers)
 └── NO
-    ├── Any FLEXIBLE (windowed) already late?   → Pool: late flexible patients only
-    ├── Any FLEXIBLE within 90 min of deadline? → Pool: urgent flexible patients, sorted tightest deadline first (EDF)
-    └── None urgent                             → Pool: all remaining patients
+    ├── Any windowed FLEXIBLE already late?
+    │   └── Pool: late flexible patients only
+    ├── Any windowed FLEXIBLE within 90 min of deadline?
+    │   └── Pool: urgent flexible patients, sorted tightest deadline first (EDF)
+    ├── Any remaining windowed FLEXIBLE?
+    │   └── Pool: all remaining windowed flexible patients
+    └── Otherwise
+        └── Pool: all remaining patients (including no-window flexible)
 ```
 
-### Step 2 — Score every candidate (depth-2 lookahead)
+### Step 2 — Seed scoring (depth-2 lookahead)
 
 Within the pool, each candidate is scored across 5 dimensions (lower = better):
 
@@ -146,15 +166,24 @@ Priorities 4–5 are objective-dependent: `"distance"` (default) minimises wait 
 
 The beam search evaluates 2 steps ahead across the top 8 candidates, so lateness from future steps folds back into the current decision.
 
-### Step 3 — Gap filler
+### Step 3 — Gap filler / sequence fill
 
-After a candidate is selected, if it has > 30 min of idle wait before its window opens, the algorithm checks whether a nearby no-window or flexible patient can be inserted into that gap without delaying the anchor visit.
+If the selected anchor has a large idle gap before service start, the optimizer tries to fill that gap with feasible nearby visits (single filler or planned filler sequence), while preserving anchor feasibility.
+
+### Step 4 — Deterministic ILS refinement
+
+After the greedy seed is built, v3 runs deterministic ILS local search:
+
+- perturbations are reproducible per `requestId` seed;
+- accepted moves must not worsen fixed-window safety;
+- objective-specific ranking is applied only after fixed-window/lateness safety precedence.
 
 ### Key properties
 
-- Distance is the **last** tiebreaker — it never overrides deadline pressure.
-- The gap filler can only **insert**, never displace a selected candidate.
-- Flexible patients within 90 min of their deadline are elevated to a priority pool and sorted by tightest deadline first (EDF), so they are picked before going late rather than after.
+- Fixed-window safety is strict: accepted moves cannot worsen fixed late-count, fixed late-seconds, or fixed slack consumption.
+- Distance mode prioritizes lower travel, with bounded idle-gap tradeoffs to reduce extreme idle blocks.
+- Time mode prioritizes lower elapsed time (`wait + travel`) with bounded idle smoothing; if a less-driving candidate finishes earlier and is equally safe, time mode adopts it.
+- Flexible patients within 90 min of deadline are elevated to urgent EDF ordering to prevent avoidable lateness.
 
 ## Additional docs
 
