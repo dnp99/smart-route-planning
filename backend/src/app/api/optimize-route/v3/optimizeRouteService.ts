@@ -42,6 +42,9 @@ const MAX_ILS_ITERATIONS = 64;
 const DISTANCE_IDLE_GAP_THRESHOLD_SECONDS = 45 * 60;
 const DISTANCE_IDLE_TRAVEL_TOLERANCE_SECONDS = 6 * 60;
 const DISTANCE_IDLE_PENALTY_MULTIPLIER = 100;
+const TIME_IDLE_GAP_THRESHOLD_SECONDS = 30 * 60;
+const TIME_IDLE_ELAPSED_TOLERANCE_SECONDS = 10 * 60;
+const TIME_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS = 30 * 60;
 
 export type OptimizeRouteV3ShadowContext = {
   requestId: string;
@@ -328,14 +331,8 @@ const estimateTravelSeconds = (distanceKm: number) =>
 
 const minuteBucket = (seconds: number) => Math.floor(seconds / 60);
 
-const computeMinuteAlignedLateBySeconds = (
-  serviceStartSeconds: number,
-  windowEndSeconds: number,
-) => {
-  const lateMinutes = Math.max(
-    0,
-    minuteBucket(serviceStartSeconds) - minuteBucket(windowEndSeconds),
-  );
+const computeMinuteAlignedLateBySeconds = (serviceEndSeconds: number, windowEndSeconds: number) => {
+  const lateMinutes = Math.max(0, minuteBucket(serviceEndSeconds) - minuteBucket(windowEndSeconds));
   return lateMinutes * 60;
 };
 
@@ -449,12 +446,13 @@ const compareDepartureAnchors = (
   right: VisitWithCoords,
   startLocation: LocationRef,
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+  objective: "time" | "distance",
 ) => {
   if (left.windowStartSeconds !== right.windowStartSeconds) {
     return left.windowStartSeconds - right.windowStartSeconds;
   }
 
-  if (left.windowType !== right.windowType) {
+  if (objective === "distance" && left.windowType !== right.windowType) {
     return left.windowType === "fixed" ? -1 : 1;
   }
 
@@ -475,6 +473,7 @@ const resolveFirstDepartureAnchor = (
   visits: VisitWithCoords[],
   startLocation: LocationRef,
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+  objective: "time" | "distance",
 ) => {
   const anchoredVisits = visits.filter((visit) => visit.hasPreferredWindow);
   if (anchoredVisits.length === 0) {
@@ -483,7 +482,7 @@ const resolveFirstDepartureAnchor = (
 
   const sortedVisits = [...anchoredVisits];
   sortedVisits.sort((left, right) =>
-    compareDepartureAnchors(left, right, startLocation, resolveTravelSeconds),
+    compareDepartureAnchors(left, right, startLocation, resolveTravelSeconds, objective),
   );
 
   return sortedVisits[0] ?? null;
@@ -538,6 +537,7 @@ const resolveDepartureContext = async (
   googleMapsApiKey: string,
   hasPlanningMatrix: boolean,
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+  objective: "time" | "distance",
 ) => {
   if (request.start.departureTime) {
     const departureDate = new Date(request.start.departureTime);
@@ -555,7 +555,12 @@ const resolveDepartureContext = async (
     ? parseTimeToSeconds(request.nurseWorkingHours.workStart)
     : undefined;
 
-  const firstAnchor = resolveFirstDepartureAnchor(visits, startLocation, resolveTravelSeconds);
+  const firstAnchor = resolveFirstDepartureAnchor(
+    visits,
+    startLocation,
+    resolveTravelSeconds,
+    objective,
+  );
   const departureLocalSeconds = firstAnchor
     ? Math.max(
         0,
@@ -600,7 +605,7 @@ const projectVisit = (
   const serviceEndSeconds = serviceStartSeconds + visit.serviceDurationMinutes * 60;
   const waitSeconds = Math.max(0, serviceStartSeconds - arrivalSeconds);
   const lateBySeconds = visit.hasPreferredWindow
-    ? Math.max(0, serviceStartSeconds - visit.windowEndSeconds)
+    ? Math.max(0, serviceEndSeconds - visit.windowEndSeconds)
     : 0;
   const slackSeconds = visit.windowEndSeconds - serviceEndSeconds;
 
@@ -890,8 +895,10 @@ const maybeSelectGapFiller = (
         anchorArrivalAfterFiller,
         anchor.windowStartSeconds,
       );
+      const anchorServiceEndAfterFiller =
+        anchorServiceStartAfterFiller + anchor.serviceDurationMinutes * 60;
       const anchorLateAfterFiller = anchor.hasPreferredWindow
-        ? Math.max(0, anchorServiceStartAfterFiller - anchor.windowEndSeconds)
+        ? Math.max(0, anchorServiceEndAfterFiller - anchor.windowEndSeconds)
         : 0;
       if (anchorLateAfterFiller > selectedProjection.lateBySeconds) {
         return null;
@@ -1116,11 +1123,27 @@ const orderVisitsByWindowDistanceAndDuration = (
     const lateFixedProjections = hasFixedRemaining
       ? projections.filter((p) => p.visit.windowType === "fixed" && p.lateBySeconds > 0)
       : [];
-    const lateFlexibleProjections = !hasFixedRemaining
+    // In "finish sooner" mode, do not anchor the entire construction on a far-future
+    // fixed visit. Keep fixed-first behavior only when a fixed visit is already late
+    // or close enough that delaying it could quickly create lateness.
+    const prioritizedFixedProjections =
+      lateFixedProjections.length > 0
+        ? []
+        : objective === "distance"
+          ? projections.filter((p) => p.visit.windowType === "fixed")
+          : projections.filter(
+              (p) =>
+                p.visit.windowType === "fixed" &&
+                p.waitSeconds <= TIME_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS,
+            );
+    const shouldPrioritizeFixed =
+      lateFixedProjections.length > 0 || prioritizedFixedProjections.length > 0;
+
+    const lateFlexibleProjections = !shouldPrioritizeFixed
       ? projections.filter((p) => p.visit.hasPreferredWindow && p.lateBySeconds > 0)
       : [];
     const urgentFlexibleProjections =
-      !hasFixedRemaining && lateFlexibleProjections.length === 0
+      !shouldPrioritizeFixed && lateFlexibleProjections.length === 0
         ? projections.filter(
             (p) =>
               p.visit.hasPreferredWindow &&
@@ -1134,7 +1157,7 @@ const orderVisitsByWindowDistanceAndDuration = (
     // common failure mode where greedy travel-time picks consume the entire day and
     // the windowed patient's deadline is missed.
     const windowedFlexibleProjections =
-      !hasFixedRemaining &&
+      !shouldPrioritizeFixed &&
       lateFlexibleProjections.length === 0 &&
       urgentFlexibleProjections.length === 0
         ? projections.filter((p) => p.visit.hasPreferredWindow)
@@ -1142,8 +1165,8 @@ const orderVisitsByWindowDistanceAndDuration = (
     const primaryProjections =
       lateFixedProjections.length > 0
         ? lateFixedProjections
-        : hasFixedRemaining
-          ? projections.filter((p) => p.visit.windowType === "fixed")
+        : prioritizedFixedProjections.length > 0
+          ? prioritizedFixedProjections
           : lateFlexibleProjections.length > 0
             ? lateFlexibleProjections
             : urgentFlexibleProjections.length > 0
@@ -1334,6 +1357,79 @@ const evaluateOrderedVisits = (
   };
 };
 
+const doesNotWorsenDelayedDepartureConstraints = (
+  candidate: ScheduleEvaluation,
+  baseline: ScheduleEvaluation,
+) => {
+  const fixedLatenessComparison = compareFixedLateness(candidate.score, baseline.score);
+  if (fixedLatenessComparison !== 0) {
+    return fixedLatenessComparison < 0;
+  }
+
+  if (candidate.score.totalLateSeconds !== baseline.score.totalLateSeconds) {
+    return candidate.score.totalLateSeconds < baseline.score.totalLateSeconds;
+  }
+
+  if (candidate.dayOverflowSeconds !== baseline.dayOverflowSeconds) {
+    return candidate.dayOverflowSeconds < baseline.dayOverflowSeconds;
+  }
+
+  if (candidate.lunchSkippedDueToFixed !== baseline.lunchSkippedDueToFixed) {
+    return baseline.lunchSkippedDueToFixed || !candidate.lunchSkippedDueToFixed;
+  }
+
+  return true;
+};
+
+const resolveLatestFeasibleDepartureLocalSeconds = (
+  orderedVisits: VisitWithCoords[],
+  startLocation: LocationRef,
+  departureLocalSeconds: number,
+  resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+  lunchContext: LunchContext | undefined,
+  objective: "time" | "distance",
+) => {
+  if (objective !== "time" || orderedVisits.length === 0) {
+    return departureLocalSeconds;
+  }
+
+  if (!orderedVisits.some((visit) => visit.hasPreferredWindow)) {
+    return departureLocalSeconds;
+  }
+
+  const baseline = evaluateOrderedVisits(
+    orderedVisits,
+    startLocation,
+    departureLocalSeconds,
+    resolveTravelSeconds,
+    lunchContext,
+    objective,
+  );
+
+  let low = departureLocalSeconds;
+  let high = PLANNING_DAY_END_SECONDS;
+
+  while (low < high) {
+    const mid = Math.floor((low + high + 1) / 2);
+    const candidate = evaluateOrderedVisits(
+      orderedVisits,
+      startLocation,
+      mid,
+      resolveTravelSeconds,
+      lunchContext,
+      objective,
+    );
+
+    if (doesNotWorsenDelayedDepartureConstraints(candidate, baseline)) {
+      low = mid;
+    } else {
+      high = mid - 1;
+    }
+  }
+
+  return low;
+};
+
 const compareScheduleEvaluations = (
   left: ScheduleEvaluation,
   right: ScheduleEvaluation,
@@ -1348,14 +1444,24 @@ const compareScheduleEvaluations = (
     return left.score.totalLateSeconds - right.score.totalLateSeconds;
   }
 
-  const scoreComparison =
-    objective === "time"
-      ? left.score.totalWaitSeconds +
-        left.score.totalTravelSeconds -
-        (right.score.totalWaitSeconds + right.score.totalTravelSeconds)
-      : 0;
-  if (scoreComparison !== 0) {
-    return scoreComparison;
+  if (objective === "time") {
+    const leftIdleExcess = Math.max(0, left.maxIdleGapSeconds - TIME_IDLE_GAP_THRESHOLD_SECONDS);
+    const rightIdleExcess = Math.max(0, right.maxIdleGapSeconds - TIME_IDLE_GAP_THRESHOLD_SECONDS);
+    if (leftIdleExcess !== rightIdleExcess) {
+      return leftIdleExcess - rightIdleExcess;
+    }
+
+    const leftElapsed = left.score.totalWaitSeconds + left.score.totalTravelSeconds;
+    const rightElapsed = right.score.totalWaitSeconds + right.score.totalTravelSeconds;
+    const elapsedDifference = leftElapsed - rightElapsed;
+
+    if (Math.abs(elapsedDifference) > TIME_IDLE_ELAPSED_TOLERANCE_SECONDS) {
+      return elapsedDifference;
+    }
+
+    if (elapsedDifference !== 0) {
+      return elapsedDifference;
+    }
   }
 
   if (objective === "distance") {
@@ -2078,10 +2184,10 @@ const buildTaskResult = (
     ? Math.max(0, task.windowStartSeconds - arrivalLocalSeconds)
     : 0;
   const serviceStartSeconds = arrivalLocalSeconds + waitSeconds;
-  const lateBySeconds = task.hasPreferredWindow
-    ? computeMinuteAlignedLateBySeconds(serviceStartSeconds, task.windowEndSeconds)
-    : 0;
   const serviceEndSeconds = serviceStartSeconds + task.serviceDurationMinutes * 60;
+  const lateBySeconds = task.hasPreferredWindow
+    ? computeMinuteAlignedLateBySeconds(serviceEndSeconds, task.windowEndSeconds)
+    : 0;
 
   return {
     taskResult: {
@@ -2146,6 +2252,7 @@ export const optimizeRouteV3 = async (
   googleMapsApiKey: string,
   shadowContext?: OptimizeRouteV3ShadowContext,
 ): Promise<OptimizeRouteResultV2> => {
+  const objective = request.optimizationObjective ?? "distance";
   const coordsByLocationKey = await geocodeLocations(request, googleMapsApiKey);
   const startCoords = resolveCoordsOrThrow(coordsByLocationKey, request.start);
   const endCoords = resolveCoordsOrThrow(coordsByLocationKey, request.end);
@@ -2204,9 +2311,11 @@ export const optimizeRouteV3 = async (
     googleMapsApiKey,
     planningTravelMatrix !== undefined,
     resolveTravelSeconds,
+    objective,
   );
-  const departureTimestampMs = departureContext.departureTimestampMs;
-  const departureLocalSeconds = departureContext.departureLocalSeconds;
+  let departureTimestampMs = departureContext.departureTimestampMs;
+  let departureLocalSeconds = departureContext.departureLocalSeconds;
+  let departureTime = departureContext.departureTime;
 
   let lunchContext: LunchContext | undefined;
   if (
@@ -2231,9 +2340,34 @@ export const optimizeRouteV3 = async (
     resolveTravelSeconds,
     request.preserveOrder === true,
     lunchContext,
-    request.optimizationObjective ?? "distance",
+    objective,
     shadowContext,
   );
+
+  if (!request.start.departureTime && objective === "time") {
+    const delayedDepartureLocalSeconds = resolveLatestFeasibleDepartureLocalSeconds(
+      orderedVisits,
+      {
+        coords: startCoords,
+        locationKey: startLocationKey,
+      },
+      departureLocalSeconds,
+      resolveTravelSeconds,
+      lunchContext,
+      objective,
+    );
+
+    if (delayedDepartureLocalSeconds !== departureLocalSeconds) {
+      departureLocalSeconds = delayedDepartureLocalSeconds;
+      departureTime = toIsoFromPlanningDateAndLocalSeconds(
+        request.planningDate,
+        request.timezone,
+        departureLocalSeconds,
+      );
+      departureTimestampMs = new Date(departureTime).getTime();
+    }
+  }
+
   const plannedStops = groupVisitsIntoStops(orderedVisits, {
     address: request.end.address,
     googlePlaceId: request.end.googlePlaceId,
@@ -2392,7 +2526,7 @@ export const optimizeRouteV3 = async (
     start: {
       address: request.start.address,
       coords: startCoords,
-      departureTime: departureContext.departureTime,
+      departureTime,
     },
     end: {
       address: request.end.address,
