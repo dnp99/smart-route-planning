@@ -1538,17 +1538,21 @@ const compareScheduleEvaluations = (
   }
 
   if (objective === "time") {
+    const leftElapsed = left.score.totalWaitSeconds + left.score.totalTravelSeconds;
+    const rightElapsed = right.score.totalWaitSeconds + right.score.totalTravelSeconds;
+    const elapsedDifference = leftElapsed - rightElapsed;
+
+    if (Math.abs(elapsedDifference) > TIME_IDLE_ELAPSED_TOLERANCE_SECONDS) {
+      return elapsedDifference;
+    }
+
     const leftIdleExcess = Math.max(0, left.maxIdleGapSeconds - TIME_IDLE_GAP_THRESHOLD_SECONDS);
     const rightIdleExcess = Math.max(0, right.maxIdleGapSeconds - TIME_IDLE_GAP_THRESHOLD_SECONDS);
     if (leftIdleExcess !== rightIdleExcess) {
       return leftIdleExcess - rightIdleExcess;
     }
 
-    const leftElapsed = left.score.totalWaitSeconds + left.score.totalTravelSeconds;
-    const rightElapsed = right.score.totalWaitSeconds + right.score.totalTravelSeconds;
-    const elapsedDifference = leftElapsed - rightElapsed;
-
-    if (Math.abs(elapsedDifference) > TIME_IDLE_ELAPSED_TOLERANCE_SECONDS) {
+    if (elapsedDifference !== 0) {
       return elapsedDifference;
     }
   }
