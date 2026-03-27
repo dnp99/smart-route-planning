@@ -244,15 +244,13 @@ describe("optimizeRouteV3 service", () => {
 
     const call = mockedBuildDrivingRoute.mock.calls[0];
     const passedOrderedStops = call?.[1] ?? [];
-    // "distance" objective minimises travel seconds first.
-    // B (near start) → C (near start, wait until 11:00) → D → A (D and A are
-    // co-located at ~43.70/-79.70) drives far fewer km than the alternative
-    // B → A → C → D which makes two 11 km round-trips.
+    // "distance" objective keeps travel first, but within the travel tolerance
+    // band it now prefers routes that avoid concentrating large idle gaps.
     expect(passedOrderedStops.map((stop) => stop.address)).toEqual([
       "Address B",
       "Address C",
-      "Address D",
       "Address A",
+      "Address D",
       "End",
     ]);
   });
@@ -797,6 +795,336 @@ describe("optimizeRouteV3 service", () => {
       "Nearby Gap Visit",
       "Shared Fixed Address",
       "End",
+    ]);
+  });
+
+  it("uses sequence gap-filling before a flexible preferred-window anchor in finish-sooner mode", async () => {
+    let nowCalls = 0;
+    const dateNowSpy = vi
+      .spyOn(Date, "now")
+      .mockImplementation(() => (nowCalls++ === 0 ? 0 : 1000));
+
+    const startAddress = "Start";
+    const visits = [
+      {
+        label: "early",
+        visitId: "visit-early",
+        patientId: "patient-early",
+        patientName: "Early Flexible",
+        address: "Early Visit",
+        windowStart: "09:00",
+        windowEnd: "10:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 20,
+      },
+      {
+        label: "anchor",
+        visitId: "visit-anchor",
+        patientId: "patient-anchor",
+        patientName: "Nancy Price",
+        address: "Flexible Anchor",
+        windowStart: "10:30",
+        windowEnd: "14:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 15,
+      },
+      {
+        label: "long",
+        visitId: "visit-long",
+        patientId: "patient-long",
+        patientName: "Ernst Vonarburg",
+        address: "Long Filler",
+        windowStart: "",
+        windowEnd: "",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 35,
+      },
+      {
+        label: "short",
+        visitId: "visit-short",
+        patientId: "patient-short",
+        patientName: "Catherine Nguemelieu Epse Djom",
+        address: "Short Filler",
+        windowStart: "",
+        windowEnd: "",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 5,
+      },
+    ];
+
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: startAddress, coords: { lat: 43.6, lon: -79.6 } },
+      ...visits.map((visit, index) => ({
+        address: visit.address,
+        coords: { lat: 43.61 + index * 0.001, lon: -79.61 + index * 0.001 },
+      })),
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    const nodes = [
+      { label: "start", address: startAddress },
+      ...visits.map(({ label, address }) => ({ label, address })),
+      { label: "end", address: "End" },
+    ];
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrixByLabel(nodes, 45 * 60, [
+        ["start", "early", 5 * 60],
+        ["early", "anchor", 5 * 60],
+        ["early", "long", 5 * 60],
+        ["early", "short", 20 * 60],
+        ["long", "anchor", 5 * 60],
+        ["long", "short", 60],
+        ["short", "anchor", 60],
+        ["anchor", "end", 5 * 60],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-03-24",
+        timezone: "America/Toronto",
+        start: { address: startAddress, departureTime: "2026-03-24T09:00:00-04:00" },
+        end: { address: "End" },
+        visits: visits.map((visit) => {
+          const visitWithoutLabel = { ...visit };
+          delete (visitWithoutLabel as { label?: string }).label;
+          return visitWithoutLabel;
+        }),
+        optimizationObjective: "time",
+      },
+      "google-key",
+    );
+    dateNowSpy.mockRestore();
+
+    const actualOrder = result.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .map((stop) => stop.tasks[0]?.patientName ?? stop.address);
+    expect(actualOrder).toEqual([
+      "Early Flexible",
+      "Ernst Vonarburg",
+      "Catherine Nguemelieu Epse Djom",
+      "Nancy Price",
+    ]);
+    expect(result.metrics.totalLateSeconds).toBe(0);
+  });
+
+  it("reduces long idle gaps in less-driving mode when extra travel stays within tolerance", async () => {
+    const startAddress = "Start";
+    const visits = [
+      {
+        label: "early",
+        visitId: "visit-early",
+        patientId: "patient-early",
+        patientName: "Early Flexible",
+        address: "Early Visit",
+        windowStart: "09:00",
+        windowEnd: "10:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 20,
+      },
+      {
+        label: "anchor",
+        visitId: "visit-anchor",
+        patientId: "patient-anchor",
+        patientName: "Nancy Price",
+        address: "Flexible Anchor",
+        windowStart: "12:10",
+        windowEnd: "14:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 15,
+      },
+      {
+        label: "long",
+        visitId: "visit-long",
+        patientId: "patient-long",
+        patientName: "Ernst Vonarburg",
+        address: "Long Filler",
+        windowStart: "",
+        windowEnd: "",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 35,
+      },
+      {
+        label: "short",
+        visitId: "visit-short",
+        patientId: "patient-short",
+        patientName: "Catherine Nguemelieu Epse Djom",
+        address: "Short Filler",
+        windowStart: "",
+        windowEnd: "",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 30,
+      },
+    ];
+
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: startAddress, coords: { lat: 43.6, lon: -79.6 } },
+      ...visits.map((visit, index) => ({
+        address: visit.address,
+        coords: { lat: 43.61 + index * 0.001, lon: -79.61 + index * 0.001 },
+      })),
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    const nodes = [
+      { label: "start", address: startAddress },
+      ...visits.map(({ label, address }) => ({ label, address })),
+      { label: "end", address: "End" },
+    ];
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrixByLabel(nodes, 45 * 60, [
+        ["start", "early", 5 * 60],
+        ["early", "anchor", 60],
+        ["early", "long", 5 * 60],
+        ["early", "short", 20 * 60],
+        ["long", "anchor", 60],
+        ["anchor", "short", 60],
+        ["long", "short", 3 * 60],
+        ["short", "anchor", 3 * 60],
+        ["anchor", "end", 5 * 60],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-03-24",
+        timezone: "America/Toronto",
+        start: { address: startAddress, departureTime: "2026-03-24T09:00:00-04:00" },
+        end: { address: "End" },
+        visits: visits.map((visit) => {
+          const visitWithoutLabel = { ...visit };
+          delete (visitWithoutLabel as { label?: string }).label;
+          return visitWithoutLabel;
+        }),
+        optimizationObjective: "distance",
+      },
+      "google-key",
+    );
+
+    const actualOrder = result.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .map((stop) => stop.tasks[0]?.patientName ?? stop.address);
+    expect(actualOrder).toEqual([
+      "Early Flexible",
+      "Ernst Vonarburg",
+      "Catherine Nguemelieu Epse Djom",
+      "Nancy Price",
+    ]);
+  });
+
+  it("keeps travel-first ordering in less-driving mode when idle-gap improvement exceeds travel tolerance", async () => {
+    const startAddress = "Start";
+    const visits = [
+      {
+        label: "early",
+        visitId: "visit-early",
+        patientId: "patient-early",
+        patientName: "Early Flexible",
+        address: "Early Visit",
+        windowStart: "09:00",
+        windowEnd: "10:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 20,
+      },
+      {
+        label: "anchor",
+        visitId: "visit-anchor",
+        patientId: "patient-anchor",
+        patientName: "Nancy Price",
+        address: "Flexible Anchor",
+        windowStart: "12:10",
+        windowEnd: "14:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 15,
+      },
+      {
+        label: "long",
+        visitId: "visit-long",
+        patientId: "patient-long",
+        patientName: "Ernst Vonarburg",
+        address: "Long Filler",
+        windowStart: "",
+        windowEnd: "",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 35,
+      },
+      {
+        label: "short",
+        visitId: "visit-short",
+        patientId: "patient-short",
+        patientName: "Catherine Nguemelieu Epse Djom",
+        address: "Short Filler",
+        windowStart: "",
+        windowEnd: "",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 30,
+      },
+    ];
+
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: startAddress, coords: { lat: 43.6, lon: -79.6 } },
+      ...visits.map((visit, index) => ({
+        address: visit.address,
+        coords: { lat: 43.61 + index * 0.001, lon: -79.61 + index * 0.001 },
+      })),
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    const nodes = [
+      { label: "start", address: startAddress },
+      ...visits.map(({ label, address }) => ({ label, address })),
+      { label: "end", address: "End" },
+    ];
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrixByLabel(nodes, 45 * 60, [
+        ["start", "early", 5 * 60],
+        ["early", "anchor", 60],
+        ["early", "long", 5 * 60],
+        ["early", "short", 20 * 60],
+        ["long", "anchor", 60],
+        ["anchor", "short", 60],
+        ["long", "short", 6 * 60],
+        ["short", "anchor", 6 * 60],
+        ["anchor", "end", 5 * 60],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-03-24",
+        timezone: "America/Toronto",
+        start: { address: startAddress, departureTime: "2026-03-24T09:00:00-04:00" },
+        end: { address: "End" },
+        visits: visits.map((visit) => {
+          const visitWithoutLabel = { ...visit };
+          delete (visitWithoutLabel as { label?: string }).label;
+          return visitWithoutLabel;
+        }),
+        optimizationObjective: "distance",
+      },
+      "google-key",
+    );
+
+    const actualOrder = result.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .map((stop) => stop.tasks[0]?.patientName ?? stop.address);
+    expect(actualOrder).toEqual([
+      "Early Flexible",
+      "Ernst Vonarburg",
+      "Nancy Price",
+      "Catherine Nguemelieu Epse Djom",
     ]);
   });
 

@@ -39,6 +39,9 @@ const LOOKAHEAD_BEAM_WIDTH = 8;
 const MAX_MATRIX_NODES = 25;
 const ILS_TIME_LIMIT_MS = 250;
 const MAX_ILS_ITERATIONS = 64;
+const DISTANCE_IDLE_GAP_THRESHOLD_SECONDS = 45 * 60;
+const DISTANCE_IDLE_TRAVEL_TOLERANCE_SECONDS = 6 * 60;
+const DISTANCE_IDLE_PENALTY_MULTIPLIER = 100;
 
 export type OptimizeRouteV3ShadowContext = {
   requestId: string;
@@ -742,7 +745,31 @@ const planGapWindowSequence = (
         if (p.waitSeconds > IDLE_GAP_FILLER_MAX_WAIT_SECONDS) return false;
         const anchorReturnTravel = resolveTravelSeconds(p.visit, anchor);
         const anchorArrival = p.serviceEndSeconds + anchorReturnTravel;
-        return anchorArrival <= anchor.windowStartSeconds - IDLE_GAP_RETURN_BUFFER_SECONDS;
+        if (anchorArrival > anchor.windowStartSeconds - IDLE_GAP_RETURN_BUFFER_SECONDS) {
+          return false;
+        }
+
+        // Safety guard: a candidate is invalid if taking it now would make any
+        // remaining preferred-window visit immediately late from this state.
+        const nextLocation: LocationRef = {
+          coords: p.visit.coords,
+          locationKey: p.visit.locationKey,
+        };
+        const wouldMakeOtherWindowLate = remaining
+          .filter(
+            (candidate) => candidate.visitId !== p.visit.visitId && candidate.hasPreferredWindow,
+          )
+          .some((candidate) => {
+            const projected = projectVisit(
+              candidate,
+              nextLocation,
+              p.serviceEndSeconds,
+              resolveTravelSeconds,
+            );
+            return projected.lateBySeconds > 0;
+          });
+
+        return !wouldMakeOtherWindowLate;
       });
 
     if (feasible.length === 0) break;
@@ -949,6 +976,8 @@ type ScheduleEvaluation = {
   dayOverflowSeconds: number;
   endTimeSeconds: number;
   lunchSkippedDueToFixed: boolean;
+  maxIdleGapSeconds: number;
+  distanceIdlePenaltySeconds: number;
 };
 
 const orderVisitsByWindowDistanceAndDuration = (
@@ -1136,16 +1165,17 @@ const orderVisitsByWindowDistanceAndDuration = (
       throw new HttpError(500, "Unable to evaluate route candidates.");
     }
 
-    // Gap window planning: when a large gap exists before a fixed anchor, plan
-    // the full sequence of gap visits once rather than picking one at a time.
+    // Gap window planning: when a large gap exists before an anchored visit,
+    // plan the full sequence of gap visits once rather than picking one at a time.
     // This prevents visits with wide windows (e.g. Dindyal 08:30-13:00) from
     // being stranded after the anchor because a greedy one-at-a-time picker
     // chose geometrically closer visits on each individual iteration.
-    if (
-      hasFixedRemaining &&
+    const isGapPlanningEligible =
       firstProjection.waitSeconds >= IDLE_GAP_FILL_THRESHOLD_SECONDS &&
-      firstProjection.visit.visitId !== gapQueueAnchorId
-    ) {
+      firstProjection.visit.visitId !== gapQueueAnchorId &&
+      (hasFixedRemaining || firstProjection.visit.hasPreferredWindow);
+
+    if (isGapPlanningEligible) {
       gapQueueAnchorId = firstProjection.visit.visitId;
       gapQueue = planGapWindowSequence(
         firstProjection.visit,
@@ -1213,11 +1243,14 @@ const buildPenalty = (
   evaluation: Omit<ScheduleEvaluation, "penalty">,
   objective: "time" | "distance",
 ) => {
+  const distanceIdlePenaltySeconds =
+    objective === "distance" ? evaluation.distanceIdlePenaltySeconds : 0;
   const objectiveSeconds =
     objective === "time"
       ? evaluation.score.totalWaitSeconds + evaluation.score.totalTravelSeconds
       : evaluation.score.totalTravelSeconds * PLANNING_DAY_END_SECONDS +
-        evaluation.score.totalWaitSeconds;
+        evaluation.score.totalWaitSeconds +
+        distanceIdlePenaltySeconds;
 
   return (
     evaluation.score.fixedLateCount * 1_000_000_000_000 +
@@ -1241,6 +1274,7 @@ const evaluateOrderedVisits = (
   let lunchTaken = false;
   let lunchSkippedDueToFixed = false;
   let score = ZERO_SCORE;
+  let maxIdleGapSeconds = 0;
 
   orderedVisits.forEach((visit, index) => {
     if (lunchContext && !lunchTaken && currentTimeSeconds >= lunchContext.targetLunchStartSeconds) {
@@ -1270,6 +1304,7 @@ const evaluateOrderedVisits = (
       currentTimeSeconds,
       resolveTravelSeconds,
     );
+    maxIdleGapSeconds = Math.max(maxIdleGapSeconds, projection.waitSeconds);
     score = addScores(score, scoreProjection(projection));
     currentLocation = {
       coords: visit.coords,
@@ -1278,11 +1313,19 @@ const evaluateOrderedVisits = (
     currentTimeSeconds = projection.serviceEndSeconds;
   });
 
+  const distanceIdlePenaltySeconds =
+    objective === "distance"
+      ? Math.max(0, maxIdleGapSeconds - DISTANCE_IDLE_GAP_THRESHOLD_SECONDS) *
+        DISTANCE_IDLE_PENALTY_MULTIPLIER
+      : 0;
+
   const baseEvaluation = {
     score,
     dayOverflowSeconds: Math.max(0, currentTimeSeconds - PLANNING_DAY_END_SECONDS),
     endTimeSeconds: currentTimeSeconds,
     lunchSkippedDueToFixed,
+    maxIdleGapSeconds,
+    distanceIdlePenaltySeconds,
   };
 
   return {
@@ -1296,9 +1339,48 @@ const compareScheduleEvaluations = (
   right: ScheduleEvaluation,
   objective: "time" | "distance",
 ) => {
-  const scoreComparison = compareScores(left.score, right.score, objective);
+  const fixedLatenessComparison = compareFixedLateness(left.score, right.score);
+  if (fixedLatenessComparison !== 0) {
+    return fixedLatenessComparison;
+  }
+
+  if (left.score.totalLateSeconds !== right.score.totalLateSeconds) {
+    return left.score.totalLateSeconds - right.score.totalLateSeconds;
+  }
+
+  const scoreComparison =
+    objective === "time"
+      ? left.score.totalWaitSeconds +
+        left.score.totalTravelSeconds -
+        (right.score.totalWaitSeconds + right.score.totalTravelSeconds)
+      : 0;
   if (scoreComparison !== 0) {
     return scoreComparison;
+  }
+
+  if (objective === "distance") {
+    const travelDifference = left.score.totalTravelSeconds - right.score.totalTravelSeconds;
+    if (Math.abs(travelDifference) > DISTANCE_IDLE_TRAVEL_TOLERANCE_SECONDS) {
+      return travelDifference;
+    }
+
+    const leftDistanceObjective =
+      left.score.totalTravelSeconds + left.score.totalWaitSeconds + left.distanceIdlePenaltySeconds;
+    const rightDistanceObjective =
+      right.score.totalTravelSeconds +
+      right.score.totalWaitSeconds +
+      right.distanceIdlePenaltySeconds;
+    if (leftDistanceObjective !== rightDistanceObjective) {
+      return leftDistanceObjective - rightDistanceObjective;
+    }
+
+    if (travelDifference !== 0) {
+      return travelDifference;
+    }
+
+    if (left.score.totalWaitSeconds !== right.score.totalWaitSeconds) {
+      return left.score.totalWaitSeconds - right.score.totalWaitSeconds;
+    }
   }
 
   if (left.dayOverflowSeconds !== right.dayOverflowSeconds) {
