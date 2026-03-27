@@ -1750,6 +1750,31 @@ const isAcceptedImprovement = (
   return compareScheduleEvaluations(candidate, reference, objective) < 0;
 };
 
+const isStrictElapsedImprovementForTime = (
+  candidate: ScheduleEvaluation,
+  reference: ScheduleEvaluation,
+) => {
+  if (worsensFixedLateness(candidate, reference)) {
+    return false;
+  }
+
+  if (candidate.score.totalLateSeconds !== reference.score.totalLateSeconds) {
+    return candidate.score.totalLateSeconds < reference.score.totalLateSeconds;
+  }
+
+  if (candidate.dayOverflowSeconds !== reference.dayOverflowSeconds) {
+    return candidate.dayOverflowSeconds < reference.dayOverflowSeconds;
+  }
+
+  const candidateElapsed = candidate.score.totalWaitSeconds + candidate.score.totalTravelSeconds;
+  const referenceElapsed = reference.score.totalWaitSeconds + reference.score.totalTravelSeconds;
+  if (candidateElapsed !== referenceElapsed) {
+    return candidateElapsed < referenceElapsed;
+  }
+
+  return candidate.endTimeSeconds < reference.endTimeSeconds;
+};
+
 const localSearchSweep = (
   orderedVisits: VisitWithCoords[],
   startLocation: LocationRef,
@@ -2174,6 +2199,7 @@ const solveRouteWithIls = (
   ) {
     return {
       ...seed,
+      evaluation: seedEvaluation,
       lunchSkippedDueToFixed: seedEvaluation.lunchSkippedDueToFixed,
       diagnostics: {
         penalty: seedEvaluation.penalty,
@@ -2290,6 +2316,7 @@ const solveRouteWithIls = (
   return {
     orderedVisits: bestOrder,
     unscheduledTasks: seed.unscheduledTasks,
+    evaluation: bestEvaluation,
     lunchSkippedDueToFixed: bestEvaluation.lunchSkippedDueToFixed,
     diagnostics: {
       penalty: bestEvaluation.penalty,
@@ -2467,10 +2494,10 @@ export const optimizeRouteV3 = async (
     lunchContext = { targetLunchStartSeconds, lunchDurationSeconds };
   }
 
-  const rngSeed = hashRequestIdToSeed(shadowContext?.requestId ?? "v3-default-seed");
-  const rng = createSeededRng(rngSeed);
+  const requestSeedKey = shadowContext?.requestId ?? "v3-default-seed";
+  const primaryRng = createSeededRng(hashRequestIdToSeed(requestSeedKey));
 
-  const { orderedVisits, unscheduledTasks, lunchSkippedDueToFixed } = solveRouteWithIls(
+  let solvedRoute = solveRouteWithIls(
     visitsWithCoords,
     {
       coords: startCoords,
@@ -2481,9 +2508,34 @@ export const optimizeRouteV3 = async (
     request.preserveOrder === true,
     lunchContext,
     objective,
-    rng,
+    primaryRng,
     shadowContext,
   );
+
+  if (objective === "time" && request.preserveOrder !== true) {
+    const distanceBenchmarkRng = createSeededRng(
+      hashRequestIdToSeed(`${requestSeedKey}:distance-benchmark`),
+    );
+    const distanceBenchmark = solveRouteWithIls(
+      visitsWithCoords,
+      {
+        coords: startCoords,
+        locationKey: startLocationKey,
+      },
+      departureLocalSeconds,
+      resolveTravelSeconds,
+      false,
+      lunchContext,
+      "distance",
+      distanceBenchmarkRng,
+    );
+
+    if (isStrictElapsedImprovementForTime(distanceBenchmark.evaluation, solvedRoute.evaluation)) {
+      solvedRoute = distanceBenchmark;
+    }
+  }
+
+  const { orderedVisits, unscheduledTasks, lunchSkippedDueToFixed } = solvedRoute;
 
   if (!request.start.departureTime) {
     const delayedDepartureLocalSeconds = resolveLatestFeasibleDepartureLocalSeconds(
