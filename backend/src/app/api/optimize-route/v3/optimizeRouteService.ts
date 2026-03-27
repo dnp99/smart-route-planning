@@ -42,6 +42,7 @@ const MAX_ILS_ITERATIONS = 128;
 const DISTANCE_IDLE_GAP_THRESHOLD_SECONDS = 45 * 60;
 const DISTANCE_IDLE_TRAVEL_TOLERANCE_SECONDS = 6 * 60;
 const DISTANCE_IDLE_PENALTY_MULTIPLIER = 100;
+const DISTANCE_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS = 45 * 60;
 const TIME_IDLE_GAP_THRESHOLD_SECONDS = 30 * 60;
 const TIME_IDLE_ELAPSED_TOLERANCE_SECONDS = 10 * 60;
 const TIME_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS = 30 * 60;
@@ -79,6 +80,8 @@ type LocationRef = {
   locationKey: string;
 };
 
+type RandomSource = () => number;
+
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
 
 const haversineDistanceKm = (from: LatLng, to: LatLng) => {
@@ -99,6 +102,28 @@ const haversineDistanceKm = (from: LatLng, to: LatLng) => {
 const parseTimeToSeconds = (value: string) => {
   const [hourString, minuteString] = value.split(":");
   return Number(hourString) * 3600 + Number(minuteString) * 60;
+};
+
+const hashRequestIdToSeed = (requestId: string) => {
+  // 32-bit FNV-1a hash for stable seed derivation.
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < requestId.length; index += 1) {
+    hash ^= requestId.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0 || 0x9e3779b9;
+};
+
+const createSeededRng = (seed: number): RandomSource => {
+  let state = seed >>> 0;
+  return () => {
+    // Mulberry32: compact deterministic PRNG with acceptable quality for
+    // perturbation diversification in heuristic search.
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = Math.imul(state ^ (state >>> 15), state | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
 };
 
 const resolveLocationKey = ({ address, googlePlaceId }: GeocodeTarget) => {
@@ -868,9 +893,13 @@ const maybeSelectGapFiller = (
   }
 
   const anchor = selectedProjection.visit;
-  // Less-driving mode keeps strict fixed-first semantics: do not inject
-  // flexible fillers ahead of a fixed anchor, even when there is a large gap.
-  if (objective === "distance" && anchor.windowType === "fixed") {
+  // Less-driving mode still protects near-due fixed anchors. For far-future
+  // fixed anchors, allow safe fillers to avoid extreme idle blocks.
+  if (
+    objective === "distance" &&
+    anchor.windowType === "fixed" &&
+    selectedProjection.waitSeconds <= DISTANCE_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS
+  ) {
     return selectedProjection;
   }
 
@@ -1140,12 +1169,18 @@ const orderVisitsByWindowDistanceAndDuration = (
     // Objective-specific fixed anchoring:
     // - time mode: avoid anchoring on far-future fixed visits unless they are late
     //   or near-due.
-    // - distance mode: keep strict fixed-first behavior.
+    // - distance mode: keep fixed-first for near-due fixed visits, but allow
+    //   far-future fixed anchors to defer so we can avoid extreme idle blocks
+    //   and downstream flexible lateness.
     const prioritizedFixedProjections =
       lateFixedProjections.length > 0
         ? []
         : objective === "distance"
-          ? projections.filter((p) => p.visit.windowType === "fixed")
+          ? projections.filter(
+              (p) =>
+                p.visit.windowType === "fixed" &&
+                p.waitSeconds <= DISTANCE_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS,
+            )
           : projections.filter(
               (p) =>
                 p.visit.windowType === "fixed" &&
@@ -1210,9 +1245,10 @@ const orderVisitsByWindowDistanceAndDuration = (
     // This prevents visits with wide windows (e.g. Dindyal 08:30-13:00) from
     // being stranded after the anchor because a greedy one-at-a-time picker
     // chose geometrically closer visits on each individual iteration.
-    const allowGapPlanningForAnchor = !(
-      objective === "distance" && firstProjection.visit.windowType === "fixed"
-    );
+    const allowGapPlanningForAnchor =
+      objective !== "distance" ||
+      firstProjection.visit.windowType !== "fixed" ||
+      firstProjection.waitSeconds > DISTANCE_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS;
     const isGapPlanningEligible =
       allowGapPlanningForAnchor &&
       firstProjection.waitSeconds >= IDLE_GAP_FILL_THRESHOLD_SECONDS &&
@@ -1497,14 +1533,6 @@ const compareScheduleEvaluations = (
     return fixedLatenessComparison;
   }
 
-  if (objective === "distance") {
-    // Less-driving mode keeps strict fixed-first sequencing as a structural
-    // rule immediately after fixed-window lateness.
-    if (left.fixedAfterFlexibleCount !== right.fixedAfterFlexibleCount) {
-      return left.fixedAfterFlexibleCount - right.fixedAfterFlexibleCount;
-    }
-  }
-
   if (left.score.totalLateSeconds !== right.score.totalLateSeconds) {
     return left.score.totalLateSeconds - right.score.totalLateSeconds;
   }
@@ -1526,6 +1554,13 @@ const compareScheduleEvaluations = (
   }
 
   if (objective === "distance") {
+    const hasLargeIdleGap =
+      left.maxIdleGapSeconds > DISTANCE_IDLE_GAP_THRESHOLD_SECONDS ||
+      right.maxIdleGapSeconds > DISTANCE_IDLE_GAP_THRESHOLD_SECONDS;
+    if (!hasLargeIdleGap && left.fixedAfterFlexibleCount !== right.fixedAfterFlexibleCount) {
+      return left.fixedAfterFlexibleCount - right.fixedAfterFlexibleCount;
+    }
+
     const travelDifference = left.score.totalTravelSeconds - right.score.totalTravelSeconds;
     if (Math.abs(travelDifference) > DISTANCE_IDLE_TRAVEL_TOLERANCE_SECONDS) {
       return travelDifference;
@@ -1695,6 +1730,22 @@ const worsensFixedLateness = (candidate: ScheduleEvaluation, reference: Schedule
   return candidate.fixedSlackConsumedSeconds > reference.fixedSlackConsumedSeconds;
 };
 
+const isAcceptedImprovement = (
+  candidate: ScheduleEvaluation,
+  reference: ScheduleEvaluation,
+  objective: "time" | "distance",
+) => {
+  // Uniform safety contract across all acceptance paths:
+  // 1) fixedLateCount must not increase
+  // 2) fixedLateSeconds must not increase (when counts tie)
+  // 3) fixedSlackConsumedSeconds must not increase (when fixed lateness ties)
+  if (worsensFixedLateness(candidate, reference)) {
+    return false;
+  }
+
+  return compareScheduleEvaluations(candidate, reference, objective) < 0;
+};
+
 const localSearchSweep = (
   orderedVisits: VisitWithCoords[],
   startLocation: LocationRef,
@@ -1729,12 +1780,8 @@ const localSearchSweep = (
       candidateOrder: VisitWithCoords[],
       candidateEvaluation: ScheduleEvaluation,
     ) => {
-      // Hard constraint: never accept a move that makes any fixed patient later.
-      if (worsensFixedLateness(candidateEvaluation, bestEvaluation)) {
-        return;
-      }
       const reference = bestCandidateEvaluation ?? bestEvaluation;
-      if (compareScheduleEvaluations(candidateEvaluation, reference, objective) < 0) {
+      if (isAcceptedImprovement(candidateEvaluation, reference, objective)) {
         bestCandidateOrder = candidateOrder;
         bestCandidateEvaluation = candidateEvaluation;
       }
@@ -1866,6 +1913,7 @@ const localSearchSweep = (
 const perturbFlexibleSegment = (
   orderedVisits: VisitWithCoords[],
   segments: FlexibleSegmentRange[],
+  rng: RandomSource,
 ) => {
   const eligibleSegments = segments.filter(
     (segment) => segment.endIndex - segment.startIndex + 1 >= 2,
@@ -1876,7 +1924,7 @@ const perturbFlexibleSegment = (
 
   // Pick a random eligible segment rather than cycling deterministically — this
   // ensures successive perturbations explore different parts of the solution.
-  const segment = eligibleSegments[Math.floor(Math.random() * eligibleSegments.length)];
+  const segment = eligibleSegments[Math.floor(rng() * eligibleSegments.length)];
   if (!segment) {
     return orderedVisits;
   }
@@ -1884,9 +1932,8 @@ const perturbFlexibleSegment = (
   const segmentVisits = orderedVisits.slice(segment.startIndex, segment.endIndex + 1);
   if (segmentVisits.length >= 4) {
     // Pick a random split point and reverse a sub-range for diversification.
-    const splitStart = Math.floor(Math.random() * (segmentVisits.length - 1));
-    const splitEnd =
-      splitStart + 1 + Math.floor(Math.random() * (segmentVisits.length - splitStart - 1));
+    const splitStart = Math.floor(rng() * (segmentVisits.length - 1));
+    const splitEnd = splitStart + 1 + Math.floor(rng() * (segmentVisits.length - splitStart - 1));
     const replacement = [
       ...segmentVisits.slice(0, splitStart),
       ...segmentVisits.slice(splitStart, splitEnd + 1).reverse(),
@@ -1896,12 +1943,12 @@ const perturbFlexibleSegment = (
   }
 
   // For short segments rotate by a random non-zero offset.
-  const rotation = Math.floor(Math.random() * (segmentVisits.length - 1)) + 1;
+  const rotation = Math.floor(rng() * (segmentVisits.length - 1)) + 1;
   const replacement = [...segmentVisits.slice(rotation), ...segmentVisits.slice(0, rotation)];
   return replaceRange(orderedVisits, segment, replacement);
 };
 
-const perturbFlexibleBlockGlobally = (orderedVisits: VisitWithCoords[]) => {
+const perturbFlexibleBlockGlobally = (orderedVisits: VisitWithCoords[], rng: RandomSource) => {
   const candidates: Array<{ fromIndex: number; moveLength: number }> = [];
 
   for (let moveLength = 1; moveLength <= 3; moveLength += 1) {
@@ -1921,7 +1968,7 @@ const perturbFlexibleBlockGlobally = (orderedVisits: VisitWithCoords[]) => {
   // Pick a random block and a random target position. The previous modular
   // formula re-visited the same (block, target) pairs on every run, so the
   // ILS never escaped the neighbourhood explored in iteration 0.
-  const candidate = candidates[Math.floor(Math.random() * candidates.length)];
+  const candidate = candidates[Math.floor(rng() * candidates.length)];
   if (!candidate) {
     return orderedVisits;
   }
@@ -1931,7 +1978,7 @@ const perturbFlexibleBlockGlobally = (orderedVisits: VisitWithCoords[]) => {
     return orderedVisits;
   }
 
-  let targetIndex = Math.floor(Math.random() * (remainingLength + 1));
+  let targetIndex = Math.floor(rng() * (remainingLength + 1));
   if (targetIndex === candidate.fromIndex) {
     targetIndex = (targetIndex + 1) % (remainingLength + 1);
   }
@@ -2005,13 +2052,7 @@ const refineTrailingFlexibleBlocksAheadOfFixed = (
           objective,
         );
 
-        // Apply the same hard fixed-patient protection used by localSearchSweep.
-        // Refinement must not consume more fixed-window slack or worsen fixed lateness.
-        if (worsensFixedLateness(candidateEvaluation, bestEvaluation)) {
-          continue;
-        }
-
-        if (compareScheduleEvaluations(candidateEvaluation, bestEvaluation, objective) < 0) {
+        if (isAcceptedImprovement(candidateEvaluation, bestEvaluation, objective)) {
           bestOrder = candidateOrder;
           bestEvaluation = candidateEvaluation;
           improved = true;
@@ -2080,10 +2121,7 @@ const promoteNoWindowBeforeLateFixedAnchors = (
         objective,
       );
 
-      const fixedLateImproved =
-        compareFixedLateness(candidateEvaluation.score, bestEvaluation.score) < 0;
-
-      if (fixedLateImproved) {
+      if (isAcceptedImprovement(candidateEvaluation, bestEvaluation, objective)) {
         bestOrder = candidateOrder;
         bestEvaluation = candidateEvaluation;
         improved = true;
@@ -2103,6 +2141,7 @@ const solveRouteWithIls = (
   preserveOrder: boolean,
   lunchContext: LunchContext | undefined,
   objective: "time" | "distance",
+  rng: RandomSource,
   shadowContext?: OptimizeRouteV3ShadowContext,
 ) => {
   const seed = orderVisitsByWindowDistanceAndDuration(
@@ -2163,8 +2202,8 @@ const solveRouteWithIls = (
       iteration === 0
         ? currentOrder
         : iteration % 2 === 0
-          ? perturbFlexibleSegment(currentOrder, segments)
-          : perturbFlexibleBlockGlobally(currentOrder);
+          ? perturbFlexibleSegment(currentOrder, segments, rng)
+          : perturbFlexibleBlockGlobally(currentOrder, rng);
     const localResult = localSearchSweep(
       candidateStart,
       startLocation,
@@ -2182,10 +2221,7 @@ const solveRouteWithIls = (
     currentOrder = localResult.orderedVisits;
 
     // Update the global best only when the new local optimum is strictly better.
-    if (
-      !worsensFixedLateness(localResult.evaluation, bestEvaluation) &&
-      compareScheduleEvaluations(localResult.evaluation, bestEvaluation, objective) < 0
-    ) {
+    if (isAcceptedImprovement(localResult.evaluation, bestEvaluation, objective)) {
       bestOrder = localResult.orderedVisits;
       bestEvaluation = localResult.evaluation;
     }
@@ -2200,10 +2236,7 @@ const solveRouteWithIls = (
     objective,
     deadlineMs,
   );
-  if (
-    !worsensFixedLateness(refinedResult.evaluation, bestEvaluation) &&
-    compareScheduleEvaluations(refinedResult.evaluation, bestEvaluation, objective) < 0
-  ) {
+  if (isAcceptedImprovement(refinedResult.evaluation, bestEvaluation, objective)) {
     bestOrder = refinedResult.orderedVisits;
     bestEvaluation = refinedResult.evaluation;
   }
@@ -2217,10 +2250,7 @@ const solveRouteWithIls = (
     objective,
     deadlineMs,
   );
-  // Intentionally fixed-lateness-only: this promotion pass is a targeted
-  // recovery for already-late fixed patients. It may trade fixed slack usage
-  // for improved fixed lateness and does not rank by fixedSlackConsumedSeconds.
-  if (compareFixedLateness(promotedNoWindowResult.evaluation.score, bestEvaluation.score) < 0) {
+  if (isAcceptedImprovement(promotedNoWindowResult.evaluation, bestEvaluation, objective)) {
     bestOrder = promotedNoWindowResult.orderedVisits;
     bestEvaluation = promotedNoWindowResult.evaluation;
   }
@@ -2433,6 +2463,9 @@ export const optimizeRouteV3 = async (
     lunchContext = { targetLunchStartSeconds, lunchDurationSeconds };
   }
 
+  const rngSeed = hashRequestIdToSeed(shadowContext?.requestId ?? "v3-default-seed");
+  const rng = createSeededRng(rngSeed);
+
   const { orderedVisits, unscheduledTasks, lunchSkippedDueToFixed } = solveRouteWithIls(
     visitsWithCoords,
     {
@@ -2444,6 +2477,7 @@ export const optimizeRouteV3 = async (
     request.preserveOrder === true,
     lunchContext,
     objective,
+    rng,
     shadowContext,
   );
 
