@@ -37,8 +37,8 @@ const PLANNING_DAY_END_SECONDS = 24 * 3600 - 1;
 const LOOKAHEAD_DEPTH = 2;
 const LOOKAHEAD_BEAM_WIDTH = 8;
 const MAX_MATRIX_NODES = 25;
-const ILS_TIME_LIMIT_MS = 250;
-const MAX_ILS_ITERATIONS = 64;
+const ILS_TIME_LIMIT_MS = 500;
+const MAX_ILS_ITERATIONS = 128;
 const DISTANCE_IDLE_GAP_THRESHOLD_SECONDS = 45 * 60;
 const DISTANCE_IDLE_TRAVEL_TOLERANCE_SECONDS = 6 * 60;
 const DISTANCE_IDLE_PENALTY_MULTIPLIER = 100;
@@ -868,6 +868,12 @@ const maybeSelectGapFiller = (
   }
 
   const anchor = selectedProjection.visit;
+  // Less-driving mode keeps strict fixed-first semantics: do not inject
+  // flexible fillers ahead of a fixed anchor, even when there is a large gap.
+  if (objective === "distance" && anchor.windowType === "fixed") {
+    return selectedProjection;
+  }
+
   const latestAnchorArrivalSeconds = Math.max(
     currentTimeSeconds,
     anchor.windowStartSeconds - IDLE_GAP_RETURN_BUFFER_SECONDS,
@@ -985,6 +991,14 @@ type ScheduleEvaluation = {
   lunchSkippedDueToFixed: boolean;
   maxIdleGapSeconds: number;
   distanceIdlePenaltySeconds: number;
+  fixedAfterFlexibleCount: number;
+  // Total seconds by which fixed-window visits were served after their window
+  // opened. Zero means every fixed patient was served exactly at window open
+  // (or that the nurse waited outside and entered at the window start). A higher
+  // value means fixed patients were served later into their windows, reducing
+  // the buffer against delays. Used as a hard guard: moves that push fixed
+  // patients later inside their windows are rejected even when no lateness occurs.
+  fixedSlackConsumedSeconds: number;
 };
 
 const orderVisitsByWindowDistanceAndDuration = (
@@ -1123,18 +1137,15 @@ const orderVisitsByWindowDistanceAndDuration = (
     const lateFixedProjections = hasFixedRemaining
       ? projections.filter((p) => p.visit.windowType === "fixed" && p.lateBySeconds > 0)
       : [];
-    // In "finish sooner" mode, do not anchor the entire construction on a far-future
-    // fixed visit. Keep fixed-first behavior only when a fixed visit is already late
-    // or close enough that delaying it could quickly create lateness.
+    // Objective-specific fixed anchoring:
+    // - time mode: avoid anchoring on far-future fixed visits unless they are late
+    //   or near-due.
+    // - distance mode: keep strict fixed-first behavior.
     const prioritizedFixedProjections =
       lateFixedProjections.length > 0
         ? []
         : objective === "distance"
-          ? projections.filter(
-              (p) =>
-                p.visit.windowType === "fixed" &&
-                p.waitSeconds <= TIME_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS,
-            )
+          ? projections.filter((p) => p.visit.windowType === "fixed")
           : projections.filter(
               (p) =>
                 p.visit.windowType === "fixed" &&
@@ -1199,7 +1210,11 @@ const orderVisitsByWindowDistanceAndDuration = (
     // This prevents visits with wide windows (e.g. Dindyal 08:30-13:00) from
     // being stranded after the anchor because a greedy one-at-a-time picker
     // chose geometrically closer visits on each individual iteration.
+    const allowGapPlanningForAnchor = !(
+      objective === "distance" && firstProjection.visit.windowType === "fixed"
+    );
     const isGapPlanningEligible =
+      allowGapPlanningForAnchor &&
       firstProjection.waitSeconds >= IDLE_GAP_FILL_THRESHOLD_SECONDS &&
       firstProjection.visit.visitId !== gapQueueAnchorId &&
       (hasFixedRemaining || firstProjection.visit.hasPreferredWindow);
@@ -1304,6 +1319,9 @@ const evaluateOrderedVisits = (
   let lunchSkippedDueToFixed = false;
   let score = ZERO_SCORE;
   let maxIdleGapSeconds = 0;
+  let fixedAfterFlexibleCount = 0;
+  let fixedSlackConsumedSeconds = 0;
+  let seenFlexibleVisit = false;
 
   orderedVisits.forEach((visit, index) => {
     if (lunchContext && !lunchTaken && currentTimeSeconds >= lunchContext.targetLunchStartSeconds) {
@@ -1335,6 +1353,26 @@ const evaluateOrderedVisits = (
     );
     maxIdleGapSeconds = Math.max(maxIdleGapSeconds, projection.waitSeconds);
     score = addScores(score, scoreProjection(projection));
+
+    if (visit.windowType === "fixed") {
+      if (seenFlexibleVisit) {
+        fixedAfterFlexibleCount += 1;
+      }
+    } else {
+      seenFlexibleVisit = true;
+    }
+
+    // Accumulate how far into their window each fixed patient was actually
+    // served. If the nurse arrives early and waits at the door, serviceStart
+    // equals windowStart and this contributes 0. If the nurse arrives late
+    // (within the window), this grows. Used as a secondary hard guard.
+    if (visit.windowType === "fixed" && visit.hasPreferredWindow) {
+      fixedSlackConsumedSeconds += Math.max(
+        0,
+        projection.serviceStartSeconds - visit.windowStartSeconds,
+      );
+    }
+
     currentLocation = {
       coords: visit.coords,
       locationKey: visit.locationKey,
@@ -1355,6 +1393,8 @@ const evaluateOrderedVisits = (
     lunchSkippedDueToFixed,
     maxIdleGapSeconds,
     distanceIdlePenaltySeconds,
+    fixedAfterFlexibleCount,
+    fixedSlackConsumedSeconds,
   };
 
   return {
@@ -1455,6 +1495,14 @@ const compareScheduleEvaluations = (
   const fixedLatenessComparison = compareFixedLateness(left.score, right.score);
   if (fixedLatenessComparison !== 0) {
     return fixedLatenessComparison;
+  }
+
+  if (objective === "distance") {
+    // Less-driving mode keeps strict fixed-first sequencing as a structural
+    // rule immediately after fixed-window lateness.
+    if (left.fixedAfterFlexibleCount !== right.fixedAfterFlexibleCount) {
+      return left.fixedAfterFlexibleCount - right.fixedAfterFlexibleCount;
+    }
   }
 
   if (left.score.totalLateSeconds !== right.score.totalLateSeconds) {
@@ -1619,23 +1667,32 @@ const isGloballyMovableFlexibleBlock = (
   moveLength: number,
 ) => {
   const movingVisits = orderedVisits.slice(fromIndex, fromIndex + moveLength);
-  if (movingVisits.length === 0 || movingVisits.some((visit) => visit.windowType === "fixed")) {
-    return false;
+  // Any block composed entirely of non-fixed visits is movable. No-window
+  // flexible visits are included — relocating them can free time for fixed
+  // windows and should not be artificially gated by neighbour type.
+  return movingVisits.length > 0 && movingVisits.every((visit) => visit.windowType !== "fixed");
+};
+
+// Returns true when the candidate strictly worsens any fixed-window constraint
+// relative to the reference. Used as a hard guard in the ILS local search: no
+// move that hurts fixed patients is ever accepted regardless of travel savings.
+//
+// Three-tier check (in order):
+//  1. fixedLateCount   — any new missed fixed window is an immediate reject.
+//  2. fixedLateSeconds — more cumulative lateness for already-missed windows.
+//  3. fixedSlackConsumedSeconds — fixed patients served later *inside* their
+//     window. This catches the case where Jing (no-window flexible, very close)
+//     gets inserted before Ravi (fixed 09:00–10:00, farther away): Ravi stays
+//     within its window but is served 20 min later, burning slack and leaving
+//     less buffer against real-world delays.
+const worsensFixedLateness = (candidate: ScheduleEvaluation, reference: ScheduleEvaluation) => {
+  if (candidate.score.fixedLateCount !== reference.score.fixedLateCount) {
+    return candidate.score.fixedLateCount > reference.score.fixedLateCount;
   }
-
-  if (movingVisits.some((visit) => visit.hasPreferredWindow)) {
-    return true;
+  if (candidate.score.fixedLateSeconds !== reference.score.fixedLateSeconds) {
+    return candidate.score.fixedLateSeconds > reference.score.fixedLateSeconds;
   }
-
-  const previousVisit = orderedVisits[fromIndex - 1];
-  const nextVisit = orderedVisits[fromIndex + moveLength];
-
-  return Boolean(
-    (previousVisit &&
-      previousVisit.windowType === "flexible" &&
-      previousVisit.hasPreferredWindow) ||
-    (nextVisit && nextVisit.windowType === "flexible" && nextVisit.hasPreferredWindow),
-  );
+  return candidate.fixedSlackConsumedSeconds > reference.fixedSlackConsumedSeconds;
 };
 
 const localSearchSweep = (
@@ -1661,7 +1718,30 @@ const localSearchSweep = (
   while (improved && Date.now() < deadlineMs) {
     improved = false;
 
-    for (let moveLength = 1; moveLength <= 3 && !improved; moveLength += 1) {
+    // Best-improvement: scan the full neighbourhood in one pass and apply the
+    // single best move found. This is more informative per unit of clock time
+    // than first-improvement-with-restart, which re-scans from index 0 after
+    // every accepted move and exhausts the time budget on early iterations.
+    let bestCandidateOrder: VisitWithCoords[] | null = null;
+    let bestCandidateEvaluation: ScheduleEvaluation | null = null;
+
+    const acceptCandidate = (
+      candidateOrder: VisitWithCoords[],
+      candidateEvaluation: ScheduleEvaluation,
+    ) => {
+      // Hard constraint: never accept a move that makes any fixed patient later.
+      if (worsensFixedLateness(candidateEvaluation, bestEvaluation)) {
+        return;
+      }
+      const reference = bestCandidateEvaluation ?? bestEvaluation;
+      if (compareScheduleEvaluations(candidateEvaluation, reference, objective) < 0) {
+        bestCandidateOrder = candidateOrder;
+        bestCandidateEvaluation = candidateEvaluation;
+      }
+    };
+
+    // Phase 1 — global relocation moves (1-3 consecutive flexible visits)
+    for (let moveLength = 1; moveLength <= 3; moveLength += 1) {
       for (let fromIndex = 0; fromIndex + moveLength <= bestOrder.length; fromIndex += 1) {
         if (!isGloballyMovableFlexibleBlock(bestOrder, fromIndex, moveLength)) {
           continue;
@@ -1673,6 +1753,9 @@ const localSearchSweep = (
           }
 
           if (Date.now() >= deadlineMs) {
+            if (bestCandidateOrder) {
+              return { orderedVisits: bestCandidateOrder, evaluation: bestCandidateEvaluation! };
+            }
             return { orderedVisits: bestOrder, evaluation: bestEvaluation };
           }
 
@@ -1682,70 +1765,52 @@ const localSearchSweep = (
             moveLength,
             targetIndex,
           );
-          const candidateEvaluation = evaluateOrderedVisits(
+          acceptCandidate(
             candidateOrder,
-            startLocation,
-            departureLocalSeconds,
-            resolveTravelSeconds,
-            lunchContext,
-            objective,
+            evaluateOrderedVisits(
+              candidateOrder,
+              startLocation,
+              departureLocalSeconds,
+              resolveTravelSeconds,
+              lunchContext,
+              objective,
+            ),
           );
-
-          if (compareScheduleEvaluations(candidateEvaluation, bestEvaluation, objective) < 0) {
-            bestOrder = candidateOrder;
-            bestEvaluation = candidateEvaluation;
-            improved = true;
-            break;
-          }
-        }
-
-        if (improved) {
-          break;
         }
       }
     }
 
-    if (improved) {
-      continue;
-    }
-
+    // Phase 2 — segment-scoped moves (reverse + relocate within flexible segments)
     const segments = buildFlexibleSegmentRanges(bestOrder);
     for (const segment of segments) {
       const segmentLength = segment.endIndex - segment.startIndex + 1;
 
+      // 2-opt reversals within the segment
       for (let startOffset = 0; startOffset < segmentLength - 1; startOffset += 1) {
         for (let endOffset = startOffset + 1; endOffset < segmentLength; endOffset += 1) {
           if (Date.now() >= deadlineMs) {
+            if (bestCandidateOrder) {
+              return { orderedVisits: bestCandidateOrder, evaluation: bestCandidateEvaluation! };
+            }
             return { orderedVisits: bestOrder, evaluation: bestEvaluation };
           }
 
           const candidateOrder = reverseSegmentWindow(bestOrder, segment, startOffset, endOffset);
-          const candidateEvaluation = evaluateOrderedVisits(
+          acceptCandidate(
             candidateOrder,
-            startLocation,
-            departureLocalSeconds,
-            resolveTravelSeconds,
-            lunchContext,
-            objective,
+            evaluateOrderedVisits(
+              candidateOrder,
+              startLocation,
+              departureLocalSeconds,
+              resolveTravelSeconds,
+              lunchContext,
+              objective,
+            ),
           );
-
-          if (compareScheduleEvaluations(candidateEvaluation, bestEvaluation, objective) < 0) {
-            bestOrder = candidateOrder;
-            bestEvaluation = candidateEvaluation;
-            improved = true;
-            break;
-          }
-        }
-
-        if (improved) {
-          break;
         }
       }
 
-      if (improved) {
-        break;
-      }
-
+      // Relocations within the segment
       for (let moveLength = 1; moveLength <= Math.min(3, segmentLength - 1); moveLength += 1) {
         for (let fromOffset = 0; fromOffset + moveLength <= segmentLength; fromOffset += 1) {
           for (
@@ -1758,6 +1823,9 @@ const localSearchSweep = (
             }
 
             if (Date.now() >= deadlineMs) {
+              if (bestCandidateOrder) {
+                return { orderedVisits: bestCandidateOrder, evaluation: bestCandidateEvaluation! };
+              }
               return { orderedVisits: bestOrder, evaluation: bestEvaluation };
             }
 
@@ -1768,36 +1836,27 @@ const localSearchSweep = (
               moveLength,
               insertOffset,
             );
-            const candidateEvaluation = evaluateOrderedVisits(
+            acceptCandidate(
               candidateOrder,
-              startLocation,
-              departureLocalSeconds,
-              resolveTravelSeconds,
-              lunchContext,
-              objective,
+              evaluateOrderedVisits(
+                candidateOrder,
+                startLocation,
+                departureLocalSeconds,
+                resolveTravelSeconds,
+                lunchContext,
+                objective,
+              ),
             );
-
-            if (compareScheduleEvaluations(candidateEvaluation, bestEvaluation, objective) < 0) {
-              bestOrder = candidateOrder;
-              bestEvaluation = candidateEvaluation;
-              improved = true;
-              break;
-            }
-          }
-
-          if (improved) {
-            break;
           }
         }
-
-        if (improved) {
-          break;
-        }
       }
+    }
 
-      if (improved) {
-        break;
-      }
+    // Apply the single best move found across the entire neighbourhood
+    if (bestCandidateOrder) {
+      bestOrder = bestCandidateOrder;
+      bestEvaluation = bestCandidateEvaluation!;
+      improved = true;
     }
   }
 
@@ -1807,7 +1866,6 @@ const localSearchSweep = (
 const perturbFlexibleSegment = (
   orderedVisits: VisitWithCoords[],
   segments: FlexibleSegmentRange[],
-  iteration: number,
 ) => {
   const eligibleSegments = segments.filter(
     (segment) => segment.endIndex - segment.startIndex + 1 >= 2,
@@ -1816,33 +1874,34 @@ const perturbFlexibleSegment = (
     return orderedVisits;
   }
 
-  const segment = eligibleSegments[iteration % eligibleSegments.length];
+  // Pick a random eligible segment rather than cycling deterministically — this
+  // ensures successive perturbations explore different parts of the solution.
+  const segment = eligibleSegments[Math.floor(Math.random() * eligibleSegments.length)];
   if (!segment) {
     return orderedVisits;
   }
 
   const segmentVisits = orderedVisits.slice(segment.startIndex, segment.endIndex + 1);
   if (segmentVisits.length >= 4) {
-    const quarter = Math.max(1, Math.floor(segmentVisits.length / 4));
-    const firstBreak = quarter;
-    const secondBreak = Math.max(firstBreak + 1, Math.floor(segmentVisits.length / 2));
-    const thirdBreak = Math.max(secondBreak + 1, segmentVisits.length - quarter);
+    // Pick a random split point and reverse a sub-range for diversification.
+    const splitStart = Math.floor(Math.random() * (segmentVisits.length - 1));
+    const splitEnd =
+      splitStart + 1 + Math.floor(Math.random() * (segmentVisits.length - splitStart - 1));
     const replacement = [
-      ...segmentVisits.slice(0, firstBreak),
-      ...segmentVisits.slice(thirdBreak),
-      ...segmentVisits.slice(secondBreak, thirdBreak),
-      ...segmentVisits.slice(firstBreak, secondBreak),
+      ...segmentVisits.slice(0, splitStart),
+      ...segmentVisits.slice(splitStart, splitEnd + 1).reverse(),
+      ...segmentVisits.slice(splitEnd + 1),
     ];
-
     return replaceRange(orderedVisits, segment, replacement);
   }
 
-  const rotation = (iteration % (segmentVisits.length - 1)) + 1;
+  // For short segments rotate by a random non-zero offset.
+  const rotation = Math.floor(Math.random() * (segmentVisits.length - 1)) + 1;
   const replacement = [...segmentVisits.slice(rotation), ...segmentVisits.slice(0, rotation)];
   return replaceRange(orderedVisits, segment, replacement);
 };
 
-const perturbFlexibleBlockGlobally = (orderedVisits: VisitWithCoords[], iteration: number) => {
+const perturbFlexibleBlockGlobally = (orderedVisits: VisitWithCoords[]) => {
   const candidates: Array<{ fromIndex: number; moveLength: number }> = [];
 
   for (let moveLength = 1; moveLength <= 3; moveLength += 1) {
@@ -1859,7 +1918,10 @@ const perturbFlexibleBlockGlobally = (orderedVisits: VisitWithCoords[], iteratio
     return orderedVisits;
   }
 
-  const candidate = candidates[iteration % candidates.length];
+  // Pick a random block and a random target position. The previous modular
+  // formula re-visited the same (block, target) pairs on every run, so the
+  // ILS never escaped the neighbourhood explored in iteration 0.
+  const candidate = candidates[Math.floor(Math.random() * candidates.length)];
   if (!candidate) {
     return orderedVisits;
   }
@@ -1869,7 +1931,7 @@ const perturbFlexibleBlockGlobally = (orderedVisits: VisitWithCoords[], iteratio
     return orderedVisits;
   }
 
-  let targetIndex = (iteration * 3 + candidate.moveLength) % (remainingLength + 1);
+  let targetIndex = Math.floor(Math.random() * (remainingLength + 1));
   if (targetIndex === candidate.fromIndex) {
     targetIndex = (targetIndex + 1) % (remainingLength + 1);
   }
@@ -1942,6 +2004,12 @@ const refineTrailingFlexibleBlocksAheadOfFixed = (
           lunchContext,
           objective,
         );
+
+        // Apply the same hard fixed-patient protection used by localSearchSweep.
+        // Refinement must not consume more fixed-window slack or worsen fixed lateness.
+        if (worsensFixedLateness(candidateEvaluation, bestEvaluation)) {
+          continue;
+        }
 
         if (compareScheduleEvaluations(candidateEvaluation, bestEvaluation, objective) < 0) {
           bestOrder = candidateOrder;
@@ -2077,6 +2145,12 @@ const solveRouteWithIls = (
 
   let bestOrder = seed.orderedVisits;
   let bestEvaluation = seedEvaluation;
+  // currentOrder is the ILS incumbent — the solution perturbations are applied
+  // to. It always advances to the local optimum of each iteration regardless of
+  // whether that optimum beats the global best. This is the standard ILS
+  // acceptance rule and ensures the search escapes local optima rather than
+  // repeatedly perturbing the same global-best solution.
+  let currentOrder = seed.orderedVisits;
   const deadlineMs = Date.now() + ILS_TIME_LIMIT_MS;
 
   for (
@@ -2084,13 +2158,13 @@ const solveRouteWithIls = (
     iteration < MAX_ILS_ITERATIONS && Date.now() < deadlineMs;
     iteration += 1
   ) {
-    const segments = buildFlexibleSegmentRanges(bestOrder);
+    const segments = buildFlexibleSegmentRanges(currentOrder);
     const candidateStart =
       iteration === 0
-        ? bestOrder
+        ? currentOrder
         : iteration % 2 === 0
-          ? perturbFlexibleSegment(bestOrder, segments, iteration)
-          : perturbFlexibleBlockGlobally(bestOrder, iteration);
+          ? perturbFlexibleSegment(currentOrder, segments)
+          : perturbFlexibleBlockGlobally(currentOrder);
     const localResult = localSearchSweep(
       candidateStart,
       startLocation,
@@ -2101,7 +2175,17 @@ const solveRouteWithIls = (
       deadlineMs,
     );
 
-    if (compareScheduleEvaluations(localResult.evaluation, bestEvaluation, objective) < 0) {
+    // Always advance the incumbent to the new local optimum (ILS acceptance).
+    // This incumbent can drift on fixed-window slack consumption across iterations;
+    // that is intentional to preserve exploration diversity. Output safety comes
+    // from the guarded global-best acceptance below.
+    currentOrder = localResult.orderedVisits;
+
+    // Update the global best only when the new local optimum is strictly better.
+    if (
+      !worsensFixedLateness(localResult.evaluation, bestEvaluation) &&
+      compareScheduleEvaluations(localResult.evaluation, bestEvaluation, objective) < 0
+    ) {
       bestOrder = localResult.orderedVisits;
       bestEvaluation = localResult.evaluation;
     }
@@ -2116,7 +2200,10 @@ const solveRouteWithIls = (
     objective,
     deadlineMs,
   );
-  if (compareScheduleEvaluations(refinedResult.evaluation, bestEvaluation, objective) < 0) {
+  if (
+    !worsensFixedLateness(refinedResult.evaluation, bestEvaluation) &&
+    compareScheduleEvaluations(refinedResult.evaluation, bestEvaluation, objective) < 0
+  ) {
     bestOrder = refinedResult.orderedVisits;
     bestEvaluation = refinedResult.evaluation;
   }
@@ -2130,6 +2217,9 @@ const solveRouteWithIls = (
     objective,
     deadlineMs,
   );
+  // Intentionally fixed-lateness-only: this promotion pass is a targeted
+  // recovery for already-late fixed patients. It may trade fixed slack usage
+  // for improved fixed lateness and does not rank by fixedSlackConsumedSeconds.
   if (compareFixedLateness(promotedNoWindowResult.evaluation.score, bestEvaluation.score) < 0) {
     bestOrder = promotedNoWindowResult.orderedVisits;
     bestEvaluation = promotedNoWindowResult.evaluation;
