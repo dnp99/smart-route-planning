@@ -1130,7 +1130,11 @@ const orderVisitsByWindowDistanceAndDuration = (
       lateFixedProjections.length > 0
         ? []
         : objective === "distance"
-          ? projections.filter((p) => p.visit.windowType === "fixed")
+          ? projections.filter(
+              (p) =>
+                p.visit.windowType === "fixed" &&
+                p.waitSeconds <= TIME_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS,
+            )
           : projections.filter(
               (p) =>
                 p.visit.windowType === "fixed" &&
@@ -1139,14 +1143,16 @@ const orderVisitsByWindowDistanceAndDuration = (
     const shouldPrioritizeFixed =
       lateFixedProjections.length > 0 || prioritizedFixedProjections.length > 0;
 
+    const isFlexibleWindowed = (p: (typeof projections)[number]) =>
+      p.visit.windowType !== "fixed" && p.visit.hasPreferredWindow;
     const lateFlexibleProjections = !shouldPrioritizeFixed
-      ? projections.filter((p) => p.visit.hasPreferredWindow && p.lateBySeconds > 0)
+      ? projections.filter((p) => isFlexibleWindowed(p) && p.lateBySeconds > 0)
       : [];
     const urgentFlexibleProjections =
       !shouldPrioritizeFixed && lateFlexibleProjections.length === 0
         ? projections.filter(
             (p) =>
-              p.visit.hasPreferredWindow &&
+              isFlexibleWindowed(p) &&
               p.slackSeconds >= 0 &&
               p.slackSeconds < FLEXIBLE_URGENCY_THRESHOLD_SECONDS,
           )
@@ -1160,7 +1166,7 @@ const orderVisitsByWindowDistanceAndDuration = (
       !shouldPrioritizeFixed &&
       lateFlexibleProjections.length === 0 &&
       urgentFlexibleProjections.length === 0
-        ? projections.filter((p) => p.visit.hasPreferredWindow)
+        ? projections.filter((p) => isFlexibleWindowed(p))
         : [];
     const primaryProjections =
       lateFixedProjections.length > 0
@@ -1388,12 +1394,23 @@ const resolveLatestFeasibleDepartureLocalSeconds = (
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
   lunchContext: LunchContext | undefined,
   objective: "time" | "distance",
+  workStartSeconds: number | undefined,
 ) => {
-  if (objective !== "time" || orderedVisits.length === 0) {
+  if (orderedVisits.length === 0) {
     return departureLocalSeconds;
   }
 
   if (!orderedVisits.some((visit) => visit.hasPreferredWindow)) {
+    return departureLocalSeconds;
+  }
+
+  const hasEarlyFixedVisit =
+    orderedVisits[0]?.windowType === "fixed" ||
+    (workStartSeconds !== undefined &&
+      orderedVisits.some(
+        (visit) => visit.windowType === "fixed" && visit.windowStartSeconds <= workStartSeconds,
+      ));
+  if (hasEarlyFixedVisit) {
     return departureLocalSeconds;
   }
 
@@ -1456,10 +1473,6 @@ const compareScheduleEvaluations = (
     const elapsedDifference = leftElapsed - rightElapsed;
 
     if (Math.abs(elapsedDifference) > TIME_IDLE_ELAPSED_TOLERANCE_SECONDS) {
-      return elapsedDifference;
-    }
-
-    if (elapsedDifference !== 0) {
       return elapsedDifference;
     }
   }
@@ -2344,7 +2357,7 @@ export const optimizeRouteV3 = async (
     shadowContext,
   );
 
-  if (!request.start.departureTime && objective === "time") {
+  if (!request.start.departureTime) {
     const delayedDepartureLocalSeconds = resolveLatestFeasibleDepartureLocalSeconds(
       orderedVisits,
       {
@@ -2355,6 +2368,7 @@ export const optimizeRouteV3 = async (
       resolveTravelSeconds,
       lunchContext,
       objective,
+      workingHoursStartSeconds,
     );
 
     if (delayedDepartureLocalSeconds !== departureLocalSeconds) {
