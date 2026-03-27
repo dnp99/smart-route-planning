@@ -1470,6 +1470,87 @@ describe("optimizeRouteV3 service", () => {
     expect(actualOrder).toEqual(["Visit A", "Visit B", "Visit C"]);
   });
 
+  it("time mode adopts the less-driving candidate when it finishes earlier without worsening fixed safety", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Visit A", coords: { lat: 43.61, lon: -79.61 } },
+      { address: "Visit B", coords: { lat: 43.62, lon: -79.62 } },
+      { address: "Visit C", coords: { lat: 43.63, lon: -79.63 } },
+      { address: "End", coords: { lat: 43.64, lon: -79.64 } },
+    ]);
+
+    const nodes = [
+      { label: "start", address: "Start" },
+      { label: "a", address: "Visit A" },
+      { label: "b", address: "Visit B" },
+      { label: "c", address: "Visit C" },
+      { label: "end", address: "End" },
+    ];
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrixByLabel(nodes, 45 * 60, [
+        ["start", "a", 5 * 60],
+        ["a", "b", 5 * 60],
+        ["a", "c", 30 * 60],
+        ["b", "c", 5 * 60],
+        ["c", "b", 30 * 60],
+        ["b", "end", 5 * 60],
+        ["c", "end", 5 * 60],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-03-27",
+        timezone: "America/Toronto",
+        start: { address: "Start", departureTime: "2026-03-27T09:00:00-04:00" },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "visit-a",
+            patientId: "patient-a",
+            patientName: "Visit A",
+            address: "Visit A",
+            windowStart: "09:00",
+            windowEnd: "09:30",
+            windowType: "fixed",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "visit-b",
+            patientId: "patient-b",
+            patientName: "Visit B",
+            address: "Visit B",
+            windowStart: "10:00",
+            windowEnd: "14:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 15,
+          },
+          {
+            visitId: "visit-c",
+            patientId: "patient-c",
+            patientName: "Visit C",
+            address: "Visit C",
+            windowStart: "09:00",
+            windowEnd: "16:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 15,
+          },
+        ],
+        optimizationObjective: "time",
+      },
+      "google-key",
+    );
+
+    const actualOrder = result.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .map((stop) => stop.tasks[0]?.patientName ?? stop.address);
+    expect(actualOrder).toEqual(["Visit A", "Visit B", "Visit C"]);
+  });
+
   it("time mode does not anchor on a far-future fixed visit when it is not yet due", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
