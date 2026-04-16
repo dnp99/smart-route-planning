@@ -46,6 +46,7 @@ const DISTANCE_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS = 45 * 60;
 const TIME_IDLE_GAP_THRESHOLD_SECONDS = 30 * 60;
 const TIME_IDLE_ELAPSED_TOLERANCE_SECONDS = 10 * 60;
 const TIME_FIXED_PRIORITY_WAIT_THRESHOLD_SECONDS = 30 * 60;
+const NEARBY_CONSECUTIVE_DISTANCE_KM = 0.5;
 
 export type OptimizeRouteV3ShadowContext = {
   requestId: string;
@@ -1028,6 +1029,108 @@ type ScheduleEvaluation = {
   // the buffer against delays. Used as a hard guard: moves that push fixed
   // patients later inside their windows are rejected even when no lateness occurs.
   fixedSlackConsumedSeconds: number;
+  nearbyNonConsecutiveCount: number;
+};
+
+const isFixedOnTimeWhenServedFirst = (visit: VisitWithCoords) => {
+  if (visit.windowType !== "fixed" || !visit.hasPreferredWindow) {
+    return true;
+  }
+
+  const serviceEndSeconds = visit.windowStartSeconds + visit.serviceDurationMinutes * 60;
+  return serviceEndSeconds <= visit.windowEndSeconds;
+};
+
+const canServePairConsecutivelyWithoutFixedWindowConflict = (
+  first: VisitWithCoords,
+  second: VisitWithCoords,
+  resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+) => {
+  if (!isFixedOnTimeWhenServedFirst(first)) {
+    return false;
+  }
+
+  const firstServiceEndSeconds = first.windowStartSeconds + first.serviceDurationMinutes * 60;
+  const secondArrivalSeconds = firstServiceEndSeconds + resolveTravelSeconds(first, second);
+  const secondServiceStartSeconds = Math.max(secondArrivalSeconds, second.windowStartSeconds);
+  const secondServiceEndSeconds = secondServiceStartSeconds + second.serviceDurationMinutes * 60;
+
+  if (second.windowType !== "fixed" || !second.hasPreferredWindow) {
+    return true;
+  }
+
+  return secondServiceEndSeconds <= second.windowEndSeconds;
+};
+
+const hasNearbyPairFixedWindowConflict = (
+  left: VisitWithCoords,
+  right: VisitWithCoords,
+  resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+) => {
+  if (left.windowType !== "fixed" && right.windowType !== "fixed") {
+    return false;
+  }
+
+  const leftThenRightFeasible = canServePairConsecutivelyWithoutFixedWindowConflict(
+    left,
+    right,
+    resolveTravelSeconds,
+  );
+  if (leftThenRightFeasible) {
+    return false;
+  }
+
+  return !canServePairConsecutivelyWithoutFixedWindowConflict(right, left, resolveTravelSeconds);
+};
+
+const countNearbyNonConsecutiveVisits = (
+  orderedVisits: VisitWithCoords[],
+  resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+) => {
+  if (orderedVisits.length < 3) {
+    return 0;
+  }
+
+  const indexByVisitId = new Map(
+    orderedVisits.map((visit, index) => [visit.visitId, index] as const),
+  );
+
+  let violations = 0;
+  for (let leftIndex = 0; leftIndex < orderedVisits.length; leftIndex += 1) {
+    const left = orderedVisits[leftIndex];
+    if (!left) {
+      continue;
+    }
+
+    for (let rightIndex = leftIndex + 1; rightIndex < orderedVisits.length; rightIndex += 1) {
+      const right = orderedVisits[rightIndex];
+      if (!right) {
+        continue;
+      }
+
+      if (haversineDistanceKm(left.coords, right.coords) > NEARBY_CONSECUTIVE_DISTANCE_KM) {
+        continue;
+      }
+
+      if (hasNearbyPairFixedWindowConflict(left, right, resolveTravelSeconds)) {
+        continue;
+      }
+
+      const leftPosition = indexByVisitId.get(left.visitId);
+      const rightPosition = indexByVisitId.get(right.visitId);
+      if (
+        leftPosition === undefined ||
+        rightPosition === undefined ||
+        Math.abs(leftPosition - rightPosition) === 1
+      ) {
+        continue;
+      }
+
+      violations += 1;
+    }
+  }
+
+  return violations;
 };
 
 const orderVisitsByWindowDistanceAndDuration = (
@@ -1336,6 +1439,7 @@ const buildPenalty = (
     evaluation.score.fixedLateCount * 1_000_000_000_000 +
     evaluation.score.fixedLateSeconds * 1_000_000_000 +
     evaluation.score.totalLateSeconds * 1_000_000 +
+    evaluation.nearbyNonConsecutiveCount * 10_000 +
     evaluation.dayOverflowSeconds * 1_000 +
     objectiveSeconds
   );
@@ -1421,6 +1525,10 @@ const evaluateOrderedVisits = (
       ? Math.max(0, maxIdleGapSeconds - DISTANCE_IDLE_GAP_THRESHOLD_SECONDS) *
         DISTANCE_IDLE_PENALTY_MULTIPLIER
       : 0;
+  const nearbyNonConsecutiveCount = countNearbyNonConsecutiveVisits(
+    orderedVisits,
+    resolveTravelSeconds,
+  );
 
   const baseEvaluation = {
     score,
@@ -1431,6 +1539,7 @@ const evaluateOrderedVisits = (
     distanceIdlePenaltySeconds,
     fixedAfterFlexibleCount,
     fixedSlackConsumedSeconds,
+    nearbyNonConsecutiveCount,
   };
 
   return {
@@ -1535,6 +1644,10 @@ const compareScheduleEvaluations = (
 
   if (left.score.totalLateSeconds !== right.score.totalLateSeconds) {
     return left.score.totalLateSeconds - right.score.totalLateSeconds;
+  }
+
+  if (left.nearbyNonConsecutiveCount !== right.nearbyNonConsecutiveCount) {
+    return left.nearbyNonConsecutiveCount - right.nearbyNonConsecutiveCount;
   }
 
   if (objective === "time") {
@@ -1764,6 +1877,10 @@ const isStrictElapsedImprovementForTime = (
 
   if (candidate.dayOverflowSeconds !== reference.dayOverflowSeconds) {
     return candidate.dayOverflowSeconds < reference.dayOverflowSeconds;
+  }
+
+  if (candidate.nearbyNonConsecutiveCount !== reference.nearbyNonConsecutiveCount) {
+    return candidate.nearbyNonConsecutiveCount < reference.nearbyNonConsecutiveCount;
   }
 
   const candidateElapsed = candidate.score.totalWaitSeconds + candidate.score.totalTravelSeconds;
