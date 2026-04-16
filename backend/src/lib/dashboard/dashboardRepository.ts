@@ -158,7 +158,7 @@ const resolveUpcomingStops = ({
     time: timeFormatter.format(task.serviceStartTime as Date),
     route: toRouteLabel(latestRunId),
     destination: task.address,
-    status: task.onTime === false ? "at_risk" : "on_track",
+    status: (task.onTime === false ? "at_risk" : "on_track") as DashboardUpcomingStop["status"],
   }));
 };
 
