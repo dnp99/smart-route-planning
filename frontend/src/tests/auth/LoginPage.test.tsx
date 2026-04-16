@@ -44,7 +44,7 @@ describe("LoginPage", () => {
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/patients" element={<div>Patients</div>} />
+          <Route path="/patients" element={<div>Clients</div>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -68,7 +68,7 @@ describe("LoginPage", () => {
       expect(signUpMock).toHaveBeenCalledWith("Nurse One", "nurse@example.com", "secret123");
     });
 
-    expect(await screen.findByText("Patients")).toBeTruthy();
+    expect(await screen.findByText("Clients")).toBeTruthy();
     expect(window.localStorage.getItem("careflow.auth.token")).toBe("jwt-token");
   });
 
@@ -77,7 +77,7 @@ describe("LoginPage", () => {
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/patients" element={<div>Patients</div>} />
+          <Route path="/patients" element={<div>Clients</div>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -85,7 +85,7 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
 
     expect(
-      screen.getByText("Create your CareFlow account to manage patients and route-planning data."),
+      screen.getByText("Create your CareFlow account to manage clients and route-planning data."),
     ).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Display name"), {

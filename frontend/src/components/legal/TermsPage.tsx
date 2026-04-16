@@ -13,7 +13,7 @@ export default function TermsPage() {
           </h2>
           <p className="m-0">
             CareFlow is a nurse operations tool designed to help healthcare professionals manage
-            patient visits and plan daily routes. Use of this application is intended solely for
+            client visits and plan daily routes. Use of this application is intended solely for
             authorized personnel in connection with their professional duties.
           </p>
         </section>

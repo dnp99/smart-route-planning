@@ -82,7 +82,7 @@ describe("patientForm validateForm", () => {
     );
 
     expect(errors.visitWindowRows?.[0]?.endTime).toBe(
-      "Jane Doe fixed window must be at least 45 minutes long as per patient's profile.",
+      "Jane Doe fixed window must be at least 45 minutes long as per client's profile.",
     );
   });
 

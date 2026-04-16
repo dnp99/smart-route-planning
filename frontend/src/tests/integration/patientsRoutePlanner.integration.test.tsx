@@ -326,9 +326,9 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });
@@ -338,13 +338,13 @@ describe("patients and route planner integration", () => {
     fireEvent.change(screen.getByLabelText("Address"), {
       target: { value: "123 Main St" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save new client/i }));
 
     await waitFor(() => {
       expect(screen.getAllByText("Jane Doe").length).toBeGreaterThan(0);
     });
 
-    fireEvent.change(screen.getByLabelText("Search patients"), {
+    fireEvent.change(screen.getByLabelText("Search clients"), {
       target: { value: "doe" },
     });
 
@@ -353,7 +353,7 @@ describe("patients and route planner integration", () => {
     });
 
     fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Jane Doe/i })[0]);
-    fireEvent.click(screen.getAllByRole("button", { name: /Edit patient Jane Doe/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Janet" },
     });
@@ -364,12 +364,12 @@ describe("patients and route planner integration", () => {
     });
 
     fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Janet Doe/i })[0]);
-    fireEvent.click(screen.getByRole("button", { name: /Delete patient Janet Doe/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Delete client Janet Doe/i }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
     await waitFor(() => {
       expect(deletePatientMock).toHaveBeenCalledTimes(1);
-      expect(screen.getByText("No patients match this search.")).toBeTruthy();
+      expect(screen.getByText("No clients match this search.")).toBeTruthy();
     });
   });
 
@@ -380,9 +380,9 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "John" },
     });
@@ -392,7 +392,7 @@ describe("patients and route planner integration", () => {
     fireEvent.change(screen.getByLabelText("Address"), {
       target: { value: "456 Queen St" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save new client/i }));
 
     await waitFor(() => {
       expect(screen.getAllByText("John Smith").length).toBeGreaterThan(0);
@@ -403,7 +403,7 @@ describe("patients and route planner integration", () => {
     fireEvent.change(screen.getByLabelText("Ending point"), {
       target: { value: "Airport" },
     });
-    fireEvent.change(screen.getByLabelText("Destination patient search"), {
+    fireEvent.change(screen.getByLabelText("Destination client search"), {
       target: { value: "john" },
     });
 

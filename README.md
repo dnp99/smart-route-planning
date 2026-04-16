@@ -4,8 +4,8 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 
 ## What it does
 
-- Requires authenticated access for patient and route-planner workflows.
-- Manages patient records and visit windows.
+- Requires authenticated access for client and route-planner workflows.
+- Manages client records and visit windows.
 - Optimizes daily visits with time windows, travel distance/time, and visit duration; planning date defaults to tomorrow and is configurable per session.
 - Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
@@ -13,9 +13,10 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 - Provides an authenticated global workspace header with sticky positioning, app logo, and rotating nurse quotes.
 - Keeps header quote selection stable across browser refresh during a signed-in session.
 - Clears all session-scoped storage (optimization result, draft, header quote) on logout and login.
-- Uses a consistent overflow action menu pattern for patient row actions.
+- Uses a consistent overflow action menu pattern for client row actions.
 - Includes legal pages (Terms, Privacy, License, Trademark) accessible from the footer.
 - Mobile-optimized route planner with wizard-style step flow and safe-area-aware sticky footer.
+- Uses in-memory geocoding and travel-matrix caching (with in-flight request deduplication) to reduce repeated optimization latency.
 
 ## Tech stack
 
@@ -42,6 +43,11 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
   - `POST /api/optimize-route/v2` (legacy compatibility / rollback path)
 - Address suggestions:
   - `GET /api/address-autocomplete?query=...`
+
+Notes:
+
+- UI terminology uses **Client/Clients** for care recipients.
+- API paths and shared contract field names remain `/api/patients`, `patientId`, and `patientName` for compatibility.
 
 ## Local run
 
@@ -182,8 +188,10 @@ After the greedy seed is built, v3 runs deterministic ILS local search:
 
 - Fixed-window safety is strict: accepted moves cannot worsen fixed late-count, fixed late-seconds, or fixed slack consumption.
 - Distance mode prioritizes lower travel, with bounded idle-gap tradeoffs to reduce extreme idle blocks.
+- Distance mode has a fixed-safety guardrail: if the distance solution is strictly worse than the time benchmark on fixed-window safety, v3 falls back to the time benchmark.
 - Time mode prioritizes lower elapsed time (`wait + travel`) with bounded idle smoothing; if a less-driving candidate finishes earlier and is equally safe, time mode adopts it.
 - Flexible patients within 90 min of deadline are elevated to urgent EDF ordering to prevent avoidable lateness.
+- Nearby clustering is enforced as a scheduling preference: visits within `0.5 km` are scored to be consecutive unless doing so creates a fixed-window conflict.
 
 ## Additional docs
 

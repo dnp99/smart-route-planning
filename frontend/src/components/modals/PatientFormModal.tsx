@@ -107,14 +107,14 @@ export const PatientFormModal = ({
               id="patient-modal-title"
               className="m-0 text-xl font-semibold text-slate-900 dark:text-slate-100"
             >
-              {formMode === "create" ? "Add New Patient" : "Edit Patient"}
+              {formMode === "create" ? "Add New Client" : "Edit Client"}
             </h2>
             <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
               {formMode === "create"
-                ? "Capture patient details and preferred visit timing."
+                ? "Capture client details and preferred visit timing."
                 : selectedPatient
                   ? `Update ${getPatientDisplayName(selectedPatient)}.`
-                  : "Update patient details."}
+                  : "Update client details."}
             </p>
           </div>
 
@@ -337,7 +337,7 @@ export const PatientFormModal = ({
 
               {formValues.visitWindows.length === 0 && (
                 <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
-                  No preferred window set. This patient will be treated as flexible, and timing can
+                  No preferred window set. This client will be treated as flexible, and timing can
                   be picked during route planning.
                 </p>
               )}
@@ -371,7 +371,7 @@ export const PatientFormModal = ({
               {isSubmitting
                 ? "Saving..."
                 : formMode === "create"
-                  ? "Save new patient"
+                  ? "Save new client"
                   : "Save changes"}
             </button>
           </div>

@@ -111,8 +111,8 @@ const LoginPage = () => {
 
         <p className={responsiveStyles.authDescription}>
           {mode === "signup"
-            ? "Create your CareFlow account to manage patients and route-planning data."
-            : "Sign in to continue managing patients and route-planning data."}
+            ? "Create your CareFlow account to manage clients and route-planning data."
+            : "Sign in to continue managing clients and route-planning data."}
         </p>
 
         <form className={responsiveStyles.authForm} onSubmit={handleSubmit}>

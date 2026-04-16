@@ -82,7 +82,7 @@ export const formatPatientListLabel = (destinations: SelectedPatientDestination[
   ];
 
   if (names.length === 0) {
-    return "selected patients";
+    return "selected clients";
   }
 
   if (names.length === 1) {

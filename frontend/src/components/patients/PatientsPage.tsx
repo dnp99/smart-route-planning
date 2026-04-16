@@ -70,7 +70,7 @@ const PatientsPage = () => {
         setSelectedPatientId(null);
       }
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Unable to load patients.");
+      setPageError(error instanceof Error ? error.message : "Unable to load clients.");
     } finally {
       setIsLoadingPatients(false);
     }
@@ -234,7 +234,7 @@ const PatientsPage = () => {
       }
 
       if (!selectedPatientId) {
-        setPageError("Please select a patient to edit.");
+        setPageError("Please select a client to edit.");
         return;
       }
 
@@ -245,7 +245,7 @@ const PatientsPage = () => {
       await fetchPatients(searchQuery);
       setIsModalOpen(false);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Unable to save patient.");
+      setPageError(error instanceof Error ? error.message : "Unable to save client.");
     } finally {
       setIsSubmitting(false);
     }
@@ -267,7 +267,7 @@ const PatientsPage = () => {
       await fetchPatients(searchQuery);
       setPendingDeleteId(null);
     } catch (error) {
-      setPageError(error instanceof Error ? error.message : "Unable to delete patient.");
+      setPageError(error instanceof Error ? error.message : "Unable to delete client.");
       setPendingDeleteId(null);
     } finally {
       setIsDeletingPatient(false);
@@ -281,21 +281,21 @@ const PatientsPage = () => {
           <div className="flex items-start justify-between gap-3">
             <h1 className="m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100">
               {searchQuery.trim()
-                ? `Patients (${patients.length} of ${totalPatientCount})`
-                : `Patients (${patients.length})`}
+                ? `Clients (${patients.length} of ${totalPatientCount})`
+                : `Clients (${patients.length})`}
             </h1>
             <button
               type="button"
               onClick={openCreateModal}
-              aria-label="Add patient"
-              title="Add patient"
+              aria-label="Add client"
+              title="Add client"
               className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:hidden"
             >
               <PlusIcon className="h-4 w-4" />
             </button>
           </div>
           <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
-            Manage patients for route planning.
+            Manage clients for route planning.
           </p>
         </div>
 
@@ -308,7 +308,7 @@ const PatientsPage = () => {
         <div>
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <label htmlFor="patient-search" className="sr-only">
-              Search patients
+              Search clients
             </label>
 
             <div className="relative min-w-0 flex-1">
@@ -331,7 +331,7 @@ const PatientsPage = () => {
                 type="search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search patients by name or address"
+                placeholder="Search clients by name or address"
                 className={`${responsiveStyles.searchInput} pl-9 sm:pl-10 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden ${searchQuery ? "pr-8" : ""}`}
               />
               {searchQuery && (
@@ -365,7 +365,7 @@ const PatientsPage = () => {
               className={`hidden shrink-0 items-center justify-center gap-2 sm:inline-flex ${responsiveStyles.primaryButton}`}
             >
               <PlusIcon className="h-4 w-4" />
-              Add Patient
+              Add Client
             </button>
           </div>
 
@@ -381,7 +381,7 @@ const PatientsPage = () => {
 
         {pendingDeleteId && (
           <ConfirmDialog
-            title="Delete patient"
+            title="Delete client"
             message="This action cannot be undone."
             confirmLabel="Delete"
             confirmLoadingLabel="Deleting..."

@@ -86,7 +86,7 @@ const seedAuthenticatedSession = (displayName = "Nurse One", homeAddress: string
 };
 
 const waitForPatientsPage = async () => {
-  await screen.findByRole("button", { name: "Add patient" });
+  await screen.findByRole("button", { name: "Add client" });
 };
 
 describe("Footer", () => {
@@ -256,7 +256,7 @@ describe("App routing", () => {
     );
 
     await waitForPatientsPage();
-    expect(screen.getByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
     expect(screen.getByText("Nurse operations workspace for Nurse One")).toBeTruthy();
   });
 
@@ -270,10 +270,8 @@ describe("App routing", () => {
     );
 
     await waitForPatientsPage();
-    expect(screen.getByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Patients" }).getAttribute("aria-current")).toBe(
-      "page",
-    );
+    expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Clients" }).getAttribute("aria-current")).toBe("page");
   });
 
   it("shows account options menu items", async () => {
