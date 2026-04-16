@@ -112,9 +112,9 @@ export const responsiveStyles = {
   dateInput:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
   dateInputTrigger:
-    "flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 cursor-pointer",
+    "flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-1 ring-blue-100 transition hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-blue-800 dark:bg-slate-900 dark:text-slate-100 dark:ring-blue-900/40 cursor-pointer",
   dateInputTriggerCompact:
-    "flex w-36 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 cursor-pointer",
+    "flex w-36 shrink-0 items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-1 ring-blue-100 transition hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-blue-800 dark:bg-slate-900 dark:text-slate-100 dark:ring-blue-900/40 cursor-pointer",
   calendarPopover:
     "absolute z-50 mt-1 rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-900",
   calendarNav: "flex items-center justify-between pb-2",
