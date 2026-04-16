@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { buildPlanningTravelDurationMatrix } from "./travelMatrix";
+import {
+  __resetPlanningTravelMatrixCacheForTests,
+  buildPlanningTravelDurationMatrix,
+} from "./travelMatrix";
 
 describe("buildPlanningTravelDurationMatrix", () => {
   const fetchMock = vi.fn();
@@ -11,6 +14,7 @@ describe("buildPlanningTravelDurationMatrix", () => {
     }) as Response;
 
   beforeEach(() => {
+    __resetPlanningTravelMatrixCacheForTests();
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -42,6 +46,29 @@ describe("buildPlanningTravelDurationMatrix", () => {
     expect(matrix.get("visit-a")?.get("visit-a")).toBe(0);
     expect(matrix.get("start")?.get("visit-a")).toBe(120);
     expect(matrix.get("visit-a")?.get("start")).toBe(180);
+  });
+
+  it("reuses cached matrix for identical node sets without a second upstream call", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify([
+          { originIndex: 0, destinationIndex: 1, duration: "120s" },
+          { originIndex: 1, destinationIndex: 0, duration: "180s" },
+        ]),
+    } as Response);
+
+    const nodes = [
+      { locationKey: "start", coords: { lat: 43.6, lon: -79.6 } },
+      { locationKey: "visit-a", coords: { lat: 43.7, lon: -79.7 } },
+    ];
+
+    const first = await buildPlanningTravelDurationMatrix(nodes, "api-key");
+    const second = await buildPlanningTravelDurationMatrix(nodes, "api-key");
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(second.get("start")?.get("visit-a")).toBe(120);
+    expect(first.get("visit-a")?.get("start")).toBe(180);
   });
 
   it("parses newline-delimited matrix element payloads", async () => {
