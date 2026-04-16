@@ -191,19 +191,14 @@ describe("Legal pages", () => {
 });
 
 describe("App routing", () => {
-  it("renders home page at / for signed-out users", async () => {
+  it("renders login page at / for signed-out users", () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
         <App />
       </MemoryRouter>,
     );
 
-    expect(
-      await screen.findByRole("heading", { name: /Plan daily visits without the route chaos/i }),
-    ).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Sign in to CareFlow" }).getAttribute("href")).toBe(
-      "/login",
-    );
+    expect(screen.getByRole("heading", { name: "Login" })).toBeTruthy();
   });
 
   it("renders home page at / for signed-in users", async () => {

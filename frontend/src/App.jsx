@@ -73,7 +73,7 @@ function App() {
 
   const optimizationObjective = authUser?.optimizationObjective ?? "distance";
   const isAuthenticated = Boolean(authToken);
-  const defaultProtectedPath = "/patients";
+  const defaultProtectedPath = "/";
   const renderProtectedRoute = (element) =>
     isAuthenticated ? element : <Navigate to="/login" replace />;
 
@@ -209,10 +209,10 @@ function App() {
           <Route path="/legal/privacy" element={<PrivacyPage />} />
           <Route path="/legal/license" element={<LicensePage />} />
           <Route path="/legal/trademark" element={<TrademarkPage />} />
-          <Route path="/" element={<HomePage isAuthenticated={isAuthenticated} />} />
+          <Route path="/" element={renderProtectedRoute(<HomePage isAuthenticated={isAuthenticated} />)} />
           <Route
             path="*"
-            element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/"} replace />}
+            element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
           />
         </Routes>
       </div>
