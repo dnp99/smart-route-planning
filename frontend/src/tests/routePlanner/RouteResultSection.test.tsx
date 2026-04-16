@@ -70,12 +70,12 @@ describe("RouteResultSection", () => {
     const { rerender } = render(<RouteResultSection {...props} />);
 
     expect(screen.getByText("Add a starting and ending point to continue.")).toBeTruthy();
-    const continueButton = screen.getByRole("button", { name: "Continue to Patients →" });
+    const continueButton = screen.getByRole("button", { name: "Continue to Clients →" });
     expect(continueButton).toHaveProperty("disabled", true);
 
     props.hasValidTripAddresses = true;
     rerender(<RouteResultSection {...props} />);
-    const enabledContinueButton = screen.getByRole("button", { name: "Continue to Patients →" });
+    const enabledContinueButton = screen.getByRole("button", { name: "Continue to Clients →" });
     expect(enabledContinueButton).toHaveProperty("disabled", false);
     fireEvent.click(enabledContinueButton);
     expect(props.onSetActiveMobileStep).toHaveBeenCalledWith("patients");
@@ -88,7 +88,7 @@ describe("RouteResultSection", () => {
 
     const { rerender } = render(<RouteResultSection {...props} />);
 
-    expect(screen.getByText("Add at least one patient to continue.")).toBeTruthy();
+    expect(screen.getByText("Add at least one client to continue.")).toBeTruthy();
     const continueButton = screen.getByRole("button", { name: "Continue to Review →" });
     expect(continueButton).toHaveProperty("disabled", true);
 
@@ -101,7 +101,7 @@ describe("RouteResultSection", () => {
     expect(screen.getByText("Ready to optimize")).toBeTruthy();
     expect(screen.getByText("2 destination(s) included • ending point missing")).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Edit trip" }));
-    fireEvent.click(screen.getByRole("button", { name: "Edit patients" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit clients" }));
     expect(props.onSetActiveMobileStep).toHaveBeenCalledWith("trip");
     expect(props.onSetActiveMobileStep).toHaveBeenCalledWith("patients");
   });

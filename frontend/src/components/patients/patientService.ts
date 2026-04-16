@@ -20,7 +20,7 @@ export const listPatients = async (query: string): Promise<Patient[]> => {
 
   const querySuffix = searchParams.toString();
   const path = querySuffix ? `/api/patients?${querySuffix}` : "/api/patients";
-  const payload = await requestJson(path, { method: "GET" }, "Unable to load patients.");
+  const payload = await requestJson(path, { method: "GET" }, "Unable to load clients.");
 
   return parseListPatientsResponse(payload).patients;
 };
@@ -33,11 +33,11 @@ export const createPatient = async (request: CreatePatientRequest): Promise<Pati
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
     },
-    "Unable to create patient.",
+    "Unable to create client.",
   );
 
   if (!isPatient(payload)) {
-    throw new Error("Unexpected patient response format.");
+    throw new Error("Unexpected client response format.");
   }
 
   return payload;
@@ -54,11 +54,11 @@ export const updatePatient = async (
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(request),
     },
-    "Unable to update patient.",
+    "Unable to update client.",
   );
 
   if (!isPatient(payload)) {
-    throw new Error("Unexpected patient response format.");
+    throw new Error("Unexpected client response format.");
   }
 
   return payload;
@@ -70,7 +70,7 @@ export const deletePatient = async (patientId: string): Promise<DeletePatientRes
     {
       method: "DELETE",
     },
-    "Unable to delete patient.",
+    "Unable to delete client.",
   );
 
   if (

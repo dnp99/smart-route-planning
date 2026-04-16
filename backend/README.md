@@ -11,6 +11,7 @@ This folder contains the Next.js backend for CareFlow.
 - Geocode addresses through Google Places API.
 - Fetch address suggestions through Google Places autocomplete.
 - Enforce JWT authentication on all business endpoints, plus validation, timeouts, CORS, and lightweight rate limiting.
+- Reduce optimize-route latency with in-memory geocode and travel-matrix caching plus in-flight request deduplication.
 
 ## Local development
 
@@ -200,6 +201,26 @@ Authentication behavior:
   - Returns up to 5 suggestions
   - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
 
+## Optimization performance caches
+
+CareFlow uses process-local in-memory caches for expensive routing dependencies:
+
+- Geocoding cache (`src/app/api/optimize-route/geocoding.ts`)
+  - TTL: 24 hours
+  - Max entries: 5000
+  - Keys: normalized address and (when available) Google Place ID
+  - Includes in-flight dedupe so concurrent requests for the same target share one upstream call
+- Travel matrix cache (`src/app/api/optimize-route/v2/travelMatrix.ts`)
+  - TTL: 10 minutes
+  - Max entries: 500
+  - Key: normalized set of nodes (location key + rounded coordinates)
+  - Includes in-flight dedupe so concurrent requests for the same matrix share one Google Routes call
+
+Notes:
+
+- Caches are intentionally ephemeral and local to each backend process.
+- Upstream fetches still use `cache: "no-store"`; application-level caches control reuse behavior.
+
 ## Route optimizer — v3 (production) scheduling logic
 
 `POST /api/optimize-route/v3` uses a greedy beam-search seed (depth 2, beam width 8) with priority tiers and EDF candidate selection, then applies deterministic seeded ILS refinement with fixed-window safety guards.
@@ -211,12 +232,22 @@ At each step, the algorithm selects from a prioritised pool:
 ```text
 Any FIXED patients remaining?
 ├── YES
-│   ├── Any FIXED already late?  → Pool: late fixed patients only
-│   └── None late               → Pool: all fixed patients
+│   ├── Any FIXED already late?
+│   │   └── Pool: late fixed patients only
+│   └── None late
+│       └── Pool: near-due fixed patients only
+│           - time mode: fixed with wait <= 30 min
+│           - distance mode: fixed with wait <= 45 min
+│       (if none are near-due, fall through to flexible tiers)
 └── NO
-    ├── Any FLEXIBLE (windowed) already late?   → Pool: late flexible patients only
-    ├── Any FLEXIBLE within 90 min of deadline? → Pool: urgent flexible patients, sorted tightest deadline first (EDF)
-    └── None urgent                             → Pool: all remaining patients
+    ├── Any windowed FLEXIBLE already late?
+    │   └── Pool: late flexible patients only
+    ├── Any windowed FLEXIBLE within 90 min of deadline?
+    │   └── Pool: urgent flexible patients, sorted tightest deadline first (EDF)
+    ├── Any remaining windowed FLEXIBLE?
+    │   └── Pool: all remaining windowed flexible patients
+    └── Otherwise
+        └── Pool: all remaining patients (including no-window flexible)
 ```
 
 ### Step 2 — Score every candidate (depth-2 lookahead)
@@ -235,15 +266,16 @@ Priorities 4–5 are objective-dependent: `"distance"` (default) minimises wait 
 
 The beam search evaluates 2 steps ahead across the top 8 candidates, so lateness from future steps folds back into the current decision.
 
-### Step 3 — Gap filler
+### Step 3 — Gap filler / sequence fill
 
-After a candidate is selected, if it has > 30 min of idle wait before its window opens, the algorithm checks whether a nearby no-window or flexible patient can be inserted into that gap without delaying the anchor visit.
+If a selected anchor has a large idle gap before service start, v3 attempts to fill that gap with feasible nearby visits (single filler or planned filler sequence) without breaking anchor feasibility.
 
 ### Key properties
 
 - The `optimizationObjective` field (`"distance"` or `"time"`, default `"distance"`) controls the final objective tradeoff after fixed-window safety and lateness priorities are enforced.
 - Distance is the **last** tiebreaker — it never overrides deadline pressure.
-- The gap filler can only **insert**, never displace a selected candidate.
+- Distance mode guardrail: if the distance solution is strictly worse than the time benchmark on fixed-window safety, v3 falls back to the time benchmark.
+- Nearby clustering preference: visit pairs within `0.5 km` are scored to stay consecutive unless consecutive service would create a fixed-window conflict.
 - Flexible patients within 90 min of their deadline are elevated to a priority pool and sorted by tightest deadline first (EDF), so they are picked before going late rather than after.
 
 ### Warnings in response

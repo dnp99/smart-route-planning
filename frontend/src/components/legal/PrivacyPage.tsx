@@ -15,7 +15,7 @@ export default function PrivacyPage() {
           </h2>
           <p className="m-0">
             CareFlow collects account information (email, display name, home address) used for
-            authentication and route-planning defaults. Patient visit data entered into the
+            authentication and route-planning defaults. Client visit data entered into the
             application is used solely to support your operational workflows.
           </p>
         </section>

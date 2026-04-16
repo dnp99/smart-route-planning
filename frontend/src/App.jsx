@@ -98,7 +98,7 @@ function App() {
       <div className={responsiveStyles.contentWrapper}>
         {isAuthenticated && (
           <nav className={responsiveStyles.tabNav}>
-            <NavLink to="/patients" aria-label="Patients" className={resolveTabClassName}>
+            <NavLink to="/patients" aria-label="Clients" className={resolveTabClassName}>
               {({ isActive }) => (
                 <>
                   <svg
@@ -121,7 +121,7 @@ function App() {
                     <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
                     <circle cx="20" cy="10" r="2" />
                   </svg>
-                  Patients
+                  Clients
                 </>
               )}
             </NavLink>

@@ -176,7 +176,7 @@ hover:bg-blue-700
 disabled:opacity-60 disabled:cursor-not-allowed
 ```
 
-Use for: Optimize Route, Add Patient, Save, Submit.
+Use for: Optimize Route, Add Client, Save, Submit.
 
 ### Button — Secondary
 
@@ -190,7 +190,7 @@ hover:bg-slate-200
 disabled:opacity-60 disabled:cursor-not-allowed
 ```
 
-Use for: Cancel, Edit trip, Edit patients, Close.
+Use for: Cancel, Edit trip, Edit clients, Close.
 
 **Rule:** Never put a border on a secondary button. If you need a border, use a ghost/outline variant explicitly.
 
@@ -353,20 +353,20 @@ text-blue-600 font-medium underline underline-offset-2 cursor-pointer
 
 ## 4. Page Templates
 
-### Patients Page
+### Clients Page
 
 ```
 <main>                           ← responsiveStyles.page
   <section>                      ← responsiveStyles.section (white card)
 
-    [H1] Patients (N)           ← "Patients (N of M)" when search is active
-    [Body/Secondary] Manage patients for route planning.
+    [H1] Clients (N)            ← "Clients (N of M)" when search is active
+    [Body/Secondary] Manage clients for route planning.
 
-    [Search input + Add Patient button]
+    [Search input + Add Client button]
       Search: responsiveStyles.searchInput + pl-9 for icon
       Button: bg-blue-600 primary style
 
-    [PatientsTable]
+    [Clients table (`PatientsTable` component)]
       Table card (hidden on mobile, md:block)
       Mobile cards (md:hidden)
 
@@ -389,8 +389,8 @@ text-blue-600 font-medium underline underline-offset-2 cursor-pointer
       [Trip Setup panel]         ← responsiveStyles.panel (white card)
         Expanded:  2-col grid (Starting point, Ending point, Planning date)
         Collapsed: address summary + inline date input + chevron
-      [Patient Search panel]     ← responsiveStyles.panel
-        [Patients label + count badge]  ← countPill: slate-200 bg, slate-700 text, font-bold
+      [Client Search panel]      ← responsiveStyles.panel
+        [Clients label + count badge]   ← countPill: slate-200 bg, slate-700 text, font-bold
         [Selected Destinations]  ← responsiveStyles.destinationList
           [DestinationRow]       ← min-h-14 to align with two-line search results
 
@@ -489,7 +489,7 @@ These are **never** acceptable:
 | Optimize button | `optimizeButton` |
 | Google Maps button | `googleMapsButton` |
 | Destination list | `destinationList` |
-| Count/status pill (e.g. Patients badge) | `countPill` — `bg-slate-200 text-slate-700 font-bold rounded-full` |
+| Count/status pill (e.g. Clients badge) | `countPill` — `bg-slate-200 text-slate-700 font-bold rounded-full` |
 
 ---
 
@@ -528,7 +528,7 @@ The primary list item in the visit order. Each card represents one scheduled tas
 
 **Header row layout:**
 ```
-[chevron] [N. Patient Name ··················] [STATUS CHIP] [▲]
+[chevron] [N. Client Name ···················] [STATUS CHIP] [▲]
                                                               [▼]
 ```
 
@@ -588,7 +588,7 @@ dark:border-blue-900/50 dark:bg-blue-950/20
 - Prefix `~ ` when `isStale === true`
 
 **Rules:**
-- Must visually differ from visit stop cards — uses indigo/blue tint, no patient name, no status chip
+- Must visually differ from visit stop cards — uses indigo/blue tint, no client name, no status chip
 - Fires between any two consecutive tasks (cross-stop OR within the same multi-task stop) when gap ≥ `BREAK_GAP_THRESHOLD_MINUTES` (30)
 - Inter-stop break: computed from `prevStop.departureTime` → `nextStop.tasks[0].serviceStartTime − travelMs`
 - Inter-task break: computed from `prevTask.serviceEndTime` → `task.serviceStartTime`
@@ -711,7 +711,7 @@ rounded-2xl border border-slate-200 bg-white px-4 py-10
 text-center text-sm text-slate-500
 ```
 - Single sentence, no heading
-- Example: "No patients found." / "No results match your search."
+- Example: "No clients found." / "No results match your search."
 
 ### Loading state
 - Render **skeleton rows** at the same height as data rows (`py-5`)
@@ -808,7 +808,7 @@ Only **one primary action** is allowed per section. All other actions are second
 
 | Level | Style | Token | Example |
 |---|---|---|---|
-| Primary | Blue filled button | `primaryButton` / `optimizeButton` | Optimize Route, Add Patient, Save |
+| Primary | Blue filled button | `primaryButton` / `optimizeButton` | Optimize Route, Add Client, Save |
 | Secondary | Gray filled button (no border) | `secondaryButton` | Cancel, Edit trip, Close |
 | Utility | Neutral outlined button | `outlineButton` (or component-specific documented equivalent) | Contextual system actions inside banners/panels (e.g., Reset order) |
 | Tertiary | Text link | `text-blue-600 hover:underline` | Edit (collapsed panel), "+2 more" |
@@ -827,9 +827,9 @@ Consistent terminology prevents confusion between developers and design.
 
 | Term | Meaning | Example |
 |---|---|---|
-| **Card** | Static white container, no interactive state changes | Metric card, patient mobile card |
-| **Panel** | Interactive container — can collapse, expand, or be edited | Trip setup panel, Patient search panel |
-| **Section** | Page-level grouping with a title and description | The `<section>` wrapping all of Patients or Route Planner |
+| **Card** | Static white container, no interactive state changes | Metric card, client mobile card |
+| **Panel** | Interactive container — can collapse, expand, or be edited | Trip setup panel, Client search panel |
+| **Section** | Page-level grouping with a title and description | The `<section>` wrapping all of Clients or Route Planner |
 | **Row** | A single record inside a table or list | Table data row, destination list row |
 | **Pill** | Small inline badge communicating type or status | Fixed/Flexible pill, On time chip |
 | **Modal** | Full overlay dialog | PatientFormModal, Account settings |
@@ -962,7 +962,7 @@ Markers on the Leaflet route map must follow timeline color semantics.
 
 | Marker type | Color | When |
 |---|---|---|
-| Regular stop | Blue (`#2563EB`) | Patient visit stops |
+| Regular stop | Blue (`#2563EB`) | Client visit stops |
 | Final destination | Red (`#EF4444`) | Ending point (E marker) |
 | Active / selected | Darker blue (`#1D4ED8`) | When the corresponding card is expanded |
 
@@ -972,7 +972,7 @@ Markers on the Leaflet route map must follow timeline color semantics.
   - stop = blue
   - endpoint = red
   - selected = darker blue
-- Marker labels use initials (e.g. `RR`, `DP+DP`) — match the patient name abbreviation logic
+- Marker labels use initials (e.g. `RR`, `DP+DP`) — match the client name abbreviation logic
 - Active/selected state is a darker stroke, not a different hue
 
 ---

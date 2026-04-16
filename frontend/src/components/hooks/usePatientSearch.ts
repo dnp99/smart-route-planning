@@ -35,7 +35,7 @@ export const usePatientSearch = ({ query, enabled }: UsePatientSearchOptions) =>
       } catch (searchError) {
         if (isSubscribed) {
           setPatients([]);
-          setError(searchError instanceof Error ? searchError.message : "Unable to load patients.");
+          setError(searchError instanceof Error ? searchError.message : "Unable to load clients.");
         }
       } finally {
         if (isSubscribed) {

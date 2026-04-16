@@ -216,7 +216,7 @@ export const DestinationRow = ({
                 checked={destination.persistPlanningWindow}
                 onChange={(e) => onSetPersistWindow(e.target.checked)}
               />
-              Save this window to patient record
+              Save this window to client record
             </label>
           </div>
         </div>

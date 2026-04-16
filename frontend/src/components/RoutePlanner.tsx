@@ -441,7 +441,7 @@ function RoutePlanner({
                 { key: "trip", label: "Trip", stepNumber: 1, isComplete: hasValidTripAddresses },
                 {
                   key: "patients",
-                  label: "Patients",
+                  label: "Clients",
                   stepNumber: 2,
                   isComplete: selectedDestinations.length > 0,
                 },

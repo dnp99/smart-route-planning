@@ -91,7 +91,7 @@ describe("PatientsPage address autocomplete integration", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });
@@ -99,7 +99,7 @@ describe("PatientsPage address autocomplete integration", () => {
       target: { value: "Doe" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Pick suggested address" }));
-    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save new client/i }));
 
     await waitFor(() => {
       expect(mockedCreatePatient).toHaveBeenCalledWith(

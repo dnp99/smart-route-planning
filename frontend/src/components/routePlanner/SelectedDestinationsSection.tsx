@@ -32,7 +32,7 @@ export const SelectedDestinationsSection = ({
       </p>
       <div className={responsiveStyles.destinationList}>
         {selectedDestinations.length === 0 ? (
-          <p className={responsiveStyles.panelEmptyText}>No patients selected yet.</p>
+          <p className={responsiveStyles.panelEmptyText}>No clients selected yet.</p>
         ) : (
           <ol className="m-0 divide-y divide-slate-100 dark:divide-slate-800">
             {selectedDestinations.map((destination, index) => (

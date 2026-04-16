@@ -5,16 +5,17 @@ This folder contains the Vite + React frontend for CareFlow.
 ## Responsibilities
 
 - Collect starting point, ending point, and intermediate destinations.
-- Require login before allowing access to patient and route-planner pages.
+- Require login before allowing access to client and route-planner pages.
 - Fetch Google Places-backed address suggestions from the backend autocomplete endpoint.
 - Submit route optimization requests to the backend (production path: `POST /api/optimize-route/v3`) with a selectable optimization objective (`"distance"` or `"time"`) and a configurable planning date (defaults to tomorrow).
 - Render the optimized route with Leaflet.
 - Support manual stop reordering with recalculated ETA flow.
 - Persist optimization result in sessionStorage across tab switches; clear on auth change.
 - Keep quote/header workspace behavior consistent across auth sessions.
-- Present unified overflow action menus in patient list rows.
+- Present unified overflow action menus in client list rows.
 - Serve legal pages (Terms, Privacy, License, Trademark) at `/legal/*` routes.
-- Mobile-first route planner with wizard step flow (Trip → Patients → Review), always-expanded sections on mobile, step completion indicators, and safe-area-aware sticky footer CTA.
+- Mobile-first route planner with wizard step flow (Trip → Clients → Review), always-expanded sections on mobile, step completion indicators, and safe-area-aware sticky footer CTA.
+- Use Client/Clients wording in UI copy while keeping `/api/patients` endpoints and `patient*` contract fields for backend compatibility.
 
 ## Local development
 
@@ -59,7 +60,7 @@ or:
 
 - `src/App.jsx` - global layout, sticky header with logo + rotating nurse quote, footer with legal links, account settings modal
 - `src/components/RoutePlanner.tsx` - route planner composition and workflow orchestration
-- `src/components/routePlanner/routePlannerHelpers.ts` - destination-to-visit mapping and patient search filtering
+- `src/components/routePlanner/routePlannerHelpers.ts` - destination-to-visit mapping and client search filtering
 - `src/components/routePlanner/routePlannerSubmission.ts` - submit-time validation and request builders
 - `src/components/routePlanner/routePlannerDraft.ts` - localStorage draft persistence and mobile step state
 - `src/components/routePlanner/useCreatePatientForm.ts` - create-patient modal/form state and handlers
@@ -72,6 +73,6 @@ or:
 - `src/components/legal/` - Terms, Privacy, License, Trademark static pages
 - `src/components/AddressAutocompleteInput.tsx` - address suggestion input
 - `src/components/RouteMap.tsx` - Leaflet route map
-- `src/components/patients/PatientsTable.tsx` - patient table with overflow action menus (Edit, Delete)
+- `src/components/patients/PatientsTable.tsx` - client table with overflow action menus (Edit, Delete)
 - `src/components/responsiveStyles.ts` - shared Tailwind class tokens for consistent panel/card/button styling
 - `src/components/apiBaseUrl.ts` - runtime backend URL resolution
