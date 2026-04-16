@@ -37,7 +37,7 @@ const runInTransaction = async <T>(operation: (db: ReturnType<typeof getDb>) => 
 };
 
 const toNonNegativeInt = (value: number) => {
-  if (!Number.isFinite(value)) {
+  if (!isFinite(value)) {
     return 0;
   }
 
@@ -45,7 +45,7 @@ const toNonNegativeInt = (value: number) => {
 };
 
 const roundToOneDecimal = (value: number) => {
-  if (!Number.isFinite(value)) {
+  if (!isFinite(value)) {
     return 0;
   }
 
