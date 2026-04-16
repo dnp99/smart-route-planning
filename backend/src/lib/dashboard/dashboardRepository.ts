@@ -3,6 +3,7 @@ import type {
   DashboardAlert,
   DashboardSummaryResponse,
   DashboardTrendPoint,
+  DashboardUpcomingStop,
   OptimizeRouteV2ScheduleWarning,
   OptimizeRouteV2UnscheduledTask,
 } from "../../../../shared/contracts";
