@@ -191,6 +191,34 @@ describe("Legal pages", () => {
 });
 
 describe("App routing", () => {
+  it("renders login page at / for signed-out users", () => {
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("heading", { name: "Login" })).toBeTruthy();
+  });
+
+  it("renders home page at / for signed-in users", async () => {
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: /Plan daily visits without the route chaos/i }),
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBe("page");
+    expect(screen.getByRole("link", { name: "Go to Clients" }).getAttribute("href")).toBe(
+      "/patients",
+    );
+  });
+
   it("renders route planner at /route-planner and marks nav active", async () => {
     seedAuthenticatedSession();
 
@@ -201,7 +229,7 @@ describe("App routing", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Smart Route Planner" })).toBeTruthy();
-    expect(screen.getByText("Nurse operations workspace for Nurse One")).toBeTruthy();
+    expect(screen.getByText("Operations workspace for Nurse One")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Route Planner" }).getAttribute("aria-current")).toBe(
       "page",
     );
@@ -257,7 +285,7 @@ describe("App routing", () => {
 
     await waitForPatientsPage();
     expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
-    expect(screen.getByText("Nurse operations workspace for Nurse One")).toBeTruthy();
+    expect(screen.getByText("Operations workspace for Nurse One")).toBeTruthy();
   });
 
   it("renders patients page at /patients and marks nav active", async () => {
@@ -285,6 +313,9 @@ describe("App routing", () => {
 
     await waitForPatientsPage();
     expect(screen.queryByRole("menuitem", { name: "Logout" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Open account options menu" }).textContent).toBe(
+      "NO",
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
 

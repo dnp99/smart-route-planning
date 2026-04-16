@@ -36,23 +36,30 @@ const readStoredHeaderQuote = (): Quote | null => {
   return (nurseQuotes as Quote[]).find((q) => q.content === stored) ?? null;
 };
 
-const OptionsIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    className={className}
-  >
-    <circle cx="12" cy="5" r="1.5" />
-    <circle cx="12" cy="12" r="1.5" />
-    <circle cx="12" cy="19" r="1.5" />
-  </svg>
-);
+const resolveAccountInitials = (displayName?: string, email?: string) => {
+  const normalizedDisplayName = formatNameWords(displayName ?? "");
+  if (normalizedDisplayName.length > 0) {
+    const parts = normalizedDisplayName.split(" ").filter(Boolean);
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return normalizedDisplayName.slice(0, 2).toUpperCase();
+  }
+
+  const localEmail = (email ?? "").trim().split("@")[0];
+  const emailTokens = localEmail
+    .split(/[.\-_]/)
+    .map((token) => token.trim())
+    .filter(Boolean);
+  if (emailTokens.length >= 2) {
+    return `${emailTokens[0][0]}${emailTokens[1][0]}`.toUpperCase();
+  }
+  if (localEmail.length > 0) {
+    return localEmail.slice(0, 2).toUpperCase();
+  }
+
+  return "CF";
+};
 
 export default function AppHeader({
   isAuthenticated,
@@ -90,9 +97,10 @@ export default function AppHeader({
 
   const formattedDisplayName =
     typeof authUser?.displayName === "string" ? formatNameWords(authUser.displayName) : "";
+  const accountInitials = resolveAccountInitials(authUser?.displayName, authUser?.email);
   const workspaceSubtitle = formattedDisplayName
-    ? `Nurse operations workspace for ${formattedDisplayName}`
-    : "Nurse operations workspace";
+    ? `Operations workspace for ${formattedDisplayName}`
+    : "Operations workspace";
 
   return (
     <header className={responsiveStyles.appHeader}>
@@ -160,7 +168,9 @@ export default function AppHeader({
                 title="Open account options menu"
                 className={responsiveStyles.accountMenuButton}
               >
-                <OptionsIcon className="h-4 w-4" />
+                <span aria-hidden="true" className="block leading-none">
+                  {accountInitials}
+                </span>
               </button>
 
               {isAccountMenuOpen && (

@@ -61,7 +61,7 @@ const LoginPage = () => {
           ? await signUp(trimmedDisplayName, trimmedEmail, password)
           : await login(trimmedEmail, password);
       setAuthSession(result.token, result.user);
-      navigate("/patients", { replace: true });
+      navigate("/", { replace: true });
     } catch (loginError) {
       setError(
         loginError instanceof Error
