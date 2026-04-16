@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseOptimizeRouteV2Response } from "../../../../../../shared/contracts";
 import { requireAuth } from "../../../../lib/auth/requireAuth";
+import { recordOptimizationRun } from "../../../../lib/dashboard/dashboardRepository";
 import { HttpError, buildCorsHeaders, toErrorResponse } from "../../../../lib/http";
 import { enforceOptimizeRouteRateLimit, requireOptimizeRouteApiKey } from "../requestGuards";
 import { optimizeRouteV3 } from "./optimizeRouteService";
@@ -43,7 +44,8 @@ const hashToUnitInterval = (value: string) => {
   return (hash >>> 0) / 4294967295;
 };
 
-const resolveRequestId = (request: Request) => request.headers.get("x-request-id")?.trim() || crypto.randomUUID();
+const resolveRequestId = (request: Request) =>
+  request.headers.get("x-request-id")?.trim() || crypto.randomUUID();
 
 const shouldLogShadowComparison = (requestId: string) => {
   if (!isEnabled(process.env.OPTIMIZE_ROUTE_V3_SHADOW_COMPARE)) {
@@ -105,6 +107,18 @@ export async function POST(request: Request) {
     const parsedResponse = parseOptimizeRouteV2Response(result);
     if (!parsedResponse) {
       throw new HttpError(500, "Failed to shape optimize-route v3 response.");
+    }
+
+    try {
+      await recordOptimizationRun({
+        nurseId: auth.nurseId,
+        endpointVersion: "v3",
+        requestId,
+        request: parsedRequest,
+        result,
+      });
+    } catch (error) {
+      console.error("Failed to persist optimize-route v3 history.", error);
     }
 
     return NextResponse.json(parsedResponse, { headers: corsHeaders });

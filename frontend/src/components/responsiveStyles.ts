@@ -350,4 +350,39 @@ export const responsiveStyles = {
     "h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600",
   scheduleThresholdInput:
     "w-20 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium tabular-nums text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+
+  // ── Dashboard ────────────────────────────────────────────────────────────────
+  dashboardCard:
+    "dashboard-reveal rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+  dashboardHeroSection:
+    "dashboard-surface dashboard-reveal relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7",
+  dashboardEyebrow:
+    "m-0 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300",
+  dashboardHeroHeading:
+    "m-0 mt-3 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl",
+  dashboardHeroMeta: "m-0 mt-2 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-base",
+  dashboardHeroBody: "m-0 mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base",
+  dashboardHeroActions: "mt-6 flex flex-wrap gap-2.5",
+  dashboardKpiGrid: "dashboard-reveal grid gap-3 sm:grid-cols-2 xl:grid-cols-4",
+  dashboardKpiCard:
+    "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+  dashboardKpiLabel:
+    "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
+  dashboardKpiValue: "m-0 mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100",
+  dashboardKpiDelta: "m-0 mt-2 text-xs font-semibold",
+  dashboardNudgeCard:
+    "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
+  dashboardAlertItem:
+    "rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/70",
+  dashboardScheduleItem:
+    "flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700",
+  dashboardStatusPill:
+    "rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  dashboardDraftActions: "mt-4 flex flex-wrap gap-2",
+  dashboardTrendRow: "grid grid-cols-[40px_1fr_36px] items-center gap-2",
+  dashboardTrendTrack: "h-2 rounded-full bg-slate-200 dark:bg-slate-700",
+  dashboardTrendFill: "h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
+  dashboardSnapshotGrid:
+    "mt-3 grid gap-2 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-3",
+  dashboardSnapshotItem: "m-0 rounded-xl bg-slate-100 p-3 dark:bg-slate-800/80",
 };

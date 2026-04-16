@@ -2,8 +2,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { HttpError } from "../../../../lib/http";
 import { __resetOptimizeRouteRateLimitForTests } from "../requestGuards";
 
-const { requireAuthMock } = vi.hoisted(() => ({
+const { requireAuthMock, recordOptimizationRunMock } = vi.hoisted(() => ({
   requireAuthMock: vi.fn(),
+  recordOptimizationRunMock: vi.fn(),
 }));
 
 vi.mock("./optimizeRouteService", () => ({
@@ -12,6 +13,10 @@ vi.mock("./optimizeRouteService", () => ({
 
 vi.mock("../../../../lib/auth/requireAuth", () => ({
   requireAuth: requireAuthMock,
+}));
+
+vi.mock("../../../../lib/dashboard/dashboardRepository", () => ({
+  recordOptimizationRun: recordOptimizationRunMock,
 }));
 
 import { optimizeRouteV2 } from "./optimizeRouteService";
@@ -67,6 +72,8 @@ describe("optimize-route v2 route handler", () => {
   beforeEach(() => {
     mockedOptimizeRouteV2.mockReset();
     requireAuthMock.mockReset();
+    recordOptimizationRunMock.mockReset();
+    recordOptimizationRunMock.mockResolvedValue(undefined);
     requireAuthMock.mockResolvedValue({ nurseId: "nurse-1", email: "nurse@example.com" });
     __resetOptimizeRouteRateLimitForTests();
     requestCounter = 0;
@@ -257,6 +264,12 @@ describe("optimize-route v2 route handler", () => {
         optimizationObjective: "distance",
       },
       "test-key",
+    );
+    expect(recordOptimizationRunMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nurseId: "nurse-1",
+        endpointVersion: "v2",
+      }),
     );
   });
 

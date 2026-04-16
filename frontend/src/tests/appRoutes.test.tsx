@@ -4,21 +4,29 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { setAuthSession } from "../components/auth/authSession";
 
-const { fetchMeMock, updateProfileHomeAddressMock, listPatientsMock } = vi.hoisted(() => ({
-  fetchMeMock: vi.fn(),
-  updateProfileHomeAddressMock: vi.fn(),
-  listPatientsMock: vi.fn(),
-}));
+const { fetchMeMock, updateProfileMock, listPatientsMock, fetchDashboardSummaryMock } = vi.hoisted(
+  () => ({
+    fetchMeMock: vi.fn(),
+    updateProfileMock: vi.fn(),
+    listPatientsMock: vi.fn(),
+    fetchDashboardSummaryMock: vi.fn(),
+  }),
+);
 
 vi.mock("../components/auth/authService", () => ({
   fetchMe: fetchMeMock,
-  updateProfileHomeAddress: updateProfileHomeAddressMock,
+  updateProfile: updateProfileMock,
+  updateProfileHomeAddress: vi.fn(),
   login: vi.fn(),
   signUp: vi.fn(),
 }));
 
 vi.mock("../components/patients/patientService", () => ({
   listPatients: listPatientsMock,
+}));
+
+vi.mock("../components/home/homeDashboardService", () => ({
+  fetchDashboardSummary: fetchDashboardSummaryMock,
 }));
 
 vi.mock("../components/AddressAutocompleteInput", () => ({
@@ -50,8 +58,37 @@ vi.mock("../components/AddressAutocompleteInput", () => ({
 beforeEach(() => {
   window.localStorage.clear();
   fetchMeMock.mockReset();
-  updateProfileHomeAddressMock.mockReset();
+  updateProfileMock.mockReset();
   listPatientsMock.mockResolvedValue([]);
+  fetchDashboardSummaryMock.mockReset();
+  fetchDashboardSummaryMock.mockResolvedValue({
+    asOf: "2026-04-16T12:00:00.000Z",
+    timezone: "America/Toronto",
+    kpis: {
+      routesToday: 3,
+      visitsScheduledToday: 11,
+      onTimeRatePercent7d: 92,
+      unscheduledVisitsToday: 1,
+      driveHoursToday: 7.4,
+    },
+    alerts: [],
+    upcomingStops: [],
+    trend: [
+      { date: "2026-04-10", label: "Fri", onTimeRatePercent: 88 },
+      { date: "2026-04-11", label: "Sat", onTimeRatePercent: 84 },
+      { date: "2026-04-12", label: "Sun", onTimeRatePercent: 90 },
+      { date: "2026-04-13", label: "Mon", onTimeRatePercent: 94 },
+      { date: "2026-04-14", label: "Tue", onTimeRatePercent: 91 },
+      { date: "2026-04-15", label: "Wed", onTimeRatePercent: 93 },
+      { date: "2026-04-16", label: "Thu", onTimeRatePercent: 92 },
+    ],
+    snapshot: {
+      completedRoutes: 3,
+      delayedRoutes: 1,
+      unscheduledVisits: 1,
+      totalDistanceKm: 42.3,
+    },
+  });
   fetchMeMock.mockResolvedValue({
     user: {
       id: "nurse-1",
@@ -60,7 +97,7 @@ beforeEach(() => {
       homeAddress: null,
     },
   });
-  updateProfileHomeAddressMock.mockResolvedValue({
+  updateProfileMock.mockResolvedValue({
     user: {
       id: "nurse-1",
       email: "nurse@example.com",
@@ -210,13 +247,9 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      await screen.findByRole("heading", { name: /Plan daily visits without the route chaos/i }),
-    ).toBeTruthy();
+    expect(await screen.findByText(/Good (morning|afternoon|evening), Nurse/i)).toBeTruthy();
+    expect(screen.getByText(/Add a home address for default start and end points/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBe("page");
-    expect(screen.getByRole("link", { name: "Go to Clients" }).getAttribute("href")).toBe(
-      "/patients",
-    );
   });
 
   it("renders route planner at /route-planner and marks nav active", async () => {
@@ -344,10 +377,45 @@ describe("App routing", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
 
     await waitFor(() => {
-      expect(updateProfileHomeAddressMock).toHaveBeenCalledWith(
-        "test-token",
-        "1 Main Street, Toronto, ON",
-      );
+      expect(updateProfileMock).toHaveBeenCalledWith("test-token", {
+        homeAddress: "1 Main Street, Toronto, ON",
+      });
+    });
+    expect(await screen.findByText(/Account settings saved\./i)).toBeTruthy();
+  });
+
+  it("opens account settings modal and saves display name", async () => {
+    updateProfileMock.mockResolvedValue({
+      user: {
+        id: "nurse-1",
+        email: "nurse@example.com",
+        displayName: "Alex Brown",
+        homeAddress: null,
+      },
+    });
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/patients"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitForPatientsPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Account settings" }));
+
+    expect(await screen.findByRole("heading", { name: "Account settings" })).toBeTruthy();
+    fireEvent.change(screen.getByRole("textbox", { name: /display name/i }), {
+      target: { value: "Alex Brown" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
+
+    await waitFor(() => {
+      expect(updateProfileMock).toHaveBeenCalledWith("test-token", {
+        displayName: "Alex Brown",
+      });
     });
     expect(await screen.findByText(/Account settings saved\./i)).toBeTruthy();
   });

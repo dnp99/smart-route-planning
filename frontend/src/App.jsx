@@ -209,7 +209,16 @@ function App() {
           <Route path="/legal/privacy" element={<PrivacyPage />} />
           <Route path="/legal/license" element={<LicensePage />} />
           <Route path="/legal/trademark" element={<TrademarkPage />} />
-          <Route path="/" element={renderProtectedRoute(<HomePage isAuthenticated={isAuthenticated} />)} />
+          <Route
+            path="/"
+            element={renderProtectedRoute(
+              <HomePage
+                isAuthenticated={isAuthenticated}
+                authUser={authUser}
+                onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+              />,
+            )}
+          />
           <Route
             path="*"
             element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}

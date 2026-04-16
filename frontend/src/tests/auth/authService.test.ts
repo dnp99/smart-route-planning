@@ -3,6 +3,7 @@ import {
   fetchMe,
   login,
   signUp,
+  updateProfile,
   updateProfileHomeAddress,
 } from "../../components/auth/authService";
 
@@ -131,5 +132,33 @@ describe("authService", () => {
       }),
     });
     expect(result.user.homeAddress).toBe("1 Main Street, Toronto, ON");
+  });
+
+  it("updates profile display name", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        user: {
+          id: "nurse-1",
+          email: "nurse@example.com",
+          displayName: "Alex Brown",
+          homeAddress: "1 Main Street, Toronto, ON",
+        },
+      }),
+    } as Response);
+
+    const result = await updateProfile("jwt-token", { displayName: "Alex Brown" });
+
+    expect(fetchMock).toHaveBeenCalledWith("http://api.example.com/api/auth/me", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer jwt-token",
+      },
+      body: JSON.stringify({
+        displayName: "Alex Brown",
+      }),
+    });
+    expect(result.user.displayName).toBe("Alex Brown");
   });
 });

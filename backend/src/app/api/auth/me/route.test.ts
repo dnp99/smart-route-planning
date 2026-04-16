@@ -4,12 +4,14 @@ import { HttpError } from "../../../../lib/http";
 const {
   requireAuthMock,
   findNurseByIdMock,
+  updateNurseDisplayNameMock,
   updateNurseHomeAddressMock,
   updateNurseWorkingHoursMock,
   updateNurseOptimizationObjectiveMock,
 } = vi.hoisted(() => ({
   requireAuthMock: vi.fn(),
   findNurseByIdMock: vi.fn(),
+  updateNurseDisplayNameMock: vi.fn(),
   updateNurseHomeAddressMock: vi.fn(),
   updateNurseWorkingHoursMock: vi.fn(),
   updateNurseOptimizationObjectiveMock: vi.fn(),
@@ -21,6 +23,7 @@ vi.mock("../../../../lib/auth/requireAuth", () => ({
 
 vi.mock("../../../../lib/patients/patientRepository", () => ({
   findNurseById: findNurseByIdMock,
+  updateNurseDisplayName: updateNurseDisplayNameMock,
   updateNurseHomeAddress: updateNurseHomeAddressMock,
   updateNurseWorkingHours: updateNurseWorkingHoursMock,
   updateNurseOptimizationObjective: updateNurseOptimizationObjectiveMock,
@@ -37,6 +40,7 @@ describe("/api/auth/me route", () => {
     delete process.env.AUTH_ENFORCE_HTTPS;
     requireAuthMock.mockReset();
     findNurseByIdMock.mockReset();
+    updateNurseDisplayNameMock.mockReset();
     updateNurseHomeAddressMock.mockReset();
     updateNurseWorkingHoursMock.mockReset();
     updateNurseOptimizationObjectiveMock.mockReset();
@@ -212,6 +216,50 @@ describe("/api/auth/me route", () => {
     });
   });
 
+  it("updates nurse display name for an authenticated nurse", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+      homeAddress: null,
+    });
+    updateNurseDisplayNameMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Alex Brown",
+      isActive: true,
+      homeAddress: null,
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: {
+          origin: "http://localhost:5173",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          displayName: "  Alex Brown  ",
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateNurseDisplayNameMock).toHaveBeenCalledWith("nurse-1", "Alex Brown");
+    await expect(response.json()).resolves.toEqual({
+      user: {
+        id: "nurse-1",
+        email: "nurse@example.com",
+        displayName: "Alex Brown",
+        homeAddress: null,
+        workingHours: null,
+        breakGapThresholdMinutes: null,
+        optimizationObjective: null,
+      },
+    });
+  });
+
   it("returns 400 for invalid PATCH json body", async () => {
     findNurseByIdMock.mockResolvedValue({
       id: "nurse-1",
@@ -287,6 +335,58 @@ describe("/api/auth/me route", () => {
     expect(response.status).toBe(400);
     await expect(response.json()).resolves.toEqual({
       error: "Home address is required.",
+    });
+  });
+
+  it("returns 400 when displayName is blank", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+      homeAddress: null,
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: {
+          origin: "http://localhost:5173",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ displayName: " " }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Display name is required.",
+    });
+  });
+
+  it("returns 400 when displayName exceeds max length", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+      homeAddress: null,
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: {
+          origin: "http://localhost:5173",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ displayName: "A".repeat(121) }),
+      }),
+    );
+
+    expect(response.status).toBe(400);
+    await expect(response.json()).resolves.toEqual({
+      error: "Display name must be 120 characters or fewer.",
     });
   });
 
@@ -553,6 +653,31 @@ describe("/api/auth/me route", () => {
           "content-type": "application/json",
         },
         body: JSON.stringify({ homeAddress: "1 Main Street, Toronto, ON" }),
+      }),
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toEqual({ error: "Unauthorized." });
+  });
+
+  it("returns 401 when display-name update target no longer exists", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+      homeAddress: null,
+    });
+    updateNurseDisplayNameMock.mockResolvedValue(null);
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: {
+          origin: "http://localhost:5173",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({ displayName: "Alex Brown" }),
       }),
     );
 

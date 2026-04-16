@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { __resetOptimizeRouteRateLimitForTests } from "../requestGuards";
 
-const { requireAuthMock } = vi.hoisted(() => ({
+const { requireAuthMock, recordOptimizationRunMock } = vi.hoisted(() => ({
   requireAuthMock: vi.fn(),
+  recordOptimizationRunMock: vi.fn(),
 }));
 
 vi.mock("./optimizeRouteService", () => ({
@@ -11,6 +12,10 @@ vi.mock("./optimizeRouteService", () => ({
 
 vi.mock("../../../../lib/auth/requireAuth", () => ({
   requireAuth: requireAuthMock,
+}));
+
+vi.mock("../../../../lib/dashboard/dashboardRepository", () => ({
+  recordOptimizationRun: recordOptimizationRunMock,
 }));
 
 import { optimizeRouteV3 } from "./optimizeRouteService";
@@ -55,6 +60,8 @@ describe("optimize-route v3 route handler", () => {
   beforeEach(() => {
     mockedOptimizeRouteV3.mockReset();
     requireAuthMock.mockReset();
+    recordOptimizationRunMock.mockReset();
+    recordOptimizationRunMock.mockResolvedValue(undefined);
     requireAuthMock.mockResolvedValue({ nurseId: "nurse-1", email: "nurse@example.com" });
     __resetOptimizeRouteRateLimitForTests();
     requestCounter = 0;
@@ -128,6 +135,12 @@ describe("optimize-route v3 route handler", () => {
     expect(response.status).toBe(200);
     expect(payload.algorithmVersion).toBe("v3.0.0-ils-seeded");
     expect(mockedOptimizeRouteV3).toHaveBeenCalledTimes(1);
+    expect(recordOptimizationRunMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nurseId: "nurse-1",
+        endpointVersion: "v3",
+      }),
+    );
   });
 
   it("passes sampled shadow context to the v3 optimizer", async () => {
@@ -164,14 +177,10 @@ describe("optimize-route v3 route handler", () => {
       }),
     );
 
-    expect(mockedOptimizeRouteV3).toHaveBeenCalledWith(
-      expect.anything(),
-      "test-key",
-      {
-        requestId: "req-shadow-1",
-        nurseId: "nurse-1",
-        shadowCompare: true,
-      },
-    );
+    expect(mockedOptimizeRouteV3).toHaveBeenCalledWith(expect.anything(), "test-key", {
+      requestId: "req-shadow-1",
+      nurseId: "nurse-1",
+      shadowCompare: true,
+    });
   });
 });
