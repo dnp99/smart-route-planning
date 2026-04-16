@@ -20,6 +20,7 @@ import AppHeader from "./components/layout/AppHeader";
 import AppFooter from "./components/layout/AppFooter";
 import AccountSettingsModal from "./components/modals/AccountSettingsModal";
 import ScrollToTopButton from "./components/layout/ScrollToTopButton";
+import HomePage from "./components/HomePage";
 
 const resolveTabClassName = ({ isActive }) =>
   [
@@ -98,6 +99,33 @@ function App() {
       <div className={responsiveStyles.contentWrapper}>
         {isAuthenticated && (
           <nav className={responsiveStyles.tabNav}>
+            <NavLink to="/" end aria-label="Home" className={resolveTabClassName}>
+              {({ isActive }) => (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className={[
+                      "h-4 w-4 shrink-0",
+                      isActive
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
+                    ].join(" ")}
+                  >
+                    <path d="M3 11.5 12 4l9 7.5" />
+                    <path d="M5.5 10.5V20h13V10.5" />
+                    <path d="M10 20v-5h4v5" />
+                  </svg>
+                  Home
+                </>
+              )}
+            </NavLink>
             <NavLink to="/patients" aria-label="Clients" className={resolveTabClassName}>
               {({ isActive }) => (
                 <>
@@ -181,13 +209,10 @@ function App() {
           <Route path="/legal/privacy" element={<PrivacyPage />} />
           <Route path="/legal/license" element={<LicensePage />} />
           <Route path="/legal/trademark" element={<TrademarkPage />} />
-          <Route
-            path="/"
-            element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
-          />
+          <Route path="/" element={<HomePage isAuthenticated={isAuthenticated} />} />
           <Route
             path="*"
-            element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
+            element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/"} replace />}
           />
         </Routes>
       </div>
