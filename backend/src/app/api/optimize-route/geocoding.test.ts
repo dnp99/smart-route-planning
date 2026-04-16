@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  __resetGeocodeCacheForTests,
   geocodeAddressesSequentially,
   geocodeTargetsSequentially,
   normalizeAddressKey,
@@ -9,6 +10,7 @@ describe("geocoding helpers", () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
+    __resetGeocodeCacheForTests();
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
   });
@@ -71,6 +73,30 @@ describe("geocoding helpers", () => {
       signal: expect.any(AbortSignal),
     });
     expect(result).toEqual([{ address: "Address A", coords: { lat: 43.7001, lon: -79.4001 } }]);
+  });
+
+  it("reuses cached geocodes for repeated targets without a second upstream call", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        location: {
+          latitude: 43.7001,
+          longitude: -79.4001,
+        },
+      }),
+    } as Response);
+
+    const first = await geocodeTargetsSequentially(
+      [{ address: "Address A", googlePlaceId: "place-123" }],
+      "google-key",
+    );
+    const second = await geocodeTargetsSequentially(
+      [{ address: "Address A", googlePlaceId: "place-123" }],
+      "google-key",
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(first).toEqual(second);
   });
 
   it("falls back to text geocoding when place lookup fails", async () => {

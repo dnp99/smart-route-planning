@@ -2,6 +2,8 @@ import { HttpError } from "../../../../lib/http";
 import type { LatLng } from "./types";
 
 const GOOGLE_ROUTES_TIMEOUT_MS = 10000;
+const MATRIX_CACHE_TTL_MS = 10 * 60 * 1000;
+const MATRIX_CACHE_MAX_ENTRIES = 500;
 
 type MatrixElement = {
   originIndex: number;
@@ -134,6 +136,83 @@ export type TravelMatrixNode = {
 
 export type TravelDurationMatrix = Map<string, Map<string, number>>;
 
+type MatrixCacheEntry = {
+  matrix: TravelDurationMatrix;
+  expiresAt: number;
+};
+
+const matrixCache = new Map<string, MatrixCacheEntry>();
+const matrixInFlight = new Map<string, Promise<TravelDurationMatrix>>();
+
+const cloneTravelDurationMatrix = (matrix: TravelDurationMatrix): TravelDurationMatrix => {
+  const next: TravelDurationMatrix = new Map();
+  for (const [originKey, row] of matrix.entries()) {
+    next.set(originKey, new Map(row));
+  }
+  return next;
+};
+
+const pruneMatrixCache = (nowMs: number) => {
+  for (const [cacheKey, entry] of matrixCache.entries()) {
+    if (entry.expiresAt <= nowMs) {
+      matrixCache.delete(cacheKey);
+    }
+  }
+
+  if (matrixCache.size <= MATRIX_CACHE_MAX_ENTRIES) {
+    return;
+  }
+
+  const toDeleteCount = matrixCache.size - MATRIX_CACHE_MAX_ENTRIES;
+  let deleted = 0;
+  for (const cacheKey of matrixCache.keys()) {
+    matrixCache.delete(cacheKey);
+    deleted += 1;
+    if (deleted >= toDeleteCount) {
+      break;
+    }
+  }
+};
+
+const normalizeCoordKey = (value: number) => value.toFixed(6);
+
+const buildMatrixCacheKey = (nodes: TravelMatrixNode[]) =>
+  nodes
+    .map(
+      (node) =>
+        `${node.locationKey}:${normalizeCoordKey(node.coords.lat)},${normalizeCoordKey(node.coords.lon)}`,
+    )
+    .sort()
+    .join("|");
+
+const getCachedMatrix = (cacheKey: string) => {
+  const nowMs = Date.now();
+  pruneMatrixCache(nowMs);
+  const cached = matrixCache.get(cacheKey);
+  if (!cached) {
+    return undefined;
+  }
+  if (cached.expiresAt <= nowMs) {
+    matrixCache.delete(cacheKey);
+    return undefined;
+  }
+  return cloneTravelDurationMatrix(cached.matrix);
+};
+
+const setCachedMatrix = (cacheKey: string, matrix: TravelDurationMatrix) => {
+  const nowMs = Date.now();
+  matrixCache.set(cacheKey, {
+    matrix: cloneTravelDurationMatrix(matrix),
+    expiresAt: nowMs + MATRIX_CACHE_TTL_MS,
+  });
+  pruneMatrixCache(nowMs);
+};
+
+export const __resetPlanningTravelMatrixCacheForTests = () => {
+  matrixCache.clear();
+  matrixInFlight.clear();
+};
+
 export const buildPlanningTravelDurationMatrix = async (
   nodes: TravelMatrixNode[],
   apiKey: string,
@@ -154,76 +233,100 @@ export const buildPlanningTravelDurationMatrix = async (
     return matrix;
   }
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => {
-    controller.abort();
-  }, GOOGLE_ROUTES_TIMEOUT_MS);
+  const cacheKey = buildMatrixCacheKey(nodes);
+  const cachedMatrix = getCachedMatrix(cacheKey);
+  if (cachedMatrix) {
+    return cachedMatrix;
+  }
 
-  let response: Response;
+  const inFlight = matrixInFlight.get(cacheKey);
+  if (inFlight) {
+    return cloneTravelDurationMatrix(await inFlight);
+  }
+
+  const requestPromise = (async () => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, GOOGLE_ROUTES_TIMEOUT_MS);
+
+    let response: Response;
+
+    try {
+      response = await fetch("https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask": "originIndex,destinationIndex,duration,status,condition",
+        },
+        body: JSON.stringify({
+          origins: nodes.map((node) => toWaypoint(node.coords)),
+          destinations: nodes.map((node) => toWaypoint(node.coords)),
+          travelMode: "DRIVE",
+        }),
+        cache: "no-store",
+        signal: controller.signal,
+      });
+    } catch {
+      throw new HttpError(503, "Driving route matrix service is currently unavailable.");
+    } finally {
+      clearTimeout(timeoutId);
+    }
+
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        throw new HttpError(500, "Google Routes API key is invalid or not authorized.");
+      }
+
+      if (response.status === 429) {
+        throw new HttpError(
+          503,
+          "Driving route matrix service is rate-limited. Please try again shortly.",
+        );
+      }
+
+      throw new HttpError(503, "Driving route matrix service returned an unexpected error.");
+    }
+
+    const payloadText = await response.text();
+    const elements = parseResponseElements(payloadText);
+
+    elements.forEach((element) => {
+      if (isElementRouteUnavailable(element)) {
+        return;
+      }
+
+      const originNode = nodes[element.originIndex];
+      const destinationNode = nodes[element.destinationIndex];
+      if (!originNode || !destinationNode) {
+        throw new HttpError(503, "Google Routes matrix returned out-of-range indices.");
+      }
+
+      if (originNode.locationKey === destinationNode.locationKey) {
+        return;
+      }
+
+      const durationSeconds = parseGoogleDurationSeconds(element.duration);
+      const row = matrix.get(originNode.locationKey);
+      if (!row) {
+        throw new HttpError(503, "Google Routes matrix returned an unknown origin.");
+      }
+
+      row.set(destinationNode.locationKey, durationSeconds);
+    });
+
+    setCachedMatrix(cacheKey, matrix);
+    return cloneTravelDurationMatrix(matrix);
+  })();
+
+  matrixInFlight.set(cacheKey, requestPromise);
 
   try {
-    response = await fetch("https://routes.googleapis.com/distanceMatrix/v2:computeRouteMatrix", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": apiKey,
-        "X-Goog-FieldMask": "originIndex,destinationIndex,duration,status,condition",
-      },
-      body: JSON.stringify({
-        origins: nodes.map((node) => toWaypoint(node.coords)),
-        destinations: nodes.map((node) => toWaypoint(node.coords)),
-        travelMode: "DRIVE",
-      }),
-      cache: "no-store",
-      signal: controller.signal,
-    });
-  } catch {
-    throw new HttpError(503, "Driving route matrix service is currently unavailable.");
+    return cloneTravelDurationMatrix(await requestPromise);
   } finally {
-    clearTimeout(timeoutId);
+    if (matrixInFlight.get(cacheKey) === requestPromise) {
+      matrixInFlight.delete(cacheKey);
+    }
   }
-
-  if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      throw new HttpError(500, "Google Routes API key is invalid or not authorized.");
-    }
-
-    if (response.status === 429) {
-      throw new HttpError(
-        503,
-        "Driving route matrix service is rate-limited. Please try again shortly.",
-      );
-    }
-
-    throw new HttpError(503, "Driving route matrix service returned an unexpected error.");
-  }
-
-  const payloadText = await response.text();
-  const elements = parseResponseElements(payloadText);
-
-  elements.forEach((element) => {
-    if (isElementRouteUnavailable(element)) {
-      return;
-    }
-
-    const originNode = nodes[element.originIndex];
-    const destinationNode = nodes[element.destinationIndex];
-    if (!originNode || !destinationNode) {
-      throw new HttpError(503, "Google Routes matrix returned out-of-range indices.");
-    }
-
-    if (originNode.locationKey === destinationNode.locationKey) {
-      return;
-    }
-
-    const durationSeconds = parseGoogleDurationSeconds(element.duration);
-    const row = matrix.get(originNode.locationKey);
-    if (!row) {
-      throw new HttpError(503, "Google Routes matrix returned an unknown origin.");
-    }
-
-    row.set(destinationNode.locationKey, durationSeconds);
-  });
-
-  return matrix;
 };
