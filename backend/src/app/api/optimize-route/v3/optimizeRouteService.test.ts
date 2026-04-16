@@ -17,7 +17,10 @@ import { geocodeTargetsSequentially } from "../geocoding";
 import { buildDrivingRoute } from "../routing";
 import { buildPlanningTravelDurationMatrix } from "../v2/travelMatrix";
 import { optimizeRouteV2 } from "../v2/optimizeRouteService";
-import { optimizeRouteV3 } from "./optimizeRouteService";
+import {
+  __shouldFallbackDistanceToTimeForFixedSafety,
+  optimizeRouteV3,
+} from "./optimizeRouteService";
 
 const mockedGeocodeTargetsSequentially = vi.mocked(geocodeTargetsSequentially);
 const mockedBuildDrivingRoute = vi.mocked(buildDrivingRoute);
@@ -169,6 +172,42 @@ describe("optimizeRouteV3 service", () => {
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
+  });
+
+  it("falls back from distance to time benchmark when distance has more fixed-window misses", () => {
+    expect(
+      __shouldFallbackDistanceToTimeForFixedSafety(
+        { fixedLateCount: 2, fixedLateSeconds: 1200, fixedSlackConsumedSeconds: 0 },
+        { fixedLateCount: 1, fixedLateSeconds: 3000, fixedSlackConsumedSeconds: 0 },
+      ),
+    ).toBe(true);
+  });
+
+  it("falls back from distance to time benchmark when fixed miss count ties but seconds are worse", () => {
+    expect(
+      __shouldFallbackDistanceToTimeForFixedSafety(
+        { fixedLateCount: 1, fixedLateSeconds: 1200, fixedSlackConsumedSeconds: 0 },
+        { fixedLateCount: 1, fixedLateSeconds: 600, fixedSlackConsumedSeconds: 0 },
+      ),
+    ).toBe(true);
+  });
+
+  it("falls back from distance to time benchmark when fixed lateness ties but slack consumed is worse", () => {
+    expect(
+      __shouldFallbackDistanceToTimeForFixedSafety(
+        { fixedLateCount: 0, fixedLateSeconds: 0, fixedSlackConsumedSeconds: 900 },
+        { fixedLateCount: 0, fixedLateSeconds: 0, fixedSlackConsumedSeconds: 300 },
+      ),
+    ).toBe(true);
+  });
+
+  it("does not fall back when distance is at least as safe on fixed windows", () => {
+    expect(
+      __shouldFallbackDistanceToTimeForFixedSafety(
+        { fixedLateCount: 0, fixedLateSeconds: 0, fixedSlackConsumedSeconds: 200 },
+        { fixedLateCount: 1, fixedLateSeconds: 60, fixedSlackConsumedSeconds: 0 },
+      ),
+    ).toBe(false);
   });
 
   it("prefers the next available visit before far-future windows when no fixed risk is introduced", async () => {

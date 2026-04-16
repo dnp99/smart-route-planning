@@ -1032,6 +1032,31 @@ type ScheduleEvaluation = {
   nearbyNonConsecutiveCount: number;
 };
 
+type FixedSafetySnapshot = {
+  fixedLateCount: number;
+  fixedLateSeconds: number;
+  fixedSlackConsumedSeconds: number;
+};
+
+const toFixedSafetySnapshot = (evaluation: ScheduleEvaluation): FixedSafetySnapshot => ({
+  fixedLateCount: evaluation.score.fixedLateCount,
+  fixedLateSeconds: evaluation.score.fixedLateSeconds,
+  fixedSlackConsumedSeconds: evaluation.fixedSlackConsumedSeconds,
+});
+
+export const __shouldFallbackDistanceToTimeForFixedSafety = (
+  distance: FixedSafetySnapshot,
+  time: FixedSafetySnapshot,
+) => {
+  if (distance.fixedLateCount !== time.fixedLateCount) {
+    return distance.fixedLateCount > time.fixedLateCount;
+  }
+  if (distance.fixedLateSeconds !== time.fixedLateSeconds) {
+    return distance.fixedLateSeconds > time.fixedLateSeconds;
+  }
+  return distance.fixedSlackConsumedSeconds > time.fixedSlackConsumedSeconds;
+};
+
 const isFixedOnTimeWhenServedFirst = (visit: VisitWithCoords) => {
   if (visit.windowType !== "fixed" || !visit.hasPreferredWindow) {
     return true;
@@ -1838,13 +1863,10 @@ const isGloballyMovableFlexibleBlock = (
 //     within its window but is served 20 min later, burning slack and leaving
 //     less buffer against real-world delays.
 const worsensFixedLateness = (candidate: ScheduleEvaluation, reference: ScheduleEvaluation) => {
-  if (candidate.score.fixedLateCount !== reference.score.fixedLateCount) {
-    return candidate.score.fixedLateCount > reference.score.fixedLateCount;
-  }
-  if (candidate.score.fixedLateSeconds !== reference.score.fixedLateSeconds) {
-    return candidate.score.fixedLateSeconds > reference.score.fixedLateSeconds;
-  }
-  return candidate.fixedSlackConsumedSeconds > reference.fixedSlackConsumedSeconds;
+  return __shouldFallbackDistanceToTimeForFixedSafety(
+    toFixedSafetySnapshot(candidate),
+    toFixedSafetySnapshot(reference),
+  );
 };
 
 const isAcceptedImprovement = (
@@ -2649,6 +2671,31 @@ export const optimizeRouteV3 = async (
 
     if (isStrictElapsedImprovementForTime(distanceBenchmark.evaluation, solvedRoute.evaluation)) {
       solvedRoute = distanceBenchmark;
+    }
+  }
+
+  if (objective === "distance" && request.preserveOrder !== true) {
+    const timeBenchmarkRng = createSeededRng(
+      hashRequestIdToSeed(`${requestSeedKey}:time-benchmark`),
+    );
+    const timeBenchmark = solveRouteWithIls(
+      visitsWithCoords,
+      {
+        coords: startCoords,
+        locationKey: startLocationKey,
+      },
+      departureLocalSeconds,
+      resolveTravelSeconds,
+      false,
+      lunchContext,
+      "time",
+      timeBenchmarkRng,
+    );
+
+    // Guardrail for less-driving mode: if the distance-optimized result is
+    // strictly worse on fixed-window safety, fall back to the time benchmark.
+    if (worsensFixedLateness(solvedRoute.evaluation, timeBenchmark.evaluation)) {
+      solvedRoute = timeBenchmark;
     }
   }
 
