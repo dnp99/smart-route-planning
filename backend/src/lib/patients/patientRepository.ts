@@ -101,6 +101,19 @@ export const updateNurseHomeAddress = async (nurseId: string, homeAddress: strin
   return nurse ?? null;
 };
 
+export const updateNurseDisplayName = async (nurseId: string, displayName: string) => {
+  const [nurse] = await getDb()
+    .update(nurses)
+    .set({
+      displayName,
+      updatedAt: new Date(),
+    })
+    .where(eq(nurses.id, nurseId))
+    .returning();
+
+  return nurse ?? null;
+};
+
 export const updateNurseWorkingHours = async (
   nurseId: string,
   workingHours: WeeklyWorkingHours | null | undefined,

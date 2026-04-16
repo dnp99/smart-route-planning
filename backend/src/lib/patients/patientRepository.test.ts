@@ -17,6 +17,7 @@ import {
   findPatientByIdForNurse,
   listPatientsByNurse,
   NurseEmailConflictError,
+  updateNurseDisplayName,
   updateNurseHomeAddress,
   updateNurseLastLoginAt,
   updatePatientForNurse,
@@ -141,6 +142,27 @@ describe("patientRepository", () => {
     expect(setMock).toHaveBeenCalledWith(
       expect.objectContaining({
         homeAddress: "1 Main St",
+        updatedAt: expect.any(Date),
+      }),
+    );
+    expect(whereMock).toHaveBeenCalled();
+  });
+
+  it("updates nurse display name", async () => {
+    const returningMock = vi.fn().mockResolvedValue([{ id: "nurse-1", displayName: "Alex Brown" }]);
+    const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
+    const setMock = vi.fn().mockReturnValue({ where: whereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: setMock });
+    getDbMock.mockReturnValue({ update: updateMock });
+
+    await expect(updateNurseDisplayName("nurse-1", "Alex Brown")).resolves.toEqual({
+      id: "nurse-1",
+      displayName: "Alex Brown",
+    });
+
+    expect(setMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        displayName: "Alex Brown",
         updatedAt: expect.any(Date),
       }),
     );

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseOptimizeRouteV2Response } from "../../../../../../shared/contracts";
 import { requireAuth } from "../../../../lib/auth/requireAuth";
+import { recordOptimizationRun } from "../../../../lib/dashboard/dashboardRepository";
 import { HttpError, buildCorsHeaders, toErrorResponse } from "../../../../lib/http";
 import { enforceOptimizeRouteRateLimit, requireOptimizeRouteApiKey } from "../requestGuards";
 import { optimizeRouteV2 } from "./optimizeRouteService";
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
   });
 
   try {
-    await requireAuth(request);
+    const auth = await requireAuth(request);
     requireOptimizeRouteApiKey(request);
     enforceOptimizeRouteRateLimit(request);
 
@@ -52,6 +53,17 @@ export async function POST(request: Request) {
     const parsedResponse = parseOptimizeRouteV2Response(result);
     if (!parsedResponse) {
       throw new HttpError(500, "Failed to shape optimize-route v2 response.");
+    }
+
+    try {
+      await recordOptimizationRun({
+        nurseId: auth.nurseId,
+        endpointVersion: "v2",
+        request: parsedRequest,
+        result,
+      });
+    } catch (error) {
+      console.error("Failed to persist optimize-route v2 history.", error);
     }
 
     return NextResponse.json(parsedResponse, { headers: corsHeaders });

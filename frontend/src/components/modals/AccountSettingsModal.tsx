@@ -6,6 +6,7 @@ import { useAccountSettings, DAYS, buildDefaultSchedule } from "../hooks/useAcco
 import type { WeeklyWorkingHours } from "../../../../shared/contracts";
 
 const MAX_HOME_ADDRESS_LENGTH = 200;
+const MAX_DISPLAY_NAME_LENGTH = 120;
 const PROFILE_MODAL_HOME_ADDRESS_ID = "account-settings-home-address";
 
 type AuthUser = {
@@ -85,6 +86,9 @@ export default function AccountSettingsModal({
     currentOptimizationObjective,
   );
   const {
+    // Profile
+    displayNameInput,
+    setDisplayNameInput,
     // Home address
     homeAddressInput,
     setHomeAddressInput,
@@ -146,6 +150,9 @@ export default function AccountSettingsModal({
     currentPasswordInput.length > 0 ||
     newPasswordInput.length > 0 ||
     confirmPasswordInput.length > 0;
+  const normalizedSavedDisplayName = (authUser?.displayName ?? "").trim();
+  const normalizedDisplayNameInput = displayNameInput.trim();
+  const hasProfileDisplayNameChanges = normalizedDisplayNameInput !== normalizedSavedDisplayName;
   const normalizedSavedHomeAddress = (authUser?.homeAddress ?? "").trim();
   const normalizedHomeAddressInput = homeAddressInput.trim();
   const hasProfileAddressChanges = normalizedHomeAddressInput !== normalizedSavedHomeAddress;
@@ -173,7 +180,7 @@ export default function AccountSettingsModal({
 
   const hasUnsavedChangesForTab = (tab: "profile" | "working-hours" | "route") => {
     if (tab === "profile") {
-      return hasProfileAddressChanges || isProfilePasswordMode;
+      return hasProfileDisplayNameChanges || hasProfileAddressChanges || isProfilePasswordMode;
     }
     if (tab === "working-hours") {
       return hasWorkingHoursChanges;
@@ -217,7 +224,7 @@ export default function AccountSettingsModal({
             newPasswordInput.length > 0 &&
             confirmPasswordInput === newPasswordInput
           )
-        : isSavingAccountSettings || !hasProfileAddressChanges
+        : isSavingAccountSettings || (!hasProfileDisplayNameChanges && !hasProfileAddressChanges)
       : activeSettingsTab === "working-hours"
         ? scheduleControlsDisabled || !hasWorkingHoursChanges
         : isSavingObjective || routeObjectiveInput === currentOptimizationObjective;
@@ -317,6 +324,21 @@ export default function AccountSettingsModal({
                   className="grid gap-4"
                   onSubmit={handleProfileSubmit}
                 >
+                  <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
+                    <span className="font-medium">Display name</span>
+                    <input
+                      type="text"
+                      value={displayNameInput}
+                      onChange={(event) => {
+                        setDisplayNameInput(event.target.value.slice(0, MAX_DISPLAY_NAME_LENGTH));
+                        if (accountSettingsError) setAccountSettingsError("");
+                      }}
+                      autoComplete="name"
+                      disabled={isSavingAccountSettings}
+                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:px-4 sm:py-3"
+                    />
+                  </label>
+
                   <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
                     <span className="font-medium">Email</span>
                     <input

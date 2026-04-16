@@ -245,6 +245,7 @@ vi.mock("../../components/routePlanner/routePlannerService", () => ({
 
 vi.mock("../../components/auth/authService", () => ({
   fetchMe: fetchMeMock,
+  updateProfile: vi.fn(),
   updateProfileHomeAddress: vi.fn(),
   login: vi.fn(),
   signUp: vi.fn(),

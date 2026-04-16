@@ -8,12 +8,14 @@ import { requireAuth } from "../../../../lib/auth/requireAuth";
 import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
 import {
   findNurseById,
+  updateNurseDisplayName,
   updateNurseHomeAddress,
   updateNurseOptimizationObjective,
   updateNurseWorkingHours,
 } from "../../../../lib/patients/patientRepository";
 import { requireSecureAuthTransport } from "../requestGuards";
 
+const MAX_DISPLAY_NAME_LENGTH = 120;
 const MAX_HOME_ADDRESS_LENGTH = 200;
 const HH_MM_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
@@ -158,6 +160,23 @@ const validateAndNormalizeHomeAddress = (value: unknown): string => {
   return homeAddress;
 };
 
+const validateAndNormalizeDisplayName = (value: unknown): string => {
+  if (typeof value !== "string") {
+    throw new HttpError(400, "displayName must be a string.");
+  }
+
+  const displayName = value.trim();
+  if (!displayName) {
+    throw new HttpError(400, "Display name is required.");
+  }
+
+  if (displayName.length > MAX_DISPLAY_NAME_LENGTH) {
+    throw new HttpError(400, "Display name must be 120 characters or fewer.");
+  }
+
+  return displayName;
+};
+
 export async function OPTIONS(request: Request) {
   let corsHeaders: Record<string, string> | undefined;
 
@@ -246,6 +265,15 @@ export async function PATCH(request: Request) {
     }
 
     const payload = body as Record<string, unknown>;
+
+    if (payload.displayName !== undefined) {
+      const displayName = validateAndNormalizeDisplayName(payload.displayName);
+      const updated = await updateNurseDisplayName(auth.nurseId, displayName);
+      if (!updated || !updated.isActive) {
+        return NextResponse.json({ error: "Unauthorized." }, { status: 401, headers: corsHeaders });
+      }
+      nurse = updated;
+    }
 
     if (payload.homeAddress !== undefined) {
       const homeAddress = validateAndNormalizeHomeAddress(payload.homeAddress);

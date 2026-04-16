@@ -57,6 +57,13 @@
       "when": 1742774400000,
       "tag": "0007_optimization_objective",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1776314128758,
+      "tag": "0008_ancient_shinko_yamashiro",
+      "breakpoints": true
     }
   ]
 }

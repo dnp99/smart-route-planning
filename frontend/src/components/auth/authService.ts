@@ -80,7 +80,13 @@ export const fetchMe = async (token: string) => {
   return parsed;
 };
 
-export const updateProfileHomeAddress = async (token: string, homeAddress: string) => {
+export const updateProfile = async (
+  token: string,
+  updates: {
+    displayName?: string;
+    homeAddress?: string;
+  },
+) => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
     method: "PATCH",
@@ -88,7 +94,7 @@ export const updateProfileHomeAddress = async (token: string, homeAddress: strin
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ homeAddress }),
+    body: JSON.stringify(updates),
   });
 
   const payload = await response.json().catch(() => null);
@@ -102,6 +108,10 @@ export const updateProfileHomeAddress = async (token: string, homeAddress: strin
   }
 
   return parsed;
+};
+
+export const updateProfileHomeAddress = async (token: string, homeAddress: string) => {
+  return updateProfile(token, { homeAddress });
 };
 
 export const updateWorkingHours = async (

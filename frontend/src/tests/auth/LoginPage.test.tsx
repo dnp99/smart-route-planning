@@ -12,6 +12,7 @@ vi.mock("../../components/auth/authService", () => ({
   login: loginMock,
   signUp: signUpMock,
   fetchMe: vi.fn(),
+  updateProfile: vi.fn(),
   updateProfileHomeAddress: vi.fn(),
 }));
 

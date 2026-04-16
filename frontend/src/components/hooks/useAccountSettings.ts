@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import {
+  updateProfile,
   updateOptimizationObjective,
   updatePassword,
-  updateProfileHomeAddress,
   updateWorkingHours,
 } from "../auth/authService";
 import { clearAuthSession, getAuthToken, setStoredAuthUser } from "../auth/authSession";
 import type { DaySchedule, WeeklyWorkingHours } from "../../../../shared/contracts";
 
+const MAX_DISPLAY_NAME_LENGTH = 120;
 const MAX_HOME_ADDRESS_LENGTH = 200;
 const MIN_PASSWORD_LENGTH = 8;
 const DEFAULT_BREAK_GAP_THRESHOLD = 30;
@@ -73,7 +74,8 @@ export function useAccountSettings({
   onClose,
   onSaved,
 }: UseAccountSettingsParams) {
-  // ── Home address form ────────────────────────────────────────────────────────
+  // ── Profile form ─────────────────────────────────────────────────────────────
+  const [displayNameInput, setDisplayNameInput] = useState("");
   const [homeAddressInput, setHomeAddressInput] = useState("");
   const [accountSettingsError, setAccountSettingsError] = useState("");
   const [accountSettingsSuccess, setAccountSettingsSuccess] = useState("");
@@ -112,6 +114,7 @@ export function useAccountSettings({
   // Reset all form state when modal opens
   useEffect(() => {
     if (!isOpen) return;
+    setDisplayNameInput(authUser?.displayName ?? "");
     setHomeAddressInput(authUser?.homeAddress ?? "");
     setAccountSettingsError("");
     setAccountSettingsSuccess("");
@@ -157,13 +160,38 @@ export function useAccountSettings({
     setAccountSettingsError("");
     setAccountSettingsSuccess("");
 
-    const normalized = homeAddressInput.trim();
-    if (!normalized) {
-      setAccountSettingsError("Home address is required.");
-      return;
+    const normalizedDisplayName = displayNameInput.trim();
+    const normalizedSavedDisplayName = (authUser?.displayName ?? "").trim();
+    const normalizedHomeAddress = homeAddressInput.trim();
+    const normalizedSavedHomeAddress = (authUser?.homeAddress ?? "").trim();
+
+    const updates: { displayName?: string; homeAddress?: string } = {};
+
+    if (normalizedDisplayName !== normalizedSavedDisplayName) {
+      if (!normalizedDisplayName) {
+        setAccountSettingsError("Display name is required.");
+        return;
+      }
+      if (normalizedDisplayName.length > MAX_DISPLAY_NAME_LENGTH) {
+        setAccountSettingsError("Display name must be 120 characters or fewer.");
+        return;
+      }
+      updates.displayName = normalizedDisplayName;
     }
-    if (normalized.length > MAX_HOME_ADDRESS_LENGTH) {
-      setAccountSettingsError("Home address must be 200 characters or fewer.");
+
+    if (normalizedHomeAddress !== normalizedSavedHomeAddress) {
+      if (!normalizedHomeAddress) {
+        setAccountSettingsError("Home address is required.");
+        return;
+      }
+      if (normalizedHomeAddress.length > MAX_HOME_ADDRESS_LENGTH) {
+        setAccountSettingsError("Home address must be 200 characters or fewer.");
+        return;
+      }
+      updates.homeAddress = normalizedHomeAddress;
+    }
+
+    if (Object.keys(updates).length === 0) {
       return;
     }
 
@@ -175,7 +203,7 @@ export function useAccountSettings({
 
     setIsSavingAccountSettings(true);
     try {
-      const updated = await updateProfileHomeAddress(token, normalized);
+      const updated = await updateProfile(token, updates);
       setStoredAuthUser(updated.user);
       onSaved(updated.user);
       setAccountSettingsSuccess("Account settings saved.");
@@ -340,6 +368,9 @@ export function useAccountSettings({
   };
 
   return {
+    // Profile
+    displayNameInput,
+    setDisplayNameInput,
     // Home address
     homeAddressInput,
     setHomeAddressInput,
