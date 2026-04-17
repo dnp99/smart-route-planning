@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import type {
   AuthUser,
   DashboardAlert,
+  DashboardBusiestDay,
+  DashboardPatientRisk,
   DashboardSummaryResponse,
   DashboardTrendPoint,
   DashboardUpcomingStop,
@@ -50,22 +52,6 @@ const toStopStatusLabel = (status: DashboardUpcomingStop["status"]) => {
   if (status === "at_risk") return "At risk";
   if (status === "pending") return "Pending";
   return "On track";
-};
-
-const resolveOnTimeTone = (value: number | null) => {
-  if (value === null) {
-    return "text-slate-500";
-  }
-
-  if (value >= 90) {
-    return "text-emerald-600";
-  }
-
-  if (value >= 75) {
-    return "text-amber-600";
-  }
-
-  return "text-rose-600";
 };
 
 const resolveGreetingPrefix = () => {
@@ -190,9 +176,9 @@ export default function HomePage({
           tone: "text-slate-500",
         },
         {
-          label: "On-time rate (7d)",
+          label: "Total Active Clients",
           value: "—",
-          delta: "Needs route history",
+          delta: "All time",
           tone: "text-slate-500",
         },
         {
@@ -210,8 +196,6 @@ export default function HomePage({
       ];
     }
 
-    const onTimeRate = dashboardSummary.kpis.onTimeRatePercent7d;
-
     return [
       {
         label: "Routes today",
@@ -220,10 +204,10 @@ export default function HomePage({
         tone: "text-blue-600",
       },
       {
-        label: "On-time rate (7d)",
-        value: onTimeRate === null ? "—" : `${onTimeRate}%`,
-        delta: onTimeRate === null ? "No 7-day history" : "Weighted by scheduled visits",
-        tone: resolveOnTimeTone(onTimeRate),
+        label: "Total Active Clients",
+        value: String(dashboardSummary.kpis.activePatientCount),
+        delta: "All time",
+        tone: "text-blue-600",
       },
       {
         label: "Unscheduled visits",
@@ -281,6 +265,12 @@ export default function HomePage({
   const upcomingStops = dashboardSummary?.upcomingStops ?? [];
   const trendBars =
     dashboardSummary && dashboardSummary.trend.length > 0 ? dashboardSummary.trend : EMPTY_TREND;
+  const busiestDays: DashboardBusiestDay[] = dashboardSummary?.busiestDays ?? [];
+  const patientRisks: DashboardPatientRisk[] = dashboardSummary?.patientRisks ?? [];
+  const maxBusiestAvg = useMemo(
+    () => Math.max(1, ...busiestDays.map((d) => d.avgVisits)),
+    [busiestDays],
+  );
   const routePlannerDraft = useMemo(() => readRoutePlannerDraft(), []);
   const draftSelectedCount = useMemo(
     () =>
@@ -414,45 +404,31 @@ export default function HomePage({
         ))}
       </section>
 
-      <section className={responsiveStyles.dashboardCard}>
-        {hasRouteDraft ? (
-          <>
-            <h2 className={responsiveStyles.cardTitle}>Route Draft</h2>
-            <p className={responsiveStyles.cardDescription}>
-              Planning for {resolveDraftDateLabel(routePlannerDraft?.planningDate)} ·{" "}
-              {draftSelectedCount} client{draftSelectedCount === 1 ? "" : "s"}
-              {routePlannerDraft?.startAddress ? ` · Start: ${routePlannerDraft.startAddress}` : ""}
-            </p>
-            <div className={responsiveStyles.dashboardDraftActions}>
-              <Link to="/route-planner" className={responsiveStyles.primaryButton}>
-                Resume Planning
-              </Link>
-              <button
-                type="button"
-                className={responsiveStyles.secondaryButton}
-                onClick={() => {
-                  clearRoutePlannerDraft();
-                  navigate("/route-planner");
-                }}
-              >
-                Start Fresh
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <h2 className={responsiveStyles.cardTitle}>No route draft yet</h2>
-            <p className={responsiveStyles.cardDescription}>
-              Build your next route for today or an upcoming visit day.
-            </p>
-            <div className={responsiveStyles.dashboardDraftActions}>
-              <Link to="/route-planner" className={responsiveStyles.primaryButton}>
-                Plan a Route
-              </Link>
-            </div>
-          </>
-        )}
-      </section>
+      {hasRouteDraft && (
+        <section className={responsiveStyles.dashboardCard}>
+          <h2 className={responsiveStyles.cardTitle}>Route Draft</h2>
+          <p className={responsiveStyles.cardDescription}>
+            Planning for {resolveDraftDateLabel(routePlannerDraft?.planningDate)} ·{" "}
+            {draftSelectedCount} client{draftSelectedCount === 1 ? "" : "s"}
+            {routePlannerDraft?.startAddress ? ` · Start: ${routePlannerDraft.startAddress}` : ""}
+          </p>
+          <div className={responsiveStyles.dashboardDraftActions}>
+            <Link to="/route-planner" className={responsiveStyles.primaryButton}>
+              Resume Planning
+            </Link>
+            <button
+              type="button"
+              className={responsiveStyles.secondaryButton}
+              onClick={() => {
+                clearRoutePlannerDraft();
+                navigate("/route-planner");
+              }}
+            >
+              Start Fresh
+            </button>
+          </div>
+        </section>
+      )}
 
       {profileNudges.map((nudge) => (
         <section key={nudge.id} className={responsiveStyles.dashboardNudgeCard}>
@@ -468,6 +444,82 @@ export default function HomePage({
           </div>
         </section>
       ))}
+
+      <section className="dashboard-reveal grid gap-4 xl:grid-cols-2">
+        <article className={responsiveStyles.dashboardCard}>
+          <h2 className={responsiveStyles.cardTitle}>Busiest Days</h2>
+          <p className={responsiveStyles.cardDescription}>
+            Average scheduled visits by day of week across all routes.
+          </p>
+          {busiestDays.length === 0 ? (
+            <p
+              className={`${responsiveStyles.cardDescription} mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-700`}
+            >
+              No route history yet. Run an optimization to populate this view.
+            </p>
+          ) : (
+            <ul className="m-0 mt-4 list-none space-y-2 p-0">
+              {busiestDays.map((day) => (
+                <li key={day.dayLabel} className={responsiveStyles.dashboardTrendRow}>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {day.dayLabel}
+                  </span>
+                  <div className={responsiveStyles.dashboardTrendTrack}>
+                    <div
+                      className={responsiveStyles.dashboardTrendFill}
+                      style={{ width: `${(day.avgVisits / maxBusiestAvg) * 100}%` }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    {day.avgVisits.toFixed(1)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </article>
+
+        <article className={responsiveStyles.dashboardCard}>
+          <h2 className={responsiveStyles.cardTitle}>Client Risk Panel</h2>
+          <p className={responsiveStyles.cardDescription}>
+            Clients frequently unscheduled or late in the last 30 days.
+          </p>
+          {patientRisks.length === 0 ? (
+            <p
+              className={`${responsiveStyles.cardDescription} mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-700`}
+            >
+              No at-risk clients detected.
+            </p>
+          ) : (
+            <ul className="m-0 mt-4 list-none space-y-2 p-0">
+              {patientRisks.map((risk) => (
+                <li key={risk.patientId} className={responsiveStyles.dashboardRiskItem}>
+                  <div>
+                    <p className={responsiveStyles.cardTitle}>
+                      {risk.firstName} {risk.lastName}
+                    </p>
+                    <p className={`${responsiveStyles.cardDescription} mt-0.5`}>
+                      {risk.totalAppearances} total visit{risk.totalAppearances === 1 ? "" : "s"}
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap justify-end gap-1.5">
+                    {risk.unscheduledCount > 0 && (
+                      <span className={responsiveStyles.dashboardRiskBadgeAmber}>
+                        {risk.unscheduledCount} unscheduled
+                      </span>
+                    )}
+                    {risk.lateCount > 0 && (
+                      <span className={responsiveStyles.dashboardRiskBadgeRose}>
+                        {risk.lateCount} late
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </article>
+      </section>
 
       <section className={responsiveStyles.dashboardCard}>
         <h2 className={responsiveStyles.cardTitle}>Route Alerts</h2>
@@ -489,8 +541,8 @@ export default function HomePage({
         </ul>
       </section>
 
-      <section className="dashboard-reveal grid gap-4 xl:grid-cols-12">
-        <article className={`${responsiveStyles.dashboardCard} xl:col-span-5`}>
+      <section className="dashboard-reveal grid gap-4 xl:grid-cols-2">
+        <article className={responsiveStyles.dashboardCard}>
           <h2 className={responsiveStyles.cardTitle}>Today&apos;s Schedule</h2>
           {upcomingStops.length === 0 ? (
             <p
@@ -520,7 +572,7 @@ export default function HomePage({
           )}
         </article>
 
-        <article className={`${responsiveStyles.dashboardCard} xl:col-span-4`}>
+        <article className={responsiveStyles.dashboardCard}>
           <h2 className={responsiveStyles.cardTitle}>Weekly On-time Trend</h2>
           <p className={responsiveStyles.cardDescription}>
             Weighted on-time percentage over the last 7 planning days.
@@ -544,44 +596,6 @@ export default function HomePage({
             ))}
           </ul>
         </article>
-
-        <article className={`${responsiveStyles.dashboardCard} xl:col-span-3`}>
-          <h2 className={responsiveStyles.cardTitle}>Quick Actions</h2>
-          <div className="mt-4 grid gap-2">
-            <Link to="/route-planner" className={responsiveStyles.primaryButton}>
-              Plan New Route
-            </Link>
-            <Link to="/patients" className={responsiveStyles.secondaryButton}>
-              Add Client
-            </Link>
-          </div>
-        </article>
-      </section>
-
-      <section className={responsiveStyles.dashboardCard}>
-        <h2 className={responsiveStyles.cardTitle}>End-of-day Snapshot</h2>
-        <div className={responsiveStyles.dashboardSnapshotGrid}>
-          <p className={responsiveStyles.dashboardSnapshotItem}>
-            Completed routes:{" "}
-            <strong className="text-slate-900 dark:text-slate-100">
-              {dashboardSummary ? dashboardSummary.snapshot.completedRoutes : "—"}
-            </strong>
-          </p>
-          <p className={responsiveStyles.dashboardSnapshotItem}>
-            Delayed routes:{" "}
-            <strong className="text-slate-900 dark:text-slate-100">
-              {dashboardSummary ? dashboardSummary.snapshot.delayedRoutes : "—"}
-            </strong>
-          </p>
-          <p className={responsiveStyles.dashboardSnapshotItem}>
-            Distance planned:{" "}
-            <strong className="text-slate-900 dark:text-slate-100">
-              {dashboardSummary
-                ? `${dashboardSummary.snapshot.totalDistanceKm.toFixed(1)} km`
-                : "—"}
-            </strong>
-          </p>
-        </div>
       </section>
     </main>
   );

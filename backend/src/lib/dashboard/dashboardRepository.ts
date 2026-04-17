@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import type {
   DashboardAlert,
   DashboardSummaryResponse,
@@ -103,6 +103,79 @@ const toAlertLevel = (warning: OptimizeRouteV2ScheduleWarning): DashboardAlert["
 };
 
 const toRouteLabel = (runId: string) => `R-${runId.slice(0, 4).toUpperCase()}`;
+
+const DOW_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
+const buildBusiestDays = async (nurseId: string) => {
+  const rows = await getDb()
+    .select({
+      dayOfWeek: sql<number>`extract(dow from ${routeOptimizationRuns.planningDate}::date)::int`,
+      avgVisits: sql<number>`round(avg(${routeOptimizationRuns.scheduledVisitCount})::numeric, 1)::float`,
+      totalRuns: sql<number>`count(*)::int`,
+    })
+    .from(routeOptimizationRuns)
+    .where(eq(routeOptimizationRuns.nurseId, nurseId))
+    .groupBy(sql`extract(dow from ${routeOptimizationRuns.planningDate}::date)`)
+    .orderBy(sql`extract(dow from ${routeOptimizationRuns.planningDate}::date)`);
+
+  return rows.map((row) => ({
+    dayLabel: DOW_LABELS[row.dayOfWeek] ?? "Unknown",
+    avgVisits: row.avgVisits ?? 0,
+    totalRuns: row.totalRuns ?? 0,
+  }));
+};
+
+const buildPatientRisks = async (nurseId: string, since: string) => {
+  const taskStats = await getDb()
+    .select({
+      patientId: routeOptimizationTasks.patientId,
+      totalAppearances: sql<number>`count(*)::int`,
+      unscheduledCount: sql<number>`count(*) filter (where ${routeOptimizationTasks.isUnscheduled} = true)::int`,
+      lateCount: sql<number>`count(*) filter (where ${routeOptimizationTasks.onTime} = false and ${routeOptimizationTasks.isUnscheduled} = false)::int`,
+    })
+    .from(routeOptimizationTasks)
+    .innerJoin(routeOptimizationRuns, eq(routeOptimizationTasks.runId, routeOptimizationRuns.id))
+    .where(
+      and(
+        eq(routeOptimizationTasks.nurseId, nurseId),
+        gte(routeOptimizationRuns.planningDate, since),
+      ),
+    )
+    .groupBy(routeOptimizationTasks.patientId)
+    .having(
+      sql`count(*) filter (where ${routeOptimizationTasks.isUnscheduled} = true) > 0 or count(*) filter (where ${routeOptimizationTasks.onTime} = false and ${routeOptimizationTasks.isUnscheduled} = false) > 0`,
+    )
+    .orderBy(
+      desc(sql`count(*) filter (where ${routeOptimizationTasks.isUnscheduled} = true)`),
+      desc(
+        sql`count(*) filter (where ${routeOptimizationTasks.onTime} = false and ${routeOptimizationTasks.isUnscheduled} = false)`,
+      ),
+    )
+    .limit(5);
+
+  if (taskStats.length === 0) return [];
+
+  const patientIds = taskStats.map((s) => s.patientId);
+  const patientRecords = await getDb()
+    .select({ id: patients.id, firstName: patients.firstName, lastName: patients.lastName })
+    .from(patients)
+    .where(and(eq(patients.nurseId, nurseId), inArray(patients.id, patientIds)));
+
+  return taskStats.flatMap((stat) => {
+    const patient = patientRecords.find((p) => p.id === stat.patientId);
+    if (!patient) return [];
+    return [
+      {
+        patientId: stat.patientId,
+        firstName: patient.firstName,
+        lastName: patient.lastName,
+        unscheduledCount: stat.unscheduledCount,
+        lateCount: stat.lateCount,
+        totalAppearances: stat.totalAppearances,
+      },
+    ];
+  });
+};
 
 const buildDateRange = (now: Date, timezone: string) => {
   const dates: string[] = [];
@@ -362,6 +435,7 @@ export const getDashboardSummaryForNurse = async ({
   const dateRange = buildDateRange(now, timezone);
   const startDate = dateRange[0];
   const endDate = dateRange[dateRange.length - 1];
+  const thirtyDaysAgo = formatDateInTimeZone(new Date(now.getTime() - 30 * DAY_MS), timezone);
 
   const recentRuns = await getDb()
     .select()
@@ -426,6 +500,15 @@ export const getDashboardSummaryForNurse = async ({
       run.fixedWindowViolations > 0 || run.totalLateSeconds > 0 || run.unscheduledVisitCount > 0,
   ).length;
 
+  const busiestDays = await buildBusiestDays(nurseId);
+  const patientRisks = await buildPatientRisks(nurseId, thirtyDaysAgo);
+
+  const [activePatientRow] = await getDb()
+    .select({ count: sql<number>`count(*)::int` })
+    .from(patients)
+    .where(and(eq(patients.nurseId, nurseId), eq(patients.isActive, true)));
+  const activePatientCount = activePatientRow?.count ?? 0;
+
   return {
     asOf: now.toISOString(),
     timezone,
@@ -435,6 +518,7 @@ export const getDashboardSummaryForNurse = async ({
       onTimeRatePercent7d,
       unscheduledVisitsToday,
       driveHoursToday: roundToOneDecimal(totalDurationTodaySeconds / 3600),
+      activePatientCount,
     },
     alerts: buildAlerts({
       latestRun,
@@ -451,6 +535,8 @@ export const getDashboardSummaryForNurse = async ({
           })
         : [],
     trend: buildTrend(dateRange, recentRuns),
+    busiestDays,
+    patientRisks,
     snapshot: {
       completedRoutes: todayRuns.length,
       delayedRoutes,

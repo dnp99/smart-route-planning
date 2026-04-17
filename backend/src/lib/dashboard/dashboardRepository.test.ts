@@ -31,6 +31,37 @@ const makeSelectLimitChain = (result: unknown[]) => {
   return { select: selectMock };
 };
 
+/** Builds a getDb() mock for buildBusiestDays: .where().groupBy().orderBy() */
+const makeSelectGroupByOrderByChain = (result: unknown[]) => {
+  const orderByMock = vi.fn().mockResolvedValue(result);
+  const groupByMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+  const whereMock = vi.fn().mockReturnValue({ groupBy: groupByMock });
+  const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+  const selectMock = vi.fn().mockReturnValue({ from: fromMock });
+  return { select: selectMock };
+};
+
+/** Builds a getDb() mock for buildPatientRisks stats: .innerJoin().where().groupBy().having().orderBy().limit() */
+const makeSelectJoinGroupByHavingLimitChain = (result: unknown[]) => {
+  const limitMock = vi.fn().mockResolvedValue(result);
+  const orderByMock = vi.fn().mockReturnValue({ limit: limitMock });
+  const havingMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+  const groupByMock = vi.fn().mockReturnValue({ having: havingMock });
+  const whereMock = vi.fn().mockReturnValue({ groupBy: groupByMock });
+  const innerJoinMock = vi.fn().mockReturnValue({ where: whereMock });
+  const fromMock = vi.fn().mockReturnValue({ innerJoin: innerJoinMock });
+  const selectMock = vi.fn().mockReturnValue({ from: fromMock });
+  return { select: selectMock };
+};
+
+/** Builds a getDb() mock for patient name fetch: .from().where() resolves directly */
+const makeSelectWhereChain = (result: unknown[]) => {
+  const whereMock = vi.fn().mockResolvedValue(result);
+  const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+  const selectMock = vi.fn().mockReturnValue({ from: fromMock });
+  return { select: selectMock };
+};
+
 // ── Data builders ─────────────────────────────────────────────────────────────
 
 const makeRun = (overrides: Record<string, unknown> = {}) => ({
@@ -248,8 +279,6 @@ describe("dashboardRepository", () => {
       expect(capturedTaskRows).toEqual([
         expect.objectContaining({
           visitId: "visit-1",
-          patientName: null,
-          address: null,
           isUnscheduled: true,
           unscheduledReason: "fixed_window_unreachable",
           arrivalTime: null,
@@ -323,6 +352,9 @@ describe("dashboardRepository", () => {
     it("returns no-history alert when nurse has no runs at all", async () => {
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([])); // recentRuns = []
       getDbMock.mockReturnValueOnce(makeSelectLimitChain([])); // fallback = []
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([])); // busiestDays
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([])); // patientRisks stats
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -347,6 +379,9 @@ describe("dashboardRepository", () => {
       });
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([run])); // recentRuns = [run]
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([])); // tasks = []
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([])); // busiestDays
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([])); // patientRisks stats
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 7 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -357,6 +392,7 @@ describe("dashboardRepository", () => {
       expect(result.kpis.routesToday).toBe(1);
       expect(result.kpis.visitsScheduledToday).toBe(4);
       expect(result.kpis.onTimeRatePercent7d).toBe(100);
+      expect(result.kpis.activePatientCount).toBe(7);
       expect(result.kpis.driveHoursToday).toBe(4.0);
       expect(result.snapshot.totalDistanceKm).toBe(25.0);
       expect(result.trend).toHaveLength(7);
@@ -366,6 +402,9 @@ describe("dashboardRepository", () => {
       const run = makeRun({ planningDate: "2026-04-16", unscheduledVisitCount: 2 });
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([run]));
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -398,6 +437,9 @@ describe("dashboardRepository", () => {
       });
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([run]));
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -415,6 +457,9 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([])); // recentRuns = []
       getDbMock.mockReturnValueOnce(makeSelectLimitChain([oldRun])); // fallback = [oldRun]
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([])); // tasks = []
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([])); // busiestDays
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([])); // patientRisks stats
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -449,6 +494,9 @@ describe("dashboardRepository", () => {
       ];
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([run]));
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain(tasks));
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -472,8 +520,6 @@ describe("dashboardRepository", () => {
           nurseId: "nurse-1",
           visitId: "visit-1",
           patientId: "patient-1",
-          patientName: "Alice Smith",
-          address: "123 Main St",
           serviceStartTime: new Date("2026-04-16T10:00:00.000Z"),
           serviceEndTime: new Date("2026-04-16T10:30:00.000Z"),
           onTime: false,
@@ -483,6 +529,9 @@ describe("dashboardRepository", () => {
       ];
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([run]));
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain(tasks));
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -503,8 +552,6 @@ describe("dashboardRepository", () => {
           nurseId: "nurse-1",
           visitId: "visit-1",
           patientId: "patient-1",
-          patientName: "Alice Smith",
-          address: "123 Main St",
           serviceStartTime: new Date("2026-04-16T09:00:00.000Z"),
           serviceEndTime: new Date("2026-04-16T09:30:00.000Z"), // already ended
           onTime: true,
@@ -514,6 +561,9 @@ describe("dashboardRepository", () => {
       ];
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([run]));
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain(tasks));
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -534,8 +584,6 @@ describe("dashboardRepository", () => {
           nurseId: "nurse-1",
           visitId: "visit-1",
           patientId: "patient-1",
-          patientName: "Alice Smith",
-          address: "123 Main St",
           serviceStartTime: null, // unscheduled — no Date
           serviceEndTime: null,
           onTime: null,
@@ -545,6 +593,9 @@ describe("dashboardRepository", () => {
       ];
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([run]));
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain(tasks));
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -559,6 +610,9 @@ describe("dashboardRepository", () => {
       const run = makeRun({ planningDate: "2026-04-16", warnings: "not-an-array" });
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([run]));
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -572,6 +626,9 @@ describe("dashboardRepository", () => {
     it("includes the timezone in the response", async () => {
       getDbMock.mockReturnValueOnce(makeSelectOrderByChain([]));
       getDbMock.mockReturnValueOnce(makeSelectLimitChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -580,6 +637,82 @@ describe("dashboardRepository", () => {
       });
 
       expect(result.timezone).toBe("America/Vancouver");
+    });
+
+    it("returns busiest days mapped to day labels", async () => {
+      getDbMock.mockReturnValueOnce(makeSelectOrderByChain([])); // recentRuns
+      getDbMock.mockReturnValueOnce(makeSelectLimitChain([])); // fallback
+      getDbMock.mockReturnValueOnce(
+        makeSelectGroupByOrderByChain([
+          { dayOfWeek: 1, avgVisits: 4.5, totalRuns: 8 }, // Monday
+          { dayOfWeek: 3, avgVisits: 3.0, totalRuns: 6 }, // Wednesday
+        ]),
+      ); // busiestDays
+      getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([])); // patientRisks stats
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
+
+      const result = await getDashboardSummaryForNurse({
+        nurseId: "nurse-1",
+        timezone: "America/Toronto",
+        now: new Date("2026-04-16T14:00:00.000Z"),
+      });
+
+      expect(result.busiestDays).toHaveLength(2);
+      expect(result.busiestDays[0].dayLabel).toBe("Mon");
+      expect(result.busiestDays[0].avgVisits).toBe(4.5);
+      expect(result.busiestDays[0].totalRuns).toBe(8);
+      expect(result.busiestDays[1].dayLabel).toBe("Wed");
+    });
+
+    it("returns patient risks with names from the patients table", async () => {
+      const run = makeRun({ planningDate: "2026-04-16" });
+      getDbMock.mockReturnValueOnce(makeSelectOrderByChain([run])); // recentRuns
+      getDbMock.mockReturnValueOnce(makeSelectOrderByChain([])); // tasks
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([])); // busiestDays
+      getDbMock.mockReturnValueOnce(
+        makeSelectJoinGroupByHavingLimitChain([
+          { patientId: "patient-1", totalAppearances: 3, unscheduledCount: 2, lateCount: 1 },
+        ]),
+      ); // patientRisks stats
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereChain([{ id: "patient-1", firstName: "Alice", lastName: "Smith" }]),
+      ); // patient names
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 3 }])); // activePatientCount
+
+      const result = await getDashboardSummaryForNurse({
+        nurseId: "nurse-1",
+        timezone: "America/Toronto",
+        now: new Date("2026-04-16T14:00:00.000Z"),
+      });
+
+      expect(result.patientRisks).toHaveLength(1);
+      expect(result.patientRisks[0].firstName).toBe("Alice");
+      expect(result.patientRisks[0].lastName).toBe("Smith");
+      expect(result.patientRisks[0].unscheduledCount).toBe(2);
+      expect(result.patientRisks[0].lateCount).toBe(1);
+      expect(result.patientRisks[0].totalAppearances).toBe(3);
+    });
+
+    it("omits patient risk entry when patient record is not found", async () => {
+      const run = makeRun({ planningDate: "2026-04-16" });
+      getDbMock.mockReturnValueOnce(makeSelectOrderByChain([run])); // recentRuns
+      getDbMock.mockReturnValueOnce(makeSelectOrderByChain([])); // tasks
+      getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([])); // busiestDays
+      getDbMock.mockReturnValueOnce(
+        makeSelectJoinGroupByHavingLimitChain([
+          { patientId: "ghost-patient", totalAppearances: 2, unscheduledCount: 1, lateCount: 0 },
+        ]),
+      ); // patientRisks stats
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([])); // patient not found
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
+
+      const result = await getDashboardSummaryForNurse({
+        nurseId: "nurse-1",
+        timezone: "America/Toronto",
+        now: new Date("2026-04-16T14:00:00.000Z"),
+      });
+
+      expect(result.patientRisks).toHaveLength(0);
     });
   });
 });
