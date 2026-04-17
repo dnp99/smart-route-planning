@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import type { RoutePlannerDraft } from "../routePlanner/routePlannerDraft";
-import type { AddressSuggestion } from "../types";
+import type { RoutePlannerDraft } from "../state/routePlannerDraft";
+import type { AddressSuggestion } from "../../../components/types";
 
 const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
 

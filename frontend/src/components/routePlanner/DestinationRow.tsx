@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { useEffect, useState } from "react";
 import { responsiveStyles } from "../responsiveStyles";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
@@ -228,3 +229,6 @@ export const DestinationRow = ({
     </li>
   );
 };
+=======
+export * from "../../features/route-planner/ui/DestinationRow";
+>>>>>>> Stashed changes

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { HttpError } from "../../../../lib/http";
+import type { OptimizeRouteRequestV2 } from "./types";
 import { parseAndValidateBody } from "./validation";
 
 const expectHttpError = (fn: () => unknown, status: number, message: string) => {
@@ -21,7 +22,7 @@ const minutesToTime = (minutes: number) => {
   return `${hours}:${minutePart}`;
 };
 
-const buildValidPayload = () => ({
+const buildValidPayload = (): OptimizeRouteRequestV2 => ({
   planningDate: "2026-03-13",
   timezone: "America/Toronto",
   start: {

@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import AddressAutocompleteInput from "../AddressAutocompleteInput";
@@ -380,3 +381,6 @@ export const PatientFormModal = ({
     </div>
   );
 };
+=======
+export { PatientFormModal } from "../../features/patients/ui/PatientFormModal";
+>>>>>>> Stashed changes

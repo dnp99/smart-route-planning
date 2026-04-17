@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { responsiveStyles } from "../responsiveStyles";
 import { OptimizedRouteResult } from "./OptimizedRouteResult";
 import type { MobilePlannerStep } from "./routePlannerDraft";
@@ -298,3 +299,6 @@ export const RouteResultSection = ({
     </>
   );
 };
+=======
+export * from "../../features/route-planner/ui/RouteResultSection";
+>>>>>>> Stashed changes

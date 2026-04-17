@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import type { Patient } from "../../../../shared/contracts";
 import { formatNameWords, formatPatientNameFromParts } from "../patients/patientName";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
@@ -114,3 +115,6 @@ export const patientMatchesSearchQuery = (patient: Patient, query: string) => {
     address.indexOf(normalizedQuery) !== -1
   );
 };
+=======
+export * from "../../features/route-planner/domain/routePlannerHelpers";
+>>>>>>> Stashed changes

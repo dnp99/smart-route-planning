@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
@@ -415,3 +416,6 @@ const PatientsPage = () => {
 };
 
 export default PatientsPage;
+=======
+export { default } from "../../features/patients/ui/PatientsPage";
+>>>>>>> Stashed changes

@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import {
   isPatient,
   parseListPatientsResponse,
@@ -84,3 +85,6 @@ export const deletePatient = async (patientId: string): Promise<DeletePatientRes
 
   return payload;
 };
+=======
+export * from "../../features/patients/api/patientService";
+>>>>>>> Stashed changes

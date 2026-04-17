@@ -3,7 +3,7 @@ import {
   persistPlanningWindows,
   requestOptimizedRoute,
   resolveWorkingHoursForDate,
-} from "../../components/routePlanner/routePlannerService";
+} from "../../features/route-planner/api/routePlannerService";
 import { setAuthSession } from "../../components/auth/authSession";
 
 vi.mock("../../components/apiBaseUrl", () => ({

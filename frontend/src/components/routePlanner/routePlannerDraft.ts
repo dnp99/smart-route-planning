@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 
 export const ROUTE_PLANNER_DRAFT_STORAGE_KEY = "careflow.route-planner.draft.v1";
@@ -135,3 +136,6 @@ export const clearRoutePlannerDraft = (): void => {
 
   window.localStorage.removeItem(ROUTE_PLANNER_DRAFT_STORAGE_KEY);
 };
+=======
+export * from "../../features/route-planner/state/routePlannerDraft";
+>>>>>>> Stashed changes

@@ -2,6 +2,13 @@ type NavigateEasyWindow = Window & {
   __NAVIGATE_EASY_API_BASE_URL__?: string;
 };
 
+declare global {
+  interface ImportMetaEnv {
+    readonly VITE_API_BASE_URL?: string;
+    readonly VITE_ENABLE_ILS_OPTIMIZER?: string;
+  }
+}
+
 const DEFAULT_API_BASE_URL = "http://localhost:3000";
 
 const normalizeBaseUrl = (value: string | undefined) => {

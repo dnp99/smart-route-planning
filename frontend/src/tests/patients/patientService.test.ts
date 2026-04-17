@@ -4,7 +4,7 @@ import {
   deletePatient,
   listPatients,
   updatePatient,
-} from "../../components/patients/patientService";
+} from "../../features/patients/api/patientService";
 import { setAuthSession } from "../../components/auth/authSession";
 
 vi.mock("../../components/apiBaseUrl", () => ({

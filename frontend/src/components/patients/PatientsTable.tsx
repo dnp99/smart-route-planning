@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Patient } from "../../../../shared/contracts";
 import { getPatientDisplayName, toTimeInput } from "./patientForm";
@@ -777,3 +778,6 @@ export const PatientsTable = ({
     </>
   );
 };
+=======
+export * from "../../features/patients/ui/PatientsTable";
+>>>>>>> Stashed changes

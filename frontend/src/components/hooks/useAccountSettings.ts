@@ -5,8 +5,13 @@ import {
   updateProfileHomeAddress,
   updateWorkingHours,
 } from "../auth/authService";
+<<<<<<< Updated upstream
 import { clearAuthSession, getAuthToken, setStoredAuthUser } from "../auth/authSession";
 import type { DaySchedule, WeeklyWorkingHours } from "../../../../shared/contracts";
+=======
+import { clearAuthSession, setStoredAuthUser } from "../auth/authSession";
+import type { AuthUser as SharedAuthUser, DaySchedule, WeeklyWorkingHours } from "../../../../shared/contracts";
+>>>>>>> Stashed changes
 
 const MAX_HOME_ADDRESS_LENGTH = 200;
 const MIN_PASSWORD_LENGTH = 8;
@@ -51,14 +56,7 @@ export const buildDefaultSchedule = (
   return result;
 };
 
-type AuthUser = {
-  displayName?: string;
-  email?: string;
-  homeAddress?: string;
-  workingHours?: WeeklyWorkingHours | null;
-  breakGapThresholdMinutes?: number | null;
-  optimizationObjective?: "time" | "distance" | null;
-} | null;
+type AuthUser = SharedAuthUser | null;
 
 type UseAccountSettingsParams = {
   authUser: AuthUser;

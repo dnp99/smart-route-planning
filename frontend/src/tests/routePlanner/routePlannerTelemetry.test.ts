@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   emitRouteMapUnavailable,
   ROUTE_MAP_UNAVAILABLE_EVENT,
-} from "../../components/routePlanner/routePlannerTelemetry";
+} from "../../features/route-planner/utils/routePlannerTelemetry";
 
 const detail = {
   orderedStopCount: 2,

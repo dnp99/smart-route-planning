@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
-import RoutePlanner from "./components/RoutePlanner";
+import RoutePlanner from "./features/route-planner/ui/RoutePlanner";
 import LoginPage from "./components/auth/LoginPage";
 import { fetchMe } from "./components/auth/authService";
 import {
@@ -14,7 +14,7 @@ import LicensePage from "./components/legal/LicensePage";
 import PrivacyPage from "./components/legal/PrivacyPage";
 import TermsPage from "./components/legal/TermsPage";
 import TrademarkPage from "./components/legal/TrademarkPage";
-import PatientsPage from "./components/patients/PatientsPage";
+import PatientsPage from "./features/patients/ui/PatientsPage";
 import { responsiveStyles } from "./components/responsiveStyles";
 import AppHeader from "./components/layout/AppHeader";
 import AppFooter from "./components/layout/AppFooter";

@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { useEffect, useState } from "react";
 import type { Patient } from "../../../../shared/contracts";
 import { listPatients } from "../patients/patientService";
@@ -56,3 +57,6 @@ export const usePatientSearch = ({ query, enabled }: UsePatientSearchOptions) =>
     error,
   };
 };
+=======
+export { usePatientSearch } from "../../features/route-planner/hooks/usePatientSearch";
+>>>>>>> Stashed changes

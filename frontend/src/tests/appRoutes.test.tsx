@@ -17,7 +17,7 @@ vi.mock("../components/auth/authService", () => ({
   signUp: vi.fn(),
 }));
 
-vi.mock("../components/patients/patientService", () => ({
+vi.mock("../features/patients/api/patientService", () => ({
   listPatients: listPatientsMock,
 }));
 

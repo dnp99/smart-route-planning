@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import { responsiveStyles } from "./responsiveStyles";
@@ -611,3 +612,6 @@ function RoutePlanner({
 }
 
 export default RoutePlanner;
+=======
+export { default } from "../features/route-planner/ui/RoutePlanner";
+>>>>>>> Stashed changes

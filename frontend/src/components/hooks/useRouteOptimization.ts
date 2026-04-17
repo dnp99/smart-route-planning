@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import { useEffect, useState } from "react";
 import {
   requestOptimizedRoute,
@@ -143,3 +144,6 @@ export const useRouteOptimization = () => {
     optimizeRoute,
   };
 };
+=======
+export { useRouteOptimization } from "../../features/route-planner/hooks/useRouteOptimization";
+>>>>>>> Stashed changes

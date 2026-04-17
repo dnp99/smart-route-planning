@@ -1,9 +1,9 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { OptimizedRouteResult } from "../../components/routePlanner/OptimizedRouteResult";
+import { OptimizedRouteResult } from "../../features/route-planner/ui/OptimizedRouteResult";
 import type { OptimizeRouteResponse } from "../../components/types";
 
-vi.mock("../../components/RouteMap", () => ({
+vi.mock("../../features/route-planner/RouteMap", () => ({
   default: () => <div>Route Map Mock</div>,
 }));
 
