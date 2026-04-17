@@ -31,14 +31,18 @@ npm run dev
 
 The app runs on `http://localhost:5173`.
 
-For Vercel hosting, `frontend/vercel.json` rewrites deep links such as `/patients` and `/route-planner` back to `index.html` so browser refreshes keep loading the React app instead of returning a platform `404`.
+For Vercel hosting, `frontend/vercel.json` includes:
+- an `/api/*` rewrite to the backend deployment (so browser requests stay same-origin and cookie auth remains first-party),
+- deep-link rewrites such as `/patients` and `/route-planner` back to `index.html` so browser refreshes keep loading the React app instead of returning a platform `404`.
 
 ## Runtime API configuration
 
 The frontend reads its API base URL from `VITE_API_BASE_URL` first, then falls back to
 `window.__NAVIGATE_EASY_API_BASE_URL__`.
 
-If the value is not provided, it defaults to `http://localhost:3000`.
+If neither is provided:
+- local hosts (`localhost`, `127.0.0.1`, `::1`) default to `http://localhost:3000`,
+- non-local hosts default to same-origin (`""`), which works with the `/api/*` rewrite.
 
 Route optimizer engine selection is controlled by `VITE_ENABLE_ILS_OPTIMIZER`:
 
@@ -50,7 +54,8 @@ The `v3` path keeps the same response contract as `v2`.
 Example:
 
 ```bash
-VITE_API_BASE_URL=https://smart-route-planning-backend.vercel.app
+# Local dev
+VITE_API_BASE_URL=http://localhost:3000
 ```
 
 or:

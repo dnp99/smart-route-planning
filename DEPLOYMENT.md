@@ -43,7 +43,9 @@ Use two environments:
 
 ### Frontend SPA routing
 
-- Keep `frontend/vercel.json` deployed with the frontend project so Vercel rewrites deep links to `index.html`.
+- Keep `frontend/vercel.json` deployed with the frontend project.
+- Ensure `/api/*` rewrites to your backend deployment so browser auth requests stay same-origin from the SPA host.
+- Keep deep-link rewrites to `index.html`.
 - This prevents direct loads or refreshes on routes such as `/patients` and `/route-planner` from returning `404`.
 
 ### Frontend runtime API URL
@@ -63,6 +65,7 @@ Add this script in `frontend/index.html` (or inject it at hosting edge):
 ```
 
 For staging, set it to `https://api-staging.yourdomain.com`.
+For Vercel production with frontend `/api` rewrite, leave runtime API override unset (or empty) so calls go to same-origin `/api/*`.
 
 ---
 

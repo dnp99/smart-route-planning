@@ -33,4 +33,16 @@ describe("resolveApiBaseUrl", () => {
 
     expect(resolveApiBaseUrl()).toBe("http://localhost:3000");
   });
+
+  it("falls back to same-origin empty base outside localhost when env/window are missing", () => {
+    vi.stubEnv("VITE_API_BASE_URL", "");
+    delete (window as Window & { __NAVIGATE_EASY_API_BASE_URL__?: string })
+      .__NAVIGATE_EASY_API_BASE_URL__;
+
+    vi.spyOn(window, "location", "get").mockReturnValue({
+      ...window.location,
+      hostname: "careflow.example",
+    } as Location);
+    expect(resolveApiBaseUrl()).toBe("");
+  });
 });
