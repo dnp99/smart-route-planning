@@ -46,8 +46,13 @@ function App() {
 
   useEffect(() => {
     const handleAuthChange = () => {
-      setAuthUser(getAuthUser());
-      if (!getAuthUser()) setIsAccountSettingsOpen(false);
+      const nextUser = getAuthUser();
+      setAuthUser(nextUser);
+      if (!nextUser) {
+        setIsAccountSettingsOpen(false);
+        setIsLegalNoticeRequired(false);
+        setLegalNoticeError("");
+      }
     };
     window.addEventListener(getAuthChangedEventName(), handleAuthChange);
     return () => window.removeEventListener(getAuthChangedEventName(), handleAuthChange);
@@ -68,6 +73,8 @@ function App() {
             clearAuthSession();
           }
           setAuthUser(null);
+          setIsLegalNoticeRequired(false);
+          setLegalNoticeError("");
           setIsAuthResolved(true);
         }
       });
@@ -78,8 +85,6 @@ function App() {
 
   useEffect(() => {
     if (!isAuthResolved || !isAuthenticated) {
-      setIsLegalNoticeRequired(false);
-      setLegalNoticeError("");
       return;
     }
 
