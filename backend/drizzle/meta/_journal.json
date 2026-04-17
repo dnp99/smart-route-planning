@@ -64,6 +64,13 @@
       "when": 1776314128758,
       "tag": "0008_ancient_shinko_yamashiro",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1776393225321,
+      "tag": "0009_common_blockbuster",
+      "breakpoints": true
     }
   ]
 }

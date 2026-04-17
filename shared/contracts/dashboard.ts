@@ -10,6 +10,7 @@ export type DashboardAlert = {
 export type DashboardUpcomingStop = {
   time: string;
   route: string;
+  patientName?: string;
   destination: string;
   status: "on_track" | "at_risk" | "pending";
 };
@@ -57,6 +58,7 @@ const isUpcomingStop = (value: unknown): value is DashboardUpcomingStop =>
   isObject(value) &&
   typeof value.time === "string" &&
   typeof value.route === "string" &&
+  (value.patientName === undefined || typeof value.patientName === "string") &&
   typeof value.destination === "string" &&
   isStopStatus(value.status);
 
@@ -77,7 +79,8 @@ export const isDashboardSummaryResponse = (value: unknown): value is DashboardSu
     !isObject(value.kpis) ||
     typeof value.kpis.routesToday !== "number" ||
     typeof value.kpis.visitsScheduledToday !== "number" ||
-    (value.kpis.onTimeRatePercent7d !== null && typeof value.kpis.onTimeRatePercent7d !== "number") ||
+    (value.kpis.onTimeRatePercent7d !== null &&
+      typeof value.kpis.onTimeRatePercent7d !== "number") ||
     typeof value.kpis.unscheduledVisitsToday !== "number" ||
     typeof value.kpis.driveHoursToday !== "number" ||
     !Array.isArray(value.alerts) ||
