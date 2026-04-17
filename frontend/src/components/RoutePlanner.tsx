@@ -483,6 +483,14 @@ function RoutePlanner({
           </p>
         </div>
 
+        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+          <p className="m-0 font-medium">Scheduling Notice</p>
+          <p className="m-0 mt-1">
+            Route plans are generated to assist with scheduling. Always review and confirm visit
+            timing and feasibility before use.
+          </p>
+        </div>
+
         <form className={responsiveStyles.form} onSubmit={handleSubmit}>
           {isMobileViewport && (
             <nav aria-label="Route planner steps" className={responsiveStyles.mobileStepNav}>

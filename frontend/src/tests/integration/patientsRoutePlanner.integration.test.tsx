@@ -3,8 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { setAuthSession } from "../../components/auth/authSession";
 
-const { fetchMeMock } = vi.hoisted(() => ({
+const { fetchMeMock, fetchLegalNoticeStatusMock, acknowledgeLegalNoticeMock } = vi.hoisted(() => ({
   fetchMeMock: vi.fn(),
+  fetchLegalNoticeStatusMock: vi.fn(),
+  acknowledgeLegalNoticeMock: vi.fn(),
 }));
 
 type PatientRecord = {
@@ -249,6 +251,8 @@ vi.mock("../../components/auth/authService", () => ({
   updateProfileHomeAddress: vi.fn(),
   login: vi.fn(),
   signUp: vi.fn(),
+  fetchLegalNoticeStatus: fetchLegalNoticeStatusMock,
+  acknowledgeLegalNotice: acknowledgeLegalNoticeMock,
 }));
 
 vi.mock("../../components/AddressAutocompleteInput", () => ({
@@ -293,6 +297,20 @@ describe("patients and route planner integration", () => {
         displayName: "Nurse One",
         homeAddress: null,
       },
+    });
+    fetchLegalNoticeStatusMock.mockReset();
+    fetchLegalNoticeStatusMock.mockResolvedValue({
+      required: false,
+      currentVersion: "2026-04-16",
+      acceptedVersion: "2026-04-16",
+      acceptedAt: "2026-04-16T10:00:00.000Z",
+    });
+    acknowledgeLegalNoticeMock.mockReset();
+    acknowledgeLegalNoticeMock.mockResolvedValue({
+      required: false,
+      currentVersion: "2026-04-16",
+      acceptedVersion: "2026-04-16",
+      acceptedAt: "2026-04-16T10:00:00.000Z",
     });
     window.localStorage.clear();
     setAuthSession({

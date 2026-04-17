@@ -2,7 +2,12 @@ import { useEffect, useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import RoutePlanner from "./components/RoutePlanner";
 import LoginPage from "./components/auth/LoginPage";
-import { fetchMe, logout } from "./components/auth/authService";
+import {
+  acknowledgeLegalNotice,
+  fetchLegalNoticeStatus,
+  fetchMe,
+  logout,
+} from "./components/auth/authService";
 import {
   clearAuthSession,
   getAuthChangedEventName,
@@ -18,6 +23,7 @@ import { responsiveStyles } from "./components/responsiveStyles";
 import AppHeader from "./components/layout/AppHeader";
 import AppFooter from "./components/layout/AppFooter";
 import AccountSettingsModal from "./components/modals/AccountSettingsModal";
+import LegalAcknowledgementModal from "./components/modals/LegalAcknowledgementModal";
 import ScrollToTopButton from "./components/layout/ScrollToTopButton";
 import HomePage from "./components/HomePage";
 
@@ -32,14 +38,21 @@ const resolveTabClassName = ({ isActive }) =>
 function App() {
   const [authUser, setAuthUser] = useState(() => getAuthUser());
   const [isAuthResolved, setIsAuthResolved] = useState(false);
-  const [authRefreshKey, setAuthRefreshKey] = useState(0);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
+  const [isLegalNoticeRequired, setIsLegalNoticeRequired] = useState(false);
+  const [isLegalNoticeSubmitting, setIsLegalNoticeSubmitting] = useState(false);
+  const [legalNoticeError, setLegalNoticeError] = useState("");
+  const isAuthenticated = Boolean(authUser);
 
   useEffect(() => {
     const handleAuthChange = () => {
-      setAuthUser(getAuthUser());
-      setAuthRefreshKey((current) => current + 1);
-      if (!getAuthUser()) setIsAccountSettingsOpen(false);
+      const nextUser = getAuthUser();
+      setAuthUser(nextUser);
+      if (!nextUser) {
+        setIsAccountSettingsOpen(false);
+        setIsLegalNoticeRequired(false);
+        setLegalNoticeError("");
+      }
     };
     window.addEventListener(getAuthChangedEventName(), handleAuthChange);
     return () => window.removeEventListener(getAuthChangedEventName(), handleAuthChange);
@@ -50,7 +63,6 @@ function App() {
     void fetchMe()
       .then((result) => {
         if (active) {
-          setAuthUser(result.user);
           setStoredAuthUser(result.user);
           setIsAuthResolved(true);
         }
@@ -61,16 +73,65 @@ function App() {
             clearAuthSession();
           }
           setAuthUser(null);
+          setIsLegalNoticeRequired(false);
+          setLegalNoticeError("");
           setIsAuthResolved(true);
         }
       });
     return () => {
       active = false;
     };
-  }, [authRefreshKey]);
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthResolved || !isAuthenticated) {
+      return;
+    }
+
+    let active = true;
+    void fetchLegalNoticeStatus()
+      .then((status) => {
+        if (!active) {
+          return;
+        }
+        setIsLegalNoticeRequired(status.required);
+        setLegalNoticeError("");
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+        setIsLegalNoticeRequired(false);
+        setLegalNoticeError(
+          error instanceof Error ? error.message : "Unable to load legal notice status.",
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthResolved, isAuthenticated]);
+
+  const handleLegalNoticeAgree = () => {
+    setIsLegalNoticeSubmitting(true);
+    setLegalNoticeError("");
+    void acknowledgeLegalNotice()
+      .then((status) => {
+        setIsLegalNoticeRequired(status.required);
+      })
+      .catch((error) => {
+        setLegalNoticeError(
+          error instanceof Error
+            ? error.message
+            : "Unable to save legal notice acknowledgement.",
+        );
+      })
+      .finally(() => {
+        setIsLegalNoticeSubmitting(false);
+      });
+  };
 
   const optimizationObjective = authUser?.optimizationObjective ?? "distance";
-  const isAuthenticated = Boolean(authUser);
   const defaultProtectedPath = "/";
   const renderProtectedRoute = (element) =>
     isAuthenticated ? element : <Navigate to="/login" replace />;
@@ -237,6 +298,13 @@ function App() {
           setAuthUser(updatedUser);
           setStoredAuthUser(updatedUser);
         }}
+      />
+
+      <LegalAcknowledgementModal
+        isOpen={isAuthenticated && isLegalNoticeRequired}
+        isSubmitting={isLegalNoticeSubmitting}
+        error={legalNoticeError}
+        onAgree={handleLegalNoticeAgree}
       />
 
       <ScrollToTopButton />

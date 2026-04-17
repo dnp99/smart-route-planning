@@ -13,8 +13,11 @@ This folder contains the Vite + React frontend for CareFlow.
 - Keep optimization results in memory only (no browser storage persistence).
 - Persist only non-sensitive route-planner draft state in localStorage (IDs/order/flags/date/objective/UI step).
 - Keep quote/header workspace behavior consistent across auth sessions.
+- Require first-use legal acknowledgement via blocking modal (`I Agree`) and re-prompt when legal notice version changes.
 - Present unified overflow action menus in client list rows.
 - Serve legal pages (Terms, Privacy, License, Trademark) at `/legal/*` routes.
+- Show a persistent privacy reminder banner on Clients page.
+- Show a scheduling notice banner on Route Planner page.
 - Mobile-first route planner with wizard step flow (Trip → Clients → Review), always-expanded sections on mobile, step completion indicators, and safe-area-aware sticky footer CTA.
 - Use Client/Clients wording in UI copy while keeping `/api/patients` endpoints and `patient*` contract fields for backend compatibility.
 - Use cookie-based auth (`credentials: "include"`) with no JWT/token storage in localStorage/sessionStorage.
@@ -60,7 +63,7 @@ or:
 
 ## Key files
 
-- `src/App.jsx` - global layout, sticky header with logo + rotating nurse quote, footer with legal links, account settings modal
+- `src/App.jsx` - global layout, sticky header with logo + rotating nurse quote, footer with legal links, account settings modal, legal acknowledgement flow
 - `src/components/RoutePlanner.tsx` - route planner composition and workflow orchestration
 - `src/components/routePlanner/routePlannerHelpers.ts` - destination-to-visit mapping and client search filtering
 - `src/components/routePlanner/routePlannerSubmission.ts` - submit-time validation and request builders
@@ -73,6 +76,7 @@ or:
 - `src/components/auth/LoginPage.tsx` - login screen
 - `src/components/auth/authFetch.ts` - authenticated backend fetch helper
 - `src/components/legal/` - Terms, Privacy, License, Trademark static pages
+- `src/components/modals/LegalAcknowledgementModal.tsx` - required first-use legal notice acknowledgement modal
 - `src/components/AddressAutocompleteInput.tsx` - address suggestion input
 - `src/components/RouteMap.tsx` - Leaflet route map
 - `src/components/patients/PatientsTable.tsx` - client table with overflow action menus (Edit, Delete)

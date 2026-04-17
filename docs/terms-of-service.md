@@ -47,6 +47,7 @@ You must notify us if you suspect unauthorized access to your account.
 We may suspend or terminate accounts that violate these terms.
 
 CareFlow uses secure session cookies for authentication. Users must not attempt to bypass session controls or reuse unauthorized session artifacts.
+Users may be required to acknowledge in-app privacy/data-use notices before continuing to protected workflows.
 
 ---
 
