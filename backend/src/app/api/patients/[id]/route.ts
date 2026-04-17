@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAuth } from "../../../../lib/auth/requireAuth";
+import { logAuditEvent } from "../../../../lib/audit/auditLogger";
+import {
+  resolveRequestIpAddress,
+  resolveRequestUserAgent,
+} from "../../../../lib/audit/requestAuditContext";
 import { HttpError, buildCorsHeaders, toErrorResponse } from "../../../../lib/http";
 import { toPatientDto } from "../../../../lib/patients/patientDto";
 import {
@@ -67,11 +72,31 @@ export async function PATCH(request: Request, context: ParamsContext) {
     const updatedPatient = await updatePatientForNurse(auth.nurseId, patientId, payload);
 
     if (!updatedPatient) {
+      await logAuditEvent({
+        actorNurseId: auth.nurseId,
+        action: "patients.update",
+        resourceType: "patient",
+        resourceId: patientId,
+        outcome: "denied",
+        metadata: { reason: "not_found" },
+        ipAddress: resolveRequestIpAddress(request),
+        userAgent: resolveRequestUserAgent(request),
+      });
       return NextResponse.json(
         { error: "Patient not found." },
         { status: 404, headers: corsHeaders },
       );
     }
+    await logAuditEvent({
+      actorNurseId: auth.nurseId,
+      action: "patients.update",
+      resourceType: "patient",
+      resourceId: updatedPatient.id,
+      outcome: "success",
+      metadata: { changedFields: Object.keys(payload).sort() },
+      ipAddress: resolveRequestIpAddress(request),
+      userAgent: resolveRequestUserAgent(request),
+    });
 
     return NextResponse.json(toPatientDto(updatedPatient), { headers: corsHeaders });
   } catch (error) {
@@ -94,11 +119,31 @@ export async function DELETE(request: Request, context: ParamsContext) {
     const deletedPatient = await deletePatientForNurse(auth.nurseId, patientId);
 
     if (!deletedPatient) {
+      await logAuditEvent({
+        actorNurseId: auth.nurseId,
+        action: "patients.archive",
+        resourceType: "patient",
+        resourceId: patientId,
+        outcome: "denied",
+        metadata: { reason: "not_found" },
+        ipAddress: resolveRequestIpAddress(request),
+        userAgent: resolveRequestUserAgent(request),
+      });
       return NextResponse.json(
         { error: "Patient not found." },
         { status: 404, headers: corsHeaders },
       );
     }
+    await logAuditEvent({
+      actorNurseId: auth.nurseId,
+      action: "patients.archive",
+      resourceType: "patient",
+      resourceId: deletedPatient.id,
+      outcome: "success",
+      metadata: {},
+      ipAddress: resolveRequestIpAddress(request),
+      userAgent: resolveRequestUserAgent(request),
+    });
 
     return NextResponse.json(
       {

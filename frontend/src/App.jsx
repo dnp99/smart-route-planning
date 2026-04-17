@@ -2,11 +2,15 @@ import { useEffect, useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import RoutePlanner from "./features/route-planner/ui/RoutePlanner";
 import LoginPage from "./components/auth/LoginPage";
-import { fetchMe } from "./components/auth/authService";
+import {
+  acknowledgeLegalNotice,
+  fetchLegalNoticeStatus,
+  fetchMe,
+  logout,
+} from "./components/auth/authService";
 import {
   clearAuthSession,
   getAuthChangedEventName,
-  getAuthToken,
   getAuthUser,
   setStoredAuthUser,
 } from "./components/auth/authSession";
@@ -19,7 +23,9 @@ import { responsiveStyles } from "./components/responsiveStyles";
 import AppHeader from "./components/layout/AppHeader";
 import AppFooter from "./components/layout/AppFooter";
 import AccountSettingsModal from "./components/modals/AccountSettingsModal";
+import LegalAcknowledgementModal from "./components/modals/LegalAcknowledgementModal";
 import ScrollToTopButton from "./components/layout/ScrollToTopButton";
+import HomePage from "./components/HomePage";
 
 const resolveTabClassName = ({ isActive }) =>
   [
@@ -30,49 +36,103 @@ const resolveTabClassName = ({ isActive }) =>
   ].join(" ");
 
 function App() {
-  const [authToken, setAuthToken] = useState(() => getAuthToken());
   const [authUser, setAuthUser] = useState(() => getAuthUser());
-  const [isAuthResolved, setIsAuthResolved] = useState(() => !getAuthToken());
+  const [isAuthResolved, setIsAuthResolved] = useState(false);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
+  const [isLegalNoticeRequired, setIsLegalNoticeRequired] = useState(false);
+  const [isLegalNoticeSubmitting, setIsLegalNoticeSubmitting] = useState(false);
+  const [legalNoticeError, setLegalNoticeError] = useState("");
+  const isAuthenticated = Boolean(authUser);
 
   useEffect(() => {
     const handleAuthChange = () => {
-      const nextToken = getAuthToken();
-      setAuthToken(nextToken);
-      setAuthUser(getAuthUser());
-      setIsAuthResolved(!nextToken);
-      if (!nextToken) setIsAccountSettingsOpen(false);
+      const nextUser = getAuthUser();
+      setAuthUser(nextUser);
+      if (!nextUser) {
+        setIsAccountSettingsOpen(false);
+        setIsLegalNoticeRequired(false);
+        setLegalNoticeError("");
+      }
     };
     window.addEventListener(getAuthChangedEventName(), handleAuthChange);
     return () => window.removeEventListener(getAuthChangedEventName(), handleAuthChange);
   }, []);
 
   useEffect(() => {
-    if (!authToken) return;
     let active = true;
-    void fetchMe(authToken)
+    void fetchMe()
       .then((result) => {
         if (active) {
-          setAuthUser(result.user);
+          setStoredAuthUser(result.user);
           setIsAuthResolved(true);
         }
       })
       .catch(() => {
         if (active) {
-          clearAuthSession();
-          setAuthToken(null);
+          if (getAuthUser()) {
+            clearAuthSession();
+          }
           setAuthUser(null);
+          setIsLegalNoticeRequired(false);
+          setLegalNoticeError("");
           setIsAuthResolved(true);
         }
       });
     return () => {
       active = false;
     };
-  }, [authToken]);
+  }, []);
+
+  useEffect(() => {
+    if (!isAuthResolved || !isAuthenticated) {
+      return;
+    }
+
+    let active = true;
+    void fetchLegalNoticeStatus()
+      .then((status) => {
+        if (!active) {
+          return;
+        }
+        setIsLegalNoticeRequired(status.required);
+        setLegalNoticeError("");
+      })
+      .catch((error) => {
+        if (!active) {
+          return;
+        }
+        setIsLegalNoticeRequired(false);
+        setLegalNoticeError(
+          error instanceof Error ? error.message : "Unable to load legal notice status.",
+        );
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [isAuthResolved, isAuthenticated]);
+
+  const handleLegalNoticeAgree = () => {
+    setIsLegalNoticeSubmitting(true);
+    setLegalNoticeError("");
+    void acknowledgeLegalNotice()
+      .then((status) => {
+        setIsLegalNoticeRequired(status.required);
+      })
+      .catch((error) => {
+        setLegalNoticeError(
+          error instanceof Error
+            ? error.message
+            : "Unable to save legal notice acknowledgement.",
+        );
+      })
+      .finally(() => {
+        setIsLegalNoticeSubmitting(false);
+      });
+  };
 
   const optimizationObjective = authUser?.optimizationObjective ?? "distance";
-  const isAuthenticated = Boolean(authToken);
-  const defaultProtectedPath = "/patients";
+  const defaultProtectedPath = "/";
   const renderProtectedRoute = (element) =>
     isAuthenticated ? element : <Navigate to="/login" replace />;
 
@@ -92,13 +152,43 @@ function App() {
         isAuthenticated={isAuthenticated}
         authUser={authUser}
         onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
-        onLogout={clearAuthSession}
+        onLogout={() => {
+          void logout();
+          clearAuthSession();
+        }}
       />
 
       <div className={responsiveStyles.contentWrapper}>
         {isAuthenticated && (
           <nav className={responsiveStyles.tabNav}>
-            <NavLink to="/patients" aria-label="Patients" className={resolveTabClassName}>
+            <NavLink to="/" end aria-label="Home" className={resolveTabClassName}>
+              {({ isActive }) => (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.75"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className={[
+                      "h-4 w-4 shrink-0",
+                      isActive
+                        ? "text-blue-600 dark:text-blue-400"
+                        : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
+                    ].join(" ")}
+                  >
+                    <path d="M3 11.5 12 4l9 7.5" />
+                    <path d="M5.5 10.5V20h13V10.5" />
+                    <path d="M10 20v-5h4v5" />
+                  </svg>
+                  Home
+                </>
+              )}
+            </NavLink>
+            <NavLink to="/patients" aria-label="Clients" className={resolveTabClassName}>
               {({ isActive }) => (
                 <>
                   <svg
@@ -121,7 +211,7 @@ function App() {
                     <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
                     <circle cx="20" cy="10" r="2" />
                   </svg>
-                  Patients
+                  Clients
                 </>
               )}
             </NavLink>
@@ -183,7 +273,13 @@ function App() {
           <Route path="/legal/trademark" element={<TrademarkPage />} />
           <Route
             path="/"
-            element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
+            element={renderProtectedRoute(
+              <HomePage
+                isAuthenticated={isAuthenticated}
+                authUser={authUser}
+                onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+              />,
+            )}
           />
           <Route
             path="*"
@@ -202,6 +298,13 @@ function App() {
           setAuthUser(updatedUser);
           setStoredAuthUser(updatedUser);
         }}
+      />
+
+      <LegalAcknowledgementModal
+        isOpen={isAuthenticated && isLegalNoticeRequired}
+        isSubmitting={isLegalNoticeSubmitting}
+        error={legalNoticeError}
+        onAgree={handleLegalNoticeAgree}
       />
 
       <ScrollToTopButton />

@@ -5,12 +5,12 @@ const {
   findNurseByEmailMock,
   updateNurseLastLoginAtMock,
   verifyPasswordMock,
-  signAccessTokenMock,
+  createAuthSessionMock,
 } = vi.hoisted(() => ({
   findNurseByEmailMock: vi.fn(),
   updateNurseLastLoginAtMock: vi.fn(),
   verifyPasswordMock: vi.fn(),
-  signAccessTokenMock: vi.fn(),
+  createAuthSessionMock: vi.fn(),
 }));
 
 vi.mock("../../../../lib/patients/patientRepository", () => ({
@@ -22,8 +22,8 @@ vi.mock("../../../../lib/auth/password", () => ({
   verifyPassword: verifyPasswordMock,
 }));
 
-vi.mock("../../../../lib/auth/jwt", () => ({
-  signAccessToken: signAccessTokenMock,
+vi.mock("../../../../lib/auth/sessionRepository", () => ({
+  createAuthSession: createAuthSessionMock,
 }));
 
 import { OPTIONS, POST } from "./route";
@@ -43,7 +43,7 @@ describe("/api/auth/login route", () => {
     findNurseByEmailMock.mockReset();
     updateNurseLastLoginAtMock.mockReset();
     verifyPasswordMock.mockReset();
-    signAccessTokenMock.mockReset();
+    createAuthSessionMock.mockReset();
   });
 
   afterEach(() => {
@@ -218,7 +218,7 @@ describe("/api/auth/login route", () => {
     await expect(response.json()).resolves.toEqual({ error: "Invalid email or password." });
   });
 
-  it("returns token and auth user on successful login", async () => {
+  it("returns auth user on successful login", async () => {
     findNurseByEmailMock.mockResolvedValue({
       id: "nurse-1",
       email: "nurse@example.com",
@@ -227,7 +227,7 @@ describe("/api/auth/login route", () => {
       isActive: true,
     });
     verifyPasswordMock.mockResolvedValue(true);
-    signAccessTokenMock.mockResolvedValue("jwt-token");
+    createAuthSessionMock.mockResolvedValue({ id: "session-1" });
 
     const response = await POST(
       new Request("http://localhost:3000/api/auth/login", {
@@ -239,7 +239,6 @@ describe("/api/auth/login route", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      token: "jwt-token",
       user: {
         id: "nurse-1",
         email: "nurse@example.com",
@@ -250,10 +249,11 @@ describe("/api/auth/login route", () => {
         optimizationObjective: null,
       },
     });
+    expect(response.headers.get("set-cookie")).toContain("careflow_session=session-1");
     expect(updateNurseLastLoginAtMock).toHaveBeenCalledWith("nurse-1");
   });
 
-  it("returns 500 when token signing fails unexpectedly", async () => {
+  it("returns 500 when session creation fails unexpectedly", async () => {
     findNurseByEmailMock.mockResolvedValue({
       id: "nurse-1",
       email: "nurse@example.com",
@@ -262,7 +262,7 @@ describe("/api/auth/login route", () => {
       isActive: true,
     });
     verifyPasswordMock.mockResolvedValue(true);
-    signAccessTokenMock.mockRejectedValue(new Error("signing failure"));
+    createAuthSessionMock.mockRejectedValue(new Error("session failure"));
 
     const response = await POST(
       new Request("http://localhost:3000/api/auth/login", {

@@ -18,6 +18,8 @@ describe("toPatientDto", () => {
       preferredVisitStartTime: "14:00:00",
       preferredVisitEndTime: "16:30:00",
       visitTimeType: "fixed",
+      isActive: true,
+      lastScheduledAt: null,
       createdAt,
       updatedAt,
     };
@@ -70,6 +72,8 @@ describe("toPatientDto", () => {
       preferredVisitStartTime: "09:00:00",
       preferredVisitEndTime: "11:00:00",
       visitTimeType: "flexible",
+      isActive: true,
+      lastScheduledAt: null,
       createdAt: new Date("2026-03-12T00:00:00.000Z"),
       updatedAt: new Date("2026-03-12T01:00:00.000Z"),
     };
@@ -102,6 +106,8 @@ describe("toPatientDto", () => {
       preferredVisitStartTime: "00:00:00",
       preferredVisitEndTime: "23:59:00",
       visitTimeType: "flexible",
+      isActive: true,
+      lastScheduledAt: null,
       createdAt: new Date("2026-03-12T00:00:00.000Z"),
       updatedAt: new Date("2026-03-12T01:00:00.000Z"),
     };

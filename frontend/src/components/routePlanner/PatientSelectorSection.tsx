@@ -128,7 +128,7 @@ export const PatientSelectorSection = ({
     <section className={responsiveStyles.panel}>
       <div className="flex items-center justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
-          <h2 className={responsiveStyles.cardTitle}>Patients</h2>
+          <h2 className={responsiveStyles.cardTitle}>Clients</h2>
           {destinationCount > 0 && (
             <span className={responsiveStyles.countPill}>{destinationCount}</span>
           )}
@@ -153,7 +153,7 @@ export const PatientSelectorSection = ({
           {/* Collapse control — separated from CTA */}
           <button
             type="button"
-            aria-label={isExpanded ? "Collapse patient search" : "Expand patient search"}
+            aria-label={isExpanded ? "Collapse client search" : "Expand client search"}
             onClick={() => onSetExpanded(!isExpanded)}
             className={`${responsiveStyles.panelChevronButton} ml-3`}
           >
@@ -201,7 +201,7 @@ export const PatientSelectorSection = ({
           <div className={responsiveStyles.patientSelectionGrid}>
             <div className="grid gap-2">
               <p className={responsiveStyles.patientColumnLabel}>
-                Search patients ({destinationSearchResults.length})
+                Search clients ({destinationSearchResults.length})
               </p>
               <div className={responsiveStyles.patientSearchContainer}>
                 {createPatientError && (
@@ -226,17 +226,17 @@ export const PatientSelectorSection = ({
                     <input
                       id="destination-patient-search"
                       type="search"
-                      aria-label="Destination patient search"
+                      aria-label="Destination client search"
                       value={destinationSearchQuery}
                       onChange={(e) => onSearchQueryChange(e.target.value)}
-                      placeholder="Search saved patients by first or last name"
+                      placeholder="Search saved clients by first or last name"
                       className={`${responsiveStyles.searchInputCompact} pl-9 sm:pl-10`}
                     />
                   </div>
                   <button
                     type="button"
                     onClick={onOpenCreatePatient}
-                    aria-label="Add New Patient"
+                    aria-label="Add New Client"
                     className={`${responsiveStyles.secondaryIconButton} sm:h-auto sm:w-auto sm:px-3 sm:py-1.5`}
                   >
                     <svg
@@ -253,11 +253,11 @@ export const PatientSelectorSection = ({
                       <path d="M12 5v14" />
                       <path d="M5 12h14" />
                     </svg>
-                    <span className="hidden sm:inline">Add New Patient</span>
+                    <span className="hidden sm:inline">Add New Client</span>
                   </button>
                 </div>
                 {isSearchLoading && (
-                  <p className={responsiveStyles.panelEmptyText}>Loading patients…</p>
+                  <p className={responsiveStyles.panelEmptyText}>Loading clients…</p>
                 )}
                 {searchError && (
                   <p className="m-0 text-xs text-amber-700 dark:text-amber-300">{searchError}</p>

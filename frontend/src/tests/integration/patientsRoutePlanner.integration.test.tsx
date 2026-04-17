@@ -3,8 +3,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import { setAuthSession } from "../../components/auth/authSession";
 
-const { fetchMeMock } = vi.hoisted(() => ({
+const { fetchMeMock, fetchLegalNoticeStatusMock, acknowledgeLegalNoticeMock } = vi.hoisted(() => ({
   fetchMeMock: vi.fn(),
+  fetchLegalNoticeStatusMock: vi.fn(),
+  acknowledgeLegalNoticeMock: vi.fn(),
 }));
 
 type PatientRecord = {
@@ -245,9 +247,12 @@ vi.mock("../../features/route-planner/api/routePlannerService", () => ({
 
 vi.mock("../../components/auth/authService", () => ({
   fetchMe: fetchMeMock,
+  updateProfile: vi.fn(),
   updateProfileHomeAddress: vi.fn(),
   login: vi.fn(),
   signUp: vi.fn(),
+  fetchLegalNoticeStatus: fetchLegalNoticeStatusMock,
+  acknowledgeLegalNotice: acknowledgeLegalNoticeMock,
 }));
 
 vi.mock("../../components/AddressAutocompleteInput", () => ({
@@ -293,8 +298,22 @@ describe("patients and route planner integration", () => {
         homeAddress: null,
       },
     });
+    fetchLegalNoticeStatusMock.mockReset();
+    fetchLegalNoticeStatusMock.mockResolvedValue({
+      required: false,
+      currentVersion: "2026-04-16",
+      acceptedVersion: "2026-04-16",
+      acceptedAt: "2026-04-16T10:00:00.000Z",
+    });
+    acknowledgeLegalNoticeMock.mockReset();
+    acknowledgeLegalNoticeMock.mockResolvedValue({
+      required: false,
+      currentVersion: "2026-04-16",
+      acceptedVersion: "2026-04-16",
+      acceptedAt: "2026-04-16T10:00:00.000Z",
+    });
     window.localStorage.clear();
-    setAuthSession("test-token", {
+    setAuthSession({
       id: "nurse-1",
       email: "nurse@example.com",
       displayName: "Nurse One",
@@ -326,9 +345,9 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });
@@ -338,13 +357,13 @@ describe("patients and route planner integration", () => {
     fireEvent.change(screen.getByLabelText("Address"), {
       target: { value: "123 Main St" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save new client/i }));
 
     await waitFor(() => {
       expect(screen.getAllByText("Jane Doe").length).toBeGreaterThan(0);
     });
 
-    fireEvent.change(screen.getByLabelText("Search patients"), {
+    fireEvent.change(screen.getByLabelText("Search clients"), {
       target: { value: "doe" },
     });
 
@@ -353,7 +372,7 @@ describe("patients and route planner integration", () => {
     });
 
     fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Jane Doe/i })[0]);
-    fireEvent.click(screen.getAllByRole("button", { name: /Edit patient Jane Doe/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Janet" },
     });
@@ -364,12 +383,12 @@ describe("patients and route planner integration", () => {
     });
 
     fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Janet Doe/i })[0]);
-    fireEvent.click(screen.getByRole("button", { name: /Delete patient Janet Doe/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Delete client Janet Doe/i }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
     await waitFor(() => {
       expect(deletePatientMock).toHaveBeenCalledTimes(1);
-      expect(screen.getByText("No patients match this search.")).toBeTruthy();
+      expect(screen.getByText("No clients match this search.")).toBeTruthy();
     });
   });
 
@@ -380,9 +399,9 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^Patients \(\d+\)$/ })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
 
-    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "John" },
     });
@@ -392,7 +411,7 @@ describe("patients and route planner integration", () => {
     fireEvent.change(screen.getByLabelText("Address"), {
       target: { value: "456 Queen St" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save new client/i }));
 
     await waitFor(() => {
       expect(screen.getAllByText("John Smith").length).toBeGreaterThan(0);
@@ -403,7 +422,7 @@ describe("patients and route planner integration", () => {
     fireEvent.change(screen.getByLabelText("Ending point"), {
       target: { value: "Airport" },
     });
-    fireEvent.change(screen.getByLabelText("Destination patient search"), {
+    fireEvent.change(screen.getByLabelText("Destination client search"), {
       target: { value: "john" },
     });
 

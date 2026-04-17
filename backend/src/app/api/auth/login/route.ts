@@ -6,7 +6,8 @@ import {
 } from "../../../../../../shared/contracts";
 import { logAuthAuditEvent } from "../../../../lib/auth/auditLogger";
 import { verifyPassword } from "../../../../lib/auth/password";
-import { signAccessToken } from "../../../../lib/auth/jwt";
+import { buildSessionCookie } from "../../../../lib/auth/sessionCookie";
+import { createAuthSession } from "../../../../lib/auth/sessionRepository";
 import { buildCorsHeaders, toErrorResponse } from "../../../../lib/http";
 import {
   enforceLoginRateLimit,
@@ -48,6 +49,7 @@ export async function OPTIONS(request: Request) {
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
       includeSecurityHeaders: true,
+      allowCredentials: true,
     });
     requireSecureAuthTransport(request);
 
@@ -71,6 +73,7 @@ export async function POST(request: Request) {
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
       includeSecurityHeaders: true,
+      allowCredentials: true,
     });
     requireSecureAuthTransport(request);
 
@@ -151,10 +154,14 @@ export async function POST(request: Request) {
 
     await updateNurseLastLoginAt(nurse.id);
 
-    const token = await signAccessToken({
+    const createdSession = await createAuthSession({
       nurseId: nurse.id,
-      email: nurse.email,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+      userAgent: request.headers.get("user-agent"),
     });
+    if (!createdSession) {
+      throw new Error("Unable to create auth session.");
+    }
 
     logAuthAuditEvent({
       action: "login",
@@ -165,7 +172,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(
       {
-        token,
         user: toAuthUser({
           id: nurse.id,
           email: nurse.email,
@@ -176,7 +182,12 @@ export async function POST(request: Request) {
           optimizationObjective: nurse.optimizationObjective,
         }),
       },
-      { headers: corsHeaders },
+      {
+        headers: {
+          ...corsHeaders,
+          "Set-Cookie": buildSessionCookie(createdSession.id),
+        },
+      },
     );
   } catch (error) {
     if (

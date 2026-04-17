@@ -182,7 +182,7 @@ export const useCreatePatientForm = ({ onPatientCreated }: UseCreatePatientFormO
       setIsCreatePatientModalOpen(false);
       resetCreatePatientFormState();
     } catch (error) {
-      setCreatePatientError(error instanceof Error ? error.message : "Unable to create patient.");
+      setCreatePatientError(error instanceof Error ? error.message : "Unable to create client.");
     } finally {
       setIsCreatingPatient(false);
     }

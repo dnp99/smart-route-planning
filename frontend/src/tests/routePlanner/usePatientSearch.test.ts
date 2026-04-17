@@ -86,7 +86,7 @@ describe("usePatientSearch", () => {
 
     await waitFor(() => {
       expect(result.current.patients).toEqual([]);
-      expect(result.current.error).toBe("Unable to load patients.");
+      expect(result.current.error).toBe("Unable to load clients.");
       expect(result.current.isLoading).toBe(false);
     });
   });

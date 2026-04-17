@@ -12,6 +12,7 @@ vi.mock("../../components/auth/authService", () => ({
   login: loginMock,
   signUp: signUpMock,
   fetchMe: vi.fn(),
+  updateProfile: vi.fn(),
   updateProfileHomeAddress: vi.fn(),
 }));
 
@@ -31,7 +32,6 @@ describe("LoginPage", () => {
 
   it("submits sign-up details and stores auth session", async () => {
     signUpMock.mockResolvedValue({
-      token: "jwt-token",
       user: {
         id: "nurse-1",
         email: "nurse@example.com",
@@ -44,7 +44,7 @@ describe("LoginPage", () => {
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/patients" element={<div>Patients</div>} />
+          <Route path="/" element={<div>Home</div>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -68,8 +68,8 @@ describe("LoginPage", () => {
       expect(signUpMock).toHaveBeenCalledWith("Nurse One", "nurse@example.com", "secret123");
     });
 
-    expect(await screen.findByText("Patients")).toBeTruthy();
-    expect(window.localStorage.getItem("careflow.auth.token")).toBe("jwt-token");
+    expect(await screen.findByText("Home")).toBeTruthy();
+    expect(window.localStorage.getItem("careflow.auth.token")).toBeNull();
   });
 
   it("shows signup-specific copy and blocks submission when passwords do not match", async () => {
@@ -77,7 +77,7 @@ describe("LoginPage", () => {
       <MemoryRouter initialEntries={["/login"]}>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/patients" element={<div>Patients</div>} />
+          <Route path="/" element={<div>Home</div>} />
         </Routes>
       </MemoryRouter>,
     );
@@ -85,7 +85,7 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
 
     expect(
-      screen.getByText("Create your CareFlow account to manage patients and route-planning data."),
+      screen.getByText("Create your CareFlow account to manage clients and route-planning data."),
     ).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Display name"), {

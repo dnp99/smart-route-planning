@@ -159,7 +159,7 @@ const resolvePatientValidationName = (values: PatientFormValues) => {
     return patientName;
   }
 
-  return "Patient";
+  return "Client";
 };
 
 export const validateForm = (values: PatientFormValues): FormFieldErrors => {
@@ -220,7 +220,7 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
     ) {
       const minuteLabel = values.visitDurationMinutes === 1 ? "minute" : "minutes";
       visitWindowRows[index].endTime =
-        `${patientValidationName} fixed window must be at least ${values.visitDurationMinutes} ${minuteLabel} long as per patient's profile.`;
+        `${patientValidationName} fixed window must be at least ${values.visitDurationMinutes} ${minuteLabel} long as per client's profile.`;
     }
   });
 

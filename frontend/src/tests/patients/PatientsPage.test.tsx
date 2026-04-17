@@ -99,9 +99,9 @@ describe("PatientsPage", () => {
     fireEvent.click(
       (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
     );
-    fireEvent.click(screen.getAllByRole("button", { name: /Edit patient Jane Doe/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
 
-    expect(screen.getByText("Edit Patient")).toBeTruthy();
+    expect(screen.getByText("Edit Client")).toBeTruthy();
     expect((screen.getByLabelText("First name") as HTMLInputElement).value).toBe("Jane");
     expect((screen.getByLabelText("Last name") as HTMLInputElement).value).toBe("Doe");
   });
@@ -116,7 +116,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });
@@ -127,7 +127,7 @@ describe("PatientsPage", () => {
       target: { value: "123 Main St" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save new client/i }));
 
     await waitFor(() => {
       expect(mockedCreatePatient).toHaveBeenCalledTimes(1);
@@ -151,7 +151,7 @@ describe("PatientsPage", () => {
     fireEvent.click(
       (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
     );
-    fireEvent.click(screen.getByRole("button", { name: /Delete patient Jane Doe/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Delete client Jane Doe/i }));
 
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
@@ -184,7 +184,7 @@ describe("PatientsPage", () => {
       expect(screen.getAllByText("John Smith").length).toBeGreaterThan(0);
     });
 
-    fireEvent.change(screen.getByLabelText("Search patients"), {
+    fireEvent.change(screen.getByLabelText("Search clients"), {
       target: { value: "smi" },
     });
 
@@ -238,14 +238,14 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
     fireEvent.change(screen.getByPlaceholderText("Search and select an address"), {
       target: { value: "123 Main St" },
     });
 
     // Save is disabled when required name fields are empty
     expect(
-      (screen.getByRole("button", { name: /Save new patient/i }) as HTMLButtonElement).disabled,
+      (screen.getByRole("button", { name: /Save new client/i }) as HTMLButtonElement).disabled,
     ).toBe(true);
     expect(mockedCreatePatient).not.toHaveBeenCalled();
 
@@ -265,7 +265,7 @@ describe("PatientsPage", () => {
       target: { value: "10:00" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save new client/i }));
 
     await waitFor(() => {
       expect(
@@ -286,7 +286,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Add Patient/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Jane" },
     });
@@ -300,12 +300,12 @@ describe("PatientsPage", () => {
       target: { value: "90" },
     });
 
-    fireEvent.click(screen.getByRole("button", { name: /Save new patient/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Save new client/i }));
 
     await waitFor(() => {
       expect(
         screen.getByText(
-          "Jane Doe fixed window must be at least 90 minutes long as per patient's profile.",
+          "Jane Doe fixed window must be at least 90 minutes long as per client's profile.",
         ),
       ).toBeTruthy();
       expect(mockedCreatePatient).not.toHaveBeenCalled();
@@ -324,7 +324,7 @@ describe("PatientsPage", () => {
     fireEvent.click(
       (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
     );
-    fireEvent.click(screen.getAllByRole("button", { name: /Edit patient Jane Doe/i })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
     fireEvent.change(screen.getByLabelText("Visit duration (minutes)"), {
       target: { value: "130" },
     });
@@ -333,7 +333,7 @@ describe("PatientsPage", () => {
     await waitFor(() => {
       expect(
         screen.getByText(
-          "Jane Doe fixed window must be at least 130 minutes long as per patient's profile.",
+          "Jane Doe fixed window must be at least 130 minutes long as per client's profile.",
         ),
       ).toBeTruthy();
       expect(mockedUpdatePatient).not.toHaveBeenCalled();

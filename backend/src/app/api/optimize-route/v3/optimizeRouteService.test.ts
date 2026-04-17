@@ -17,7 +17,10 @@ import { geocodeTargetsSequentially } from "../geocoding";
 import { buildDrivingRoute } from "../routing";
 import { buildPlanningTravelDurationMatrix } from "../v2/travelMatrix";
 import { optimizeRouteV2 } from "../v2/optimizeRouteService";
-import { optimizeRouteV3 } from "./optimizeRouteService";
+import {
+  __shouldFallbackDistanceToTimeForFixedSafety,
+  optimizeRouteV3,
+} from "./optimizeRouteService";
 
 const mockedGeocodeTargetsSequentially = vi.mocked(geocodeTargetsSequentially);
 const mockedBuildDrivingRoute = vi.mocked(buildDrivingRoute);
@@ -171,6 +174,42 @@ describe("optimizeRouteV3 service", () => {
     vi.unstubAllEnvs();
   });
 
+  it("falls back from distance to time benchmark when distance has more fixed-window misses", () => {
+    expect(
+      __shouldFallbackDistanceToTimeForFixedSafety(
+        { fixedLateCount: 2, fixedLateSeconds: 1200, fixedSlackConsumedSeconds: 0 },
+        { fixedLateCount: 1, fixedLateSeconds: 3000, fixedSlackConsumedSeconds: 0 },
+      ),
+    ).toBe(true);
+  });
+
+  it("falls back from distance to time benchmark when fixed miss count ties but seconds are worse", () => {
+    expect(
+      __shouldFallbackDistanceToTimeForFixedSafety(
+        { fixedLateCount: 1, fixedLateSeconds: 1200, fixedSlackConsumedSeconds: 0 },
+        { fixedLateCount: 1, fixedLateSeconds: 600, fixedSlackConsumedSeconds: 0 },
+      ),
+    ).toBe(true);
+  });
+
+  it("falls back from distance to time benchmark when fixed lateness ties but slack consumed is worse", () => {
+    expect(
+      __shouldFallbackDistanceToTimeForFixedSafety(
+        { fixedLateCount: 0, fixedLateSeconds: 0, fixedSlackConsumedSeconds: 900 },
+        { fixedLateCount: 0, fixedLateSeconds: 0, fixedSlackConsumedSeconds: 300 },
+      ),
+    ).toBe(true);
+  });
+
+  it("does not fall back when distance is at least as safe on fixed windows", () => {
+    expect(
+      __shouldFallbackDistanceToTimeForFixedSafety(
+        { fixedLateCount: 0, fixedLateSeconds: 0, fixedSlackConsumedSeconds: 200 },
+        { fixedLateCount: 1, fixedLateSeconds: 60, fixedSlackConsumedSeconds: 0 },
+      ),
+    ).toBe(false);
+  });
+
   it("prefers the next available visit before far-future windows when no fixed risk is introduced", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
@@ -304,9 +343,9 @@ describe("optimizeRouteV3 service", () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "A", coords: { lat: 43.61, lon: -79.61 } },
-      { address: "B", coords: { lat: 43.62, lon: -79.62 } },
-      { address: "C", coords: { lat: 43.63, lon: -79.63 } },
-      { address: "D", coords: { lat: 43.64, lon: -79.64 } },
+      { address: "B", coords: { lat: 43.64, lon: -79.64 } },
+      { address: "C", coords: { lat: 43.67, lon: -79.67 } },
+      { address: "D", coords: { lat: 43.7, lon: -79.7 } },
       { address: "End", coords: { lat: 43.8, lon: -79.8 } },
     ]);
 
@@ -1231,8 +1270,8 @@ describe("optimizeRouteV3 service", () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Visit A", coords: { lat: 43.61, lon: -79.61 } },
-      { address: "Visit B", coords: { lat: 43.62, lon: -79.62 } },
-      { address: "Visit C", coords: { lat: 43.63, lon: -79.63 } },
+      { address: "Visit B", coords: { lat: 43.66, lon: -79.66 } },
+      { address: "Visit C", coords: { lat: 43.71, lon: -79.71 } },
       { address: "End", coords: { lat: 43.64, lon: -79.64 } },
     ]);
 
@@ -1312,8 +1351,8 @@ describe("optimizeRouteV3 service", () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Visit A", coords: { lat: 43.61, lon: -79.61 } },
-      { address: "Visit B", coords: { lat: 43.62, lon: -79.62 } },
-      { address: "Visit C", coords: { lat: 43.63, lon: -79.63 } },
+      { address: "Visit B", coords: { lat: 43.66, lon: -79.66 } },
+      { address: "Visit C", coords: { lat: 43.71, lon: -79.71 } },
       { address: "End", coords: { lat: 43.64, lon: -79.64 } },
     ]);
 
@@ -1470,6 +1509,87 @@ describe("optimizeRouteV3 service", () => {
     expect(actualOrder).toEqual(["Visit A", "Visit B", "Visit C"]);
   });
 
+  it("time mode adopts the less-driving candidate when it finishes earlier without worsening fixed safety", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Visit A", coords: { lat: 43.61, lon: -79.61 } },
+      { address: "Visit B", coords: { lat: 43.62, lon: -79.62 } },
+      { address: "Visit C", coords: { lat: 43.63, lon: -79.63 } },
+      { address: "End", coords: { lat: 43.64, lon: -79.64 } },
+    ]);
+
+    const nodes = [
+      { label: "start", address: "Start" },
+      { label: "a", address: "Visit A" },
+      { label: "b", address: "Visit B" },
+      { label: "c", address: "Visit C" },
+      { label: "end", address: "End" },
+    ];
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrixByLabel(nodes, 45 * 60, [
+        ["start", "a", 5 * 60],
+        ["a", "b", 5 * 60],
+        ["a", "c", 30 * 60],
+        ["b", "c", 5 * 60],
+        ["c", "b", 30 * 60],
+        ["b", "end", 5 * 60],
+        ["c", "end", 5 * 60],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-03-27",
+        timezone: "America/Toronto",
+        start: { address: "Start", departureTime: "2026-03-27T09:00:00-04:00" },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "visit-a",
+            patientId: "patient-a",
+            patientName: "Visit A",
+            address: "Visit A",
+            windowStart: "09:00",
+            windowEnd: "09:30",
+            windowType: "fixed",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "visit-b",
+            patientId: "patient-b",
+            patientName: "Visit B",
+            address: "Visit B",
+            windowStart: "10:00",
+            windowEnd: "14:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 15,
+          },
+          {
+            visitId: "visit-c",
+            patientId: "patient-c",
+            patientName: "Visit C",
+            address: "Visit C",
+            windowStart: "09:00",
+            windowEnd: "16:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 15,
+          },
+        ],
+        optimizationObjective: "time",
+      },
+      "google-key",
+    );
+
+    const actualOrder = result.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .map((stop) => stop.tasks[0]?.patientName ?? stop.address);
+    expect(actualOrder).toEqual(["Visit A", "Visit B", "Visit C"]);
+  });
+
   it("time mode does not anchor on a far-future fixed visit when it is not yet due", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
@@ -1546,7 +1666,7 @@ describe("optimizeRouteV3 service", () => {
     expect(ianTask?.lateBySeconds).toBe(0);
   });
 
-  it("distance mode keeps strict fixed-first behavior even for a far-future fixed visit", async () => {
+  it("distance mode can defer a far-future fixed visit to avoid avoidable idle/lateness", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Nancy Address", coords: { lat: 43.61, lon: -79.61 } },
@@ -1614,7 +1734,7 @@ describe("optimizeRouteV3 service", () => {
     );
 
     const stopAddresses = result.orderedStops.map((stop) => stop.address);
-    expect(stopAddresses).toEqual(["Ian Address", "Nancy Address", "End"]);
+    expect(stopAddresses).toEqual(["Nancy Address", "Ian Address", "End"]);
 
     const ianTask = result.orderedStops
       .flatMap((stop) => stop.tasks)
@@ -1622,7 +1742,7 @@ describe("optimizeRouteV3 service", () => {
     expect(ianTask?.lateBySeconds).toBe(0);
   });
 
-  it("distance mode keeps fixed-first even when delaying fixed would reduce flexible lateness", async () => {
+  it("distance mode serves a tight flexible visit before a far-future fixed visit when fixed remains feasible", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Fixed Anchor", coords: { lat: 43.61, lon: -79.61 } },
@@ -1692,11 +1812,87 @@ describe("optimizeRouteV3 service", () => {
     const stopAddresses = result.orderedStops
       .filter((stop) => !stop.isEndingPoint)
       .map((stop) => stop.address);
-    expect(stopAddresses).toEqual(["Fixed Anchor", "Tight Flexible"]);
+    expect(stopAddresses).toEqual(["Tight Flexible", "Fixed Anchor"]);
 
     const fixedTask = result.orderedStops
       .flatMap((stop) => stop.tasks)
       .find((task) => task.visitId === "visit-fixed-anchor-distance");
+    expect(fixedTask?.lateBySeconds).toBe(0);
+  });
+
+  it("distance mode still keeps near-due fixed visits ahead of flexible visits", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Near Fixed", coords: { lat: 43.61, lon: -79.61 } },
+      { address: "Flexible", coords: { lat: 43.62, lon: -79.62 } },
+      { address: "End", coords: { lat: 43.63, lon: -79.63 } },
+    ]);
+
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrix([
+        ["address:start", "address:near fixed", 5 * 60],
+        ["address:start", "address:flexible", 5 * 60],
+        ["address:start", "address:end", 5 * 60],
+        ["address:near fixed", "address:start", 5 * 60],
+        ["address:near fixed", "address:flexible", 5 * 60],
+        ["address:near fixed", "address:end", 5 * 60],
+        ["address:flexible", "address:start", 5 * 60],
+        ["address:flexible", "address:near fixed", 5 * 60],
+        ["address:flexible", "address:end", 5 * 60],
+        ["address:end", "address:start", 5 * 60],
+        ["address:end", "address:near fixed", 5 * 60],
+        ["address:end", "address:flexible", 5 * 60],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-03-27",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-27T09:00:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-near-fixed-distance",
+            patientId: "patient-near-fixed-distance",
+            patientName: "Near Fixed",
+            address: "Near Fixed",
+            windowStart: "09:20",
+            windowEnd: "09:40",
+            windowType: "fixed",
+            serviceDurationMinutes: 10,
+          },
+          {
+            visitId: "visit-flexible-distance",
+            patientId: "patient-flexible-distance",
+            patientName: "Flexible",
+            address: "Flexible",
+            windowStart: "09:00",
+            windowEnd: "16:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 15,
+          },
+        ],
+        optimizationObjective: "distance",
+      },
+      "google-key",
+    );
+
+    const stopAddresses = result.orderedStops.map((stop) => stop.address);
+    expect(stopAddresses).toEqual(["Near Fixed", "Flexible", "End"]);
+
+    const fixedTask = result.orderedStops
+      .flatMap((stop) => stop.tasks)
+      .find((task) => task.visitId === "visit-near-fixed-distance");
     expect(fixedTask?.lateBySeconds).toBe(0);
   });
 
@@ -2785,9 +2981,7 @@ describe("optimizeRouteV3 service", () => {
     expect(stopAddresses).toEqual(["Ravi Fixed", "Jing Flexible"]);
   });
 
-  it("keeps final output fixed-slack-protected even when deterministic perturbation explores a worse incumbent", async () => {
-    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
-
+  it("keeps final output fixed-slack-protected under seeded perturbations", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Ravi Drift Guard", coords: { lat: 43.7, lon: -79.7 } },
@@ -2855,13 +3049,298 @@ describe("optimizeRouteV3 service", () => {
         optimizationObjective: "distance",
       },
       "google-key",
+      {
+        requestId: "seed-fixed-slack-guard",
+        nurseId: "nurse-fixed-slack-guard",
+        shadowCompare: false,
+      },
     );
 
-    expect(randomSpy).toHaveBeenCalled();
     const stopAddresses = result.orderedStops
       .filter((stop) => !stop.isEndingPoint)
       .map((stop) => stop.address);
     expect(stopAddresses).toEqual(["Ravi Drift Guard", "Jing Drift Guard"]);
+  });
+
+  it("does not move a preferred-window flexible visit ahead of a near-due fixed anchor when that only burns fixed slack", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Fixed Anchor", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Windowed Flexible", coords: { lat: 43.601, lon: -79.601 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrixByLabel(
+        [
+          { label: "start", address: "Start" },
+          { label: "fixed", address: "Fixed Anchor" },
+          { label: "windowed", address: "Windowed Flexible" },
+          { label: "end", address: "End" },
+        ],
+        40 * 60,
+        [
+          ["start", "fixed", 10 * 60],
+          ["start", "windowed", 2 * 60],
+          ["windowed", "fixed", 15 * 60],
+          ["fixed", "windowed", 60 * 60],
+          ["fixed", "end", 5 * 60],
+          ["windowed", "end", 5 * 60],
+        ],
+      ),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T08:30:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-fixed-anchor-slack-guard",
+            patientId: "patient-fixed-anchor-slack-guard",
+            patientName: "Fixed Anchor",
+            address: "Fixed Anchor",
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 15,
+          },
+          {
+            visitId: "visit-windowed-flex-slack-guard",
+            patientId: "patient-windowed-flex-slack-guard",
+            patientName: "Windowed Flexible",
+            address: "Windowed Flexible",
+            windowStart: "08:00",
+            windowEnd: "16:00",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+        ],
+        optimizationObjective: "distance",
+      },
+      "google-key",
+      {
+        requestId: "guard-refine-windowed-flex",
+        nurseId: "nurse-refine-windowed-flex",
+        shadowCompare: false,
+      },
+    );
+
+    const stopAddresses = result.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .map((stop) => stop.address);
+    expect(stopAddresses).toEqual(["Fixed Anchor", "Windowed Flexible"]);
+
+    const fixedTask = result.orderedStops
+      .flatMap((stop) => stop.tasks)
+      .find((task) => task.visitId === "visit-fixed-anchor-slack-guard");
+    expect(fixedTask?.lateBySeconds).toBe(0);
+    expect(fixedTask?.serviceStartTime).toBe("2026-03-13T13:00:00.000Z");
+  });
+
+  it("produces identical ordering across repeated runs when requestId is the same", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "A", coords: { lat: 43.61, lon: -79.61 } },
+      { address: "B", coords: { lat: 43.62, lon: -79.62 } },
+      { address: "C", coords: { lat: 43.63, lon: -79.63 } },
+      { address: "D", coords: { lat: 43.64, lon: -79.64 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildDenseTravelMatrix(
+        ["Start", "A", "B", "C", "D", "End"],
+        [
+          2366, 654, 2046, 958, 2373, 1072, 1051, 1312, 664, 600, 2022, 2458, 2328, 1315, 234, 2415,
+          2107, 524, 1785, 1209, 233, 1494, 2374, 1812, 1218, 1616, 841, 1500, 315, 2075,
+        ],
+      ),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const request = {
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      start: {
+        address: "Start",
+        departureTime: "2026-03-13T07:30:00-04:00",
+      },
+      end: {
+        address: "End",
+      },
+      visits: [
+        {
+          visitId: "visit-a",
+          patientId: "patient-a",
+          patientName: "A",
+          address: "A",
+          windowStart: "",
+          windowEnd: "",
+          windowType: "flexible" as const,
+          serviceDurationMinutes: 20,
+        },
+        {
+          visitId: "visit-b",
+          patientId: "patient-b",
+          patientName: "B",
+          address: "B",
+          windowStart: "",
+          windowEnd: "",
+          windowType: "flexible" as const,
+          serviceDurationMinutes: 21,
+        },
+        {
+          visitId: "visit-c",
+          patientId: "patient-c",
+          patientName: "C",
+          address: "C",
+          windowStart: "",
+          windowEnd: "",
+          windowType: "flexible" as const,
+          serviceDurationMinutes: 22,
+        },
+        {
+          visitId: "visit-d",
+          patientId: "patient-d",
+          patientName: "D",
+          address: "D",
+          windowStart: "",
+          windowEnd: "",
+          windowType: "flexible" as const,
+          serviceDurationMinutes: 23,
+        },
+      ],
+      optimizationObjective: "distance" as const,
+    };
+
+    const runWithSeed = () =>
+      optimizeRouteV3(request, "google-key", {
+        requestId: "deterministic-seed-1",
+        nurseId: "nurse-1",
+        shadowCompare: false,
+      });
+
+    const first = await runWithSeed();
+    const second = await runWithSeed();
+
+    const firstOrder = first.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .flatMap((stop) => stop.tasks.map((task) => task.visitId));
+    const secondOrder = second.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .flatMap((stop) => stop.tasks.map((task) => task.visitId));
+
+    expect(secondOrder).toEqual(firstOrder);
+  });
+
+  it("does not call Math.random during seeded ILS perturbations", async () => {
+    const randomSpy = vi.spyOn(Math, "random");
+
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "A", coords: { lat: 43.61, lon: -79.61 } },
+      { address: "B", coords: { lat: 43.62, lon: -79.62 } },
+      { address: "C", coords: { lat: 43.63, lon: -79.63 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrixByLabel(
+        [
+          { label: "start", address: "Start" },
+          { label: "a", address: "A" },
+          { label: "b", address: "B" },
+          { label: "c", address: "C" },
+          { label: "end", address: "End" },
+        ],
+        20 * 60,
+        [
+          ["start", "a", 6 * 60],
+          ["start", "b", 7 * 60],
+          ["start", "c", 8 * 60],
+          ["a", "b", 5 * 60],
+          ["b", "c", 5 * 60],
+          ["c", "a", 5 * 60],
+          ["a", "end", 5 * 60],
+          ["b", "end", 5 * 60],
+          ["c", "end", 5 * 60],
+        ],
+      ),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    await optimizeRouteV3(
+      {
+        planningDate: "2026-03-13",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-03-13T08:00:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-a-seeded-rng",
+            patientId: "patient-a-seeded-rng",
+            patientName: "A",
+            address: "A",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "visit-b-seeded-rng",
+            patientId: "patient-b-seeded-rng",
+            patientName: "B",
+            address: "B",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "visit-c-seeded-rng",
+            patientId: "patient-c-seeded-rng",
+            patientName: "C",
+            address: "C",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+        ],
+        optimizationObjective: "distance",
+      },
+      "google-key",
+      {
+        requestId: "seed-rng-no-math-random",
+        nurseId: "nurse-rng-no-math-random",
+        shadowCompare: false,
+      },
+    );
+
+    expect(randomSpy).not.toHaveBeenCalled();
   });
 
   it("schedules all fixed-window patients before a closer no-window patient when two share the same window", async () => {
@@ -3110,7 +3589,7 @@ describe("optimizeRouteV3 service", () => {
     expect(fixedTask?.lateBySeconds).toBe(0);
   });
 
-  it("accepts late-fixed recovery ordering even when it may consume slack on another fixed visit", async () => {
+  it("accepts late-fixed recovery ordering when it improves fixed lateness", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Fixed Late A", coords: { lat: 43.7, lon: -79.7 } },
@@ -3502,6 +3981,337 @@ describe("optimizeRouteV3 service", () => {
 
     expect(shanaazTask?.lateBySeconds).toBe(0);
     expect(ianTask?.lateBySeconds).toBe(0);
+  });
+
+  it("keeps nearby visits within 500 meters consecutive when there is no fixed-window conflict", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Near A", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Middle Visit", coords: { lat: 43.74, lon: -79.7 } },
+      { address: "Near B", coords: { lat: 43.703, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    const nodes = [
+      { label: "start", address: "Start" },
+      { label: "near-a", address: "Near A" },
+      { label: "middle", address: "Middle Visit" },
+      { label: "near-b", address: "Near B" },
+      { label: "end", address: "End" },
+    ];
+
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrixByLabel(nodes, 30 * 60, [
+        ["start", "near-a", 60],
+        ["start", "middle", 90],
+        ["start", "near-b", 120],
+        ["near-a", "middle", 60],
+        ["middle", "near-a", 60],
+        ["middle", "near-b", 60],
+        ["near-b", "middle", 60],
+        ["near-a", "near-b", 7 * 60],
+        ["near-b", "near-a", 7 * 60],
+        ["near-a", "end", 60],
+        ["middle", "end", 60],
+        ["near-b", "end", 60],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-04-15",
+        timezone: "America/Toronto",
+        start: {
+          address: "Start",
+          departureTime: "2026-04-15T08:00:00-04:00",
+        },
+        end: {
+          address: "End",
+        },
+        visits: [
+          {
+            visitId: "visit-near-a",
+            patientId: "patient-near-a",
+            patientName: "Near A",
+            address: "Near A",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 5,
+          },
+          {
+            visitId: "visit-middle",
+            patientId: "patient-middle",
+            patientName: "Middle Visit",
+            address: "Middle Visit",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 5,
+          },
+          {
+            visitId: "visit-near-b",
+            patientId: "patient-near-b",
+            patientName: "Near B",
+            address: "Near B",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 5,
+          },
+        ],
+        optimizationObjective: "distance",
+      },
+      "google-key",
+    );
+
+    const stopAddresses = result.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .map((stop) => stop.address);
+    const nearAIndex = stopAddresses.indexOf("Near A");
+    const nearBIndex = stopAddresses.indexOf("Near B");
+
+    expect(nearAIndex).toBeGreaterThan(-1);
+    expect(nearBIndex).toBeGreaterThan(-1);
+    expect(Math.abs(nearAIndex - nearBIndex)).toBe(1);
+  });
+
+  it("keeps Mildred Wheatley and Hsiu-mei Lin consecutive on the provided Mississauga payload", async () => {
+    const startAddress = "3361 Ingram Road, Mississauga, ON";
+
+    const visits = [
+      {
+        label: "shanaaz",
+        visitId: "visit-1-18beff0e-765c-4796-8e9f-f1ad81f0b030",
+        patientId: "18beff0e-765c-4796-8e9f-f1ad81f0b030",
+        patientName: "Shanaaz Haffejee",
+        address: "6260 Montevideo Road #71, Mississauga, ON",
+        googlePlaceId:
+          "Eik2MjYwIE1vbnRldmlkZW8gUm9hZCAjNzEsIE1pc3Npc3NhdWdhLCBPTiIeGhwKFgoUChIJB70mCnFqK4gRlEM7WewvfgMSAjcx",
+        windowStart: "08:00",
+        windowEnd: "08:35",
+        windowType: "fixed" as const,
+        serviceDurationMinutes: 35,
+      },
+      {
+        label: "yasmin",
+        visitId: "visit-2-2e1cb3c3-cc70-4088-b6e5-d653be8e4a4d",
+        patientId: "2e1cb3c3-cc70-4088-b6e5-d653be8e4a4d",
+        patientName: "Yasmin Ramji",
+        address: "6931 Forest Park Drive, Mississauga, ON",
+        googlePlaceId: "ChIJHdTuMTZqK4gRRa2qKQuq5i8",
+        windowStart: "08:30",
+        windowEnd: "08:45",
+        windowType: "fixed" as const,
+        serviceDurationMinutes: 15,
+      },
+      {
+        label: "gary",
+        visitId: "visit-3-5bbeca0f-7bb1-4de7-a3d1-180cfc1f3dba",
+        patientId: "5bbeca0f-7bb1-4de7-a3d1-180cfc1f3dba",
+        patientName: "Gary Frauts",
+        address: "3276 Forrestdale Circle, Mississauga, ON",
+        googlePlaceId: "ChIJJ7F2FDhqK4gRiBLQ5LdJTfw",
+        windowStart: "08:00",
+        windowEnd: "09:30",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 20,
+      },
+      {
+        label: "catherine",
+        visitId: "visit-4-93c51a70-d09a-4035-af7b-d1c6a542b484",
+        patientId: "93c51a70-d09a-4035-af7b-d1c6a542b484",
+        patientName: "Catherine Nguemelieu Epse Djom",
+        address: "7030 Copenhagen Road #10, Mississauga, ON",
+        googlePlaceId:
+          "Eik3MDMwIENvcGVuaGFnZW4gUm9hZCAjMTAsIE1pc3Npc3NhdWdhLCBPTiIeGhwKFgoUChIJSZT5Y15qK4gRIcXZ70LBabISAjEw",
+        windowStart: "",
+        windowEnd: "",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 15,
+      },
+      {
+        label: "mildred",
+        visitId: "visit-5-d3b82da0-c5c8-4895-870e-3e54b8a97e05",
+        patientId: "d3b82da0-c5c8-4895-870e-3e54b8a97e05",
+        patientName: "Mildred Wheatley",
+        address: "66 Rutledge Road, Mississauga, ON",
+        googlePlaceId: "ChIJMyj7ScZBK4gRgwYsvxtR8hw",
+        windowStart: "09:45",
+        windowEnd: "11:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 20,
+      },
+      {
+        label: "nasim",
+        visitId: "visit-6-9ebfde78-2994-4cb7-9ae6-653b9f9a5cf3",
+        patientId: "9ebfde78-2994-4cb7-9ae6-653b9f9a5cf3",
+        patientName: "Nasim Akhter",
+        address: "5697 Glen Erin Drive, Mississauga, ON",
+        googlePlaceId: "ChIJP9jDNuVBK4gRR8WwCjaaDsI",
+        windowStart: "09:00",
+        windowEnd: "11:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 15,
+      },
+      {
+        label: "ernst",
+        visitId: "visit-7-2b30986b-8beb-4f98-968b-ca59d658843e",
+        patientId: "2b30986b-8beb-4f98-968b-ca59d658843e",
+        patientName: "Ernst Vonarburg",
+        address: "6043 Tenth Line West, Mississauga, ON",
+        googlePlaceId: "ChIJzVfrsgRqK4gRRT3NFPmVuz0",
+        windowStart: "08:30",
+        windowEnd: "16:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 15,
+      },
+      {
+        label: "dindyal",
+        visitId: "visit-8-dfab81f3-5066-4e41-9928-1f5fe6e1b60b",
+        patientId: "dfab81f3-5066-4e41-9928-1f5fe6e1b60b",
+        patientName: "Dindyal Bachan",
+        address: "3435 Jorie Crescent, Mississauga, ON",
+        googlePlaceId: "ChIJ3yjQz_tpK4gRMFMNcrl1wNw",
+        windowStart: "08:30",
+        windowEnd: "13:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 20,
+      },
+      {
+        label: "hsiu",
+        visitId: "visit-9-e107449b-58b3-468b-b264-2d800516650f",
+        patientId: "e107449b-58b3-468b-b264-2d800516650f",
+        patientName: "Hsiu-mei Lin",
+        address: "92 William St #101, Mississauga, ON",
+        googlePlaceId:
+          "EiM5MiBXaWxsaWFtIFN0ICMxMDEsIE1pc3Npc3NhdWdhLCBPTiIfGh0KFgoUChIJa0cVl8dBK4gRULmmjibhxw8SAzEwMQ",
+        windowStart: "10:00",
+        windowEnd: "15:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 20,
+      },
+      {
+        label: "ian",
+        visitId: "visit-10-bb7c13cd-5bc8-48ad-8b05-633ee8e1e60b",
+        patientId: "bb7c13cd-5bc8-48ad-8b05-633ee8e1e60b",
+        patientName: "Ian Mcadam",
+        address: "6424 Millers Grove, Mississauga, ON",
+        googlePlaceId: "ChIJASXyVhZqK4gRHSwa1GJWiq4",
+        windowStart: "12:10",
+        windowEnd: "12:30",
+        windowType: "fixed" as const,
+        serviceDurationMinutes: 20,
+      },
+      {
+        label: "rodrigo",
+        visitId: "visit-11-d5fefbb7-2454-42f7-971b-2efd838828a2",
+        patientId: "d5fefbb7-2454-42f7-971b-2efd838828a2",
+        patientName: "Rodrigo Ruiz",
+        address: "3074 Wrigglesworth Crescent, Mississauga, ON",
+        googlePlaceId: "ChIJyQtniv1BK4gRm-Y5vRZYPgM",
+        windowStart: "12:30",
+        windowEnd: "16:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 15,
+      },
+      {
+        label: "kefeng",
+        visitId: "visit-12-eadb4870-4805-44e1-b305-d4e55beaf00a",
+        patientId: "eadb4870-4805-44e1-b305-d4e55beaf00a",
+        patientName: "Kefeng Zhou",
+        address: "3163 Southwind Rd, Mississauga, ON",
+        googlePlaceId: "ChIJbYdjkQNCK4gRjQccEPflk9c",
+        windowStart: "12:30",
+        windowEnd: "16:00",
+        windowType: "flexible" as const,
+        serviceDurationMinutes: 30,
+      },
+    ];
+
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: startAddress, coords: { lat: 43.5271236, lon: -79.7067248 } },
+      { address: visits[0].address, coords: { lat: 43.5837184, lon: -79.7491096 } },
+      { address: visits[1].address, coords: { lat: 43.5802536, lon: -79.7768292 } },
+      { address: visits[2].address, coords: { lat: 43.5795814, lon: -79.7724351 } },
+      { address: visits[3].address, coords: { lat: 43.5949432, lon: -79.7648816 } },
+      { address: visits[4].address, coords: { lat: 43.5841152, lon: -79.7208104 } },
+      { address: visits[5].address, coords: { lat: 43.5675878, lon: -79.7304453 } },
+      { address: visits[6].address, coords: { lat: 43.5649834, lon: -79.7511188 } },
+      { address: visits[7].address, coords: { lat: 43.5538742, lon: -79.7478674 } },
+      { address: visits[8].address, coords: { lat: 43.5834543, lon: -79.7187037 } },
+      { address: visits[9].address, coords: { lat: 43.572597, lon: -79.7598445 } },
+      { address: visits[10].address, coords: { lat: 43.5646542, lon: -79.7399064 } },
+      { address: visits[11].address, coords: { lat: 43.5539012, lon: -79.7326547 } },
+    ]);
+
+    const nodes = [
+      { label: "start", address: startAddress },
+      ...visits.map((visit) => ({
+        label: visit.label,
+        address: visit.address,
+        googlePlaceId: visit.googlePlaceId,
+      })),
+      { label: "end", address: startAddress },
+    ];
+
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrixByLabel(nodes, 6 * 60, [
+        ["start", "shanaaz", 922],
+        ["shanaaz", "yasmin", 403],
+        ["yasmin", "gary", 112],
+        ["gary", "catherine", 415],
+        ["catherine", "mildred", 629],
+        ["mildred", "nasim", 508],
+        ["nasim", "ernst", 398],
+        ["ernst", "dindyal", 250],
+        ["dindyal", "hsiu", 670],
+        ["hsiu", "ian", 613],
+        ["ian", "rodrigo", 284],
+        ["rodrigo", "kefeng", 251],
+        ["kefeng", "end", 520],
+        ["mildred", "hsiu", 180],
+        ["hsiu", "mildred", 180],
+      ]),
+    );
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-04-15",
+        timezone: "America/Toronto",
+        start: { address: startAddress },
+        end: { address: startAddress },
+        visits: visits.map((visit) => {
+          const withoutLabel = { ...visit };
+          delete (withoutLabel as { label?: string }).label;
+          return withoutLabel;
+        }),
+        nurseWorkingHours: {
+          workStart: "08:00",
+          workEnd: "16:00",
+        },
+        optimizationObjective: "time",
+      },
+      "google-key",
+    );
+
+    const order = result.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .map((stop) => stop.tasks[0]?.patientName ?? stop.address);
+    const mildredIndex = order.indexOf("Mildred Wheatley");
+    const hsiuMeiIndex = order.indexOf("Hsiu-mei Lin");
+
+    expect(mildredIndex).toBeGreaterThan(-1);
+    expect(hsiuMeiIndex).toBeGreaterThan(-1);
+    expect(Math.abs(mildredIndex - hsiuMeiIndex)).toBe(1);
   });
 
   it("moves Nasim ahead of Ian on the issue-derived Mississauga matrix and eliminates the late flexible-window penalty", async () => {

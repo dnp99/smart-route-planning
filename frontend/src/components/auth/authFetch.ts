@@ -1,23 +1,18 @@
 import { extractApiErrorMessage } from "../../../../shared/contracts";
 import { resolveApiBaseUrl } from "../apiBaseUrl";
-import { clearAuthSession, getAuthToken } from "./authSession";
+import { clearAuthSession } from "./authSession";
 
 export const requestAuthedJson = async (
   path: string,
   init: RequestInit,
   fallbackMessage: string,
 ) => {
-  const token = getAuthToken();
-  if (!token) {
-    throw new Error("Please login to continue.");
-  }
-
   const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${token}`);
 
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
+    credentials: "include",
     headers,
   });
 

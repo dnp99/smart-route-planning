@@ -33,16 +33,19 @@ Use two environments:
   - Staging: `https://app-staging.yourdomain.com`
   - Production: `https://app.yourdomain.com`
 - `JWT_SECRET`
-  - Required long random secret used to sign and verify access tokens.
+  - Required only during legacy bearer-token migration grace period.
+  - Used to verify legacy bearer tokens if still accepted.
 - `JWT_EXPIRES_IN`
-  - Optional JWT TTL (for example `1h`, `30m`).
+  - Optional legacy bearer-token TTL (for example `1h`, `30m`).
   - Default: `1h`.
 - `GOOGLE_MAPS_API_KEY`
   - Required for route legs and address autocomplete.
 
 ### Frontend SPA routing
 
-- Keep `frontend/vercel.json` deployed with the frontend project so Vercel rewrites deep links to `index.html`.
+- Keep `frontend/vercel.json` deployed with the frontend project.
+- Ensure `/api/*` rewrites to your backend deployment so browser auth requests stay same-origin from the SPA host.
+- Keep deep-link rewrites to `index.html`.
 - This prevents direct loads or refreshes on routes such as `/patients` and `/route-planner` from returning `404`.
 
 ### Frontend runtime API URL
@@ -62,6 +65,7 @@ Add this script in `frontend/index.html` (or inject it at hosting edge):
 ```
 
 For staging, set it to `https://api-staging.yourdomain.com`.
+For Vercel production with frontend `/api` rewrite, leave runtime API override unset (or empty) so calls go to same-origin `/api/*`.
 
 ---
 
@@ -107,11 +111,14 @@ If you add a deploy workflow later (for example `.github/workflows/deploy.yml`),
 Before first prod cut:
 
 1. Verify backend CORS allows only frontend domain.
-2. Confirm API health:
+2. Confirm API health and cookie-session auth:
    - `POST /api/auth/login`
-   - `GET /api/auth/me` with `Authorization: Bearer <token>`
-   - `GET /api/address-autocomplete?query=Toronto` with bearer token
-   - `POST /api/optimize-route/v2` with bearer token
+   - `GET /api/auth/me` with session cookie (`credentials: include`)
+   - `GET /api/auth/legal-notice` with session cookie
+   - `POST /api/auth/legal-notice` with `{ "agree": true }` during first-use flow
+   - `POST /api/auth/logout`
+   - `GET /api/address-autocomplete?query=Toronto` with session cookie
+   - `POST /api/optimize-route/v3` with session cookie
 3. Validate frontend runtime API URL points to prod backend.
 4. Smoke test route optimization in browser.
 

@@ -43,7 +43,7 @@ export const validateRequestDestinations = (
     (destination) => destination.persistPlanningWindow && !hasCompleteWindow(destination),
   );
   if (destinationsMissingPersistWindow.length > 0) {
-    return `Set start and end time before saving to patient record for: ${formatPatientListLabel(destinationsMissingPersistWindow)}.`;
+    return `Set start and end time before saving to client record for: ${formatPatientListLabel(destinationsMissingPersistWindow)}.`;
   }
 
   return null;

@@ -3,54 +3,196 @@ import { Link } from "react-router-dom";
 export default function TermsPage() {
   return (
     <main className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
-      <h1 className="m-0 text-xl font-semibold text-slate-900 dark:text-slate-100">Terms of Use</h1>
-      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Last updated: March 2026</p>
+      <h1 className="m-0 text-xl font-semibold text-slate-900 dark:text-slate-100">
+        Terms of Service
+      </h1>
+      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+        Last updated: April 16, 2026
+      </p>
 
       <div className="mt-4 grid gap-4 text-sm text-slate-700 dark:text-slate-300">
         <section>
-          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
-            Intended Use
-          </h2>
+          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">1. Overview</h2>
           <p className="m-0">
-            CareFlow is a nurse operations tool designed to help healthcare professionals manage
-            patient visits and plan daily routes. Use of this application is intended solely for
-            authorized personnel in connection with their professional duties.
+            CareFlow is a nurse-focused route planning and client management tool designed to
+            support scheduling and operational workflows.
+          </p>
+          <p className="m-0 mt-2">
+            By accessing or using CareFlow, you agree to these Terms of Service.
           </p>
         </section>
 
         <section>
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
-            Account Responsibilities
+            2. Eligibility
           </h2>
           <p className="m-0">
-            You are responsible for maintaining the confidentiality of your account credentials and
-            for all activity that occurs under your account. You must notify us immediately of any
-            unauthorized use of your account.
+            You must be at least 18 years old and authorized to use the system in a professional
+            capacity.
+          </p>
+          <p className="m-0 mt-2">By using CareFlow, you represent that:</p>
+          <ul className="m-0 mt-2 list-disc pl-5">
+            <li>You are using the service for legitimate professional purposes</li>
+            <li>You have authority to manage and enter client-related information</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
+            3. Use of the Service
+          </h2>
+          <p className="m-0">
+            You agree to use CareFlow only for lawful purposes and in accordance with these terms.
+          </p>
+          <p className="m-0 mt-2">You must not:</p>
+          <ul className="m-0 mt-2 list-disc pl-5">
+            <li>Access or use data that does not belong to you</li>
+            <li>Attempt to bypass security or authentication mechanisms</li>
+            <li>Use the system to store or transmit unlawful or harmful content</li>
+          </ul>
+          <p className="m-0 mt-2">
+            CareFlow is intended for operational support only and should not be used as a substitute
+            for professional judgment.
           </p>
         </section>
 
         <section>
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
-            Availability Disclaimer
+            4. User Accounts
           </h2>
+          <p className="m-0">You are responsible for:</p>
+          <ul className="m-0 mt-2 list-disc pl-5">
+            <li>Maintaining the confidentiality of your login credentials</li>
+            <li>All activity that occurs under your account</li>
+          </ul>
+          <p className="m-0 mt-2">
+            You must notify us if you suspect unauthorized access to your account.
+          </p>
+          <p className="m-0 mt-2">We may suspend or terminate accounts that violate these terms.</p>
           <p className="m-0">
-            CareFlow is provided on an &ldquo;as is&rdquo; and &ldquo;as available&rdquo; basis. We
-            do not guarantee uninterrupted or error-free access and reserve the right to modify or
-            discontinue the service at any time without notice.
+            CareFlow uses secure session cookies for authentication. Users must not attempt to
+            bypass session controls or reuse unauthorized session artifacts.
           </p>
         </section>
 
         <section>
-          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">Contact</h2>
+          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
+            5. Client (Patient) Data
+          </h2>
+          <p className="m-0">You are solely responsible for:</p>
+          <ul className="m-0 mt-2 list-disc pl-5">
+            <li>
+              Ensuring you have appropriate consent or authority to collect and enter client
+              information
+            </li>
+            <li>Complying with applicable privacy laws and professional obligations</li>
+          </ul>
+          <p className="m-0 mt-2">
+            CareFlow does not verify the accuracy or legality of the data entered by users.
+          </p>
+          <p className="m-0 mt-2">
+            Client deletion operations in the product are archive-style (inactive status) to support
+            operational traceability.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
+            6. Data and Availability
+          </h2>
           <p className="m-0">
-            For questions about these terms, contact us at{" "}
+            We aim to provide reliable service but do not guarantee uninterrupted access.
+          </p>
+          <p className="m-0 mt-2">CareFlow may be temporarily unavailable due to:</p>
+          <ul className="m-0 mt-2 list-disc pl-5">
+            <li>Maintenance</li>
+            <li>System updates</li>
+            <li>Technical issues</li>
+          </ul>
+          <p className="m-0">
+            We are not responsible for data loss caused by events outside our reasonable control.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
+            7. Limitation of Liability
+          </h2>
+          <p className="m-0">CareFlow is provided on an &ldquo;as-is&rdquo; basis.</p>
+          <p className="m-0 mt-2">To the maximum extent permitted by law, we are not liable for:</p>
+          <ul className="m-0 mt-2 list-disc pl-5">
+            <li>Any indirect, incidental, or consequential damages</li>
+            <li>Loss of data, business, or operational disruption</li>
+            <li>Decisions made based on route planning or scheduling outputs</li>
+          </ul>
+          <p className="m-0 mt-2">
+            Users remain responsible for verifying schedules and ensuring safe and appropriate care
+            delivery.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
+            8. Intellectual Property
+          </h2>
+          <p className="m-0">
+            All rights to the CareFlow application, including software, design, and branding, are
+            owned by CareFlow.
+          </p>
+          <p className="m-0 mt-2">You may not:</p>
+          <ul className="m-0 mt-2 list-disc pl-5">
+            <li>Copy, modify, or distribute the software</li>
+            <li>Reverse engineer or attempt to extract source code</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
+            9. Termination
+          </h2>
+          <p className="m-0">We may suspend or terminate access if:</p>
+          <ul className="m-0 mt-2 list-disc pl-5">
+            <li>These terms are violated</li>
+            <li>The service is misused</li>
+            <li>Required for security or legal reasons</li>
+          </ul>
+          <p className="m-0 mt-2">You may stop using the service at any time.</p>
+        </section>
+
+        <section>
+          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
+            10. Changes to the Service
+          </h2>
+          <p className="m-0">
+            We may modify or update CareFlow at any time, including features and functionality.
+          </p>
+          <p className="m-0 mt-2">
+            We may also update these Terms. Continued use of the service means you accept the
+            updated Terms.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
+            11. Governing Law
+          </h2>
+          <p className="m-0">
+            These Terms are governed by the laws of the Province of Ontario and the laws of Canada
+            applicable therein.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">12. Contact</h2>
+          <p className="m-0">For questions about these Terms, contact:</p>
+          <p className="m-0 mt-2 font-semibold">CareFlow Support</p>
+          <p className="m-0 mt-2">
             <a
-              href="mailto:dpatel1995@yahoo.com"
+              href="mailto:dpate1995@yahoo.com"
               className="text-blue-600 underline hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
             >
-              dpatel1995@yahoo.com
+              dpate1995@yahoo.com
             </a>
-            .
           </p>
         </section>
       </div>

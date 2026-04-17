@@ -4,18 +4,23 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 
 ## What it does
 
-- Requires authenticated access for patient and route-planner workflows.
-- Manages patient records and visit windows.
+- Requires authenticated access for client and route-planner workflows.
+- Manages client records and visit windows.
 - Optimizes daily visits with time windows, travel distance/time, and visit duration; planning date defaults to tomorrow and is configurable per session.
 - Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
-- Persists the optimized route result in sessionStorage so tab switches don't lose the result.
+- Keeps optimized route results in memory only for the current tab lifecycle.
 - Provides an authenticated global workspace header with sticky positioning, app logo, and rotating nurse quotes.
 - Keeps header quote selection stable across browser refresh during a signed-in session.
-- Clears all session-scoped storage (optimization result, draft, header quote) on logout and login.
-- Uses a consistent overflow action menu pattern for patient row actions.
+- Uses HttpOnly cookie-based sessions (no frontend token storage).
+- Requires a first-use legal/privacy acknowledgement (`I Agree`) per signed-in user, stored server-side and re-prompted when policy version changes.
+- Persists only non-sensitive route-planner draft fields in browser storage (IDs, ordering, inclusion flags, date/objective/UI step).
+- Clears session-scoped browser storage (draft, header quote) on auth changes.
+- Uses a consistent overflow action menu pattern for client row actions.
 - Includes legal pages (Terms, Privacy, License, Trademark) accessible from the footer.
+- Shows in-app policy reminders on Clients and Route Planner pages.
 - Mobile-optimized route planner with wizard-style step flow and safe-area-aware sticky footer.
+- Uses in-memory geocoding and travel-matrix caching (with in-flight request deduplication) to reduce repeated optimization latency.
 
 ## Tech stack
 
@@ -29,19 +34,28 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 - Auth:
   - `POST /api/auth/signup`
   - `POST /api/auth/login`
+  - `POST /api/auth/logout`
   - `GET /api/auth/me`
   - `PATCH /api/auth/me`
   - `POST /api/auth/update-password`
+  - `GET /api/auth/legal-notice`
+  - `POST /api/auth/legal-notice`
 - Patients:
   - `GET /api/patients`
   - `POST /api/patients`
   - `PATCH /api/patients/:id`
   - `DELETE /api/patients/:id`
 - Route planning:
-  - `POST /api/optimize-route/v2` (current planner flow)
-- `POST /api/optimize-route/v3` (feature-flagged seeded ILS path; contract-compatible with `v2`)
+  - `POST /api/optimize-route/v3` (current production planner flow)
+  - `POST /api/optimize-route/v2` (legacy compatibility / rollback path)
 - Address suggestions:
   - `GET /api/address-autocomplete?query=...`
+
+Notes:
+
+- UI terminology uses **Client/Clients** for care recipients.
+- API paths and shared contract field names remain `/api/patients`, `patientId`, and `patientName` for compatibility.
+- During migration grace period, backend accepts cookie sessions first and legacy bearer tokens second.
 
 ## Local run
 
@@ -78,7 +92,7 @@ The frontend resolves API base URL in this order:
 
 1. `VITE_API_BASE_URL`
 2. `window.__NAVIGATE_EASY_API_BASE_URL__` (runtime override)
-3. `http://localhost:3000`
+3. `http://localhost:3000` on local hosts; same-origin (`""`) on non-local hosts
 
 Example runtime override:
 
@@ -88,9 +102,9 @@ Example runtime override:
 </script>
 ```
 
-## V2 planning request shape
+## Planning request shape
 
-`POST /api/optimize-route/v2` expects:
+`POST /api/optimize-route/v3` expects:
 
 - `planningDate` (`YYYY-MM-DD`)
 - `timezone` (IANA timezone, example `America/Toronto`)
@@ -103,17 +117,27 @@ Notes:
 
 - `start.departureTime` is optional and typically omitted by frontend.
 - Backend computes departure dynamically when omitted (earliest first-stop anchor with travel-time + buffer).
-- `"distance"` minimizes idle wait first, then travel time separately. `"time"` minimizes combined wait + travel, finishing the day earlier at the cost of slightly more driving.
+- `"distance"` prioritizes less driving with bounded idle-gap tradeoffs.
+- `"time"` prioritizes finishing sooner (combined wait + travel), with safeguards so it does not lose to an earlier equally-safe alternative when one exists.
 
-## ILS feature flag
+## Optimizer endpoint selection
 
-The frontend defaults to `POST /api/optimize-route/v2`.
+Current production endpoint is `POST /api/optimize-route/v3`.
 
-Set `VITE_ENABLE_ILS_OPTIMIZER=true` to route optimization requests to `POST /api/optimize-route/v3` instead. The `v3` path keeps the same request/response contract as `v2` so the UI render path does not change.
+Frontend still supports rollback routing:
 
-## Route optimizer scheduling logic
+- `VITE_ENABLE_ILS_OPTIMIZER=true` -> `POST /api/optimize-route/v3` (recommended / prod)
+- unset / `false` -> `POST /api/optimize-route/v2` (legacy fallback)
 
-`POST /api/optimize-route/v2` uses a greedy beam search (depth 2, beam width 8) with priority tiers and EDF candidate selection.
+`v3` and `v2` keep the same request/response contract, so UI render paths remain compatible.
+For production parity, set `VITE_ENABLE_ILS_OPTIMIZER=true` in deployed frontend environments.
+
+## Route optimizer scheduling logic (v3 production)
+
+`POST /api/optimize-route/v3` runs in two stages:
+
+1. Greedy seeded construction (depth 2, beam width 8) with window-aware priority tiers.
+2. Deterministic seeded ILS refinement (request-id-seeded perturbations) under fixed-window safety guards.
 
 ### Step 1 — Candidate pool selection
 
@@ -122,15 +146,25 @@ At each step, the algorithm selects from a prioritised pool:
 ```text
 Any FIXED patients remaining?
 ├── YES
-│   ├── Any FIXED already late?  → Pool: late fixed patients only
-│   └── None late               → Pool: all fixed patients
+│   ├── Any FIXED already late?
+│   │   └── Pool: late fixed patients only
+│   └── None late
+│       └── Pool: near-due fixed patients only
+│           - time mode: fixed with wait <= 30 min
+│           - distance mode: fixed with wait <= 45 min
+│       (if none are near-due, fall through to flexible tiers)
 └── NO
-    ├── Any FLEXIBLE (windowed) already late?   → Pool: late flexible patients only
-    ├── Any FLEXIBLE within 90 min of deadline? → Pool: urgent flexible patients, sorted tightest deadline first (EDF)
-    └── None urgent                             → Pool: all remaining patients
+    ├── Any windowed FLEXIBLE already late?
+    │   └── Pool: late flexible patients only
+    ├── Any windowed FLEXIBLE within 90 min of deadline?
+    │   └── Pool: urgent flexible patients, sorted tightest deadline first (EDF)
+    ├── Any remaining windowed FLEXIBLE?
+    │   └── Pool: all remaining windowed flexible patients
+    └── Otherwise
+        └── Pool: all remaining patients (including no-window flexible)
 ```
 
-### Step 2 — Score every candidate (depth-2 lookahead)
+### Step 2 — Seed scoring (depth-2 lookahead)
 
 Within the pool, each candidate is scored across 5 dimensions (lower = better):
 
@@ -146,15 +180,26 @@ Priorities 4–5 are objective-dependent: `"distance"` (default) minimises wait 
 
 The beam search evaluates 2 steps ahead across the top 8 candidates, so lateness from future steps folds back into the current decision.
 
-### Step 3 — Gap filler
+### Step 3 — Gap filler / sequence fill
 
-After a candidate is selected, if it has > 30 min of idle wait before its window opens, the algorithm checks whether a nearby no-window or flexible patient can be inserted into that gap without delaying the anchor visit.
+If the selected anchor has a large idle gap before service start, the optimizer tries to fill that gap with feasible nearby visits (single filler or planned filler sequence), while preserving anchor feasibility.
+
+### Step 4 — Deterministic ILS refinement
+
+After the greedy seed is built, v3 runs deterministic ILS local search:
+
+- perturbations are reproducible per `requestId` seed;
+- accepted moves must not worsen fixed-window safety;
+- objective-specific ranking is applied only after fixed-window/lateness safety precedence.
 
 ### Key properties
 
-- Distance is the **last** tiebreaker — it never overrides deadline pressure.
-- The gap filler can only **insert**, never displace a selected candidate.
-- Flexible patients within 90 min of their deadline are elevated to a priority pool and sorted by tightest deadline first (EDF), so they are picked before going late rather than after.
+- Fixed-window safety is strict: accepted moves cannot worsen fixed late-count, fixed late-seconds, or fixed slack consumption.
+- Distance mode prioritizes lower travel, with bounded idle-gap tradeoffs to reduce extreme idle blocks.
+- Distance mode has a fixed-safety guardrail: if the distance solution is strictly worse than the time benchmark on fixed-window safety, v3 falls back to the time benchmark.
+- Time mode prioritizes lower elapsed time (`wait + travel`) with bounded idle smoothing; if a less-driving candidate finishes earlier and is equally safe, time mode adopts it.
+- Flexible patients within 90 min of deadline are elevated to urgent EDF ordering to prevent avoidable lateness.
+- Nearby clustering is enforced as a scheduling preference: visits within `0.5 km` are scored to be consecutive unless doing so creates a fixed-window conflict.
 
 ## Additional docs
 

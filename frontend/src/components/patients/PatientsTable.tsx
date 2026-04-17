@@ -411,7 +411,7 @@ export const PatientsTable = ({
   if (patients.length === 0) {
     return (
       <div className="rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
-        {searchQuery.trim() ? "No patients match this search." : "No patients added yet."}
+        {searchQuery.trim() ? "No clients match this search." : "No clients added yet."}
       </div>
     );
   }
@@ -477,7 +477,7 @@ export const PatientsTable = ({
                           setOpenActionsMenuKey(null);
                           onEdit(patient);
                         }}
-                        aria-label={`Edit patient ${patientDisplayName}`}
+                        aria-label={`Edit client ${patientDisplayName}`}
                         className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
                       >
                         <EditIcon className="h-3.5 w-3.5" />
@@ -490,7 +490,7 @@ export const PatientsTable = ({
                           void onDelete(patient.id);
                         }}
                         disabled={isSubmitting}
-                        aria-label={`Delete patient ${patientDisplayName}`}
+                        aria-label={`Delete client ${patientDisplayName}`}
                         className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300 dark:hover:bg-red-950/30"
                       >
                         <TrashIcon className="h-3.5 w-3.5" />
@@ -652,7 +652,7 @@ export const PatientsTable = ({
                     colSpan={5}
                     className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
                   >
-                    No patients match the current filter.
+                    No clients match the current filter.
                   </td>
                 </tr>
               )}

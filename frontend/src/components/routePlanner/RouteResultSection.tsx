@@ -190,7 +190,7 @@ export const RouteResultSection = ({
             onClick={() => onSetActiveMobileStep("patients")}
             className={responsiveStyles.mobileContinueButton}
           >
-            Continue to Patients →
+            Continue to Clients →
           </button>
         </div>
       )}
@@ -199,7 +199,7 @@ export const RouteResultSection = ({
         <div className={responsiveStyles.stickyFooter}>
           {selectedDestinationsCount === 0 && (
             <p className={responsiveStyles.mobileContinueHint}>
-              Add at least one patient to continue.
+              Add at least one client to continue.
             </p>
           )}
           <button
@@ -233,7 +233,7 @@ export const RouteResultSection = ({
               onClick={() => onSetActiveMobileStep("patients")}
               className={responsiveStyles.secondaryButton}
             >
-              Edit patients
+              Edit clients
             </button>
           </div>
         </section>

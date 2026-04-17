@@ -7,6 +7,7 @@ type BuildCorsHeadersOptions = {
   allowedHeaders?: string;
   originPolicy?: CorsOriginPolicy;
   includeSecurityHeaders?: boolean;
+  allowCredentials?: boolean;
 };
 
 type BuildSecurityHeadersOptions = {
@@ -93,12 +94,17 @@ export const buildCorsHeaders = (
     allowedHeaders = "Content-Type",
     originPolicy = "fallback-first",
     includeSecurityHeaders = false,
+    allowCredentials = false,
   }: BuildCorsHeadersOptions,
 ) => {
+  const allowedOrigin = resolveAllowedOrigin(request, originPolicy);
   const corsHeaders = {
-    "Access-Control-Allow-Origin": resolveAllowedOrigin(request, originPolicy),
+    "Access-Control-Allow-Origin": allowedOrigin,
     "Access-Control-Allow-Methods": methods,
     "Access-Control-Allow-Headers": allowedHeaders,
+    ...((allowCredentials || originPolicy === "strict") && allowedOrigin !== "*"
+      ? { "Access-Control-Allow-Credentials": "true" }
+      : {}),
   };
 
   if (!includeSecurityHeaders) {

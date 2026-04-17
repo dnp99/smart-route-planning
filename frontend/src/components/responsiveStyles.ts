@@ -37,7 +37,7 @@ export const responsiveStyles = {
     "m-0 hidden min-w-0 max-w-[50vw] text-right text-xs italic text-slate-600 line-clamp-2 sm:block sm:text-sm dark:text-slate-300",
   // ── Account menu ──────────────────────────────────────────────────────────
   accountMenuButton:
-    "inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-slate-700 dark:text-slate-200 dark:hover:border-slate-600 dark:hover:bg-slate-800",
+    "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-100 to-blue-50 text-sm font-bold uppercase tracking-[0.02em] text-blue-800 shadow-sm transition hover:from-blue-200 hover:to-blue-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-blue-700 dark:from-blue-900/70 dark:to-blue-950/60 dark:text-blue-100 dark:hover:from-blue-800 dark:hover:to-blue-900",
   accountMenuDropdown:
     "absolute right-0 z-20 mt-2 min-w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900",
   // ── Modal ─────────────────────────────────────────────────────────────────
@@ -112,9 +112,9 @@ export const responsiveStyles = {
   dateInput:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
   dateInputTrigger:
-    "flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 cursor-pointer",
+    "flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-1 ring-blue-100 transition hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-blue-800 dark:bg-slate-900 dark:text-slate-100 dark:ring-blue-900/40 cursor-pointer",
   dateInputTriggerCompact:
-    "flex w-36 shrink-0 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 cursor-pointer",
+    "flex w-36 shrink-0 items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-1 ring-blue-100 transition hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-blue-800 dark:bg-slate-900 dark:text-slate-100 dark:ring-blue-900/40 cursor-pointer",
   calendarPopover:
     "absolute z-50 mt-1 rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-900",
   calendarNav: "flex items-center justify-between pb-2",
@@ -350,4 +350,45 @@ export const responsiveStyles = {
     "h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 dark:border-slate-600",
   scheduleThresholdInput:
     "w-20 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-sm font-medium tabular-nums text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+
+  // ── Dashboard ────────────────────────────────────────────────────────────────
+  dashboardCard:
+    "dashboard-reveal rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+  dashboardHeroSection:
+    "dashboard-surface dashboard-reveal relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7",
+  dashboardEyebrow:
+    "m-0 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300",
+  dashboardHeroHeading:
+    "m-0 mt-3 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl",
+  dashboardHeroMeta: "m-0 mt-2 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-base",
+  dashboardHeroBody: "m-0 mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base",
+  dashboardHeroActions: "mt-6 flex flex-wrap gap-2.5",
+  dashboardKpiGrid: "dashboard-reveal grid gap-3 sm:grid-cols-2 xl:grid-cols-4",
+  dashboardKpiCard:
+    "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+  dashboardKpiLabel:
+    "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
+  dashboardKpiValue: "m-0 mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100",
+  dashboardKpiDelta: "m-0 mt-2 text-xs font-semibold",
+  dashboardNudgeCard:
+    "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
+  dashboardAlertItem:
+    "rounded-xl border border-slate-200 bg-slate-50/80 p-3 dark:border-slate-700 dark:bg-slate-800/70",
+  dashboardScheduleItem:
+    "flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700",
+  dashboardStatusPill:
+    "rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-800 dark:text-slate-300",
+  dashboardDraftActions: "mt-4 flex flex-wrap gap-2",
+  dashboardTrendRow: "grid grid-cols-[40px_1fr_36px] items-center gap-2",
+  dashboardTrendTrack: "h-2 rounded-full bg-slate-200 dark:bg-slate-700",
+  dashboardTrendFill: "h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
+  dashboardSnapshotGrid:
+    "mt-3 grid gap-2 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-3",
+  dashboardSnapshotItem: "m-0 rounded-xl bg-slate-100 p-3 dark:bg-slate-800/80",
+  dashboardRiskItem:
+    "flex items-start justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700",
+  dashboardRiskBadgeAmber:
+    "rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  dashboardRiskBadgeRose:
+    "rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
 };

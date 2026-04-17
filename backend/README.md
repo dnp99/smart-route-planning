@@ -4,13 +4,14 @@ This folder contains the Next.js backend for CareFlow.
 
 ## Responsibilities
 
-- Expose `POST /api/optimize-route/v2` for the current route optimization flow.
-- Expose `POST /api/optimize-route/v3` as the feature-flagged seeded ILS engine path.
+- Expose `POST /api/optimize-route/v3` for the current production route optimization flow.
+- Keep `POST /api/optimize-route/v2` available as a legacy compatibility / rollback path.
 - Expose `GET /api/address-autocomplete` for address suggestions.
-- Expose auth endpoints for signup, login, current-user identity, and password updates.
+- Expose auth endpoints for signup, login, logout, current-user identity, and password updates.
 - Geocode addresses through Google Places API.
 - Fetch address suggestions through Google Places autocomplete.
-- Enforce JWT authentication on all business endpoints, plus validation, timeouts, CORS, and lightweight rate limiting.
+- Enforce authenticated access on business endpoints (cookie sessions, with temporary legacy bearer fallback), plus validation, timeouts, CORS, and lightweight rate limiting.
+- Reduce optimize-route latency with in-memory geocode and travel-matrix caching plus in-flight request deduplication.
 
 ## Local development
 
@@ -45,11 +46,11 @@ Production/runtime behavior:
   - Required for patient persistence.
   - Neon/Postgres connection string.
 - `JWT_SECRET`
-  - Required.
-  - Secret used for signing and verifying access tokens.
+  - Required only while legacy bearer-token compatibility remains enabled.
+  - Used for verifying legacy bearer access tokens during migration.
 - `JWT_EXPIRES_IN`
   - Optional.
-  - JWT access-token TTL accepted by `jose` (for example `1h`, `30m`).
+  - Legacy bearer-token TTL accepted by `jose` (for example `1h`, `30m`).
   - Default: `1h`.
 - `AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS`
   - Optional.
@@ -92,7 +93,7 @@ Production/runtime behavior:
   - Default: `60000`.
 - `OPTIMIZE_ROUTE_V3_SHADOW_COMPARE`
   - Optional.
-  - When `true`, `POST /api/optimize-route/v3` logs seed-vs-ILS diagnostics to the server console for rollout comparison.
+  - When `true`, `POST /api/optimize-route/v3` logs seed-vs-ILS diagnostics to the server console.
   - Does not change the response payload.
 - `OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE`
   - Optional.
@@ -104,6 +105,7 @@ Example local file:
 
 ```bash
 DATABASE_URL=postgres://username:password@host:5432/database
+# Legacy bearer-token fallback only (can be removed after hard cutover):
 JWT_SECRET=replace_with_a_long_random_secret
 JWT_EXPIRES_IN=1h
 AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS=5
@@ -130,79 +132,123 @@ OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
 
 - `POST /api/auth/signup`
   - Accepts `{ displayName, email, password }`
-  - Creates a nurse account and returns `{ token, user }`
+  - Creates a nurse account and returns `{ user }`
+  - Sets `careflow_session` HttpOnly cookie
   - Rejects duplicate emails with `409`
   - Enforces shared auth rate limiting by client IP and normalized account email
   - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
 - `POST /api/auth/login`
   - Accepts `{ email, password }`
-  - Returns `{ token, user }` when credentials are valid
+  - Returns `{ user }` when credentials are valid
+  - Sets `careflow_session` HttpOnly cookie
   - Enforces auth rate limiting by client IP and normalized account email
   - Uses optional centralized Upstash Redis limiter when configured, otherwise in-memory fallback
   - Returns `429` with `Retry-After` header while lockout is active
   - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
+- `POST /api/auth/logout`
+  - Revokes current session and clears `careflow_session` cookie
 - `GET /api/auth/me`
-  - Requires `Authorization: Bearer <token>`
+  - Requires valid auth session cookie (`careflow_session`)
+  - Legacy bearer token remains accepted during migration grace period
   - Returns current authenticated user including `homeAddress`
 - `PATCH /api/auth/me`
-  - Requires `Authorization: Bearer <token>`
+  - Requires valid auth session cookie (`careflow_session`)
+  - Legacy bearer token remains accepted during migration grace period
   - Accepts `{ homeAddress }` to update the nurse's saved home address
   - Returns updated profile
 - `POST /api/auth/update-password`
-  - Requires `Authorization: Bearer <token>`
+  - Requires valid auth session cookie (`careflow_session`)
+  - Legacy bearer token remains accepted during migration grace period
   - Accepts `{ currentPassword, newPassword }`
   - Verifies current password before updating
   - Rejects no-op changes and weak passwords
   - Rate limited; returns `429` when exceeded
+- `GET /api/auth/legal-notice`
+  - Requires valid auth session cookie (`careflow_session`)
+  - Returns current acknowledgement status for the active legal notice version
+- `POST /api/auth/legal-notice`
+  - Requires valid auth session cookie (`careflow_session`)
+  - Accepts `{ agree: true }`
+  - Stores acknowledgement timestamp + version for the authenticated nurse
 
 Authentication behavior:
 
-- Missing/invalid/malformed bearer token returns `401`.
-- Missing `JWT_SECRET` returns `500` configuration error.
+- Missing/invalid/revoked/expired session returns `401`.
+- `careflow_session` cookie attributes: `HttpOnly`, `Path=/`, 7-day max-age, `Secure` in production, `SameSite=Lax` in local dev and `SameSite=None` in production.
+- Legacy bearer tokens are still accepted during migration grace period.
 - Auth endpoints include baseline security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and emit HSTS on HTTPS requests.
 
 ### Patients
 
 - `GET /api/patients?query=...`
-  - Requires `Authorization: Bearer <token>`
-  - Lists patients for the authenticated nurse (`JWT sub`)
+  - Requires authenticated session
+  - Lists active patients for the authenticated nurse
   - Optional `query` applies case-insensitive substring search on first/last name
 - `POST /api/patients`
-  - Requires `Authorization: Bearer <token>`
-  - Creates a patient for the authenticated nurse (`JWT sub`)
+  - Requires authenticated session
+  - Creates a patient for the authenticated nurse
   - Returns `201` with created patient JSON
 - `PATCH /api/patients/:id`
-  - Requires `Authorization: Bearer <token>`
-  - Partially updates a patient owned by the authenticated nurse (`JWT sub`)
+  - Requires authenticated session
+  - Partially updates a patient owned by the authenticated nurse
   - If `address` changes and `googlePlaceId` is omitted, clears `googlePlaceId` to prevent stale mismatches
   - Returns updated patient JSON
 - `DELETE /api/patients/:id`
-  - Requires `Authorization: Bearer <token>`
-  - Hard deletes a patient owned by the authenticated nurse (`JWT sub`)
+  - Requires authenticated session
+  - Archive-only behavior: marks patient inactive (`isActive=false`) instead of hard deletion
   - Returns `{ "deleted": true, "id": "..." }`
 
 ### Route planning
 
-- `POST /api/optimize-route/v2`
-  - Requires `Authorization: Bearer <token>`
-  - See request/response shape below
-  - Enforces per-client in-memory rate limiting
 - `POST /api/optimize-route/v3`
-  - Requires `Authorization: Bearer <token>`
-  - Same request/response contract as `v2` during the rollout phase
-  - Reserved for the feature-flagged ILS engine path
-  - Enforces the same API-key and per-client rate-limit rules as `v2`
+  - Requires authenticated session
+  - Current production optimizer endpoint
+  - Same request/response contract as `v2`
+  - Enforces per-client in-memory rate limiting and optional API-key protection
+- `POST /api/optimize-route/v2`
+  - Requires authenticated session
+  - Legacy compatibility / rollback endpoint
+  - Enforces the same API-key and per-client rate-limit rules as `v3`
 
 ### Address autocomplete
 
 - `GET /api/address-autocomplete?query=...`
-  - Requires `Authorization: Bearer <token>`
+  - Requires authenticated session
   - Returns up to 5 suggestions
   - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
 
-## Route optimizer — v2 scheduling logic
+## Security and Privacy Hardening (Current)
 
-`POST /api/optimize-route/v2` uses a greedy beam search (depth 2, beam width 8) with priority tiers and EDF candidate selection.
+- Auth uses server-managed sessions in `auth_sessions`.
+- Legal acknowledgement is tracked per nurse via `nurses.legal_notice_accepted_at` and `nurses.legal_notice_accepted_version`.
+- Audit events are persisted in `audit_events` for patient read/write, optimize-route access, and dashboard access.
+- Route optimization history is minimized: identifying task fields (`patient_name`, `address`) are no longer written.
+- Existing identifying optimization-task fields are redacted by migration `0010_awesome_hairball.sql`.
+- Migration `0011_spicy_ben_parker.sql` adds legal acknowledgement fields to `nurses`.
+
+## Optimization performance caches
+
+CareFlow uses process-local in-memory caches for expensive routing dependencies:
+
+- Geocoding cache (`src/app/api/optimize-route/geocoding.ts`)
+  - TTL: 24 hours
+  - Max entries: 5000
+  - Keys: normalized address and (when available) Google Place ID
+  - Includes in-flight dedupe so concurrent requests for the same target share one upstream call
+- Travel matrix cache (`src/app/api/optimize-route/v2/travelMatrix.ts`)
+  - TTL: 10 minutes
+  - Max entries: 500
+  - Key: normalized set of nodes (location key + rounded coordinates)
+  - Includes in-flight dedupe so concurrent requests for the same matrix share one Google Routes call
+
+Notes:
+
+- Caches are intentionally ephemeral and local to each backend process.
+- Upstream fetches still use `cache: "no-store"`; application-level caches control reuse behavior.
+
+## Route optimizer — v3 (production) scheduling logic
+
+`POST /api/optimize-route/v3` uses a greedy beam-search seed (depth 2, beam width 8) with priority tiers and EDF candidate selection, then applies deterministic seeded ILS refinement with fixed-window safety guards.
 
 ### Step 1 — Candidate pool selection
 
@@ -211,12 +257,22 @@ At each step, the algorithm selects from a prioritised pool:
 ```text
 Any FIXED patients remaining?
 ├── YES
-│   ├── Any FIXED already late?  → Pool: late fixed patients only
-│   └── None late               → Pool: all fixed patients
+│   ├── Any FIXED already late?
+│   │   └── Pool: late fixed patients only
+│   └── None late
+│       └── Pool: near-due fixed patients only
+│           - time mode: fixed with wait <= 30 min
+│           - distance mode: fixed with wait <= 45 min
+│       (if none are near-due, fall through to flexible tiers)
 └── NO
-    ├── Any FLEXIBLE (windowed) already late?   → Pool: late flexible patients only
-    ├── Any FLEXIBLE within 90 min of deadline? → Pool: urgent flexible patients, sorted tightest deadline first (EDF)
-    └── None urgent                             → Pool: all remaining patients
+    ├── Any windowed FLEXIBLE already late?
+    │   └── Pool: late flexible patients only
+    ├── Any windowed FLEXIBLE within 90 min of deadline?
+    │   └── Pool: urgent flexible patients, sorted tightest deadline first (EDF)
+    ├── Any remaining windowed FLEXIBLE?
+    │   └── Pool: all remaining windowed flexible patients
+    └── Otherwise
+        └── Pool: all remaining patients (including no-window flexible)
 ```
 
 ### Step 2 — Score every candidate (depth-2 lookahead)
@@ -235,15 +291,16 @@ Priorities 4–5 are objective-dependent: `"distance"` (default) minimises wait 
 
 The beam search evaluates 2 steps ahead across the top 8 candidates, so lateness from future steps folds back into the current decision.
 
-### Step 3 — Gap filler
+### Step 3 — Gap filler / sequence fill
 
-After a candidate is selected, if it has > 30 min of idle wait before its window opens, the algorithm checks whether a nearby no-window or flexible patient can be inserted into that gap without delaying the anchor visit.
+If a selected anchor has a large idle gap before service start, v3 attempts to fill that gap with feasible nearby visits (single filler or planned filler sequence) without breaking anchor feasibility.
 
 ### Key properties
 
-- The `optimizationObjective` field (`"distance"` or `"time"`, default `"distance"`) only affects priority 4–5 tiebreaking — it never overrides deadline pressure.
+- The `optimizationObjective` field (`"distance"` or `"time"`, default `"distance"`) controls the final objective tradeoff after fixed-window safety and lateness priorities are enforced.
 - Distance is the **last** tiebreaker — it never overrides deadline pressure.
-- The gap filler can only **insert**, never displace a selected candidate.
+- Distance mode guardrail: if the distance solution is strictly worse than the time benchmark on fixed-window safety, v3 falls back to the time benchmark.
+- Nearby clustering preference: visit pairs within `0.5 km` are scored to stay consecutive unless consecutive service would create a fixed-window conflict.
 - Flexible patients within 90 min of their deadline are elevated to a priority pool and sorted by tightest deadline first (EDF), so they are picked before going late rather than after.
 
 ### Warnings in response
@@ -258,7 +315,9 @@ The optimizer returns an optional `warnings[]` array:
 
 ## Key files
 
-- `src/app/api/optimize-route/v2/optimizeRouteService.ts` — core scheduling algorithm
+- `src/app/api/optimize-route/v3/optimizeRouteService.ts` — production scheduling algorithm (greedy seed + seeded ILS)
+- `src/app/api/optimize-route/v3/route.ts` — v3 endpoint wiring
+- `src/app/api/optimize-route/v2/optimizeRouteService.ts` — legacy scheduling algorithm
 - `src/app/api/optimize-route/v2/travelMatrix.ts` — Google Routes travel duration matrix
 - `src/app/api/optimize-route/v2/validation.ts` — request validation
 - `src/app/api/optimize-route/v2/types.ts` — internal types

@@ -391,14 +391,14 @@ describe("RoutePlanner patient selection integration", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);
     fireEvent.click(screen.getAllByRole("button", { name: /Mina Lee/i })[0]);
 
-    fireEvent.click(screen.getByRole("button", { name: "Collapse patient search" }));
+    fireEvent.click(screen.getByRole("button", { name: "Collapse client search" }));
 
     const moreButton = screen.getByRole("button", { name: "+1 more" });
     expect(moreButton).toBeTruthy();
 
     fireEvent.click(moreButton);
 
-    expect(screen.getByLabelText("Destination patient search")).toBeTruthy();
+    expect(screen.getByLabelText("Destination client search")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "+1 more" })).toBeNull();
   });
 
@@ -583,8 +583,8 @@ describe("RoutePlanner patient selection integration", () => {
   it("creates a new patient from destination card and auto-selects it", async () => {
     render(<RoutePlanner />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Add New Patient" }));
-    expect(screen.getByRole("heading", { name: "Add New Patient" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Add New Client" }));
+    expect(screen.getByRole("heading", { name: "Add New Client" })).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Olivia" },
@@ -595,7 +595,7 @@ describe("RoutePlanner patient selection integration", () => {
     fireEvent.change(screen.getByLabelText("Address"), {
       target: { value: "88 Queen Street, Toronto, ON" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "Save new patient" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save new client" }));
 
     await waitFor(() => {
       expect(createPatientMock).toHaveBeenCalledWith(
@@ -608,7 +608,7 @@ describe("RoutePlanner patient selection integration", () => {
     });
 
     expect(screen.getByText("New Patient")).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "Add New Patient" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Add New Client" })).toBeNull();
   });
 
   it("submits manual start and end place ids picked from autocomplete", () => {
@@ -832,7 +832,7 @@ describe("RoutePlanner patient selection integration", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Remove John Smith/i }));
 
-    expect(screen.getByText("No patients selected yet.")).toBeTruthy();
+    expect(screen.getByText("No clients selected yet.")).toBeTruthy();
   });
 
   it("allows optimizing flexible patients without preferred windows", () => {
@@ -943,7 +943,7 @@ describe("RoutePlanner patient selection integration", () => {
     fireEvent.change(screen.getByLabelText("Flex Patient end"), {
       target: { value: "14:00" },
     });
-    fireEvent.click(screen.getByRole("checkbox", { name: "Save this window to patient record" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Save this window to client record" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 

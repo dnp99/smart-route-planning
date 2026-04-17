@@ -3,6 +3,8 @@ import type { GeocodedStop, LatLng } from "./types";
 
 const GEOCODE_TIMEOUT_MS = 8000;
 const DEFAULT_NOMINATIM_USER_AGENT = "careflow/1.0";
+const GEOCODE_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const GEOCODE_CACHE_MAX_ENTRIES = 5000;
 
 type GeocodeTarget = {
   address: string;
@@ -20,9 +22,85 @@ type PlacesTextSearchPayload = {
   places?: PlacesLocationPayload[];
 };
 
+type GeocodeCacheEntry = {
+  coords: LatLng;
+  expiresAt: number;
+};
+
+const geocodeCache = new Map<string, GeocodeCacheEntry>();
+const geocodeInFlight = new Map<string, Promise<LatLng>>();
+
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export const normalizeAddressKey = (address: string) => address.trim().toLowerCase();
+const normalizePlaceIdKey = (placeId: string) => placeId.trim().toLowerCase();
+
+const cloneCoords = (coords: LatLng): LatLng => ({ lat: coords.lat, lon: coords.lon });
+
+const pruneGeocodeCache = (nowMs: number) => {
+  for (const [cacheKey, entry] of geocodeCache.entries()) {
+    if (entry.expiresAt <= nowMs) {
+      geocodeCache.delete(cacheKey);
+    }
+  }
+
+  if (geocodeCache.size <= GEOCODE_CACHE_MAX_ENTRIES) {
+    return;
+  }
+
+  const toDeleteCount = geocodeCache.size - GEOCODE_CACHE_MAX_ENTRIES;
+  let deleted = 0;
+  for (const cacheKey of geocodeCache.keys()) {
+    geocodeCache.delete(cacheKey);
+    deleted += 1;
+    if (deleted >= toDeleteCount) {
+      break;
+    }
+  }
+};
+
+const getCachedGeocode = (cacheKeys: string[]) => {
+  const nowMs = Date.now();
+  pruneGeocodeCache(nowMs);
+
+  for (const cacheKey of cacheKeys) {
+    const cached = geocodeCache.get(cacheKey);
+    if (!cached) {
+      continue;
+    }
+    if (cached.expiresAt <= nowMs) {
+      geocodeCache.delete(cacheKey);
+      continue;
+    }
+    return cloneCoords(cached.coords);
+  }
+
+  return undefined;
+};
+
+const setCachedGeocode = (cacheKeys: string[], coords: LatLng) => {
+  const nowMs = Date.now();
+  const expiresAt = nowMs + GEOCODE_CACHE_TTL_MS;
+  const value = cloneCoords(coords);
+  for (const cacheKey of cacheKeys) {
+    geocodeCache.set(cacheKey, { coords: value, expiresAt });
+  }
+  pruneGeocodeCache(nowMs);
+};
+
+const buildGeocodeCacheKeys = (target: GeocodeTarget) => {
+  const keys = [`address:${normalizeAddressKey(target.address)}`];
+  const placeId = target.googlePlaceId?.trim();
+  if (placeId) {
+    keys.unshift(`place:${normalizePlaceIdKey(placeId)}`);
+  }
+  return keys;
+};
+
+export const __resetGeocodeCacheForTests = () => {
+  geocodeCache.clear();
+  geocodeInFlight.clear();
+};
 
 const resolveNominatimContactEmail = () => {
   const value = process.env.NOMINATIM_CONTACT_EMAIL?.trim();
@@ -198,23 +276,54 @@ const geocodeGoogleTextSearch = async (address: string, apiKey: string): Promise
 };
 
 const geocodeTarget = async (target: GeocodeTarget, googleMapsApiKey: string): Promise<LatLng> => {
-  const hasGoogleMapsApiKey = googleMapsApiKey.trim().length > 0;
-
-  if (hasGoogleMapsApiKey && target.googlePlaceId) {
-    try {
-      return await geocodeGooglePlaceId(target.googlePlaceId, googleMapsApiKey);
-    } catch {}
+  const cacheKeys = buildGeocodeCacheKeys(target);
+  const cachedCoords = getCachedGeocode(cacheKeys);
+  if (cachedCoords) {
+    return cachedCoords;
   }
 
-  try {
-    return await geocodeAddress(target.address);
-  } catch (error) {
-    if (!hasGoogleMapsApiKey) {
-      throw error;
+  for (const cacheKey of cacheKeys) {
+    const inFlight = geocodeInFlight.get(cacheKey);
+    if (inFlight) {
+      return cloneCoords(await inFlight);
     }
   }
 
-  return geocodeGoogleTextSearch(target.address, googleMapsApiKey);
+  const requestPromise = (async () => {
+    const hasGoogleMapsApiKey = googleMapsApiKey.trim().length > 0;
+
+    if (hasGoogleMapsApiKey && target.googlePlaceId) {
+      try {
+        return await geocodeGooglePlaceId(target.googlePlaceId, googleMapsApiKey);
+      } catch {}
+    }
+
+    try {
+      return await geocodeAddress(target.address);
+    } catch (error) {
+      if (!hasGoogleMapsApiKey) {
+        throw error;
+      }
+    }
+
+    return geocodeGoogleTextSearch(target.address, googleMapsApiKey);
+  })();
+
+  for (const cacheKey of cacheKeys) {
+    geocodeInFlight.set(cacheKey, requestPromise);
+  }
+
+  try {
+    const coords = await requestPromise;
+    setCachedGeocode(cacheKeys, coords);
+    return cloneCoords(coords);
+  } finally {
+    for (const cacheKey of cacheKeys) {
+      if (geocodeInFlight.get(cacheKey) === requestPromise) {
+        geocodeInFlight.delete(cacheKey);
+      }
+    }
+  }
 };
 
 export const geocodeTargetsSequentially = async (

@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
 import {
+  updateProfile,
   updateOptimizationObjective,
   updatePassword,
-  updateProfileHomeAddress,
   updateWorkingHours,
 } from "../auth/authService";
-<<<<<<< Updated upstream
-import { clearAuthSession, getAuthToken, setStoredAuthUser } from "../auth/authSession";
-import type { DaySchedule, WeeklyWorkingHours } from "../../../../shared/contracts";
-=======
 import { clearAuthSession, setStoredAuthUser } from "../auth/authSession";
 import type { AuthUser as SharedAuthUser, DaySchedule, WeeklyWorkingHours } from "../../../../shared/contracts";
->>>>>>> Stashed changes
 
+const MAX_DISPLAY_NAME_LENGTH = 120;
 const MAX_HOME_ADDRESS_LENGTH = 200;
 const MIN_PASSWORD_LENGTH = 8;
 const DEFAULT_BREAK_GAP_THRESHOLD = 30;
@@ -71,7 +67,8 @@ export function useAccountSettings({
   onClose,
   onSaved,
 }: UseAccountSettingsParams) {
-  // ── Home address form ────────────────────────────────────────────────────────
+  // ── Profile form ─────────────────────────────────────────────────────────────
+  const [displayNameInput, setDisplayNameInput] = useState("");
   const [homeAddressInput, setHomeAddressInput] = useState("");
   const [accountSettingsError, setAccountSettingsError] = useState("");
   const [accountSettingsSuccess, setAccountSettingsSuccess] = useState("");
@@ -110,6 +107,7 @@ export function useAccountSettings({
   // Reset all form state when modal opens
   useEffect(() => {
     if (!isOpen) return;
+    setDisplayNameInput(authUser?.displayName ?? "");
     setHomeAddressInput(authUser?.homeAddress ?? "");
     setAccountSettingsError("");
     setAccountSettingsSuccess("");
@@ -155,25 +153,49 @@ export function useAccountSettings({
     setAccountSettingsError("");
     setAccountSettingsSuccess("");
 
-    const normalized = homeAddressInput.trim();
-    if (!normalized) {
-      setAccountSettingsError("Home address is required.");
-      return;
+    const normalizedDisplayName = displayNameInput.trim();
+    const normalizedSavedDisplayName = (authUser?.displayName ?? "").trim();
+    const normalizedHomeAddress = homeAddressInput.trim();
+    const normalizedSavedHomeAddress = (authUser?.homeAddress ?? "").trim();
+
+    const updates: { displayName?: string; homeAddress?: string } = {};
+
+    if (normalizedDisplayName !== normalizedSavedDisplayName) {
+      if (!normalizedDisplayName) {
+        setAccountSettingsError("Display name is required.");
+        return;
+      }
+      if (normalizedDisplayName.length > MAX_DISPLAY_NAME_LENGTH) {
+        setAccountSettingsError("Display name must be 120 characters or fewer.");
+        return;
+      }
+      updates.displayName = normalizedDisplayName;
     }
-    if (normalized.length > MAX_HOME_ADDRESS_LENGTH) {
-      setAccountSettingsError("Home address must be 200 characters or fewer.");
+
+    if (normalizedHomeAddress !== normalizedSavedHomeAddress) {
+      if (!normalizedHomeAddress) {
+        setAccountSettingsError("Home address is required.");
+        return;
+      }
+      if (normalizedHomeAddress.length > MAX_HOME_ADDRESS_LENGTH) {
+        setAccountSettingsError("Home address must be 200 characters or fewer.");
+        return;
+      }
+      updates.homeAddress = normalizedHomeAddress;
+    }
+
+    if (Object.keys(updates).length === 0) {
       return;
     }
 
-    const token = getAuthToken();
-    if (!token || !authUser) {
+    if (!authUser) {
       clearAuthSession();
       return;
     }
 
     setIsSavingAccountSettings(true);
     try {
-      const updated = await updateProfileHomeAddress(token, normalized);
+      const updated = await updateProfile(updates);
       setStoredAuthUser(updated.user);
       onSaved(updated.user);
       setAccountSettingsSuccess("Account settings saved.");
@@ -208,15 +230,14 @@ export function useAccountSettings({
       return;
     }
 
-    const token = getAuthToken();
-    if (!token || !authUser) {
+    if (!authUser) {
       clearAuthSession();
       return;
     }
 
     setIsUpdatingPassword(true);
     try {
-      await updatePassword(token, currentPasswordInput, newPasswordInput);
+      await updatePassword(currentPasswordInput, newPasswordInput);
       setCurrentPasswordInput("");
       setNewPasswordInput("");
       setConfirmPasswordInput("");
@@ -276,15 +297,14 @@ export function useAccountSettings({
       return;
     }
 
-    const token = getAuthToken();
-    if (!token || !authUser) {
+    if (!authUser) {
       clearAuthSession();
       return;
     }
 
     setIsSavingSchedule(true);
     try {
-      const updated = await updateWorkingHours(token, scheduleInput, parsedBreakGap);
+      const updated = await updateWorkingHours(scheduleInput, parsedBreakGap);
       setStoredAuthUser(updated.user);
       onSaved(updated.user);
       setScheduleSuccess("Working hours saved.");
@@ -296,15 +316,14 @@ export function useAccountSettings({
   };
 
   const handleOptimizationObjectiveChange = async (value: "time" | "distance") => {
-    const token = getAuthToken();
-    if (!token || !authUser) {
+    if (!authUser) {
       clearAuthSession();
       return;
     }
     setObjectiveError("");
     setIsSavingObjective(true);
     try {
-      const updated = await updateOptimizationObjective(token, value);
+      const updated = await updateOptimizationObjective(value);
       setStoredAuthUser(updated.user);
       onSaved(updated.user);
     } catch (err) {
@@ -338,6 +357,9 @@ export function useAccountSettings({
   };
 
   return {
+    // Profile
+    displayNameInput,
+    setDisplayNameInput,
     // Home address
     homeAddressInput,
     setHomeAddressInput,

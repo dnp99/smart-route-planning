@@ -106,7 +106,7 @@ describe("formatPatientListLabel", () => {
   });
 
   it("returns fallback text when destination list is empty", () => {
-    expect(formatPatientListLabel([])).toBe("selected patients");
+    expect(formatPatientListLabel([])).toBe("selected clients");
   });
 
   it("returns the single name when there is one destination", () => {

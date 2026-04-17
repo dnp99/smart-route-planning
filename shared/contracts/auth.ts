@@ -44,17 +44,19 @@ export type SignupRequest = {
 };
 
 export type LoginResponse = {
-  token: string;
   user: AuthUser;
 };
 
-export type SignupResponse = LoginResponse;
+export type SignupResponse = {
+  user: AuthUser;
+};
 
 export type MeResponse = {
   user: AuthUser;
 };
 
 export type UpdateMeRequest = {
+  displayName?: string;
   homeAddress?: string;
   workingHours?: WeeklyWorkingHours | null;
   breakGapThresholdMinutes?: number | null;
@@ -120,12 +122,17 @@ export const isUpdateMeRequest = (value: unknown): value is UpdateMeRequest => {
     return false;
   }
 
+  const hasDisplayName = value.displayName !== undefined;
   const hasHomeAddress = value.homeAddress !== undefined;
   const hasWorkingHours = value.workingHours !== undefined;
   const hasBreakGap = value.breakGapThresholdMinutes !== undefined;
   const hasOptimizationObjective = value.optimizationObjective !== undefined;
 
-  if (!hasHomeAddress && !hasWorkingHours && !hasBreakGap && !hasOptimizationObjective) {
+  if (!hasDisplayName && !hasHomeAddress && !hasWorkingHours && !hasBreakGap && !hasOptimizationObjective) {
+    return false;
+  }
+
+  if (hasDisplayName && typeof value.displayName !== "string") {
     return false;
   }
 
@@ -171,12 +178,11 @@ export const parseLoginResponse = (value: unknown): LoginResponse | null => {
     return null;
   }
 
-  if (typeof value.token !== "string" || !isAuthUser(value.user)) {
+  if (!isAuthUser(value.user)) {
     return null;
   }
 
   return {
-    token: value.token,
     user: value.user,
   };
 };
