@@ -98,7 +98,7 @@ function RoutePlanner({
     destinationCount,
     requestDestinations,
     selectedDestinationIdSet,
-  } = useRoutePlannerDestinations({ initialDestinations: initialDraft?.selectedDestinations });
+  } = useRoutePlannerDestinations({ initialDestinations: [] });
 
   const {
     startAddress,
@@ -167,11 +167,12 @@ function RoutePlanner({
   const [conflictWarningsDismissed, setConflictWarningsDismissed] = useState(false);
   const [latenessWarningsDismissed, setLatenessWarningsDismissed] = useState(false);
   const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
-    (initialDraft?.selectedDestinations?.length ?? 0) === 0,
+    (initialDraft?.selectedDestinationStates?.length ?? 0) === 0,
   );
   const [isTripSetupExpanded, setIsTripSetupExpanded] = useState(
     normalizedHomeAddress.length === 0,
   );
+  const [hasHydratedDraftDestinations, setHasHydratedDraftDestinations] = useState(false);
 
   // Count of included destinations absent from the current manual-ordered stop list.
   // These were previously unscheduled and will be re-submitted on recalculate.
@@ -241,7 +242,7 @@ function RoutePlanner({
       startGooglePlaceId,
       manualEndGooglePlaceId,
       activeMobileStep,
-      selectedDestinations,
+      selectedDestinationStates: selectedDestinations,
       planningDate,
     });
   }, [
@@ -275,6 +276,54 @@ function RoutePlanner({
     destinationSearchQuery,
     locallyCreatedPatients,
     selectedDestinationIdSet,
+  ]);
+
+  useEffect(() => {
+    if (hasHydratedDraftDestinations) {
+      return;
+    }
+
+    const draftStates = initialDraft?.selectedDestinationStates ?? [];
+    if (draftStates.length === 0) {
+      setHasHydratedDraftDestinations(true);
+      return;
+    }
+
+    const patientById = new Map();
+    destinationSearchPatients.forEach((patient) => {
+      patientById.set(patient.id, patient);
+    });
+    locallyCreatedPatients.forEach((patient) => {
+      patientById.set(patient.id, patient);
+    });
+
+    const uniquePatientIds = [...new Set(draftStates.map((state) => state.patientId))];
+    uniquePatientIds.forEach((patientId) => {
+      if (selectedDestinationIdSet.has(patientId)) {
+        return;
+      }
+      const patient = patientById.get(patientId);
+      if (!patient) {
+        return;
+      }
+      addDestinationPatient(patient);
+    });
+
+    draftStates.forEach((state) => {
+      setDestinationVisitIncluded(state.visitKey, state.isIncluded);
+      setDestinationPersistPlanningWindow(state.visitKey, state.persistPlanningWindow);
+    });
+
+    setHasHydratedDraftDestinations(true);
+  }, [
+    addDestinationPatient,
+    destinationSearchPatients,
+    hasHydratedDraftDestinations,
+    initialDraft?.selectedDestinationStates,
+    locallyCreatedPatients,
+    selectedDestinationIdSet,
+    setDestinationPersistPlanningWindow,
+    setDestinationVisitIncluded,
   ]);
 
   const lastOptimizedSnapshotRef = useRef<string | null>(null);

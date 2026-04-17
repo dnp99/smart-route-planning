@@ -10,7 +10,7 @@ export type DashboardAlert = {
 export type DashboardUpcomingStop = {
   time: string;
   route: string;
-  patientName?: string;
+  patientName?: string | null;
   destination: string;
   status: "on_track" | "at_risk" | "pending";
 };
@@ -58,7 +58,7 @@ const isUpcomingStop = (value: unknown): value is DashboardUpcomingStop =>
   isObject(value) &&
   typeof value.time === "string" &&
   typeof value.route === "string" &&
-  (value.patientName === undefined || typeof value.patientName === "string") &&
+  (value.patientName === undefined || value.patientName === null || typeof value.patientName === "string") &&
   typeof value.destination === "string" &&
   isStopStatus(value.status);
 

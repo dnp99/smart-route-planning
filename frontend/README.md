@@ -10,12 +10,14 @@ This folder contains the Vite + React frontend for CareFlow.
 - Submit route optimization requests to the backend (production path: `POST /api/optimize-route/v3`) with a selectable optimization objective (`"distance"` or `"time"`) and a configurable planning date (defaults to tomorrow).
 - Render the optimized route with Leaflet.
 - Support manual stop reordering with recalculated ETA flow.
-- Persist optimization result in sessionStorage across tab switches; clear on auth change.
+- Keep optimization results in memory only (no browser storage persistence).
+- Persist only non-sensitive route-planner draft state in localStorage (IDs/order/flags/date/objective/UI step).
 - Keep quote/header workspace behavior consistent across auth sessions.
 - Present unified overflow action menus in client list rows.
 - Serve legal pages (Terms, Privacy, License, Trademark) at `/legal/*` routes.
 - Mobile-first route planner with wizard step flow (Trip → Clients → Review), always-expanded sections on mobile, step completion indicators, and safe-area-aware sticky footer CTA.
 - Use Client/Clients wording in UI copy while keeping `/api/patients` endpoints and `patient*` contract fields for backend compatibility.
+- Use cookie-based auth (`credentials: "include"`) with no JWT/token storage in localStorage/sessionStorage.
 
 ## Local development
 
@@ -62,12 +64,12 @@ or:
 - `src/components/RoutePlanner.tsx` - route planner composition and workflow orchestration
 - `src/components/routePlanner/routePlannerHelpers.ts` - destination-to-visit mapping and client search filtering
 - `src/components/routePlanner/routePlannerSubmission.ts` - submit-time validation and request builders
-- `src/components/routePlanner/routePlannerDraft.ts` - localStorage draft persistence and mobile step state
+- `src/components/routePlanner/routePlannerDraft.ts` - minimized localStorage draft persistence and mobile step state
 - `src/components/routePlanner/useCreatePatientForm.ts` - create-patient modal/form state and handlers
 - `src/components/routePlanner/useManualReorder.ts` - manual stop drag/reorder with stale-order tracking
-- `src/components/routePlanner/useRouteOptimization.ts` - optimization request state with sessionStorage persistence
+- `src/components/routePlanner/useRouteOptimization.ts` - optimization request state (memory-only result lifecycle)
 - `src/components/routePlanner/OptimizedRouteResult.tsx` - dispatch plan view (stat cards, route timeline, map, warnings)
-- `src/components/auth/authSession.ts` - local session/token storage, session-scoped key cleanup on auth change
+- `src/components/auth/authSession.ts` - in-memory auth user session helper and auth-change cleanup
 - `src/components/auth/LoginPage.tsx` - login screen
 - `src/components/auth/authFetch.ts` - authenticated backend fetch helper
 - `src/components/legal/` - Terms, Privacy, License, Trademark static pages

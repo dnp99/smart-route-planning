@@ -41,7 +41,7 @@ describe("requestOptimizedRoute", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     window.localStorage.clear();
-    setAuthSession("test-token", {
+    setAuthSession({
       id: "nurse-1",
       email: "nurse@example.com",
       displayName: "Nurse One",
@@ -135,7 +135,7 @@ describe("requestOptimizedRoute", () => {
 
     const headers = new Headers(init.headers);
     expect(headers.get("Content-Type")).toBe("application/json");
-    expect(headers.get("Authorization")).toBe("Bearer test-token");
+    expect(init.credentials).toBe("include");
   });
 
   it("calls optimize-route v3 when ILS flag is enabled", async () => {
@@ -610,7 +610,8 @@ describe("requestOptimizedRoute", () => {
     ]);
 
     calls.forEach((call) => {
-      expect(call.headers.get("Authorization")).toBe("Bearer test-token");
+      const rawInit = fetchMock.mock.calls.find(([url]) => url === call.url)?.[1];
+      expect(rawInit?.credentials).toBe("include");
     });
 
     expect(calls[0].headers.get("Content-Type")).toBeNull();
@@ -832,7 +833,7 @@ describe("requestOptimizedRoute — working hours integration", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     window.localStorage.clear();
-    setAuthSession("test-token", {
+    setAuthSession({
       id: "nurse-1",
       email: "nurse@example.com",
       displayName: "Nurse One",

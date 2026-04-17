@@ -71,6 +71,13 @@
       "when": 1776393225321,
       "tag": "0009_common_blockbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1776396199519,
+      "tag": "0010_awesome_hairball",
+      "breakpoints": true
     }
   ]
 }

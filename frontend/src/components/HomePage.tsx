@@ -284,7 +284,7 @@ export default function HomePage({
   const routePlannerDraft = useMemo(() => readRoutePlannerDraft(), []);
   const draftSelectedCount = useMemo(
     () =>
-      routePlannerDraft?.selectedDestinations.filter((destination) => destination.isIncluded)
+      routePlannerDraft?.selectedDestinationStates.filter((destination) => destination.isIncluded)
         .length ?? 0,
     [routePlannerDraft],
   );

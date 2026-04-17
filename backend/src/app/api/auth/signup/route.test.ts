@@ -6,14 +6,14 @@ const {
   createNurseAccountMock,
   updateNurseLastLoginAtMock,
   hashPasswordMock,
-  signAccessTokenMock,
+  createAuthSessionMock,
   NurseEmailConflictErrorMock,
 } = vi.hoisted(() => ({
   findNurseByEmailMock: vi.fn(),
   createNurseAccountMock: vi.fn(),
   updateNurseLastLoginAtMock: vi.fn(),
   hashPasswordMock: vi.fn(),
-  signAccessTokenMock: vi.fn(),
+  createAuthSessionMock: vi.fn(),
   NurseEmailConflictErrorMock: class NurseEmailConflictError extends Error {},
 }));
 
@@ -28,8 +28,8 @@ vi.mock("../../../../lib/auth/password", () => ({
   hashPassword: hashPasswordMock,
 }));
 
-vi.mock("../../../../lib/auth/jwt", () => ({
-  signAccessToken: signAccessTokenMock,
+vi.mock("../../../../lib/auth/sessionRepository", () => ({
+  createAuthSession: createAuthSessionMock,
 }));
 
 import { OPTIONS, POST } from "./route";
@@ -50,7 +50,7 @@ describe("/api/auth/signup route", () => {
     createNurseAccountMock.mockReset();
     updateNurseLastLoginAtMock.mockReset();
     hashPasswordMock.mockReset();
-    signAccessTokenMock.mockReset();
+    createAuthSessionMock.mockReset();
   });
 
   afterEach(() => {
@@ -261,10 +261,10 @@ describe("/api/auth/signup route", () => {
       error: "An account with this email already exists.",
     });
     expect(updateNurseLastLoginAtMock).not.toHaveBeenCalled();
-    expect(signAccessTokenMock).not.toHaveBeenCalled();
+    expect(createAuthSessionMock).not.toHaveBeenCalled();
   });
 
-  it("creates account and returns token on successful signup", async () => {
+  it("creates account and returns user on successful signup", async () => {
     findNurseByEmailMock.mockResolvedValue(null);
     hashPasswordMock.mockResolvedValue("hashed-password");
     createNurseAccountMock.mockResolvedValue({
@@ -272,7 +272,7 @@ describe("/api/auth/signup route", () => {
       email: "nurse@example.com",
       displayName: "Nurse One",
     });
-    signAccessTokenMock.mockResolvedValue("jwt-token");
+    createAuthSessionMock.mockResolvedValue({ id: "session-2" });
 
     const response = await POST(
       new Request("http://localhost:3000/api/auth/signup", {
@@ -294,7 +294,6 @@ describe("/api/auth/signup route", () => {
       passwordHash: "hashed-password",
     });
     await expect(response.json()).resolves.toEqual({
-      token: "jwt-token",
       user: {
         id: "nurse-2",
         email: "nurse@example.com",
@@ -305,6 +304,7 @@ describe("/api/auth/signup route", () => {
         optimizationObjective: null,
       },
     });
+    expect(response.headers.get("set-cookie")).toContain("careflow_session=session-2");
     expect(updateNurseLastLoginAtMock).toHaveBeenCalledWith("nurse-2");
   });
 });

@@ -44,11 +44,12 @@ export type SignupRequest = {
 };
 
 export type LoginResponse = {
-  token: string;
   user: AuthUser;
 };
 
-export type SignupResponse = LoginResponse;
+export type SignupResponse = {
+  user: AuthUser;
+};
 
 export type MeResponse = {
   user: AuthUser;
@@ -177,12 +178,11 @@ export const parseLoginResponse = (value: unknown): LoginResponse | null => {
     return null;
   }
 
-  if (typeof value.token !== "string" || !isAuthUser(value.user)) {
+  if (!isAuthUser(value.user)) {
     return null;
   }
 
   return {
-    token: value.token,
     user: value.user,
   };
 };

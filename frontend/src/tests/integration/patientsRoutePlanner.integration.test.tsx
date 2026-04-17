@@ -295,7 +295,7 @@ describe("patients and route planner integration", () => {
       },
     });
     window.localStorage.clear();
-    setAuthSession("test-token", {
+    setAuthSession({
       id: "nurse-1",
       email: "nurse@example.com",
       displayName: "Nurse One",

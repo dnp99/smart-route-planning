@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { parseOptimizeRouteV2Response } from "../../../../../../shared/contracts";
 import { requireAuth } from "../../../../lib/auth/requireAuth";
+import { logAuditEvent } from "../../../../lib/audit/auditLogger";
+import {
+  resolveRequestIpAddress,
+  resolveRequestUserAgent,
+} from "../../../../lib/audit/requestAuditContext";
 import { recordOptimizationRun } from "../../../../lib/dashboard/dashboardRepository";
 import { HttpError, buildCorsHeaders, toErrorResponse } from "../../../../lib/http";
 import { enforceOptimizeRouteRateLimit, requireOptimizeRouteApiKey } from "../requestGuards";
@@ -120,6 +125,19 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error("Failed to persist optimize-route v3 history.", error);
     }
+    await logAuditEvent({
+      actorNurseId: auth.nurseId,
+      action: "optimize.v3",
+      resourceType: "route_optimization",
+      outcome: "success",
+      metadata: {
+        planningDate: parsedRequest.planningDate,
+        visitCount: parsedRequest.visits.length,
+        scheduledCount: result.orderedStops.flatMap((stop) => stop.tasks).length,
+      },
+      ipAddress: resolveRequestIpAddress(request),
+      userAgent: resolveRequestUserAgent(request),
+    });
 
     return NextResponse.json(parsedResponse, { headers: corsHeaders });
   } catch (error) {

@@ -7,12 +7,14 @@ const {
   createPatientForNurseMock,
   validateCreatePatientPayloadMock,
   toPatientDtoMock,
+  logAuditEventMock,
 } = vi.hoisted(() => ({
   requireAuthMock: vi.fn(),
   listPatientsByNurseMock: vi.fn(),
   createPatientForNurseMock: vi.fn(),
   validateCreatePatientPayloadMock: vi.fn(),
   toPatientDtoMock: vi.fn(),
+  logAuditEventMock: vi.fn(),
 }));
 
 vi.mock("../../../lib/auth/requireAuth", () => ({
@@ -31,6 +33,9 @@ vi.mock("../../../lib/patients/patientValidation", () => ({
 vi.mock("../../../lib/patients/patientDto", () => ({
   toPatientDto: toPatientDtoMock,
 }));
+vi.mock("../../../lib/audit/auditLogger", () => ({
+  logAuditEvent: logAuditEventMock,
+}));
 
 import { GET, OPTIONS, POST } from "./route";
 
@@ -45,6 +50,7 @@ describe("/api/patients route", () => {
     createPatientForNurseMock.mockReset();
     validateCreatePatientPayloadMock.mockReset();
     toPatientDtoMock.mockReset();
+    logAuditEventMock.mockReset();
   });
 
   afterEach(() => {

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import { parseDashboardSummaryResponse } from "../../../../../../shared/contracts";
 import { requireAuth } from "../../../../lib/auth/requireAuth";
+import { logAuditEvent } from "../../../../lib/audit/auditLogger";
+import {
+  resolveRequestIpAddress,
+  resolveRequestUserAgent,
+} from "../../../../lib/audit/requestAuditContext";
 import { getDashboardSummaryForNurse } from "../../../../lib/dashboard/dashboardRepository";
 import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
 import { findNurseById } from "../../../../lib/patients/patientRepository";
@@ -62,6 +67,15 @@ export async function GET(request: Request) {
     if (!parsed) {
       throw new HttpError(500, "Failed to shape dashboard summary response.");
     }
+    await logAuditEvent({
+      actorNurseId: auth.nurseId,
+      action: "dashboard.summary",
+      resourceType: "dashboard",
+      outcome: "success",
+      metadata: { timezone },
+      ipAddress: resolveRequestIpAddress(request),
+      userAgent: resolveRequestUserAgent(request),
+    });
 
     return NextResponse.json(parsed, { headers: corsHeaders });
   } catch (error) {
