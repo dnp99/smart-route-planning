@@ -252,6 +252,108 @@ describe("App routing", () => {
     expect(screen.getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBe("page");
   });
 
+  it("renders client names in today's schedule", async () => {
+    fetchDashboardSummaryMock.mockReset();
+    fetchDashboardSummaryMock.mockResolvedValue({
+      asOf: "2026-04-16T12:00:00.000Z",
+      timezone: "America/Toronto",
+      kpis: {
+        routesToday: 1,
+        visitsScheduledToday: 2,
+        onTimeRatePercent7d: 92,
+        unscheduledVisitsToday: 0,
+        driveHoursToday: 2.1,
+      },
+      alerts: [],
+      upcomingStops: [
+        {
+          time: "10:45 AM",
+          route: "R-ABCD",
+          patientName: "Alice Smith",
+          destination: "123 Main St",
+          status: "on_track",
+        },
+      ],
+      trend: [
+        { date: "2026-04-10", label: "Fri", onTimeRatePercent: 88 },
+        { date: "2026-04-11", label: "Sat", onTimeRatePercent: 84 },
+        { date: "2026-04-12", label: "Sun", onTimeRatePercent: 90 },
+        { date: "2026-04-13", label: "Mon", onTimeRatePercent: 94 },
+        { date: "2026-04-14", label: "Tue", onTimeRatePercent: 91 },
+        { date: "2026-04-15", label: "Wed", onTimeRatePercent: 93 },
+        { date: "2026-04-16", label: "Thu", onTimeRatePercent: 92 },
+      ],
+      snapshot: {
+        completedRoutes: 1,
+        delayedRoutes: 0,
+        unscheduledVisits: 0,
+        totalDistanceKm: 12.8,
+      },
+    });
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("10:45 AM · Alice Smith")).toBeTruthy();
+    expect(screen.getByText("123 Main St")).toBeTruthy();
+  });
+
+  it("shows dashboard error state and supports retry on the home page", async () => {
+    fetchDashboardSummaryMock.mockReset();
+    fetchDashboardSummaryMock
+      .mockRejectedValueOnce(new Error("Unable to load dashboard summary."))
+      .mockResolvedValueOnce({
+        asOf: "2026-04-16T12:05:00.000Z",
+        timezone: "America/Toronto",
+        kpis: {
+          routesToday: 2,
+          visitsScheduledToday: 8,
+          onTimeRatePercent7d: 91,
+          unscheduledVisitsToday: 0,
+          driveHoursToday: 5.5,
+        },
+        alerts: [],
+        upcomingStops: [],
+        trend: [
+          { date: "2026-04-10", label: "Fri", onTimeRatePercent: 88 },
+          { date: "2026-04-11", label: "Sat", onTimeRatePercent: 84 },
+          { date: "2026-04-12", label: "Sun", onTimeRatePercent: 90 },
+          { date: "2026-04-13", label: "Mon", onTimeRatePercent: 94 },
+          { date: "2026-04-14", label: "Tue", onTimeRatePercent: 91 },
+          { date: "2026-04-15", label: "Wed", onTimeRatePercent: 93 },
+          { date: "2026-04-16", label: "Thu", onTimeRatePercent: 92 },
+        ],
+        snapshot: {
+          completedRoutes: 2,
+          delayedRoutes: 0,
+          unscheduledVisits: 0,
+          totalDistanceKm: 33.8,
+        },
+      });
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText("Dashboard data unavailable")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Retry Dashboard" }));
+
+    await waitFor(() => {
+      expect(fetchDashboardSummaryMock).toHaveBeenCalledTimes(2);
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("Dashboard data unavailable")).toBeNull();
+    });
+    expect(await screen.findByText("8 visits planned")).toBeTruthy();
+  });
+
   it("renders route planner at /route-planner and marks nav active", async () => {
     seedAuthenticatedSession();
 

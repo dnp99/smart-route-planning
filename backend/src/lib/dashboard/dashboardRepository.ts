@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, lte } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import type {
   DashboardAlert,
   DashboardSummaryResponse,
@@ -8,7 +8,7 @@ import type {
   OptimizeRouteV2UnscheduledTask,
 } from "../../../../shared/contracts";
 import { getDb } from "../../db";
-import { routeOptimizationRuns, routeOptimizationTasks } from "../../db/schema";
+import { patients, routeOptimizationRuns, routeOptimizationTasks } from "../../db/schema";
 import type { OptimizeRouteResultV2 } from "../../app/api/optimize-route/v2/types";
 import type { ValidatedOptimizeRouteV2Request } from "../../app/api/optimize-route/v2/validation";
 
@@ -158,6 +158,7 @@ const resolveUpcomingStops = ({
   return source.slice(0, 4).map((task) => ({
     time: timeFormatter.format(task.serviceStartTime as Date),
     route: toRouteLabel(latestRunId),
+    patientName: task.patientName,
     destination: task.address,
     status: (task.onTime === false ? "at_risk" : "on_track") as DashboardUpcomingStop["status"],
   }));
@@ -186,15 +187,27 @@ const buildTrend = (
 const buildAlerts = ({
   latestRun,
   latestRunWarnings,
+  hasRecentRuns,
 }: {
   latestRun: typeof routeOptimizationRuns.$inferSelect | null;
   latestRunWarnings: OptimizeRouteV2ScheduleWarning[];
+  hasRecentRuns: boolean;
 }): DashboardAlert[] => {
   if (!latestRun) {
     return [
       {
         title: "No route history yet",
         detail: "Run route optimization to unlock live alerts and trend tracking.",
+        level: "heads_up",
+      },
+    ];
+  }
+
+  if (!hasRecentRuns) {
+    return [
+      {
+        title: "No routes in the last 7 days",
+        detail: `Latest saved plan was for ${latestRun.planningDate}. Plan a route to refresh this dashboard.`,
         level: "heads_up",
       },
     ];
@@ -259,6 +272,27 @@ export const recordOptimizationRun = async ({
 
     if (!createdRun) {
       return;
+    }
+
+    const scheduledPatientIds = [...new Set(request.visits.map((visit) => visit.patientId))].filter(
+      (patientId): patientId is string => typeof patientId === "string" && patientId.length > 0,
+    );
+
+    if (scheduledPatientIds.length > 0) {
+      const txWithUpdate = tx as ReturnType<typeof getDb> & {
+        update?: ReturnType<typeof getDb>["update"];
+      };
+
+      if (typeof txWithUpdate.update === "function") {
+        await txWithUpdate
+          .update(patients)
+          .set({
+            isActive: true,
+            lastScheduledAt: new Date(),
+            updatedAt: new Date(),
+          })
+          .where(and(eq(patients.nurseId, nurseId), inArray(patients.id, scheduledPatientIds)));
+      }
     }
 
     const visitsById = new Map(request.visits.map((visit) => [visit.visitId, visit]));
@@ -402,7 +436,11 @@ export const getDashboardSummaryForNurse = async ({
       unscheduledVisitsToday,
       driveHoursToday: roundToOneDecimal(totalDurationTodaySeconds / 3600),
     },
-    alerts: buildAlerts({ latestRun, latestRunWarnings }),
+    alerts: buildAlerts({
+      latestRun,
+      latestRunWarnings,
+      hasRecentRuns: recentRuns.length > 0,
+    }),
     upcomingStops:
       latestRun && latestRunTasks.length > 0
         ? resolveUpcomingStops({

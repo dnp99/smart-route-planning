@@ -43,11 +43,14 @@ export const patients = pgTable(
     preferredVisitStartTime: time("preferred_visit_start_time").notNull(),
     preferredVisitEndTime: time("preferred_visit_end_time").notNull(),
     visitTimeType: text("visit_time_type").notNull(),
+    isActive: boolean("is_active").notNull().default(true),
+    lastScheduledAt: timestamp("last_scheduled_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     index("patients_nurse_id_idx").on(table.nurseId),
+    index("patients_nurse_active_idx").on(table.nurseId, table.isActive),
     index("patients_nurse_name_idx").on(table.nurseId, table.lastName, table.firstName),
     check(
       "patients_visit_duration_minutes_chk",

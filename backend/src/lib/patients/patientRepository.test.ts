@@ -193,6 +193,32 @@ describe("patientRepository", () => {
     ]);
   });
 
+  it("deactivates stale inactive-by-scheduling patients before listing", async () => {
+    const updateWhereMock = vi.fn().mockResolvedValue(undefined);
+    const updateSetMock = vi.fn().mockReturnValue({ where: updateWhereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: updateSetMock });
+
+    const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-2" }]);
+    const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+    const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+    const selectMock = vi.fn().mockReturnValue({ from: fromMock });
+
+    getDbMock.mockReturnValue({ update: updateMock, select: selectMock });
+
+    await expect(listPatientsByNurse("nurse-1")).resolves.toEqual([
+      { id: "patient-2", visitWindows: [] },
+    ]);
+
+    expect(updateMock).toHaveBeenCalledTimes(1);
+    expect(updateSetMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isActive: false,
+        updatedAt: expect.any(Date),
+      }),
+    );
+    expect(updateWhereMock).toHaveBeenCalledTimes(1);
+  });
+
   it("attaches and sorts visit windows by start, end, and createdAt", async () => {
     const patientRows = [{ id: "patient-1" }, { id: "patient-2" }];
     const windows = [
@@ -738,22 +764,31 @@ describe("patientRepository", () => {
     expect(tx.insert).not.toHaveBeenCalled();
   });
 
-  it("deletes patient row", async () => {
+  it("soft-deletes patient row by marking it inactive", async () => {
     const returningMock = vi.fn().mockResolvedValue([{ id: "patient-1" }]);
     const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
-    const deleteMock = vi.fn().mockReturnValue({ where: whereMock });
-    getDbMock.mockReturnValue({ delete: deleteMock });
+    const setMock = vi.fn().mockReturnValue({ where: whereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: setMock });
+    getDbMock.mockReturnValue({ update: updateMock });
 
     await expect(deletePatientForNurse("nurse-1", "patient-1")).resolves.toEqual({
       id: "patient-1",
     });
+
+    expect(setMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isActive: false,
+        updatedAt: expect.any(Date),
+      }),
+    );
   });
 
   it("returns null when delete query removes nothing", async () => {
     const returningMock = vi.fn().mockResolvedValue([]);
     const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
-    const deleteMock = vi.fn().mockReturnValue({ where: whereMock });
-    getDbMock.mockReturnValue({ delete: deleteMock });
+    const setMock = vi.fn().mockReturnValue({ where: whereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: setMock });
+    getDbMock.mockReturnValue({ update: updateMock });
 
     await expect(deletePatientForNurse("nurse-1", "missing")).resolves.toBeNull();
   });

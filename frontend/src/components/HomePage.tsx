@@ -130,15 +130,19 @@ export default function HomePage({
   const navigate = useNavigate();
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummaryResponse | null>(null);
   const [dashboardError, setDashboardError] = useState("");
+  const [isDashboardLoading, setIsDashboardLoading] = useState(false);
+  const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) {
       setDashboardSummary(null);
       setDashboardError("");
+      setIsDashboardLoading(false);
       return;
     }
 
     let active = true;
+    setIsDashboardLoading(true);
 
     void fetchDashboardSummary()
       .then((summary) => {
@@ -154,14 +158,20 @@ export default function HomePage({
           return;
         }
 
-        setDashboardSummary(null);
         setDashboardError(error instanceof Error ? error.message : "Unable to load dashboard.");
+      })
+      .finally(() => {
+        if (!active) {
+          return;
+        }
+
+        setIsDashboardLoading(false);
       });
 
     return () => {
       active = false;
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, dashboardRefreshKey]);
 
   const currentDateLabel = new Intl.DateTimeFormat("en-US", {
     month: "long",
@@ -234,7 +244,7 @@ export default function HomePage({
   const alerts = useMemo(() => {
     const nextAlerts = dashboardSummary?.alerts ?? [];
 
-    if (dashboardError) {
+    if (dashboardError && !dashboardSummary) {
       return [
         {
           title: "Dashboard unavailable",
@@ -242,6 +252,17 @@ export default function HomePage({
           level: "heads_up",
         } satisfies DashboardAlert,
       ];
+    }
+
+    if (dashboardError && dashboardSummary) {
+      return [
+        {
+          title: "Dashboard refresh failed",
+          detail: `Showing your last loaded snapshot. ${dashboardError}`,
+          level: "heads_up",
+        } satisfies DashboardAlert,
+        ...nextAlerts,
+      ].slice(0, 3);
     }
 
     if (nextAlerts.length === 0) {
@@ -338,6 +359,9 @@ export default function HomePage({
             {greetingPrefix}, {greetingName}
           </h1>
           <p className={responsiveStyles.dashboardHeroMeta}>{currentDateLabel}</p>
+          <p className={responsiveStyles.dashboardHeroMeta}>
+            Working hours today: {todayHoursDisplay}
+          </p>
           <p className={responsiveStyles.dashboardHeroBody}>
             Track operations in one place, spot delays early, and launch route updates with fewer
             clicks.
@@ -347,6 +371,38 @@ export default function HomePage({
           </div>
         </div>
       </section>
+
+      {isAuthenticated && (dashboardError || isDashboardLoading) && (
+        <section
+          className={
+            dashboardError
+              ? "dashboard-reveal rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm dark:border-rose-900/70 dark:bg-rose-950/30 sm:p-5"
+              : responsiveStyles.dashboardCard
+          }
+        >
+          <h2 className={responsiveStyles.cardTitle}>
+            {dashboardError ? "Dashboard data unavailable" : "Refreshing dashboard"}
+          </h2>
+          <p className={`${responsiveStyles.cardDescription} mt-2`}>
+            {dashboardError
+              ? dashboardSummary
+                ? "Your last successful dashboard snapshot is still displayed."
+                : "No dashboard snapshot is available yet."
+              : "Loading the latest route metrics..."}
+          </p>
+          {dashboardError && (
+            <div className={responsiveStyles.dashboardDraftActions}>
+              <button
+                type="button"
+                className={responsiveStyles.secondaryButton}
+                onClick={() => setDashboardRefreshKey((value) => value + 1)}
+              >
+                Retry Dashboard
+              </button>
+            </div>
+          )}
+        </section>
+      )}
 
       <section className={responsiveStyles.dashboardKpiGrid}>
         {kpis.map((kpi) => (
@@ -451,7 +507,7 @@ export default function HomePage({
                 >
                   <div>
                     <p className={responsiveStyles.cardTitle}>
-                      {stop.time} · {stop.route}
+                      {stop.time} · {stop.patientName || "Client"}
                     </p>
                     <p className={responsiveStyles.cardDescription}>{stop.destination}</p>
                   </div>

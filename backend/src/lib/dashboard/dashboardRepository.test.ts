@@ -285,6 +285,37 @@ describe("dashboardRepository", () => {
         }),
       ]);
     });
+
+    it("updates scheduled patients with lastScheduledAt and reactivates them", async () => {
+      const returningMock = vi.fn().mockResolvedValue([{ id: "run-1" }]);
+      const runValuesMock = vi.fn().mockReturnValue({ returning: returningMock });
+      const taskValuesMock = vi.fn().mockResolvedValue([]);
+      const insertMock = vi
+        .fn()
+        .mockReturnValueOnce({ values: runValuesMock })
+        .mockReturnValueOnce({ values: taskValuesMock });
+      const updateWhereMock = vi.fn().mockResolvedValue(undefined);
+      const updateSetMock = vi.fn().mockReturnValue({ where: updateWhereMock });
+      const updateMock = vi.fn().mockReturnValue({ set: updateSetMock });
+      getDbMock.mockReturnValue({ insert: insertMock, update: updateMock });
+
+      await recordOptimizationRun({
+        nurseId: "nurse-1",
+        endpointVersion: "v2",
+        request: makeRequest(),
+        result: makeResult(),
+      });
+
+      expect(updateMock).toHaveBeenCalledTimes(1);
+      expect(updateSetMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isActive: true,
+          lastScheduledAt: expect.any(Date),
+          updatedAt: expect.any(Date),
+        }),
+      );
+      expect(updateWhereMock).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("getDashboardSummaryForNurse", () => {
@@ -392,6 +423,8 @@ describe("dashboardRepository", () => {
 
       expect(result.kpis.routesToday).toBe(0);
       expect(result.kpis.onTimeRatePercent7d).toBeNull();
+      expect(result.alerts[0].title).toBe("No routes in the last 7 days");
+      expect(result.alerts[0].detail).toContain("2026-03-01");
     });
 
     it("populates upcoming stops from latest run tasks", async () => {
@@ -423,6 +456,7 @@ describe("dashboardRepository", () => {
       });
 
       expect(result.upcomingStops).toHaveLength(1);
+      expect(result.upcomingStops[0].patientName).toBe("Alice Smith");
       expect(result.upcomingStops[0].destination).toBe("123 Main St");
       expect(result.upcomingStops[0].status).toBe("on_track");
     });

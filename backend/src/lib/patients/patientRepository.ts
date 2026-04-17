@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, inArray, or } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, isNull, lt, or } from "drizzle-orm";
 import { getDb } from "../../db";
 import { nurses, patientVisitWindows, patients } from "../../db/schema";
 import type {
@@ -17,6 +17,7 @@ export class NurseEmailConflictError extends Error {
 const FALLBACK_FLEXIBLE_START_TIME = "00:00";
 const FALLBACK_FLEXIBLE_END_TIME = "23:59";
 const FALLBACK_FLEXIBLE_VISIT_TYPE = "flexible";
+const SCHEDULING_INACTIVITY_WINDOW_DAYS = 60;
 
 const runInTransaction = async <T>(operation: (db: ReturnType<typeof getDb>) => Promise<T>) => {
   const db = getDb();
@@ -31,6 +32,38 @@ const runInTransaction = async <T>(operation: (db: ReturnType<typeof getDb>) => 
   }
 
   return operation(db);
+};
+
+const deactivateStalePatientsForNurse = async (nurseId: string) => {
+  const db = getDb() as ReturnType<typeof getDb> & {
+    update?: ReturnType<typeof getDb>["update"];
+  };
+
+  if (typeof db.update !== "function") {
+    return;
+  }
+
+  const now = new Date();
+  const inactivityCutoff = new Date(
+    now.getTime() - SCHEDULING_INACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  );
+
+  await db
+    .update(patients)
+    .set({
+      isActive: false,
+      updatedAt: now,
+    })
+    .where(
+      and(
+        eq(patients.nurseId, nurseId),
+        eq(patients.isActive, true),
+        or(
+          lt(patients.lastScheduledAt, inactivityCutoff),
+          and(isNull(patients.lastScheduledAt), lt(patients.createdAt, inactivityCutoff)),
+        ),
+      ),
+    );
 };
 
 const isUniqueViolationError = (error: unknown) => {
@@ -204,9 +237,11 @@ const attachVisitWindows = async (
 };
 
 export const listPatientsByNurse = async (nurseId: string, query?: string) => {
+  await deactivateStalePatientsForNurse(nurseId);
+
   const normalizedQuery = query?.trim() ?? "";
 
-  const filters = [eq(patients.nurseId, nurseId)];
+  const filters = [eq(patients.nurseId, nurseId), eq(patients.isActive, true)];
   if (normalizedQuery.length > 0) {
     const searchTerm = `%${normalizedQuery}%`;
     filters.push(or(ilike(patients.firstName, searchTerm), ilike(patients.lastName, searchTerm))!);
@@ -366,8 +401,14 @@ export const updatePatientForNurse = async (
 
 export const deletePatientForNurse = async (nurseId: string, patientId: string) => {
   const [deletedPatient] = await getDb()
-    .delete(patients)
-    .where(and(eq(patients.id, patientId), eq(patients.nurseId, nurseId)))
+    .update(patients)
+    .set({
+      isActive: false,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(eq(patients.id, patientId), eq(patients.nurseId, nurseId), eq(patients.isActive, true)),
+    )
     .returning({ id: patients.id });
 
   return deletedPatient ?? null;
