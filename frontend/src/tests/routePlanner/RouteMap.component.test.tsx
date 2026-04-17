@@ -1,7 +1,7 @@
 import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import RouteMap from "../../components/RouteMap";
-import { ROUTE_MAP_UNAVAILABLE_EVENT } from "../../components/routePlanner/routePlannerTelemetry";
+import RouteMap from "../../features/route-planner/ui/RouteMap";
+import { ROUTE_MAP_UNAVAILABLE_EVENT } from "../../features/route-planner/utils/routePlannerTelemetry";
 
 describe("RouteMap component", () => {
   afterEach(() => {

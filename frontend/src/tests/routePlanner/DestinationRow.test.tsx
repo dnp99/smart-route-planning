@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { DestinationRow } from "../../components/routePlanner/DestinationRow";
-import type { SelectedPatientDestination } from "../../components/routePlanner/routePlannerTypes";
+import { DestinationRow } from "../../features/route-planner/ui/DestinationRow";
+import type { SelectedPatientDestination } from "../../features/route-planner/domain/routePlannerTypes";
 
 const buildDestination = (
   overrides: Partial<SelectedPatientDestination> = {},

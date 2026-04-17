@@ -1,9 +1,9 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { RouteResultSection } from "../../components/routePlanner/RouteResultSection";
+import { RouteResultSection } from "../../features/route-planner/ui/RouteResultSection";
 import type { OptimizeRouteResponse } from "../../components/types";
 
-vi.mock("../../components/routePlanner/OptimizedRouteResult", () => ({
+vi.mock("../../features/route-planner/ui/OptimizedRouteResult", () => ({
   OptimizedRouteResult: ({
     breakGapThresholdMinutes,
     showOptimizeFlash,

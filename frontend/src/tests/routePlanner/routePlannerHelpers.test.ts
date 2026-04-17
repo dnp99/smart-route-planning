@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import {
   formatPatientListLabel,
   toSelectedPatientDestinations,
-} from "../../components/routePlanner/routePlannerHelpers";
+} from "../../features/route-planner/domain/routePlannerHelpers";
 import type { Patient } from "../../../../shared/contracts";
-import type { SelectedPatientDestination } from "../../components/routePlanner/routePlannerTypes";
+import type { SelectedPatientDestination } from "../../features/route-planner/domain/routePlannerTypes";
 
 const buildPatient = (overrides: Partial<Patient> = {}): Patient => ({
   id: "patient-1",

@@ -5,7 +5,7 @@ import {
   formatExpectedStartTimeText,
   formatVisitDurationMinutes,
   timeToMinutes,
-} from "../../components/routePlanner/routePlannerResultUtils";
+} from "../../features/route-planner/utils/routePlannerResultUtils";
 
 describe("routePlannerResultUtils", () => {
   it("returns empty expected start text for invalid timestamps", () => {

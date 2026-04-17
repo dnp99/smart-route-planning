@@ -14,6 +14,12 @@ describe("auth request guards", () => {
   const originalUpstashUrl = process.env.AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_URL;
   const originalUpstashToken = process.env.AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_TOKEN;
 
+  const setNodeEnv = (value: NodeJS.ProcessEnv["NODE_ENV"]) => {
+    const nextEnv = { ...process.env };
+    nextEnv.NODE_ENV = value;
+    process.env = nextEnv;
+  };
+
   beforeEach(() => {
     __resetLoginRateLimitForTests();
     delete process.env.AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_URL;
@@ -41,11 +47,7 @@ describe("auth request guards", () => {
       process.env.AUTH_LOGIN_RATE_LIMIT_LOCKOUT_SECONDS = originalLockout;
     }
 
-    if (originalNodeEnv === undefined) {
-      delete process.env.NODE_ENV;
-    } else {
-      process.env.NODE_ENV = originalNodeEnv;
-    }
+    setNodeEnv(originalNodeEnv);
 
     if (originalAuthEnforceHttps === undefined) {
       delete process.env.AUTH_ENFORCE_HTTPS;
@@ -200,7 +202,7 @@ describe("auth request guards", () => {
   });
 
   it("requires secure transport in production", () => {
-    process.env.NODE_ENV = "production";
+    setNodeEnv("production");
 
     expect(() =>
       requireSecureAuthTransport(new Request("http://localhost:3000/api/auth/login")),
@@ -208,7 +210,7 @@ describe("auth request guards", () => {
   });
 
   it("accepts secure transport when forwarded proto is https", () => {
-    process.env.NODE_ENV = "production";
+    setNodeEnv("production");
 
     expect(() =>
       requireSecureAuthTransport(

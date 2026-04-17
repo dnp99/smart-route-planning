@@ -6,7 +6,7 @@ import {
   offsetOverlappingMarkers,
   toPatientInitials,
   type RoutePoint,
-} from "../../components/RouteMap";
+} from "../../features/route-planner/ui/RouteMap";
 
 const createTask = (patientName: string) => ({ patientName }) as OrderedStop["tasks"][number];
 

@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import PatientsPage from "../../components/patients/PatientsPage";
+import PatientsPage from "../../features/patients/ui/PatientsPage";
 
-vi.mock("../../components/patients/patientService", () => ({
+vi.mock("../../features/patients/api/patientService", () => ({
   listPatients: vi.fn(),
   createPatient: vi.fn(),
   updatePatient: vi.fn(),
@@ -14,7 +14,7 @@ import {
   deletePatient,
   listPatients,
   updatePatient,
-} from "../../components/patients/patientService";
+} from "../../features/patients/api/patientService";
 
 const mockedListPatients = vi.mocked(listPatients);
 const mockedCreatePatient = vi.mocked(createPatient);

@@ -6,7 +6,7 @@ import {
   updateWorkingHours,
 } from "../auth/authService";
 import { clearAuthSession, setStoredAuthUser } from "../auth/authSession";
-import type { DaySchedule, WeeklyWorkingHours } from "../../../../shared/contracts";
+import type { AuthUser as SharedAuthUser, DaySchedule, WeeklyWorkingHours } from "../../../../shared/contracts";
 
 const MAX_DISPLAY_NAME_LENGTH = 120;
 const MAX_HOME_ADDRESS_LENGTH = 200;
@@ -52,14 +52,7 @@ export const buildDefaultSchedule = (
   return result;
 };
 
-type AuthUser = {
-  displayName?: string;
-  email?: string;
-  homeAddress?: string;
-  workingHours?: WeeklyWorkingHours | null;
-  breakGapThresholdMinutes?: number | null;
-  optimizationObjective?: "time" | "distance" | null;
-} | null;
+type AuthUser = SharedAuthUser | null;
 
 type UseAccountSettingsParams = {
   authUser: AuthUser;

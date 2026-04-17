@@ -232,7 +232,7 @@ const requestOptimizedRouteMock = vi.fn(
   },
 );
 
-vi.mock("../../components/patients/patientService", () => ({
+vi.mock("../../features/patients/api/patientService", () => ({
   listPatients: (query: string) => listPatientsMock(query),
   createPatient: (request: Parameters<typeof createPatientMock>[0]) => createPatientMock(request),
   updatePatient: (patientId: string, request: Parameters<typeof updatePatientMock>[1]) =>
@@ -240,7 +240,7 @@ vi.mock("../../components/patients/patientService", () => ({
   deletePatient: (patientId: string) => deletePatientMock(patientId),
 }));
 
-vi.mock("../../components/routePlanner/routePlannerService", () => ({
+vi.mock("../../features/route-planner/api/routePlannerService", () => ({
   requestOptimizedRoute: (request: Parameters<typeof requestOptimizedRouteMock>[0]) =>
     requestOptimizedRouteMock(request),
 }));
@@ -281,7 +281,7 @@ vi.mock("../../components/AddressAutocompleteInput", () => ({
   ),
 }));
 
-vi.mock("../../components/RouteMap", () => ({
+vi.mock("../../features/route-planner/RouteMap", () => ({
   default: () => null,
 }));
 

@@ -1,6 +1,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { OptimizedStopList } from "../../components/routePlanner/OptimizedStopList";
+import { OptimizedStopList } from "../../features/route-planner/ui/OptimizedStopList";
 import type { OrderedStop } from "../../components/types";
 
 const buildTask = (

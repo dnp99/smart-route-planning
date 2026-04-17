@@ -6,7 +6,7 @@ import {
   persistRoutePlannerDraft,
   readRoutePlannerDraft,
   type RoutePlannerDraft,
-} from "../../components/routePlanner/routePlannerDraft";
+} from "../../features/route-planner/state/routePlannerDraft";
 
 const draftDestinationState = {
   visitKey: "visit-1",

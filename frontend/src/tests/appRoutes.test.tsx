@@ -31,7 +31,7 @@ vi.mock("../components/auth/authService", () => ({
   acknowledgeLegalNotice: acknowledgeLegalNoticeMock,
 }));
 
-vi.mock("../components/patients/patientService", () => ({
+vi.mock("../features/patients/api/patientService", () => ({
   listPatients: listPatientsMock,
 }));
 

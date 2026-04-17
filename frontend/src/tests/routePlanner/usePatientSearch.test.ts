@@ -1,11 +1,11 @@
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../components/patients/patientService", () => ({
+vi.mock("../../features/patients/api/patientService", () => ({
   listPatients: vi.fn(),
 }));
 
-import { listPatients } from "../../components/patients/patientService";
+import { listPatients } from "../../features/patients/api/patientService";
 import { usePatientSearch } from "../../components/hooks/usePatientSearch";
 
 const mockedListPatients = vi.mocked(listPatients);

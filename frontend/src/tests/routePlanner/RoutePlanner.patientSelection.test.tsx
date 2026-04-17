@@ -27,7 +27,7 @@ const usePatientSearchMock = vi.fn<
   error: "",
 }));
 
-vi.mock("../../components/hooks/useRouteOptimization", () => ({
+vi.mock("../../features/route-planner/hooks/useRouteOptimization", () => ({
   useRouteOptimization: () => ({
     result: routeOptimizationState.result,
     error: routeOptimizationState.error,
@@ -39,15 +39,15 @@ vi.mock("../../components/hooks/useRouteOptimization", () => ({
   }),
 }));
 
-vi.mock("../../components/hooks/usePatientSearch", () => ({
+vi.mock("../../features/route-planner/hooks/usePatientSearch", () => ({
   usePatientSearch: (args: { enabled: boolean }) => usePatientSearchMock(args),
 }));
 
-vi.mock("../../components/routePlanner/routePlannerService", () => ({
+vi.mock("../../features/route-planner/api/routePlannerService", () => ({
   persistPlanningWindows: (...args: unknown[]) => persistPlanningWindowsMock(...args),
 }));
 
-vi.mock("../../components/patients/patientService", () => ({
+vi.mock("../../features/patients/api/patientService", () => ({
   createPatient: (...args: unknown[]) => createPatientMock(...args),
 }));
 
@@ -104,11 +104,11 @@ vi.mock("../../components/AddressAutocompleteInput", () => ({
   },
 }));
 
-vi.mock("../../components/RouteMap", () => ({
+vi.mock("../../features/route-planner/RouteMap", () => ({
   default: () => null,
 }));
 
-import RoutePlanner from "../../components/RoutePlanner";
+import RoutePlanner from "../../features/route-planner/ui/RoutePlanner";
 
 const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 

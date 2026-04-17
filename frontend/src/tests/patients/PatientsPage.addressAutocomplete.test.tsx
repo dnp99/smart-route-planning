@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../../components/patients/patientService", () => ({
+vi.mock("../../features/patients/api/patientService", () => ({
   listPatients: vi.fn(),
   createPatient: vi.fn(),
   updatePatient: vi.fn(),
@@ -45,8 +45,8 @@ vi.mock("../../components/AddressAutocompleteInput", () => ({
   ),
 }));
 
-import { createPatient, listPatients } from "../../components/patients/patientService";
-import PatientsPage from "../../components/patients/PatientsPage";
+import { createPatient, listPatients } from "../../features/patients/api/patientService";
+import PatientsPage from "../../features/patients/ui/PatientsPage";
 
 const mockedListPatients = vi.mocked(listPatients);
 const mockedCreatePatient = vi.mocked(createPatient);

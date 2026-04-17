@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Patient } from "../../../../shared/contracts";
-import type { SelectedPatientDestination } from "../routePlanner/routePlannerTypes";
-import { toSelectedPatientDestinations } from "../routePlanner/routePlannerHelpers";
+import type { Patient } from "../../../../../shared/contracts";
+import type { SelectedPatientDestination } from "../domain/routePlannerTypes";
+import { toSelectedPatientDestinations } from "../domain/routePlannerHelpers";
 
 type UseRoutePlannerDestinationsParams = {
   initialDestinations?: SelectedPatientDestination[];

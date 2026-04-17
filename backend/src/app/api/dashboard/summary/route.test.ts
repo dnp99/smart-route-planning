@@ -40,6 +40,7 @@ describe("/api/dashboard/summary route", () => {
         onTimeRatePercent7d: 92,
         unscheduledVisitsToday: 1,
         driveHoursToday: 7.5,
+        activePatientCount: 24,
       },
       alerts: [
         {
@@ -63,6 +64,8 @@ describe("/api/dashboard/summary route", () => {
           onTimeRatePercent: 92,
         },
       ],
+      busiestDays: [],
+      patientRisks: [],
       snapshot: {
         completedRoutes: 3,
         delayedRoutes: 1,

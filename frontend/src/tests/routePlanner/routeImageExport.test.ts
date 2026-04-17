@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { exportRouteImage } from "../../components/routePlanner/routeImageExport";
+import { exportRouteImage } from "../../features/route-planner/utils/routeImageExport";
 import type { OptimizeRouteResponse } from "../../components/types";
 
 const buildResult = (overrides: Partial<OptimizeRouteResponse> = {}): OptimizeRouteResponse => ({
@@ -16,8 +16,7 @@ const buildResult = (overrides: Partial<OptimizeRouteResponse> = {}): OptimizeRo
     {
       stopId: "stop-1",
       address: "10 First Avenue",
-      lat: 43.71,
-      lng: -79.41,
+      coords: { lat: 43.71, lon: -79.41 },
       distanceFromPreviousKm: 5,
       durationFromPreviousSeconds: 1200,
       arrivalTime: "2026-03-26T08:20:00-04:00",
@@ -29,12 +28,14 @@ const buildResult = (overrides: Partial<OptimizeRouteResponse> = {}): OptimizeRo
           patientId: "patient-1",
           patientName: "alex johnson",
           address: "10 First Avenue",
+          arrivalTime: "2026-03-26T08:20:00-04:00",
           serviceStartTime: "2026-03-26T08:30:00-04:00",
           serviceEndTime: "2026-03-26T09:00:00-04:00",
           serviceDurationMinutes: 30,
           windowStart: "08:30",
           windowEnd: "09:30",
           windowType: "fixed",
+          waitSeconds: 600,
           lateBySeconds: 0,
           onTime: true,
         },
@@ -43,8 +44,7 @@ const buildResult = (overrides: Partial<OptimizeRouteResponse> = {}): OptimizeRo
     {
       stopId: "stop-2",
       address: "20 Second Street",
-      lat: 43.73,
-      lng: -79.43,
+      coords: { lat: 43.73, lon: -79.43 },
       distanceFromPreviousKm: 3,
       durationFromPreviousSeconds: 900,
       arrivalTime: "2026-03-26T11:45:00-04:00",
@@ -56,12 +56,14 @@ const buildResult = (overrides: Partial<OptimizeRouteResponse> = {}): OptimizeRo
           patientId: "patient-2",
           patientName: "jamie doe",
           address: "20 Second Street",
+          arrivalTime: "2026-03-26T11:45:00-04:00",
           serviceStartTime: "2026-03-26T12:00:00-04:00",
           serviceEndTime: "2026-03-26T12:15:00-04:00",
           serviceDurationMinutes: 15,
           windowStart: "11:30",
           windowEnd: "13:00",
           windowType: "flexible",
+          waitSeconds: 900,
           lateBySeconds: 300,
           onTime: false,
         },
@@ -70,8 +72,7 @@ const buildResult = (overrides: Partial<OptimizeRouteResponse> = {}): OptimizeRo
     {
       stopId: "stop-end",
       address: "99 Home Road",
-      lat: 43.72,
-      lng: -79.42,
+      coords: { lat: 43.72, lon: -79.42 },
       distanceFromPreviousKm: 3,
       durationFromPreviousSeconds: 900,
       arrivalTime: "2026-03-26T12:30:00-04:00",
@@ -84,22 +85,31 @@ const buildResult = (overrides: Partial<OptimizeRouteResponse> = {}): OptimizeRo
     {
       fromStopId: "start",
       toStopId: "stop-1",
-      distanceKm: 5,
+      fromAddress: "Start Address",
+      toAddress: "10 First Avenue",
+      distanceMeters: 5000,
       durationSeconds: 1200,
-      polyline: "encoded-1",
+      encodedPolyline: "encoded-1",
     },
     {
       fromStopId: "stop-1",
       toStopId: "stop-2",
-      distanceKm: 3,
+      fromAddress: "10 First Avenue",
+      toAddress: "20 Second Street",
+      distanceMeters: 3000,
       durationSeconds: 900,
-      polyline: "encoded-2",
+      encodedPolyline: "encoded-2",
     },
   ],
   metrics: {
+    fixedWindowViolations: 1,
+    totalLateSeconds: 300,
+    totalWaitSeconds: 1500,
+    totalDistanceMeters: 11000,
     totalDistanceKm: 11,
     totalDurationSeconds: 3000,
   },
+  algorithmVersion: "v3.test",
   warnings: [],
   unscheduledTasks: [
     {
@@ -177,13 +187,13 @@ describe("routeImageExport", () => {
     toBlobImpl = (callback) => callback(new Blob(["png"], { type: "image/png" }));
 
     anchorClickSpy = vi.fn();
-    createObjectURLSpy = vi.fn(() => "blob:careflow");
-    revokeObjectURLSpy = vi.fn();
+    createObjectURLSpy = vi.fn<(obj: Blob | MediaSource) => string>(() => "blob:careflow");
+    revokeObjectURLSpy = vi.fn<(url: string) => void>();
     shareSpy = vi.fn().mockResolvedValue(undefined);
     canShareSpy = vi.fn(() => false);
 
-    URL.createObjectURL = createObjectURLSpy;
-    URL.revokeObjectURL = revokeObjectURLSpy;
+    URL.createObjectURL = createObjectURLSpy as typeof URL.createObjectURL;
+    URL.revokeObjectURL = revokeObjectURLSpy as typeof URL.revokeObjectURL;
     Object.defineProperty(navigator, "canShare", {
       configurable: true,
       value: canShareSpy,
@@ -193,7 +203,7 @@ describe("routeImageExport", () => {
       value: shareSpy,
     });
 
-    createElementSpy = vi.spyOn(document, "createElement").mockImplementation((tagName) => {
+    createElementSpy = vi.spyOn(document, "createElement").mockImplementation((tagName: string) => {
       if (tagName === "canvas") {
         return {
           width: 0,
@@ -267,7 +277,7 @@ describe("routeImageExport", () => {
   });
 
   it("rejects when the canvas context is unavailable", async () => {
-    createElementSpy.mockImplementation((tagName) => {
+    createElementSpy.mockImplementation((tagName: string) => {
       if (tagName === "canvas") {
         return {
           width: 0,

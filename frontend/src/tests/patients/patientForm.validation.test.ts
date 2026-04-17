@@ -3,7 +3,7 @@ import {
   DEFAULT_VISIT_DURATION_MINUTES,
   validateForm,
   type PatientFormValues,
-} from "../../components/patients/patientForm";
+} from "../../features/patients/domain/patientForm";
 
 const buildValues = (overrides?: Partial<PatientFormValues>): PatientFormValues => ({
   firstName: "Jane",

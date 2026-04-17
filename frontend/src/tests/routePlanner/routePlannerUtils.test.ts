@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   buildGoogleMapsTripUrl,
   formatDuration,
-} from "../../components/routePlanner/routePlannerUtils";
+} from "../../features/route-planner/utils/routePlannerUtils";
 
 describe("routePlannerUtils", () => {
   it("formats durations into minutes/hours text", () => {
