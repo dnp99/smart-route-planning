@@ -62,6 +62,7 @@ We use collected information to:
 * Authenticate users and secure access
 * Monitor system performance and prevent misuse
 * Maintain audit logs for security and accountability
+* Enforce and track required in-app data-use acknowledgements
 
 We do **not** sell or use personal data for advertising or marketing.
 

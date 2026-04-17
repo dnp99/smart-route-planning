@@ -191,6 +191,20 @@ export const updateNursePasswordHash = async (nurseId: string, passwordHash: str
   return nurse ?? null;
 };
 
+export const acknowledgeNurseLegalNotice = async (nurseId: string, version: string) => {
+  const [nurse] = await getDb()
+    .update(nurses)
+    .set({
+      legalNoticeAcceptedAt: new Date(),
+      legalNoticeAcceptedVersion: version,
+      updatedAt: new Date(),
+    })
+    .where(eq(nurses.id, nurseId))
+    .returning();
+
+  return nurse ?? null;
+};
+
 export type PatientWithVisitWindows = typeof patients.$inferSelect & {
   visitWindows: (typeof patientVisitWindows.$inferSelect)[];
 };

@@ -21,6 +21,8 @@ export const nurses = pgTable("nurses", {
   workingHours: jsonb("working_hours"),
   breakGapThresholdMinutes: integer("break_gap_threshold_minutes"),
   optimizationObjective: text("optimization_objective"),
+  legalNoticeAcceptedAt: timestamp("legal_notice_accepted_at", { withTimezone: true }),
+  legalNoticeAcceptedVersion: text("legal_notice_accepted_version"),
   passwordHash: text("password_hash").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),

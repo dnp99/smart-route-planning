@@ -8,6 +8,36 @@ import {
 } from "../../../../shared/contracts";
 import { resolveApiBaseUrl } from "../apiBaseUrl";
 
+export type LegalNoticeStatus = {
+  required: boolean;
+  currentVersion: string;
+  acceptedVersion: string | null;
+  acceptedAt: string | null;
+};
+
+const parseLegalNoticeStatus = (value: unknown): LegalNoticeStatus | null => {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  const payload = value as Record<string, unknown>;
+  if (
+    typeof payload.required !== "boolean" ||
+    typeof payload.currentVersion !== "string" ||
+    (payload.acceptedVersion !== null && typeof payload.acceptedVersion !== "string") ||
+    (payload.acceptedAt !== null && typeof payload.acceptedAt !== "string")
+  ) {
+    return null;
+  }
+
+  return {
+    required: payload.required,
+    currentVersion: payload.currentVersion,
+    acceptedVersion: payload.acceptedVersion,
+    acceptedAt: payload.acceptedAt,
+  };
+};
+
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
@@ -187,4 +217,50 @@ export const logout = async (): Promise<void> => {
     method: "POST",
     credentials: "include",
   }).catch(() => null);
+};
+
+export const fetchLegalNoticeStatus = async (): Promise<LegalNoticeStatus> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/api/auth/legal-notice`, {
+    method: "GET",
+    credentials: "include",
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(extractApiErrorMessage(payload) ?? "Unable to load legal notice status.");
+  }
+
+  const parsed = parseLegalNoticeStatus(payload);
+  if (!parsed) {
+    throw new Error("Unexpected legal-notice response format.");
+  }
+
+  return parsed;
+};
+
+export const acknowledgeLegalNotice = async (): Promise<LegalNoticeStatus> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/api/auth/legal-notice`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ agree: true }),
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok) {
+    throw new Error(
+      extractApiErrorMessage(payload) ?? "Unable to save legal notice acknowledgement.",
+    );
+  }
+
+  const parsed = parseLegalNoticeStatus(payload);
+  if (!parsed) {
+    throw new Error("Unexpected legal-notice acknowledgement response format.");
+  }
+
+  return parsed;
 };

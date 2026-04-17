@@ -13,10 +13,12 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 - Provides an authenticated global workspace header with sticky positioning, app logo, and rotating nurse quotes.
 - Keeps header quote selection stable across browser refresh during a signed-in session.
 - Uses HttpOnly cookie-based sessions (no frontend token storage).
+- Requires a first-use legal/privacy acknowledgement (`I Agree`) per signed-in user, stored server-side and re-prompted when policy version changes.
 - Persists only non-sensitive route-planner draft fields in browser storage (IDs, ordering, inclusion flags, date/objective/UI step).
 - Clears session-scoped browser storage (draft, header quote) on auth changes.
 - Uses a consistent overflow action menu pattern for client row actions.
 - Includes legal pages (Terms, Privacy, License, Trademark) accessible from the footer.
+- Shows in-app policy reminders on Clients and Route Planner pages.
 - Mobile-optimized route planner with wizard-style step flow and safe-area-aware sticky footer.
 - Uses in-memory geocoding and travel-matrix caching (with in-flight request deduplication) to reduce repeated optimization latency.
 
@@ -36,6 +38,8 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
   - `GET /api/auth/me`
   - `PATCH /api/auth/me`
   - `POST /api/auth/update-password`
+  - `GET /api/auth/legal-notice`
+  - `POST /api/auth/legal-notice`
 - Patients:
   - `GET /api/patients`
   - `POST /api/patients`

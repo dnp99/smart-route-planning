@@ -4,14 +4,21 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { clearAuthSession, setAuthSession } from "../components/auth/authSession";
 
-const { fetchMeMock, updateProfileMock, listPatientsMock, fetchDashboardSummaryMock } = vi.hoisted(
-  () => ({
-    fetchMeMock: vi.fn(),
-    updateProfileMock: vi.fn(),
-    listPatientsMock: vi.fn(),
-    fetchDashboardSummaryMock: vi.fn(),
-  }),
-);
+const {
+  fetchMeMock,
+  updateProfileMock,
+  listPatientsMock,
+  fetchDashboardSummaryMock,
+  fetchLegalNoticeStatusMock,
+  acknowledgeLegalNoticeMock,
+} = vi.hoisted(() => ({
+  fetchMeMock: vi.fn(),
+  updateProfileMock: vi.fn(),
+  listPatientsMock: vi.fn(),
+  fetchDashboardSummaryMock: vi.fn(),
+  fetchLegalNoticeStatusMock: vi.fn(),
+  acknowledgeLegalNoticeMock: vi.fn(),
+}));
 
 vi.mock("../components/auth/authService", () => ({
   fetchMe: fetchMeMock,
@@ -20,6 +27,8 @@ vi.mock("../components/auth/authService", () => ({
   login: vi.fn(),
   signUp: vi.fn(),
   logout: vi.fn(),
+  fetchLegalNoticeStatus: fetchLegalNoticeStatusMock,
+  acknowledgeLegalNotice: acknowledgeLegalNoticeMock,
 }));
 
 vi.mock("../components/patients/patientService", () => ({
@@ -60,6 +69,8 @@ beforeEach(() => {
   window.localStorage.clear();
   clearAuthSession();
   fetchMeMock.mockReset();
+  fetchLegalNoticeStatusMock.mockReset();
+  acknowledgeLegalNoticeMock.mockReset();
   updateProfileMock.mockReset();
   listPatientsMock.mockResolvedValue([]);
   fetchDashboardSummaryMock.mockReset();
@@ -98,6 +109,12 @@ beforeEach(() => {
       displayName: "Nurse One",
       homeAddress: null,
     },
+  });
+  fetchLegalNoticeStatusMock.mockResolvedValue({
+    required: false,
+    currentVersion: "2026-04-16",
+    acceptedVersion: "2026-04-16",
+    acceptedAt: "2026-04-16T10:00:00.000Z",
   });
   updateProfileMock.mockResolvedValue({
     user: {
@@ -230,6 +247,21 @@ describe("Legal pages", () => {
 });
 
 describe("App routing", () => {
+  it("bootstraps current user once per app mount", async () => {
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText(/Good (morning|afternoon|evening), Nurse/i)).toBeTruthy();
+    await waitFor(() => {
+      expect(fetchMeMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
   it("renders login page at / for signed-out users", async () => {
     fetchMeMock.mockReset();
     fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
@@ -254,6 +286,43 @@ describe("App routing", () => {
     expect(await screen.findByText(/Good (morning|afternoon|evening), Nurse/i)).toBeTruthy();
     expect(screen.getByText(/Add a home address for default start and end points/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBe("page");
+  });
+
+  it("shows required legal notice modal and acknowledges it", async () => {
+    fetchLegalNoticeStatusMock.mockResolvedValueOnce({
+      required: true,
+      currentVersion: "2026-04-16",
+      acceptedVersion: null,
+      acceptedAt: null,
+    });
+    acknowledgeLegalNoticeMock.mockResolvedValueOnce({
+      required: false,
+      currentVersion: "2026-04-16",
+      acceptedVersion: "2026-04-16",
+      acceptedAt: "2026-04-16T12:00:00.000Z",
+    });
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Important Notice - Client Data Use" }),
+    ).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "I Agree" }));
+
+    await waitFor(() => {
+      expect(acknowledgeLegalNoticeMock).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(
+        screen.queryByRole("heading", { name: "Important Notice - Client Data Use" }),
+      ).toBeNull();
+    });
   });
 
   it("renders client names in today's schedule", async () => {

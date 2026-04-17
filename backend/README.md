@@ -163,6 +163,13 @@ OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
   - Verifies current password before updating
   - Rejects no-op changes and weak passwords
   - Rate limited; returns `429` when exceeded
+- `GET /api/auth/legal-notice`
+  - Requires valid auth session cookie (`careflow_session`)
+  - Returns current acknowledgement status for the active legal notice version
+- `POST /api/auth/legal-notice`
+  - Requires valid auth session cookie (`careflow_session`)
+  - Accepts `{ agree: true }`
+  - Stores acknowledgement timestamp + version for the authenticated nurse
 
 Authentication behavior:
 
@@ -213,9 +220,11 @@ Authentication behavior:
 ## Security and Privacy Hardening (Current)
 
 - Auth uses server-managed sessions in `auth_sessions`.
+- Legal acknowledgement is tracked per nurse via `nurses.legal_notice_accepted_at` and `nurses.legal_notice_accepted_version`.
 - Audit events are persisted in `audit_events` for patient read/write, optimize-route access, and dashboard access.
 - Route optimization history is minimized: identifying task fields (`patient_name`, `address`) are no longer written.
 - Existing identifying optimization-task fields are redacted by migration `0010_awesome_hairball.sql`.
+- Migration `0011_spicy_ben_parker.sql` adds legal acknowledgement fields to `nurses`.
 
 ## Optimization performance caches
 

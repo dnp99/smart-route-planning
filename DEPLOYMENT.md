@@ -111,6 +111,8 @@ Before first prod cut:
 2. Confirm API health and cookie-session auth:
    - `POST /api/auth/login`
    - `GET /api/auth/me` with session cookie (`credentials: include`)
+   - `GET /api/auth/legal-notice` with session cookie
+   - `POST /api/auth/legal-notice` with `{ "agree": true }` during first-use flow
    - `POST /api/auth/logout`
    - `GET /api/address-autocomplete?query=Toronto` with session cookie
    - `POST /api/optimize-route/v3` with session cookie

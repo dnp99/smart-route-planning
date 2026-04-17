@@ -299,6 +299,14 @@ const PatientsPage = () => {
           </p>
         </div>
 
+        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+          <p className="m-0 font-medium">Privacy Reminder</p>
+          <p className="m-0 mt-1">
+            Client information entered here should be limited to what is necessary for scheduling
+            and care delivery. Ensure you have appropriate authority to manage this data.
+          </p>
+        </div>
+
         {pageError && (
           <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
             {pageError}
