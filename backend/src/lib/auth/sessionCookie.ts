@@ -2,6 +2,7 @@ const SESSION_COOKIE_NAME = "careflow_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 const isProduction = () => process.env.NODE_ENV === "production";
+const getSessionSameSite = () => (isProduction() ? "None" : "Lax");
 
 export const getSessionCookieName = () => SESSION_COOKIE_NAME;
 
@@ -12,7 +13,7 @@ export const buildSessionCookie = (sessionId: string) => {
     `${SESSION_COOKIE_NAME}=${encodeURIComponent(sessionId)}`,
     "Path=/",
     "HttpOnly",
-    "SameSite=Lax",
+    `SameSite=${getSessionSameSite()}`,
     `Max-Age=${SESSION_MAX_AGE_SECONDS}`,
   ];
 
@@ -24,7 +25,13 @@ export const buildSessionCookie = (sessionId: string) => {
 };
 
 export const buildClearedSessionCookie = () => {
-  const parts = [`${SESSION_COOKIE_NAME}=`, "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
+  const parts = [
+    `${SESSION_COOKIE_NAME}=`,
+    "Path=/",
+    "HttpOnly",
+    `SameSite=${getSessionSameSite()}`,
+    "Max-Age=0",
+  ];
 
   if (isProduction()) {
     parts.push("Secure");

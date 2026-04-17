@@ -174,7 +174,7 @@ OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
 Authentication behavior:
 
 - Missing/invalid/revoked/expired session returns `401`.
-- `careflow_session` cookie attributes: `HttpOnly`, `SameSite=Lax`, `Path=/`, 7-day max-age, `Secure` in production.
+- `careflow_session` cookie attributes: `HttpOnly`, `Path=/`, 7-day max-age, `Secure` in production, `SameSite=Lax` in local dev and `SameSite=None` in production.
 - Legacy bearer tokens are still accepted during migration grace period.
 - Auth endpoints include baseline security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and emit HSTS on HTTPS requests.
 

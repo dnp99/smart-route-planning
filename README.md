@@ -92,7 +92,7 @@ The frontend resolves API base URL in this order:
 
 1. `VITE_API_BASE_URL`
 2. `window.__NAVIGATE_EASY_API_BASE_URL__` (runtime override)
-3. `http://localhost:3000`
+3. `http://localhost:3000` on local hosts; same-origin (`""`) on non-local hosts
 
 Example runtime override:
 
