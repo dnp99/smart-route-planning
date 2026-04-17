@@ -195,7 +195,7 @@ describe("Legal pages", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Terms of Use" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Terms of Service" })).toBeTruthy();
   });
 
   it("renders Privacy page at /legal/privacy", async () => {
