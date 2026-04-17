@@ -2,11 +2,10 @@ import { useEffect, useState } from "react";
 import { Navigate, NavLink, Route, Routes } from "react-router-dom";
 import RoutePlanner from "./components/RoutePlanner";
 import LoginPage from "./components/auth/LoginPage";
-import { fetchMe } from "./components/auth/authService";
+import { fetchMe, logout } from "./components/auth/authService";
 import {
   clearAuthSession,
   getAuthChangedEventName,
-  getAuthToken,
   getAuthUser,
   setStoredAuthUser,
 } from "./components/auth/authSession";
@@ -31,37 +30,36 @@ const resolveTabClassName = ({ isActive }) =>
   ].join(" ");
 
 function App() {
-  const [authToken, setAuthToken] = useState(() => getAuthToken());
   const [authUser, setAuthUser] = useState(() => getAuthUser());
-  const [isAuthResolved, setIsAuthResolved] = useState(() => !getAuthToken());
+  const [isAuthResolved, setIsAuthResolved] = useState(false);
+  const [authRefreshKey, setAuthRefreshKey] = useState(0);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
 
   useEffect(() => {
     const handleAuthChange = () => {
-      const nextToken = getAuthToken();
-      setAuthToken(nextToken);
       setAuthUser(getAuthUser());
-      setIsAuthResolved(!nextToken);
-      if (!nextToken) setIsAccountSettingsOpen(false);
+      setAuthRefreshKey((current) => current + 1);
+      if (!getAuthUser()) setIsAccountSettingsOpen(false);
     };
     window.addEventListener(getAuthChangedEventName(), handleAuthChange);
     return () => window.removeEventListener(getAuthChangedEventName(), handleAuthChange);
   }, []);
 
   useEffect(() => {
-    if (!authToken) return;
     let active = true;
-    void fetchMe(authToken)
+    void fetchMe()
       .then((result) => {
         if (active) {
           setAuthUser(result.user);
+          setStoredAuthUser(result.user);
           setIsAuthResolved(true);
         }
       })
       .catch(() => {
         if (active) {
-          clearAuthSession();
-          setAuthToken(null);
+          if (getAuthUser()) {
+            clearAuthSession();
+          }
           setAuthUser(null);
           setIsAuthResolved(true);
         }
@@ -69,10 +67,10 @@ function App() {
     return () => {
       active = false;
     };
-  }, [authToken]);
+  }, [authRefreshKey]);
 
   const optimizationObjective = authUser?.optimizationObjective ?? "distance";
-  const isAuthenticated = Boolean(authToken);
+  const isAuthenticated = Boolean(authUser);
   const defaultProtectedPath = "/";
   const renderProtectedRoute = (element) =>
     isAuthenticated ? element : <Navigate to="/login" replace />;
@@ -93,7 +91,10 @@ function App() {
         isAuthenticated={isAuthenticated}
         authUser={authUser}
         onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
-        onLogout={clearAuthSession}
+        onLogout={() => {
+          void logout();
+          clearAuthSession();
+        }}
       />
 
       <div className={responsiveStyles.contentWrapper}>

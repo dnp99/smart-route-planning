@@ -12,6 +12,7 @@ export const login = async (email: string, password: string): Promise<LoginRespo
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/auth/login`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -39,6 +40,7 @@ export const signUp = async (
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/auth/signup`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -58,13 +60,11 @@ export const signUp = async (
   return parsed;
 };
 
-export const fetchMe = async (token: string) => {
+export const fetchMe = async () => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
   });
 
   const payload = await response.json().catch(() => null);
@@ -80,19 +80,13 @@ export const fetchMe = async (token: string) => {
   return parsed;
 };
 
-export const updateProfile = async (
-  token: string,
-  updates: {
-    displayName?: string;
-    homeAddress?: string;
-  },
-) => {
+export const updateProfile = async (updates: { displayName?: string; homeAddress?: string }) => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify(updates),
   });
@@ -110,21 +104,20 @@ export const updateProfile = async (
   return parsed;
 };
 
-export const updateProfileHomeAddress = async (token: string, homeAddress: string) => {
-  return updateProfile(token, { homeAddress });
+export const updateProfileHomeAddress = async (homeAddress: string) => {
+  return updateProfile({ homeAddress });
 };
 
 export const updateWorkingHours = async (
-  token: string,
   workingHours: WeeklyWorkingHours | null,
   breakGapThresholdMinutes: number | null,
 ) => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ workingHours, breakGapThresholdMinutes }),
   });
@@ -143,15 +136,14 @@ export const updateWorkingHours = async (
 };
 
 export const updateOptimizationObjective = async (
-  token: string,
   optimizationObjective: "time" | "distance" | null,
 ) => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/auth/me`, {
     method: "PATCH",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ optimizationObjective }),
   });
@@ -170,16 +162,15 @@ export const updateOptimizationObjective = async (
 };
 
 export const updatePassword = async (
-  token: string,
   currentPassword: string,
   newPassword: string,
 ): Promise<void> => {
   const apiBaseUrl = resolveApiBaseUrl();
   const response = await fetch(`${apiBaseUrl}/api/auth/update-password`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
     },
     body: JSON.stringify({ currentPassword, newPassword }),
   });
@@ -188,4 +179,12 @@ export const updatePassword = async (
   if (!response.ok) {
     throw new Error(extractApiErrorMessage(payload) ?? "Unable to update password.");
   }
+};
+
+export const logout = async (): Promise<void> => {
+  const apiBaseUrl = resolveApiBaseUrl();
+  await fetch(`${apiBaseUrl}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  }).catch(() => null);
 };

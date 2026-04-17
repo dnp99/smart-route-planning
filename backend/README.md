@@ -7,10 +7,10 @@ This folder contains the Next.js backend for CareFlow.
 - Expose `POST /api/optimize-route/v3` for the current production route optimization flow.
 - Keep `POST /api/optimize-route/v2` available as a legacy compatibility / rollback path.
 - Expose `GET /api/address-autocomplete` for address suggestions.
-- Expose auth endpoints for signup, login, current-user identity, and password updates.
+- Expose auth endpoints for signup, login, logout, current-user identity, and password updates.
 - Geocode addresses through Google Places API.
 - Fetch address suggestions through Google Places autocomplete.
-- Enforce JWT authentication on all business endpoints, plus validation, timeouts, CORS, and lightweight rate limiting.
+- Enforce authenticated access on business endpoints (cookie sessions, with temporary legacy bearer fallback), plus validation, timeouts, CORS, and lightweight rate limiting.
 - Reduce optimize-route latency with in-memory geocode and travel-matrix caching plus in-flight request deduplication.
 
 ## Local development
@@ -46,11 +46,11 @@ Production/runtime behavior:
   - Required for patient persistence.
   - Neon/Postgres connection string.
 - `JWT_SECRET`
-  - Required.
-  - Secret used for signing and verifying access tokens.
+  - Required only while legacy bearer-token compatibility remains enabled.
+  - Used for verifying legacy bearer access tokens during migration.
 - `JWT_EXPIRES_IN`
   - Optional.
-  - JWT access-token TTL accepted by `jose` (for example `1h`, `30m`).
+  - Legacy bearer-token TTL accepted by `jose` (for example `1h`, `30m`).
   - Default: `1h`.
 - `AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS`
   - Optional.
@@ -105,6 +105,7 @@ Example local file:
 
 ```bash
 DATABASE_URL=postgres://username:password@host:5432/database
+# Legacy bearer-token fallback only (can be removed after hard cutover):
 JWT_SECRET=replace_with_a_long_random_secret
 JWT_EXPIRES_IN=1h
 AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS=5
@@ -131,26 +132,33 @@ OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
 
 - `POST /api/auth/signup`
   - Accepts `{ displayName, email, password }`
-  - Creates a nurse account and returns `{ token, user }`
+  - Creates a nurse account and returns `{ user }`
+  - Sets `careflow_session` HttpOnly cookie
   - Rejects duplicate emails with `409`
   - Enforces shared auth rate limiting by client IP and normalized account email
   - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
 - `POST /api/auth/login`
   - Accepts `{ email, password }`
-  - Returns `{ token, user }` when credentials are valid
+  - Returns `{ user }` when credentials are valid
+  - Sets `careflow_session` HttpOnly cookie
   - Enforces auth rate limiting by client IP and normalized account email
   - Uses optional centralized Upstash Redis limiter when configured, otherwise in-memory fallback
   - Returns `429` with `Retry-After` header while lockout is active
   - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
+- `POST /api/auth/logout`
+  - Revokes current session and clears `careflow_session` cookie
 - `GET /api/auth/me`
-  - Requires `Authorization: Bearer <token>`
+  - Requires valid auth session cookie (`careflow_session`)
+  - Legacy bearer token remains accepted during migration grace period
   - Returns current authenticated user including `homeAddress`
 - `PATCH /api/auth/me`
-  - Requires `Authorization: Bearer <token>`
+  - Requires valid auth session cookie (`careflow_session`)
+  - Legacy bearer token remains accepted during migration grace period
   - Accepts `{ homeAddress }` to update the nurse's saved home address
   - Returns updated profile
 - `POST /api/auth/update-password`
-  - Requires `Authorization: Bearer <token>`
+  - Requires valid auth session cookie (`careflow_session`)
+  - Legacy bearer token remains accepted during migration grace period
   - Accepts `{ currentPassword, newPassword }`
   - Verifies current password before updating
   - Rejects no-op changes and weak passwords
@@ -158,48 +166,56 @@ OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
 
 Authentication behavior:
 
-- Missing/invalid/malformed bearer token returns `401`.
-- Missing `JWT_SECRET` returns `500` configuration error.
+- Missing/invalid/revoked/expired session returns `401`.
+- `careflow_session` cookie attributes: `HttpOnly`, `SameSite=Lax`, `Path=/`, 7-day max-age, `Secure` in production.
+- Legacy bearer tokens are still accepted during migration grace period.
 - Auth endpoints include baseline security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and emit HSTS on HTTPS requests.
 
 ### Patients
 
 - `GET /api/patients?query=...`
-  - Requires `Authorization: Bearer <token>`
-  - Lists patients for the authenticated nurse (`JWT sub`)
+  - Requires authenticated session
+  - Lists active patients for the authenticated nurse
   - Optional `query` applies case-insensitive substring search on first/last name
 - `POST /api/patients`
-  - Requires `Authorization: Bearer <token>`
-  - Creates a patient for the authenticated nurse (`JWT sub`)
+  - Requires authenticated session
+  - Creates a patient for the authenticated nurse
   - Returns `201` with created patient JSON
 - `PATCH /api/patients/:id`
-  - Requires `Authorization: Bearer <token>`
-  - Partially updates a patient owned by the authenticated nurse (`JWT sub`)
+  - Requires authenticated session
+  - Partially updates a patient owned by the authenticated nurse
   - If `address` changes and `googlePlaceId` is omitted, clears `googlePlaceId` to prevent stale mismatches
   - Returns updated patient JSON
 - `DELETE /api/patients/:id`
-  - Requires `Authorization: Bearer <token>`
-  - Hard deletes a patient owned by the authenticated nurse (`JWT sub`)
+  - Requires authenticated session
+  - Archive-only behavior: marks patient inactive (`isActive=false`) instead of hard deletion
   - Returns `{ "deleted": true, "id": "..." }`
 
 ### Route planning
 
 - `POST /api/optimize-route/v3`
-  - Requires `Authorization: Bearer <token>`
+  - Requires authenticated session
   - Current production optimizer endpoint
   - Same request/response contract as `v2`
   - Enforces per-client in-memory rate limiting and optional API-key protection
 - `POST /api/optimize-route/v2`
-  - Requires `Authorization: Bearer <token>`
+  - Requires authenticated session
   - Legacy compatibility / rollback endpoint
   - Enforces the same API-key and per-client rate-limit rules as `v3`
 
 ### Address autocomplete
 
 - `GET /api/address-autocomplete?query=...`
-  - Requires `Authorization: Bearer <token>`
+  - Requires authenticated session
   - Returns up to 5 suggestions
   - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
+
+## Security and Privacy Hardening (Current)
+
+- Auth uses server-managed sessions in `auth_sessions`.
+- Audit events are persisted in `audit_events` for patient read/write, optimize-route access, and dashboard access.
+- Route optimization history is minimized: identifying task fields (`patient_name`, `address`) are no longer written.
+- Existing identifying optimization-task fields are redacted by migration `0010_awesome_hairball.sql`.
 
 ## Optimization performance caches
 

@@ -11,22 +11,27 @@ export type RoutePlannerDraft = {
   startGooglePlaceId: string | null;
   manualEndGooglePlaceId: string | null;
   activeMobileStep: MobilePlannerStep;
-  selectedDestinations: SelectedPatientDestination[];
+  selectedDestinationStates: RoutePlannerDraftDestinationState[];
   planningDate?: string;
+};
+
+export type RoutePlannerDraftDestinationState = {
+  visitKey: string;
+  sourceWindowId: string | null;
+  patientId: string;
+  isIncluded: boolean;
+  persistPlanningWindow: boolean;
 };
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
 
-const isWindowType = (value: unknown): value is "fixed" | "flexible" =>
-  value === "fixed" || value === "flexible";
-
 const isMobilePlannerStep = (value: unknown): value is MobilePlannerStep =>
   value === "trip" || value === "patients" || value === "review";
 
-export const parseSelectedPatientDestination = (
+export const parseRoutePlannerDraftDestinationState = (
   value: unknown,
-): SelectedPatientDestination | null => {
+): RoutePlannerDraftDestinationState | null => {
   if (!isRecord(value)) {
     return null;
   }
@@ -35,17 +40,6 @@ export const parseSelectedPatientDestination = (
     typeof value.visitKey !== "string" ||
     (value.sourceWindowId !== null && typeof value.sourceWindowId !== "string") ||
     typeof value.patientId !== "string" ||
-    typeof value.patientName !== "string" ||
-    typeof value.address !== "string" ||
-    (value.googlePlaceId !== null && typeof value.googlePlaceId !== "string") ||
-    typeof value.windowStart !== "string" ||
-    typeof value.windowEnd !== "string" ||
-    !isWindowType(value.windowType) ||
-    typeof value.serviceDurationMinutes !== "number" ||
-    value.serviceDurationMinutes !== value.serviceDurationMinutes ||
-    value.serviceDurationMinutes === Infinity ||
-    value.serviceDurationMinutes === -Infinity ||
-    typeof value.requiresPlanningWindow !== "boolean" ||
     typeof value.isIncluded !== "boolean" ||
     typeof value.persistPlanningWindow !== "boolean"
   ) {
@@ -56,14 +50,6 @@ export const parseSelectedPatientDestination = (
     visitKey: value.visitKey,
     sourceWindowId: value.sourceWindowId,
     patientId: value.patientId,
-    patientName: value.patientName,
-    address: value.address,
-    googlePlaceId: value.googlePlaceId,
-    windowStart: value.windowStart,
-    windowEnd: value.windowEnd,
-    windowType: value.windowType,
-    serviceDurationMinutes: value.serviceDurationMinutes,
-    requiresPlanningWindow: value.requiresPlanningWindow,
     isIncluded: value.isIncluded,
     persistPlanningWindow: value.persistPlanningWindow,
   };
@@ -91,17 +77,27 @@ export const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
       (parsed.startGooglePlaceId !== null && typeof parsed.startGooglePlaceId !== "string") ||
       (parsed.manualEndGooglePlaceId !== null &&
         typeof parsed.manualEndGooglePlaceId !== "string") ||
-      !isMobilePlannerStep(parsed.activeMobileStep) ||
-      !Array.isArray(parsed.selectedDestinations)
+      !isMobilePlannerStep(parsed.activeMobileStep)
     ) {
       return null;
     }
 
-    const selectedDestinations = parsed.selectedDestinations
-      .map(parseSelectedPatientDestination)
-      .filter((destination): destination is SelectedPatientDestination => destination !== null);
+    const rawDestinationStates = Array.isArray(parsed.selectedDestinationStates)
+      ? parsed.selectedDestinationStates
+      : Array.isArray(parsed.selectedDestinations)
+        ? parsed.selectedDestinations
+        : null;
+    if (!rawDestinationStates) {
+      return null;
+    }
 
-    if (selectedDestinations.length !== parsed.selectedDestinations.length) {
+    const selectedDestinationStates = rawDestinationStates
+      .map(parseRoutePlannerDraftDestinationState)
+      .filter(
+        (destination): destination is RoutePlannerDraftDestinationState => destination !== null,
+      );
+
+    if (selectedDestinationStates.length !== rawDestinationStates.length) {
       return null;
     }
 
@@ -112,7 +108,7 @@ export const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
       startGooglePlaceId: parsed.startGooglePlaceId,
       manualEndGooglePlaceId: parsed.manualEndGooglePlaceId,
       activeMobileStep: parsed.activeMobileStep,
-      selectedDestinations,
+      selectedDestinationStates,
       ...(typeof parsed.planningDate === "string" ? { planningDate: parsed.planningDate } : {}),
     };
   } catch {
@@ -120,12 +116,28 @@ export const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
   }
 };
 
+const toDestinationState = (
+  destination: SelectedPatientDestination,
+): RoutePlannerDraftDestinationState => ({
+  visitKey: destination.visitKey,
+  sourceWindowId: destination.sourceWindowId,
+  patientId: destination.patientId,
+  isIncluded: destination.isIncluded,
+  persistPlanningWindow: destination.persistPlanningWindow,
+});
+
 export const persistRoutePlannerDraft = (draft: RoutePlannerDraft): void => {
   if (typeof window === "undefined") {
     return;
   }
 
-  window.localStorage.setItem(ROUTE_PLANNER_DRAFT_STORAGE_KEY, JSON.stringify(draft));
+  window.localStorage.setItem(
+    ROUTE_PLANNER_DRAFT_STORAGE_KEY,
+    JSON.stringify({
+      ...draft,
+      selectedDestinationStates: draft.selectedDestinationStates.map(toDestinationState),
+    }),
+  );
 };
 
 export const clearRoutePlannerDraft = (): void => {

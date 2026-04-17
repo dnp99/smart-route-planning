@@ -155,11 +155,11 @@ const resolveUpcomingStops = ({
     hour12: true,
   });
 
-  return source.slice(0, 4).map((task) => ({
+  return source.slice(0, 4).map((task, index) => ({
     time: timeFormatter.format(task.serviceStartTime as Date),
     route: toRouteLabel(latestRunId),
-    patientName: task.patientName,
-    destination: task.address,
+    patientName: null,
+    destination: `Stop ${index + 1}`,
     status: (task.onTime === false ? "at_risk" : "on_track") as DashboardUpcomingStop["status"],
   }));
 };
@@ -303,8 +303,8 @@ export const recordOptimizationRun = async ({
         nurseId,
         visitId: task.visitId,
         patientId: task.patientId,
-        patientName: task.patientName,
-        address: task.address,
+        patientName: null,
+        address: null,
         windowStart: task.windowStart,
         windowEnd: task.windowEnd,
         windowType: task.windowType,
@@ -327,8 +327,8 @@ export const recordOptimizationRun = async ({
         nurseId,
         visitId: task.visitId,
         patientId: task.patientId,
-        patientName: sourceVisit?.patientName ?? task.patientId,
-        address: sourceVisit?.address ?? "Unknown",
+        patientName: null,
+        address: null,
         windowStart: sourceVisit?.windowStart ?? "00:00",
         windowEnd: sourceVisit?.windowEnd ?? "23:59",
         windowType: sourceVisit?.windowType ?? "flexible",

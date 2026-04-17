@@ -5,7 +5,7 @@ import {
   updatePassword,
   updateWorkingHours,
 } from "../auth/authService";
-import { clearAuthSession, getAuthToken, setStoredAuthUser } from "../auth/authSession";
+import { clearAuthSession, setStoredAuthUser } from "../auth/authSession";
 import type { DaySchedule, WeeklyWorkingHours } from "../../../../shared/contracts";
 
 const MAX_DISPLAY_NAME_LENGTH = 120;
@@ -195,15 +195,14 @@ export function useAccountSettings({
       return;
     }
 
-    const token = getAuthToken();
-    if (!token || !authUser) {
+    if (!authUser) {
       clearAuthSession();
       return;
     }
 
     setIsSavingAccountSettings(true);
     try {
-      const updated = await updateProfile(token, updates);
+      const updated = await updateProfile(updates);
       setStoredAuthUser(updated.user);
       onSaved(updated.user);
       setAccountSettingsSuccess("Account settings saved.");
@@ -238,15 +237,14 @@ export function useAccountSettings({
       return;
     }
 
-    const token = getAuthToken();
-    if (!token || !authUser) {
+    if (!authUser) {
       clearAuthSession();
       return;
     }
 
     setIsUpdatingPassword(true);
     try {
-      await updatePassword(token, currentPasswordInput, newPasswordInput);
+      await updatePassword(currentPasswordInput, newPasswordInput);
       setCurrentPasswordInput("");
       setNewPasswordInput("");
       setConfirmPasswordInput("");
@@ -306,15 +304,14 @@ export function useAccountSettings({
       return;
     }
 
-    const token = getAuthToken();
-    if (!token || !authUser) {
+    if (!authUser) {
       clearAuthSession();
       return;
     }
 
     setIsSavingSchedule(true);
     try {
-      const updated = await updateWorkingHours(token, scheduleInput, parsedBreakGap);
+      const updated = await updateWorkingHours(scheduleInput, parsedBreakGap);
       setStoredAuthUser(updated.user);
       onSaved(updated.user);
       setScheduleSuccess("Working hours saved.");
@@ -326,15 +323,14 @@ export function useAccountSettings({
   };
 
   const handleOptimizationObjectiveChange = async (value: "time" | "distance") => {
-    const token = getAuthToken();
-    if (!token || !authUser) {
+    if (!authUser) {
       clearAuthSession();
       return;
     }
     setObjectiveError("");
     setIsSavingObjective(true);
     try {
-      const updated = await updateOptimizationObjective(token, value);
+      const updated = await updateOptimizationObjective(value);
       setStoredAuthUser(updated.user);
       onSaved(updated.user);
     } catch (err) {

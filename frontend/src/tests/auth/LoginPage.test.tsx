@@ -32,7 +32,6 @@ describe("LoginPage", () => {
 
   it("submits sign-up details and stores auth session", async () => {
     signUpMock.mockResolvedValue({
-      token: "jwt-token",
       user: {
         id: "nurse-1",
         email: "nurse@example.com",
@@ -70,7 +69,7 @@ describe("LoginPage", () => {
     });
 
     expect(await screen.findByText("Home")).toBeTruthy();
-    expect(window.localStorage.getItem("careflow.auth.token")).toBe("jwt-token");
+    expect(window.localStorage.getItem("careflow.auth.token")).toBeNull();
   });
 
   it("shows signup-specific copy and blocks submission when passwords do not match", async () => {

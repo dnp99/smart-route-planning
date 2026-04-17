@@ -5,6 +5,8 @@ import {
   type WeeklyWorkingHours,
 } from "../../../../../../shared/contracts";
 import { requireAuth } from "../../../../lib/auth/requireAuth";
+import { buildClearedSessionCookie } from "../../../../lib/auth/sessionCookie";
+import { touchAuthSession } from "../../../../lib/auth/sessionRepository";
 import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
 import {
   findNurseById,
@@ -186,6 +188,7 @@ export async function OPTIONS(request: Request) {
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
       includeSecurityHeaders: true,
+      allowCredentials: true,
     });
     requireSecureAuthTransport(request);
 
@@ -207,13 +210,26 @@ export async function GET(request: Request) {
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
       includeSecurityHeaders: true,
+      allowCredentials: true,
     });
     requireSecureAuthTransport(request);
 
     const auth = await requireAuth(request);
+    if (auth.authMethod === "session_cookie" && auth.sessionId) {
+      await touchAuthSession(auth.sessionId);
+    }
     const nurse = await findNurseById(auth.nurseId);
     if (!nurse || !nurse.isActive) {
-      return NextResponse.json({ error: "Unauthorized." }, { status: 401, headers: corsHeaders });
+      return NextResponse.json(
+        { error: "Unauthorized." },
+        {
+          status: 401,
+          headers: {
+            ...corsHeaders,
+            "Set-Cookie": buildClearedSessionCookie(),
+          },
+        },
+      );
     }
 
     return NextResponse.json(
@@ -231,6 +247,18 @@ export async function GET(request: Request) {
       { headers: corsHeaders },
     );
   } catch (error) {
+    if (error instanceof HttpError && error.status === 401) {
+      return NextResponse.json(
+        { error: error.message },
+        {
+          status: 401,
+          headers: {
+            ...(corsHeaders ?? {}),
+            "Set-Cookie": buildClearedSessionCookie(),
+          },
+        },
+      );
+    }
     return toErrorResponse(error, "Failed to resolve current user.", corsHeaders);
   }
 }
@@ -244,10 +272,14 @@ export async function PATCH(request: Request) {
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
       includeSecurityHeaders: true,
+      allowCredentials: true,
     });
     requireSecureAuthTransport(request);
 
     const auth = await requireAuth(request);
+    if (auth.authMethod === "session_cookie" && auth.sessionId) {
+      await touchAuthSession(auth.sessionId);
+    }
     let nurse = await findNurseById(auth.nurseId);
     if (!nurse || !nurse.isActive) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401, headers: corsHeaders });

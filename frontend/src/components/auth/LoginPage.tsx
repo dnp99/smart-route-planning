@@ -60,7 +60,7 @@ const LoginPage = () => {
         mode === "signup"
           ? await signUp(trimmedDisplayName, trimmedEmail, password)
           : await login(trimmedEmail, password);
-      setAuthSession(result.token, result.user);
+      setAuthSession(result.user);
       navigate("/", { replace: true });
     } catch (loginError) {
       setError(

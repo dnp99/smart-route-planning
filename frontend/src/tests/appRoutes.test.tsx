@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
-import { setAuthSession } from "../components/auth/authSession";
+import { clearAuthSession, setAuthSession } from "../components/auth/authSession";
 
 const { fetchMeMock, updateProfileMock, listPatientsMock, fetchDashboardSummaryMock } = vi.hoisted(
   () => ({
@@ -19,6 +19,7 @@ vi.mock("../components/auth/authService", () => ({
   updateProfileHomeAddress: vi.fn(),
   login: vi.fn(),
   signUp: vi.fn(),
+  logout: vi.fn(),
 }));
 
 vi.mock("../components/patients/patientService", () => ({
@@ -57,6 +58,7 @@ vi.mock("../components/AddressAutocompleteInput", () => ({
 
 beforeEach(() => {
   window.localStorage.clear();
+  clearAuthSession();
   fetchMeMock.mockReset();
   updateProfileMock.mockReset();
   listPatientsMock.mockResolvedValue([]);
@@ -114,7 +116,7 @@ afterEach(() => {
 });
 
 const seedAuthenticatedSession = (displayName = "Nurse One", homeAddress: string | null = null) => {
-  setAuthSession("test-token", {
+  setAuthSession({
     id: "nurse-1",
     email: "nurse@example.com",
     displayName,
@@ -186,56 +188,58 @@ describe("Footer", () => {
 });
 
 describe("Legal pages", () => {
-  it("renders Terms page at /legal/terms", () => {
+  it("renders Terms page at /legal/terms", async () => {
     render(
       <MemoryRouter initialEntries={["/legal/terms"]}>
         <App />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "Terms of Use" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Terms of Service" })).toBeTruthy();
   });
 
-  it("renders Privacy page at /legal/privacy", () => {
+  it("renders Privacy page at /legal/privacy", async () => {
     render(
       <MemoryRouter initialEntries={["/legal/privacy"]}>
         <App />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "Privacy Policy" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Privacy Policy" })).toBeTruthy();
   });
 
-  it("renders License page at /legal/license", () => {
+  it("renders License page at /legal/license", async () => {
     render(
       <MemoryRouter initialEntries={["/legal/license"]}>
         <App />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "License" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "License" })).toBeTruthy();
   });
 
-  it("renders Trademark page at /legal/trademark", () => {
+  it("renders Trademark page at /legal/trademark", async () => {
     render(
       <MemoryRouter initialEntries={["/legal/trademark"]}>
         <App />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "Trademark" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Trademark" })).toBeTruthy();
   });
 });
 
 describe("App routing", () => {
-  it("renders login page at / for signed-out users", () => {
+  it("renders login page at / for signed-out users", async () => {
+    fetchMeMock.mockReset();
+    fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
     render(
       <MemoryRouter initialEntries={["/"]}>
         <App />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "Login" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Login" })).toBeTruthy();
   });
 
   it("renders home page at / for signed-in users", async () => {
@@ -269,8 +273,8 @@ describe("App routing", () => {
         {
           time: "10:45 AM",
           route: "R-ABCD",
-          patientName: "Alice Smith",
-          destination: "123 Main St",
+          patientName: null,
+          destination: "Stop 1",
           status: "on_track",
         },
       ],
@@ -298,8 +302,8 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByText("10:45 AM · Alice Smith")).toBeTruthy();
-    expect(screen.getByText("123 Main St")).toBeTruthy();
+    expect(await screen.findByText("10:45 AM · Client")).toBeTruthy();
+    expect(screen.getByText("Stop 1")).toBeTruthy();
   });
 
   it("shows dashboard error state and supports retry on the home page", async () => {
@@ -479,7 +483,7 @@ describe("App routing", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
 
     await waitFor(() => {
-      expect(updateProfileMock).toHaveBeenCalledWith("test-token", {
+      expect(updateProfileMock).toHaveBeenCalledWith({
         homeAddress: "1 Main Street, Toronto, ON",
       });
     });
@@ -515,21 +519,23 @@ describe("App routing", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
 
     await waitFor(() => {
-      expect(updateProfileMock).toHaveBeenCalledWith("test-token", {
+      expect(updateProfileMock).toHaveBeenCalledWith({
         displayName: "Alex Brown",
       });
     });
     expect(await screen.findByText(/Account settings saved\./i)).toBeTruthy();
   });
 
-  it("redirects unauthenticated users to login", () => {
+  it("redirects unauthenticated users to login", async () => {
+    fetchMeMock.mockReset();
+    fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
     render(
       <MemoryRouter initialEntries={["/patients"]}>
         <App />
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { name: "Login" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Login" })).toBeTruthy();
   });
 
   it("clears stale sessions when current user lookup fails", async () => {

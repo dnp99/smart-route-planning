@@ -3,9 +3,15 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const { findNurseByIdMock } = vi.hoisted(() => ({
   findNurseByIdMock: vi.fn(),
 }));
+const { findValidAuthSessionByIdMock } = vi.hoisted(() => ({
+  findValidAuthSessionByIdMock: vi.fn(),
+}));
 
 vi.mock("../patients/patientRepository", () => ({
   findNurseById: findNurseByIdMock,
+}));
+vi.mock("./sessionRepository", () => ({
+  findValidAuthSessionById: findValidAuthSessionByIdMock,
 }));
 
 import { requireAuth } from "./requireAuth";
@@ -16,6 +22,7 @@ describe("requireAuth", () => {
 
   afterEach(() => {
     findNurseByIdMock.mockReset();
+    findValidAuthSessionByIdMock.mockReset();
 
     if (originalJwtSecret === undefined) {
       delete process.env.JWT_SECRET;
@@ -46,6 +53,33 @@ describe("requireAuth", () => {
     await expect(requireAuth(request)).resolves.toEqual({
       nurseId: "nurse-1",
       email: "nurse@example.com",
+      authMethod: "bearer_token",
+    });
+  });
+
+  it("extracts auth context from session cookie", async () => {
+    process.env.JWT_SECRET = "test-jwt-secret";
+    findValidAuthSessionByIdMock.mockResolvedValue({
+      id: "session-1",
+      nurseId: "nurse-1",
+    });
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      isActive: true,
+    });
+
+    const request = new Request("http://localhost:3000/api/patients", {
+      headers: {
+        cookie: "careflow_session=session-1",
+      },
+    });
+
+    await expect(requireAuth(request)).resolves.toEqual({
+      nurseId: "nurse-1",
+      email: "nurse@example.com",
+      authMethod: "session_cookie",
+      sessionId: "session-1",
     });
   });
 

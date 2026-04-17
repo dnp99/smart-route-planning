@@ -2,24 +2,16 @@ import { describe, expect, it } from "vitest";
 import {
   ROUTE_PLANNER_DRAFT_STORAGE_KEY,
   clearRoutePlannerDraft,
-  parseSelectedPatientDestination,
+  parseRoutePlannerDraftDestinationState,
   persistRoutePlannerDraft,
   readRoutePlannerDraft,
   type RoutePlannerDraft,
 } from "../../components/routePlanner/routePlannerDraft";
 
-const draftDestination = {
+const draftDestinationState = {
   visitKey: "visit-1",
   sourceWindowId: "window-1",
   patientId: "patient-1",
-  patientName: "Casey Smith",
-  address: "1 Main Street",
-  googlePlaceId: "place-1",
-  windowStart: "09:00",
-  windowEnd: "10:00",
-  windowType: "fixed" as const,
-  serviceDurationMinutes: 45,
-  requiresPlanningWindow: false,
   isIncluded: true,
   persistPlanningWindow: false,
 };
@@ -31,31 +23,33 @@ const validDraft: RoutePlannerDraft = {
   startGooglePlaceId: "start-place",
   manualEndGooglePlaceId: null,
   activeMobileStep: "review",
-  selectedDestinations: [draftDestination],
+  selectedDestinationStates: [draftDestinationState],
 };
 
 describe("routePlannerDraft", () => {
-  it("parses a valid selected patient destination", () => {
-    expect(parseSelectedPatientDestination(draftDestination)).toEqual(draftDestination);
+  it("parses a valid selected destination state", () => {
+    expect(parseRoutePlannerDraftDestinationState(draftDestinationState)).toEqual(
+      draftDestinationState,
+    );
   });
 
-  it("rejects invalid selected patient destinations", () => {
-    expect(parseSelectedPatientDestination(null)).toBeNull();
+  it("rejects invalid selected destination states", () => {
+    expect(parseRoutePlannerDraftDestinationState(null)).toBeNull();
     expect(
-      parseSelectedPatientDestination({
-        ...draftDestination,
-        windowType: "unknown",
+      parseRoutePlannerDraftDestinationState({
+        ...draftDestinationState,
+        patientId: 123,
       }),
     ).toBeNull();
     expect(
-      parseSelectedPatientDestination({
-        ...draftDestination,
-        serviceDurationMinutes: Number.NaN,
+      parseRoutePlannerDraftDestinationState({
+        ...draftDestinationState,
+        sourceWindowId: 101,
       }),
     ).toBeNull();
     expect(
-      parseSelectedPatientDestination({
-        ...draftDestination,
+      parseRoutePlannerDraftDestinationState({
+        ...draftDestinationState,
         persistPlanningWindow: "yes",
       }),
     ).toBeNull();
@@ -84,7 +78,7 @@ describe("routePlannerDraft", () => {
       ROUTE_PLANNER_DRAFT_STORAGE_KEY,
       JSON.stringify({
         ...validDraft,
-        selectedDestinations: [{ ...draftDestination, serviceDurationMinutes: "45" }],
+        selectedDestinationStates: [{ ...draftDestinationState, patientId: 123 }],
       }),
     );
     expect(readRoutePlannerDraft()).toBeNull();

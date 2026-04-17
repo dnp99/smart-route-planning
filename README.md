@@ -9,10 +9,12 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 - Optimizes daily visits with time windows, travel distance/time, and visit duration; planning date defaults to tomorrow and is configurable per session.
 - Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
-- Persists the optimized route result in sessionStorage so tab switches don't lose the result.
+- Keeps optimized route results in memory only for the current tab lifecycle.
 - Provides an authenticated global workspace header with sticky positioning, app logo, and rotating nurse quotes.
 - Keeps header quote selection stable across browser refresh during a signed-in session.
-- Clears all session-scoped storage (optimization result, draft, header quote) on logout and login.
+- Uses HttpOnly cookie-based sessions (no frontend token storage).
+- Persists only non-sensitive route-planner draft fields in browser storage (IDs, ordering, inclusion flags, date/objective/UI step).
+- Clears session-scoped browser storage (draft, header quote) on auth changes.
 - Uses a consistent overflow action menu pattern for client row actions.
 - Includes legal pages (Terms, Privacy, License, Trademark) accessible from the footer.
 - Mobile-optimized route planner with wizard-style step flow and safe-area-aware sticky footer.
@@ -30,6 +32,7 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 - Auth:
   - `POST /api/auth/signup`
   - `POST /api/auth/login`
+  - `POST /api/auth/logout`
   - `GET /api/auth/me`
   - `PATCH /api/auth/me`
   - `POST /api/auth/update-password`
@@ -48,6 +51,7 @@ Notes:
 
 - UI terminology uses **Client/Clients** for care recipients.
 - API paths and shared contract field names remain `/api/patients`, `patientId`, and `patientName` for compatibility.
+- During migration grace period, backend accepts cookie sessions first and legacy bearer tokens second.
 
 ## Local run
 

@@ -18,7 +18,7 @@ describe("patientService", () => {
     fetchMock.mockReset();
     vi.stubGlobal("fetch", fetchMock);
     window.localStorage.clear();
-    setAuthSession("test-token", {
+    setAuthSession({
       id: "nurse-1",
       email: "nurse@example.com",
       displayName: "Nurse One",
@@ -72,7 +72,7 @@ describe("patientService", () => {
       }),
     );
     const [, listInit] = fetchMock.mock.calls[0];
-    expect(new Headers(listInit.headers).get("Authorization")).toBe("Bearer test-token");
+    expect(listInit.credentials).toBe("include");
     expect(patients).toHaveLength(1);
     expect(patients[0].firstName).toBe("Jane");
   });
@@ -143,7 +143,7 @@ describe("patientService", () => {
     const [, createInit] = fetchMock.mock.calls[0];
     const createHeaders = new Headers(createInit.headers);
     expect(createHeaders.get("Content-Type")).toBe("application/json");
-    expect(createHeaders.get("Authorization")).toBe("Bearer test-token");
+    expect(createInit.credentials).toBe("include");
     expect(created.id).toBe("patient-1");
   });
 
@@ -176,7 +176,7 @@ describe("patientService", () => {
       }),
     );
     const [, deleteInit] = fetchMock.mock.calls[0];
-    expect(new Headers(deleteInit.headers).get("Authorization")).toBe("Bearer test-token");
+    expect(deleteInit.credentials).toBe("include");
     expect(result).toEqual({ deleted: true, id: "patient-1" });
   });
 });

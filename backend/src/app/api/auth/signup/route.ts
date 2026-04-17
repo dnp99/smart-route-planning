@@ -4,7 +4,8 @@ import {
   type AuthUser,
   type WeeklyWorkingHours,
 } from "../../../../../../shared/contracts";
-import { signAccessToken } from "../../../../lib/auth/jwt";
+import { buildSessionCookie } from "../../../../lib/auth/sessionCookie";
+import { createAuthSession } from "../../../../lib/auth/sessionRepository";
 import { hashPassword } from "../../../../lib/auth/password";
 import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
 import { enforceLoginRateLimit, requireSecureAuthTransport } from "../requestGuards";
@@ -73,6 +74,7 @@ export const OPTIONS = async (request: Request) => {
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
       includeSecurityHeaders: true,
+      allowCredentials: true,
     });
     requireSecureAuthTransport(request);
 
@@ -94,6 +96,7 @@ export const POST = async (request: Request) => {
       allowedHeaders: "Content-Type, Authorization",
       originPolicy: "strict",
       includeSecurityHeaders: true,
+      allowCredentials: true,
     });
     requireSecureAuthTransport(request);
 
@@ -135,14 +138,17 @@ export const POST = async (request: Request) => {
 
     await updateNurseLastLoginAt(nurse.id);
 
-    const token = await signAccessToken({
+    const createdSession = await createAuthSession({
       nurseId: nurse.id,
-      email: nurse.email,
+      ipAddress: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null,
+      userAgent: request.headers.get("user-agent"),
     });
+    if (!createdSession) {
+      throw new Error("Unable to create auth session.");
+    }
 
     return NextResponse.json(
       {
-        token,
         user: toAuthUser({
           id: nurse.id,
           email: nurse.email,
@@ -153,7 +159,13 @@ export const POST = async (request: Request) => {
           optimizationObjective: nurse.optimizationObjective,
         }),
       },
-      { status: 201, headers: corsHeaders },
+      {
+        status: 201,
+        headers: {
+          ...corsHeaders,
+          "Set-Cookie": buildSessionCookie(createdSession.id),
+        },
+      },
     );
   } catch (error) {
     if (error instanceof NurseEmailConflictError) {

@@ -248,7 +248,8 @@ describe("dashboardRepository", () => {
       expect(capturedTaskRows).toEqual([
         expect.objectContaining({
           visitId: "visit-1",
-          patientName: "Alice Smith",
+          patientName: null,
+          address: null,
           isUnscheduled: true,
           unscheduledReason: "fixed_window_unreachable",
           arrivalTime: null,
@@ -456,8 +457,8 @@ describe("dashboardRepository", () => {
       });
 
       expect(result.upcomingStops).toHaveLength(1);
-      expect(result.upcomingStops[0].patientName).toBe("Alice Smith");
-      expect(result.upcomingStops[0].destination).toBe("123 Main St");
+      expect(result.upcomingStops[0].patientName).toBeNull();
+      expect(result.upcomingStops[0].destination).toBe("Stop 1");
       expect(result.upcomingStops[0].status).toBe("on_track");
     });
 

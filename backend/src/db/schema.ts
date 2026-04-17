@@ -175,8 +175,8 @@ export const routeOptimizationTasks = pgTable(
       .references(() => nurses.id, { onDelete: "cascade" }),
     visitId: text("visit_id").notNull(),
     patientId: text("patient_id").notNull(),
-    patientName: text("patient_name").notNull(),
-    address: text("address").notNull(),
+    patientName: text("patient_name"),
+    address: text("address"),
     windowStart: time("window_start").notNull(),
     windowEnd: time("window_end").notNull(),
     windowType: text("window_type").notNull(),
@@ -216,6 +216,48 @@ export const routeOptimizationTasks = pgTable(
   ],
 );
 
+export const authSessions = pgTable(
+  "auth_sessions",
+  {
+    id: text("id").primaryKey(),
+    nurseId: uuid("nurse_id")
+      .notNull()
+      .references(() => nurses.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("auth_sessions_nurse_id_idx").on(table.nurseId),
+    index("auth_sessions_nurse_expires_idx").on(table.nurseId, table.expiresAt),
+  ],
+);
+
+export const auditEvents = pgTable(
+  "audit_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    actorNurseId: uuid("actor_nurse_id").references(() => nurses.id, { onDelete: "set null" }),
+    action: text("action").notNull(),
+    resourceType: text("resource_type").notNull(),
+    resourceId: text("resource_id"),
+    outcome: text("outcome").notNull(),
+    metadata: jsonb("metadata")
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("audit_events_actor_created_idx").on(table.actorNurseId, table.createdAt),
+    index("audit_events_resource_created_idx").on(table.resourceType, table.createdAt),
+  ],
+);
+
 export type Nurse = typeof nurses.$inferSelect;
 export type Patient = typeof patients.$inferSelect;
 export type NewPatient = typeof patients.$inferInsert;
@@ -225,3 +267,7 @@ export type RouteOptimizationRun = typeof routeOptimizationRuns.$inferSelect;
 export type NewRouteOptimizationRun = typeof routeOptimizationRuns.$inferInsert;
 export type RouteOptimizationTask = typeof routeOptimizationTasks.$inferSelect;
 export type NewRouteOptimizationTask = typeof routeOptimizationTasks.$inferInsert;
+export type AuthSession = typeof authSessions.$inferSelect;
+export type NewAuthSession = typeof authSessions.$inferInsert;
+export type AuditEvent = typeof auditEvents.$inferSelect;
+export type NewAuditEvent = typeof auditEvents.$inferInsert;
