@@ -21,6 +21,21 @@ export type DashboardTrendPoint = {
   onTimeRatePercent: number;
 };
 
+export type DashboardBusiestDay = {
+  dayLabel: string;
+  avgVisits: number;
+  totalRuns: number;
+};
+
+export type DashboardPatientRisk = {
+  patientId: string;
+  firstName: string;
+  lastName: string;
+  unscheduledCount: number;
+  lateCount: number;
+  totalAppearances: number;
+};
+
 export type DashboardSummaryResponse = {
   asOf: string;
   timezone: string;
@@ -30,10 +45,13 @@ export type DashboardSummaryResponse = {
     onTimeRatePercent7d: number | null;
     unscheduledVisitsToday: number;
     driveHoursToday: number;
+    activePatientCount: number;
   };
   alerts: DashboardAlert[];
   upcomingStops: DashboardUpcomingStop[];
   trend: DashboardTrendPoint[];
+  busiestDays: DashboardBusiestDay[];
+  patientRisks: DashboardPatientRisk[];
   snapshot: {
     completedRoutes: number;
     delayedRoutes: number;
@@ -68,6 +86,21 @@ const isTrendPoint = (value: unknown): value is DashboardTrendPoint =>
   typeof value.label === "string" &&
   typeof value.onTimeRatePercent === "number";
 
+const isBusiestDay = (value: unknown): value is DashboardBusiestDay =>
+  isObject(value) &&
+  typeof value.dayLabel === "string" &&
+  typeof value.avgVisits === "number" &&
+  typeof value.totalRuns === "number";
+
+const isPatientRisk = (value: unknown): value is DashboardPatientRisk =>
+  isObject(value) &&
+  typeof value.patientId === "string" &&
+  typeof value.firstName === "string" &&
+  typeof value.lastName === "string" &&
+  typeof value.unscheduledCount === "number" &&
+  typeof value.lateCount === "number" &&
+  typeof value.totalAppearances === "number";
+
 export const isDashboardSummaryResponse = (value: unknown): value is DashboardSummaryResponse => {
   if (!isObject(value)) {
     return false;
@@ -83,12 +116,17 @@ export const isDashboardSummaryResponse = (value: unknown): value is DashboardSu
       typeof value.kpis.onTimeRatePercent7d !== "number") ||
     typeof value.kpis.unscheduledVisitsToday !== "number" ||
     typeof value.kpis.driveHoursToday !== "number" ||
+    typeof value.kpis.activePatientCount !== "number" ||
     !Array.isArray(value.alerts) ||
     !value.alerts.every(isAlert) ||
     !Array.isArray(value.upcomingStops) ||
     !value.upcomingStops.every(isUpcomingStop) ||
     !Array.isArray(value.trend) ||
     !value.trend.every(isTrendPoint) ||
+    !Array.isArray(value.busiestDays) ||
+    !value.busiestDays.every(isBusiestDay) ||
+    !Array.isArray(value.patientRisks) ||
+    !value.patientRisks.every(isPatientRisk) ||
     !isObject(value.snapshot) ||
     typeof value.snapshot.completedRoutes !== "number" ||
     typeof value.snapshot.delayedRoutes !== "number" ||

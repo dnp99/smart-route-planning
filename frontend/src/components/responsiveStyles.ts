@@ -385,4 +385,10 @@ export const responsiveStyles = {
   dashboardSnapshotGrid:
     "mt-3 grid gap-2 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-3",
   dashboardSnapshotItem: "m-0 rounded-xl bg-slate-100 p-3 dark:bg-slate-800/80",
+  dashboardRiskItem:
+    "flex items-start justify-between gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-700",
+  dashboardRiskBadgeAmber:
+    "rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
+  dashboardRiskBadgeRose:
+    "rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
 };
