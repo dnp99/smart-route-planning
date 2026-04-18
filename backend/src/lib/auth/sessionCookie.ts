@@ -1,5 +1,5 @@
 const SESSION_COOKIE_NAME = "careflow_session";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24;
 
 const isProduction = () => process.env.NODE_ENV === "production";
 const getSessionSameSite = () => (isProduction() ? "None" : "Lax");

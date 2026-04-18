@@ -1,4 +1,4 @@
-# CareFlow Deployment Strategy
+# Routefy Deployment Strategy
 
 ## 1) Target architecture
 

@@ -129,7 +129,7 @@ export default function AppHeader({
           </div>
           <div className="min-w-0">
             <p className="m-0 text-base font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 sm:text-lg">
-              CareFlow
+              Routefy
             </p>
             <p
               className={[

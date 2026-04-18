@@ -88,7 +88,10 @@ export const PatientSelectorSection = ({
   const previewNamesText = previewNames.join(" · ");
 
   const isOptimizeDisabled =
-    isLoading || !canOptimize || (hasResult && !hasChangedSinceLastOptimize);
+    destinationCount === 0 ||
+    isLoading ||
+    !canOptimize ||
+    (hasResult && !hasChangedSinceLastOptimize);
   const defaultObjectiveLabel =
     defaultOptimizationObjective === "distance" ? "Less driving" : "Finish sooner";
   const routePreferenceControl = (

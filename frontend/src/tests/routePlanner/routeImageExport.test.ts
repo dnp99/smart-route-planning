@@ -249,7 +249,7 @@ describe("routeImageExport", () => {
     expect(canShareSpy).toHaveBeenCalledTimes(1);
     expect(shareSpy).toHaveBeenCalledWith({
       files: [expect.any(File)],
-      title: "CareFlow Schedule",
+      title: "Routefy Schedule",
     });
     expect(anchorClickSpy).not.toHaveBeenCalled();
     expect(createObjectURLSpy).not.toHaveBeenCalled();

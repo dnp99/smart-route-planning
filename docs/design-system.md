@@ -1,6 +1,6 @@
-# CareFlow Design System
+# Routefy Design System
 
-> Single source of truth for visual design in CareFlow.
+> Single source of truth for visual design in Routefy.
 > Code implementation lives in [`frontend/src/components/responsiveStyles.ts`](../frontend/src/components/responsiveStyles.ts).
 > All new UI work must use the tokens and component rules defined here — no ad-hoc Tailwind classes outside documented component specs.
 > Documented component specs are the approved exception layer between tokens and implementation.

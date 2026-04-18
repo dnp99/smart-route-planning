@@ -24,7 +24,7 @@ export default function LegalAcknowledgementModal({
           Important Notice - Client Data Use
         </h2>
         <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">
-          CareFlow is a workflow support tool for route planning and scheduling.
+          Routefy is a workflow support tool for route planning and scheduling.
         </p>
         <p className="mt-3 text-sm font-medium text-slate-800 dark:text-slate-200">
           By using this application, you confirm that:
@@ -38,8 +38,8 @@ export default function LegalAcknowledgementModal({
           </li>
         </ul>
         <p className="mt-3 text-sm text-slate-700 dark:text-slate-300">
-          CareFlow does not replace clinical judgment. You remain responsible for verifying
-          schedules and delivering care safely.
+          Routefy does not replace clinical judgment. You remain responsible for verifying schedules
+          and delivering care safely.
         </p>
         {error && (
           <p className="mt-3 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300">

@@ -13,6 +13,10 @@ import type { SelectedPatientDestination } from "./routePlannerTypes";
 export const validateRequestDestinations = (
   requestDestinations: SelectedPatientDestination[],
 ): string | null => {
+  if (requestDestinations.length === 0) {
+    return "Select at least one client before optimizing.";
+  }
+
   const fixedDestinationsMissingWindow = requestDestinations.filter(
     (destination) => destination.windowType === "fixed" && !hasCompleteWindow(destination),
   );

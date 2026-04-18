@@ -1,4 +1,5 @@
 import { NavLink } from "react-router-dom";
+import { SUPPORT_EMAIL_MAILTO } from "../../constants/support";
 import { responsiveStyles } from "../responsiveStyles";
 
 export default function AppFooter() {
@@ -25,16 +26,16 @@ export default function AppFooter() {
           </div>
           <div>
             <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-400">
-              CareFlow
+              Routefy
             </p>
             <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
-              &copy; {new Date().getFullYear()} CareFlow. All rights reserved.
+              &copy; {new Date().getFullYear()} Routefy. All rights reserved.
             </p>
           </div>
         </div>
         <nav aria-label="Legal and support links" className="flex flex-wrap gap-x-3 gap-y-0">
           <a
-            href="mailto:dpatel1995@yahoo.com"
+            href={SUPPORT_EMAIL_MAILTO}
             className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
           >
             Contact Us
