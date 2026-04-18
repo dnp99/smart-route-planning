@@ -220,11 +220,13 @@ Authentication behavior:
 ## Security and Privacy Hardening (Current)
 
 - Auth uses server-managed sessions in `auth_sessions`.
+- Session records also store derived `device_type` (`desktop`, `mobile`, `tablet`, `bot`, `unknown`) inferred from the request `user_agent`.
 - Legal acknowledgement is tracked per nurse via `nurses.legal_notice_accepted_at` and `nurses.legal_notice_accepted_version`.
 - Audit events are persisted in `audit_events` for patient read/write, optimize-route access, and dashboard access.
 - Route optimization history is minimized: identifying task fields (`patient_name`, `address`) are no longer written.
 - Existing identifying optimization-task fields are redacted by migration `0010_awesome_hairball.sql`.
 - Migration `0011_spicy_ben_parker.sql` adds legal acknowledgement fields to `nurses`.
+- Migration `0012_cold_serpent_society.sql` adds `auth_sessions.device_type`.
 
 ## Optimization performance caches
 

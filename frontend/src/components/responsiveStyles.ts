@@ -32,9 +32,6 @@ export const responsiveStyles = {
     "mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4",
   contentWrapper: "mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6",
   tabNav: "flex gap-6 border-b border-slate-200 dark:border-slate-800",
-  // ── Header quote ──────────────────────────────────────────────────────────
-  headerQuote:
-    "m-0 hidden min-w-0 max-w-[50vw] text-right text-xs italic text-slate-600 line-clamp-2 sm:block sm:text-sm dark:text-slate-300",
   // ── Account menu ──────────────────────────────────────────────────────────
   accountMenuButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-100 to-blue-50 text-sm font-bold uppercase tracking-[0.02em] text-blue-800 shadow-sm transition hover:from-blue-200 hover:to-blue-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-blue-700 dark:from-blue-900/70 dark:to-blue-950/60 dark:text-blue-100 dark:hover:from-blue-800 dark:hover:to-blue-900",

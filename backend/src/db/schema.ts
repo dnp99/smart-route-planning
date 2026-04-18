@@ -26,6 +26,7 @@ export const nurses = pgTable("nurses", {
   passwordHash: text("password_hash").notNull(),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  lastDeactivatedClientsAt: timestamp("last_deactivated_clients_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
 });
@@ -230,11 +231,16 @@ export const authSessions = pgTable(
     lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
+    deviceType: text("device_type").notNull().default("unknown"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
     index("auth_sessions_nurse_id_idx").on(table.nurseId),
     index("auth_sessions_nurse_expires_idx").on(table.nurseId, table.expiresAt),
+    check(
+      "auth_sessions_device_type_chk",
+      sql`${table.deviceType} in ('desktop', 'mobile', 'tablet', 'bot', 'unknown')`,
+    ),
   ],
 );
 

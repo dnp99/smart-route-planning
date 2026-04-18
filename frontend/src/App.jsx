@@ -9,6 +9,8 @@ import {
   logout,
 } from "./components/auth/authService";
 import {
+  beginAuthBootstrap,
+  completeAuthBootstrap,
   clearAuthSession,
   getAuthChangedEventName,
   getAuthUser,
@@ -37,7 +39,7 @@ const resolveTabClassName = ({ isActive }) =>
 
 function App() {
   const [authUser, setAuthUser] = useState(() => getAuthUser());
-  const [isAuthResolved, setIsAuthResolved] = useState(false);
+  const [isAuthResolved, setIsAuthResolved] = useState(() => getAuthUser() !== null);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [isLegalNoticeRequired, setIsLegalNoticeRequired] = useState(false);
   const [isLegalNoticeSubmitting, setIsLegalNoticeSubmitting] = useState(false);
@@ -59,6 +61,11 @@ function App() {
   }, []);
 
   useEffect(() => {
+    const hasCachedAuthUser = getAuthUser() !== null;
+    if (hasCachedAuthUser) {
+      beginAuthBootstrap();
+    }
+
     let active = true;
     void fetchMe()
       .then((result) => {
@@ -77,9 +84,13 @@ function App() {
           setLegalNoticeError("");
           setIsAuthResolved(true);
         }
+      })
+      .finally(() => {
+        completeAuthBootstrap();
       });
     return () => {
       active = false;
+      completeAuthBootstrap();
     };
   }, []);
 

@@ -170,11 +170,17 @@ describe("patientRepository", () => {
   });
 
   it("lists patients for nurse with default ordering", async () => {
+    // Claim returns [] — deactivation already ran within 24h, skipped.
+    const nurseClaimReturningMock = vi.fn().mockResolvedValue([]);
+    const nurseClaimWhereMock = vi.fn().mockReturnValue({ returning: nurseClaimReturningMock });
+    const nurseClaimSetMock = vi.fn().mockReturnValue({ where: nurseClaimWhereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: nurseClaimSetMock });
+
     const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-1" }]);
     const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
     const fromMock = vi.fn().mockReturnValue({ where: whereMock });
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
-    getDbMock.mockReturnValue({ select: selectMock });
+    getDbMock.mockReturnValue({ update: updateMock, select: selectMock });
 
     await expect(listPatientsByNurse("nurse-1")).resolves.toEqual([
       { id: "patient-1", visitWindows: [] },
@@ -182,11 +188,17 @@ describe("patientRepository", () => {
   });
 
   it("lists patients for nurse with name query", async () => {
+    // Claim returns [] — deactivation already ran within 24h, skipped.
+    const nurseClaimReturningMock = vi.fn().mockResolvedValue([]);
+    const nurseClaimWhereMock = vi.fn().mockReturnValue({ returning: nurseClaimReturningMock });
+    const nurseClaimSetMock = vi.fn().mockReturnValue({ where: nurseClaimWhereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: nurseClaimSetMock });
+
     const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-2" }]);
     const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
     const fromMock = vi.fn().mockReturnValue({ where: whereMock });
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
-    getDbMock.mockReturnValue({ select: selectMock });
+    getDbMock.mockReturnValue({ update: updateMock, select: selectMock });
 
     await expect(listPatientsByNurse("nurse-1", " jane ")).resolves.toEqual([
       { id: "patient-2", visitWindows: [] },
@@ -194,9 +206,20 @@ describe("patientRepository", () => {
   });
 
   it("deactivates stale inactive-by-scheduling patients before listing", async () => {
-    const updateWhereMock = vi.fn().mockResolvedValue(undefined);
-    const updateSetMock = vi.fn().mockReturnValue({ where: updateWhereMock });
-    const updateMock = vi.fn().mockReturnValue({ set: updateSetMock });
+    // First update: nurses.lastDeactivatedClientsAt claim — returns a row to signal the
+    // deactivation window is open (null or older than 24h).
+    const nurseClaimReturningMock = vi.fn().mockResolvedValue([{ id: "nurse-1" }]);
+    const nurseClaimWhereMock = vi.fn().mockReturnValue({ returning: nurseClaimReturningMock });
+    const nurseClaimSetMock = vi.fn().mockReturnValue({ where: nurseClaimWhereMock });
+
+    // Second update: patients isActive=false
+    const patientUpdateWhereMock = vi.fn().mockResolvedValue(undefined);
+    const patientUpdateSetMock = vi.fn().mockReturnValue({ where: patientUpdateWhereMock });
+
+    const updateMock = vi
+      .fn()
+      .mockReturnValueOnce({ set: nurseClaimSetMock })
+      .mockReturnValueOnce({ set: patientUpdateSetMock });
 
     const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-2" }]);
     const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
@@ -209,17 +232,21 @@ describe("patientRepository", () => {
       { id: "patient-2", visitWindows: [] },
     ]);
 
-    expect(updateMock).toHaveBeenCalledTimes(1);
-    expect(updateSetMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        isActive: false,
-        updatedAt: expect.any(Date),
-      }),
+    expect(updateMock).toHaveBeenCalledTimes(2);
+    expect(nurseClaimSetMock).toHaveBeenCalledWith(
+      expect.objectContaining({ lastDeactivatedClientsAt: expect.any(Date) }),
     );
-    expect(updateWhereMock).toHaveBeenCalledTimes(1);
+    expect(patientUpdateSetMock).toHaveBeenCalledWith(
+      expect.objectContaining({ isActive: false, updatedAt: expect.any(Date) }),
+    );
   });
 
   it("attaches and sorts visit windows by start, end, and createdAt", async () => {
+    const nurseClaimReturningMock = vi.fn().mockResolvedValue([]);
+    const nurseClaimWhereMock = vi.fn().mockReturnValue({ returning: nurseClaimReturningMock });
+    const nurseClaimSetMock = vi.fn().mockReturnValue({ where: nurseClaimWhereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: nurseClaimSetMock });
+
     const patientRows = [{ id: "patient-1" }, { id: "patient-2" }];
     const windows = [
       {
@@ -276,7 +303,7 @@ describe("patientRepository", () => {
       .mockReturnValueOnce({ from: patientFromMock })
       .mockReturnValueOnce({ from: windowsFromMock });
 
-    getDbMock.mockReturnValue({ select: selectMock });
+    getDbMock.mockReturnValue({ update: updateMock, select: selectMock });
 
     await expect(listPatientsByNurse("nurse-1")).resolves.toEqual([
       {
@@ -296,6 +323,11 @@ describe("patientRepository", () => {
   });
 
   it("handles non-array visit windows query results", async () => {
+    const nurseClaimReturningMock = vi.fn().mockResolvedValue([]);
+    const nurseClaimWhereMock = vi.fn().mockReturnValue({ returning: nurseClaimReturningMock });
+    const nurseClaimSetMock = vi.fn().mockReturnValue({ where: nurseClaimWhereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: nurseClaimSetMock });
+
     const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-1" }]);
     const patientWhereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
     const patientFromMock = vi.fn().mockReturnValue({ where: patientWhereMock });
@@ -308,7 +340,7 @@ describe("patientRepository", () => {
       .mockReturnValueOnce({ from: patientFromMock })
       .mockReturnValueOnce({ from: windowsFromMock });
 
-    getDbMock.mockReturnValue({ select: selectMock });
+    getDbMock.mockReturnValue({ update: updateMock, select: selectMock });
 
     await expect(listPatientsByNurse("nurse-1")).resolves.toEqual([
       { id: "patient-1", visitWindows: [] },

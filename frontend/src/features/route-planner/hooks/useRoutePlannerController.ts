@@ -173,6 +173,7 @@ export function useRoutePlannerController({
       manualEndGooglePlaceId,
       selectedDestinations,
       destinationSearchPatients,
+      isDestinationSearchLoading,
       locallyCreatedPatients,
       selectedDestinationIdSet,
       addDestinationPatient,

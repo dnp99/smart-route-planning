@@ -50,6 +50,7 @@ const PatientsPage = () => {
   const [formErrors, setFormErrors] = useState<FormFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showPrivacyReminder, setShowPrivacyReminder] = useState(false);
 
   const selectedPatient = useMemo(
     () => patients.find((patient) => patient.id === selectedPatientId) ?? null,
@@ -294,18 +295,31 @@ const PatientsPage = () => {
               <PlusIcon className="h-4 w-4" />
             </button>
           </div>
-          <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
-            Manage clients for route planning.
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
+              Manage clients for route planning.
+            </p>
+            <button
+              type="button"
+              aria-label="Show privacy reminder"
+              aria-expanded={showPrivacyReminder}
+              onClick={() => setShowPrivacyReminder((current) => !current)}
+              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30"
+            >
+              i
+            </button>
+          </div>
         </div>
 
-        <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
-          <p className="m-0 font-medium">Privacy Reminder</p>
-          <p className="m-0 mt-1">
-            Client information entered here should be limited to what is necessary for scheduling
-            and care delivery. Ensure you have appropriate authority to manage this data.
-          </p>
-        </div>
+        {showPrivacyReminder && (
+          <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+            <p className="m-0 font-medium">Privacy Reminder</p>
+            <p className="m-0 mt-1">
+              Client information entered here should be limited to what is necessary for scheduling
+              and care delivery. Ensure you have appropriate authority to manage this data.
+            </p>
+          </div>
+        )}
 
         {pageError && (
           <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">

@@ -2,7 +2,7 @@ import { HttpError } from "../http";
 import { findNurseById } from "../patients/patientRepository";
 import { verifyAccessToken } from "./jwt";
 import { readSessionIdFromCookieHeader } from "./sessionCookie";
-import { findValidAuthSessionById } from "./sessionRepository";
+import { findValidSessionWithNurse } from "./sessionRepository";
 
 export type AuthContext = {
   nurseId: string;
@@ -29,18 +29,17 @@ export const requireAuth = async (request: Request): Promise<AuthContext> => {
   const sessionId = readSessionIdFromCookieHeader(request.headers.get("cookie"));
 
   if (sessionId) {
-    const session = await findValidAuthSessionById(sessionId);
-    if (session) {
-      const nurse = await findNurseById(session.nurseId);
-      if (!nurse || !nurse.isActive) {
+    const row = await findValidSessionWithNurse(sessionId);
+    if (row) {
+      if (!row.isActive) {
         throw new HttpError(401, "Unauthorized.");
       }
 
       return {
-        nurseId: nurse.id,
-        email: nurse.email,
+        nurseId: row.nurseId,
+        email: row.email,
         authMethod: "session_cookie",
-        sessionId: session.id,
+        sessionId,
       };
     }
   }
