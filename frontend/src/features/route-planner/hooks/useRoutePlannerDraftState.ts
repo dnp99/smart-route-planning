@@ -18,6 +18,7 @@ type UseRoutePlannerDraftStateParams = {
   manualEndGooglePlaceId: string | null;
   selectedDestinations: SelectedPatientDestination[];
   destinationSearchPatients: Patient[];
+  isDestinationSearchLoading: boolean;
   locallyCreatedPatients: Patient[];
   selectedDestinationIdSet: Set<string>;
   addDestinationPatient: (patient: Patient) => void;
@@ -34,6 +35,7 @@ export function useRoutePlannerDraftState({
   manualEndGooglePlaceId,
   selectedDestinations,
   destinationSearchPatients,
+  isDestinationSearchLoading,
   locallyCreatedPatients,
   selectedDestinationIdSet,
   addDestinationPatient,
@@ -88,6 +90,12 @@ export function useRoutePlannerDraftState({
   }, []);
 
   useEffect(() => {
+    const shouldDeferPersistUntilHydration =
+      !hasHydratedDraftDestinations && (initialDraft?.selectedDestinationStates?.length ?? 0) > 0;
+    if (shouldDeferPersistUntilHydration) {
+      return;
+    }
+
     persistRoutePlannerDraft({
       version: 1,
       startAddress,
@@ -100,6 +108,8 @@ export function useRoutePlannerDraftState({
     });
   }, [
     activeMobileStep,
+    hasHydratedDraftDestinations,
+    initialDraft?.selectedDestinationStates?.length,
     manualEndAddress,
     manualEndGooglePlaceId,
     planningDate,
@@ -128,6 +138,13 @@ export function useRoutePlannerDraftState({
     });
 
     const uniquePatientIds = [...new Set(draftStates.map((state) => state.patientId))];
+    const unresolvedPatientIds = uniquePatientIds.filter(
+      (patientId) => !selectedDestinationIdSet.has(patientId) && !patientById.has(patientId),
+    );
+    if (unresolvedPatientIds.length > 0 && isDestinationSearchLoading) {
+      return;
+    }
+
     uniquePatientIds.forEach((patientId) => {
       if (selectedDestinationIdSet.has(patientId)) {
         return;
@@ -150,6 +167,7 @@ export function useRoutePlannerDraftState({
     destinationSearchPatients,
     hasHydratedDraftDestinations,
     initialDraft?.selectedDestinationStates,
+    isDestinationSearchLoading,
     locallyCreatedPatients,
     selectedDestinationIdSet,
     setDestinationPersistPlanningWindow,

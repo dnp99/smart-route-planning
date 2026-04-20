@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { SUPPORT_EMAIL_MAILTO } from "../../constants/support";
 import { responsiveStyles } from "../responsiveStyles";
 import { login, signUp } from "./authService";
 import { setAuthSession } from "./authSession";
@@ -111,7 +112,7 @@ const LoginPage = () => {
 
         <p className={responsiveStyles.authDescription}>
           {mode === "signup"
-            ? "Create your CareFlow account to manage clients and route-planning data."
+            ? "Create your Routefy account to manage clients and route-planning data."
             : "Sign in to continue managing clients and route-planning data."}
         </p>
 
@@ -212,7 +213,7 @@ const LoginPage = () => {
           <div className={responsiveStyles.authHelperRow}>
             {mode === "login" ? (
               <>
-                <a href="mailto:dpatel1995@yahoo.com" className={responsiveStyles.authHelperLink}>
+                <a href={SUPPORT_EMAIL_MAILTO} className={responsiveStyles.authHelperLink}>
                   Forgot password?
                 </a>
                 <button

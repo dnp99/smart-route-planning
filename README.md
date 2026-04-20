@@ -1,6 +1,6 @@
-# CAREFLOW
+# ROUTEFY
 
-CareFlow is a nurse-focused route planning app with a React frontend and Next.js backend.
+Routefy is a nurse-focused route planning app with a React frontend and Next.js backend.
 
 ## What it does
 

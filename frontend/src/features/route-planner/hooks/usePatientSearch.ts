@@ -11,7 +11,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 
 export const usePatientSearch = ({ query, enabled }: UsePatientSearchOptions) => {
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(enabled);
   const [error, setError] = useState("");
 
   useEffect(() => {

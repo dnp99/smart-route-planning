@@ -1,0 +1,2 @@
+ALTER TABLE "auth_sessions" ADD COLUMN "device_type" text DEFAULT 'unknown' NOT NULL;--> statement-breakpoint
+ALTER TABLE "auth_sessions" ADD CONSTRAINT "auth_sessions_device_type_chk" CHECK ("auth_sessions"."device_type" in ('desktop', 'mobile', 'tablet', 'bot', 'unknown'));

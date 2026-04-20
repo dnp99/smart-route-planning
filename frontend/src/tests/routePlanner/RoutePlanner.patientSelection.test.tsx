@@ -611,24 +611,17 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.queryByRole("heading", { name: "Add New Client" })).toBeNull();
   });
 
-  it("submits manual start and end place ids picked from autocomplete", () => {
+  it("requires at least one selected client before optimizing", () => {
     render(<RoutePlanner />);
 
     fireEvent.click(screen.getByRole("button", { name: "Pick Starting point" }));
     fireEvent.click(screen.getByRole("button", { name: "Pick Ending point" }));
-    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 
-    expect(optimizeRouteMock).toHaveBeenCalledWith({
-      startAddress: "3361 Ingram Road, Mississauga, ON",
-      startGooglePlaceId: "start-place",
-      endAddress: "6625 Snow Goose Lane, Mississauga, ON",
-      endGooglePlaceId: "end-place",
-      destinations: [],
-      canOptimize: true,
-      planningDate: expect.any(String),
-      workingHours: null,
-      optimizationObjective: "distance",
-    });
+    const optimizeButton = screen.getByRole("button", { name: "Optimize Route" });
+    expect(optimizeButton).toHaveProperty("disabled", true);
+
+    fireEvent.click(optimizeButton);
+    expect(optimizeRouteMock).not.toHaveBeenCalled();
   });
 
   it("hides leave-by suggestion while still rendering planned stop timing details", () => {

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { SUPPORT_EMAIL, SUPPORT_EMAIL_MAILTO } from "../../constants/support";
 
 export default function LicensePage() {
   return (
@@ -11,7 +12,7 @@ export default function LicensePage() {
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
             1. Application License
           </h2>
-          <p className="m-0">CareFlow is proprietary software. All rights are reserved.</p>
+          <p className="m-0">Routefy is proprietary software. All rights are reserved.</p>
           <p className="m-0 mt-2">
             You are granted a limited, non-exclusive, non-transferable right to use the application
             for its intended purpose.
@@ -27,13 +28,13 @@ export default function LicensePage() {
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
             2. Third-Party Software
           </h2>
-          <p className="m-0">CareFlow includes and depends on third-party open-source libraries.</p>
+          <p className="m-0">Routefy includes and depends on third-party open-source libraries.</p>
           <p className="m-0 mt-2">
             These libraries remain the property of their respective authors and are used under their
             respective licenses (such as MIT, Apache 2.0, and others).
           </p>
           <p className="m-0 mt-2">
-            Use of CareFlow does not grant you rights to these third-party components beyond what is
+            Use of Routefy does not grant you rights to these third-party components beyond what is
             provided in their licenses.
           </p>
         </section>
@@ -42,7 +43,7 @@ export default function LicensePage() {
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
             3. Third-Party Services
           </h2>
-          <p className="m-0">CareFlow uses external services, including:</p>
+          <p className="m-0">Routefy uses external services, including:</p>
           <ul className="m-0 mt-2 list-disc pl-5">
             <li>Google Maps / Places APIs</li>
             <li>Cloud hosting providers</li>
@@ -57,7 +58,7 @@ export default function LicensePage() {
             4. Disclaimer
           </h2>
           <p className="m-0">
-            CareFlow is provided &ldquo;as is&rdquo; without warranties of any kind.
+            Routefy is provided &ldquo;as is&rdquo; without warranties of any kind.
           </p>
           <p className="m-0 mt-2">We do not guarantee:</p>
           <ul className="m-0 mt-2 list-disc pl-5">
@@ -73,7 +74,7 @@ export default function LicensePage() {
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
             5. Limitation of Liability
           </h2>
-          <p className="m-0">To the maximum extent permitted by law, CareFlow is not liable for:</p>
+          <p className="m-0">To the maximum extent permitted by law, Routefy is not liable for:</p>
           <ul className="m-0 mt-2 list-disc pl-5">
             <li>indirect or consequential damages</li>
             <li>loss of data or operational disruptions</li>
@@ -83,13 +84,13 @@ export default function LicensePage() {
         <section>
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">6. Contact</h2>
           <p className="m-0">For licensing inquiries:</p>
-          <p className="m-0 mt-2 font-semibold">CareFlow Support</p>
+          <p className="m-0 mt-2 font-semibold">Routefy Support</p>
           <p className="m-0">
             <a
-              href="mailto:dpate1995@yahoo.com"
+              href={SUPPORT_EMAIL_MAILTO}
               className="text-blue-600 underline hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
             >
-              dpate1995@yahoo.com
+              {SUPPORT_EMAIL}
             </a>
           </p>
         </section>

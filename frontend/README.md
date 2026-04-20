@@ -1,6 +1,6 @@
 # Frontend
 
-This folder contains the Vite + React frontend for CareFlow.
+This folder contains the Vite + React frontend for Routefy.
 
 ## Responsibilities
 

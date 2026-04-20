@@ -18,6 +18,7 @@ const FALLBACK_FLEXIBLE_START_TIME = "00:00";
 const FALLBACK_FLEXIBLE_END_TIME = "23:59";
 const FALLBACK_FLEXIBLE_VISIT_TYPE = "flexible";
 const SCHEDULING_INACTIVITY_WINDOW_DAYS = 60;
+const DEACTIVATION_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 const runInTransaction = async <T>(operation: (db: ReturnType<typeof getDb>) => Promise<T>) => {
   const db = getDb();
@@ -35,25 +36,36 @@ const runInTransaction = async <T>(operation: (db: ReturnType<typeof getDb>) => 
 };
 
 const deactivateStalePatientsForNurse = async (nurseId: string) => {
-  const db = getDb() as ReturnType<typeof getDb> & {
-    update?: ReturnType<typeof getDb>["update"];
-  };
+  const now = new Date();
+  const intervalCutoff = new Date(now.getTime() - DEACTIVATION_INTERVAL_MS);
 
-  if (typeof db.update !== "function") {
+  // Atomically claim the deactivation slot — only one instance proceeds if
+  // lastDeactivatedClientsAt is null or older than 24 hours.
+  const [claimed] = await getDb()
+    .update(nurses)
+    .set({ lastDeactivatedClientsAt: now })
+    .where(
+      and(
+        eq(nurses.id, nurseId),
+        or(
+          isNull(nurses.lastDeactivatedClientsAt),
+          lt(nurses.lastDeactivatedClientsAt, intervalCutoff),
+        ),
+      ),
+    )
+    .returning({ id: nurses.id });
+
+  if (!claimed) {
     return;
   }
 
-  const now = new Date();
   const inactivityCutoff = new Date(
     now.getTime() - SCHEDULING_INACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000,
   );
 
-  await db
+  await getDb()
     .update(patients)
-    .set({
-      isActive: false,
-      updatedAt: now,
-    })
+    .set({ isActive: false, updatedAt: now })
     .where(
       and(
         eq(patients.nurseId, nurseId),

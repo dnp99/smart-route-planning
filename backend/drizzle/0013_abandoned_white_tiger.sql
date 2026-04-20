@@ -1,0 +1,1 @@
+ALTER TABLE "nurses" ADD COLUMN "last_deactivated_clients_at" timestamp with time zone;

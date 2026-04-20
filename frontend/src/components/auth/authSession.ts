@@ -1,10 +1,13 @@
 import type { AuthUser } from "../../../../shared/contracts";
 
-const SESSION_SCOPED_KEYS = ["careflow.route-planner.draft.v1", "careflow.headerQuote"];
+const SESSION_SCOPED_KEYS = ["careflow.route-planner.draft.v1"];
 const SESSION_STORAGE_SCOPED_KEYS = ["careflow_route_optimization_result"];
+const PERSISTED_AUTH_USER_KEY = "careflow.auth-user.v1";
+let authBootstrapInFlight = false;
+let authBootstrapPromise: Promise<void> | null = null;
+let resolveAuthBootstrap: (() => void) | null = null;
 
 const AUTH_CHANGED_EVENT = "careflow-auth-changed";
-let currentAuthUser: AuthUser | null = null;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -72,15 +75,42 @@ const emitAuthChanged = () => {
 
 export const getAuthChangedEventName = () => AUTH_CHANGED_EVENT;
 
-export const getAuthToken = () => {
-  return null;
+export const beginAuthBootstrap = () => {
+  if (authBootstrapInFlight) {
+    return;
+  }
+
+  authBootstrapInFlight = true;
+  authBootstrapPromise = new Promise<void>((resolve) => {
+    resolveAuthBootstrap = resolve;
+  });
 };
 
-export const getAuthUser = (): AuthUser | null => {
-  const parsed = currentAuthUser as Partial<AuthUser> | null;
-  if (!parsed) {
+export const completeAuthBootstrap = () => {
+  if (!authBootstrapInFlight) {
+    return;
+  }
+
+  authBootstrapInFlight = false;
+  const resolve = resolveAuthBootstrap;
+  authBootstrapPromise = null;
+  resolveAuthBootstrap = null;
+  resolve?.();
+};
+
+export const waitForAuthBootstrap = async () => {
+  if (!authBootstrapPromise) {
+    return;
+  }
+  await authBootstrapPromise;
+};
+
+const parseAuthUser = (value: unknown): AuthUser | null => {
+  if (typeof value !== "object" || value === null) {
     return null;
   }
+
+  const parsed = value as Partial<AuthUser>;
 
   try {
     if (
@@ -118,6 +148,48 @@ export const getAuthUser = (): AuthUser | null => {
   }
 };
 
+const persistAuthUser = (user: AuthUser): void => {
+  if (typeof window === "undefined") {
+    return;
+  }
+  try {
+    window.localStorage.setItem(PERSISTED_AUTH_USER_KEY, JSON.stringify(user));
+  } catch {
+    // ignore quota errors
+  }
+};
+
+const clearPersistedAuthUser = (): void => {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.localStorage.removeItem(PERSISTED_AUTH_USER_KEY);
+};
+
+// Initialize from localStorage so returning users don't hit a blocking fetchMe() gate
+let currentAuthUser: AuthUser | null = (() => {
+  if (typeof window === "undefined") {
+    return null;
+  }
+  try {
+    const raw = window.localStorage.getItem(PERSISTED_AUTH_USER_KEY);
+    if (!raw) {
+      return null;
+    }
+    return parseAuthUser(JSON.parse(raw) as unknown);
+  } catch {
+    return null;
+  }
+})();
+
+export const getAuthToken = () => {
+  return null;
+};
+
+export const getAuthUser = (): AuthUser | null => {
+  return parseAuthUser(currentAuthUser);
+};
+
 export const setAuthSession = (user: AuthUser) => {
   if (typeof window === "undefined") {
     return;
@@ -126,11 +198,13 @@ export const setAuthSession = (user: AuthUser) => {
   SESSION_SCOPED_KEYS.forEach((key) => window.localStorage.removeItem(key));
   SESSION_STORAGE_SCOPED_KEYS.forEach((key) => window.sessionStorage.removeItem(key));
   currentAuthUser = user;
+  persistAuthUser(user);
   emitAuthChanged();
 };
 
 export const setStoredAuthUser = (user: AuthUser) => {
   currentAuthUser = user;
+  persistAuthUser(user);
   emitAuthChanged();
 };
 
@@ -140,6 +214,7 @@ export const clearAuthSession = () => {
   }
 
   currentAuthUser = null;
+  clearPersistedAuthUser();
   SESSION_SCOPED_KEYS.forEach((key) => window.localStorage.removeItem(key));
   SESSION_STORAGE_SCOPED_KEYS.forEach((key) => window.sessionStorage.removeItem(key));
   emitAuthChanged();

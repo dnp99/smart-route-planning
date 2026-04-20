@@ -320,7 +320,7 @@ export default function HomePage({
   const renderSignedOutActions = () => (
     <>
       <Link to="/login" className={responsiveStyles.primaryButton}>
-        Sign in to CareFlow
+        Sign in to Routefy
       </Link>
       <Link to="/legal/terms" className={responsiveStyles.secondaryButton}>
         Review terms
@@ -344,7 +344,7 @@ export default function HomePage({
           className="pointer-events-none absolute -bottom-16 -left-24 h-48 w-48 rounded-full bg-orange-100/70 blur-2xl dark:bg-orange-900/20"
         />
         <div className="relative max-w-2xl">
-          <p className={responsiveStyles.dashboardEyebrow}>CareFlow Mission Control</p>
+          <p className={responsiveStyles.dashboardEyebrow}>Routefy Mission Control</p>
           <h1 className={responsiveStyles.dashboardHeroHeading}>
             {greetingPrefix}, {greetingName}
           </h1>

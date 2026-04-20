@@ -45,7 +45,7 @@ export async function GET(request: Request) {
     const query = requestUrl.searchParams.get("query") ?? "";
 
     const patients = await listPatientsByNurse(auth.nurseId, query);
-    await logAuditEvent({
+    void logAuditEvent({
       actorNurseId: auth.nurseId,
       action: "patients.list",
       resourceType: "patient",

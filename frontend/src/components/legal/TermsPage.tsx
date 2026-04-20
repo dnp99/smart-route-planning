@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { SUPPORT_EMAIL, SUPPORT_EMAIL_MAILTO } from "../../constants/support";
 
 export default function TermsPage() {
   return (
@@ -14,11 +15,11 @@ export default function TermsPage() {
         <section>
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">1. Overview</h2>
           <p className="m-0">
-            CareFlow is a nurse-focused route planning and client management tool designed to
-            support scheduling and operational workflows.
+            Routefy is a nurse-focused route planning and client management tool designed to support
+            scheduling and operational workflows.
           </p>
           <p className="m-0 mt-2">
-            By accessing or using CareFlow, you agree to these Terms of Service.
+            By accessing or using Routefy, you agree to these Terms of Service.
           </p>
         </section>
 
@@ -30,7 +31,7 @@ export default function TermsPage() {
             You must be at least 18 years old and authorized to use the system in a professional
             capacity.
           </p>
-          <p className="m-0 mt-2">By using CareFlow, you represent that:</p>
+          <p className="m-0 mt-2">By using Routefy, you represent that:</p>
           <ul className="m-0 mt-2 list-disc pl-5">
             <li>You are using the service for legitimate professional purposes</li>
             <li>You have authority to manage and enter client-related information</li>
@@ -42,7 +43,7 @@ export default function TermsPage() {
             3. Use of the Service
           </h2>
           <p className="m-0">
-            You agree to use CareFlow only for lawful purposes and in accordance with these terms.
+            You agree to use Routefy only for lawful purposes and in accordance with these terms.
           </p>
           <p className="m-0 mt-2">You must not:</p>
           <ul className="m-0 mt-2 list-disc pl-5">
@@ -51,7 +52,7 @@ export default function TermsPage() {
             <li>Use the system to store or transmit unlawful or harmful content</li>
           </ul>
           <p className="m-0 mt-2">
-            CareFlow is intended for operational support only and should not be used as a substitute
+            Routefy is intended for operational support only and should not be used as a substitute
             for professional judgment.
           </p>
         </section>
@@ -70,8 +71,8 @@ export default function TermsPage() {
           </p>
           <p className="m-0 mt-2">We may suspend or terminate accounts that violate these terms.</p>
           <p className="m-0">
-            CareFlow uses secure session cookies for authentication. Users must not attempt to
-            bypass session controls or reuse unauthorized session artifacts.
+            Routefy uses secure session cookies for authentication. Users must not attempt to bypass
+            session controls or reuse unauthorized session artifacts.
           </p>
         </section>
 
@@ -88,7 +89,7 @@ export default function TermsPage() {
             <li>Complying with applicable privacy laws and professional obligations</li>
           </ul>
           <p className="m-0 mt-2">
-            CareFlow does not verify the accuracy or legality of the data entered by users.
+            Routefy does not verify the accuracy or legality of the data entered by users.
           </p>
           <p className="m-0 mt-2">
             Client deletion operations in the product are archive-style (inactive status) to support
@@ -103,7 +104,7 @@ export default function TermsPage() {
           <p className="m-0">
             We aim to provide reliable service but do not guarantee uninterrupted access.
           </p>
-          <p className="m-0 mt-2">CareFlow may be temporarily unavailable due to:</p>
+          <p className="m-0 mt-2">Routefy may be temporarily unavailable due to:</p>
           <ul className="m-0 mt-2 list-disc pl-5">
             <li>Maintenance</li>
             <li>System updates</li>
@@ -118,7 +119,7 @@ export default function TermsPage() {
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
             7. Limitation of Liability
           </h2>
-          <p className="m-0">CareFlow is provided on an &ldquo;as-is&rdquo; basis.</p>
+          <p className="m-0">Routefy is provided on an &ldquo;as-is&rdquo; basis.</p>
           <p className="m-0 mt-2">To the maximum extent permitted by law, we are not liable for:</p>
           <ul className="m-0 mt-2 list-disc pl-5">
             <li>Any indirect, incidental, or consequential damages</li>
@@ -136,8 +137,8 @@ export default function TermsPage() {
             8. Intellectual Property
           </h2>
           <p className="m-0">
-            All rights to the CareFlow application, including software, design, and branding, are
-            owned by CareFlow.
+            All rights to the Routefy application, including software, design, and branding, are
+            owned by Routefy.
           </p>
           <p className="m-0 mt-2">You may not:</p>
           <ul className="m-0 mt-2 list-disc pl-5">
@@ -164,7 +165,7 @@ export default function TermsPage() {
             10. Changes to the Service
           </h2>
           <p className="m-0">
-            We may modify or update CareFlow at any time, including features and functionality.
+            We may modify or update Routefy at any time, including features and functionality.
           </p>
           <p className="m-0 mt-2">
             We may also update these Terms. Continued use of the service means you accept the
@@ -185,13 +186,13 @@ export default function TermsPage() {
         <section>
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">12. Contact</h2>
           <p className="m-0">For questions about these Terms, contact:</p>
-          <p className="m-0 mt-2 font-semibold">CareFlow Support</p>
+          <p className="m-0 mt-2 font-semibold">Routefy Support</p>
           <p className="m-0 mt-2">
             <a
-              href="mailto:dpate1995@yahoo.com"
+              href={SUPPORT_EMAIL_MAILTO}
               className="text-blue-600 underline hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
             >
-              dpate1995@yahoo.com
+              {SUPPORT_EMAIL}
             </a>
           </p>
         </section>

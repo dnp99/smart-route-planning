@@ -1,12 +1,14 @@
 import { extractApiErrorMessage } from "../../../../shared/contracts";
 import { resolveApiBaseUrl } from "../apiBaseUrl";
-import { clearAuthSession } from "./authSession";
+import { clearAuthSession, waitForAuthBootstrap } from "./authSession";
 
 export const requestAuthedJson = async (
   path: string,
   init: RequestInit,
   fallbackMessage: string,
 ) => {
+  await waitForAuthBootstrap();
+
   const headers = new Headers(init.headers);
 
   const apiBaseUrl = resolveApiBaseUrl();

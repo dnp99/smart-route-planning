@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { SUPPORT_EMAIL, SUPPORT_EMAIL_MAILTO } from "../../constants/support";
 
 export default function TrademarkPage() {
   return (
@@ -9,11 +10,11 @@ export default function TrademarkPage() {
       <div className="mt-4 grid gap-4 text-sm text-slate-700 dark:text-slate-300">
         <section>
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">
-            CareFlow Trademark
+            Routefy Trademark
           </h2>
           <p className="m-0">
-            &ldquo;CareFlow&rdquo; is a trademark of CareFlow. All rights reserved. Unauthorized use
-            of the CareFlow name, logo, or any associated marks is prohibited without prior written
+            &ldquo;Routefy&rdquo; is a trademark of Routefy. All rights reserved. Unauthorized use
+            of the Routefy name, logo, or any associated marks is prohibited without prior written
             consent.
           </p>
         </section>
@@ -23,8 +24,8 @@ export default function TrademarkPage() {
             Rights Reservation
           </h2>
           <p className="m-0">
-            CareFlow reserves all rights with respect to its trademarks, service marks, and trade
-            names. Nothing in this application grants any license to use CareFlow trademarks without
+            Routefy reserves all rights with respect to its trademarks, service marks, and trade
+            names. Nothing in this application grants any license to use Routefy trademarks without
             express written permission.
           </p>
         </section>
@@ -34,10 +35,10 @@ export default function TrademarkPage() {
           <p className="m-0">
             For trademark questions, contact us at{" "}
             <a
-              href="mailto:dpatel1995@yahoo.com"
+              href={SUPPORT_EMAIL_MAILTO}
               className="text-blue-600 underline hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
             >
-              dpatel1995@yahoo.com
+              {SUPPORT_EMAIL}
             </a>
             .
           </p>

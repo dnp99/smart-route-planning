@@ -1,6 +1,6 @@
 # Backend
 
-This folder contains the Next.js backend for CareFlow.
+This folder contains the Next.js backend for Routefy.
 
 ## Responsibilities
 
@@ -174,7 +174,7 @@ OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
 Authentication behavior:
 
 - Missing/invalid/revoked/expired session returns `401`.
-- `careflow_session` cookie attributes: `HttpOnly`, `Path=/`, 7-day max-age, `Secure` in production, `SameSite=Lax` in local dev and `SameSite=None` in production.
+- `careflow_session` cookie attributes: `HttpOnly`, `Path=/`, 1-day max-age, `Secure` in production, `SameSite=Lax` in local dev and `SameSite=None` in production.
 - Legacy bearer tokens are still accepted during migration grace period.
 - Auth endpoints include baseline security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and emit HSTS on HTTPS requests.
 
@@ -220,15 +220,17 @@ Authentication behavior:
 ## Security and Privacy Hardening (Current)
 
 - Auth uses server-managed sessions in `auth_sessions`.
+- Session records also store derived `device_type` (`desktop`, `mobile`, `tablet`, `bot`, `unknown`) inferred from the request `user_agent`.
 - Legal acknowledgement is tracked per nurse via `nurses.legal_notice_accepted_at` and `nurses.legal_notice_accepted_version`.
 - Audit events are persisted in `audit_events` for patient read/write, optimize-route access, and dashboard access.
 - Route optimization history is minimized: identifying task fields (`patient_name`, `address`) are no longer written.
 - Existing identifying optimization-task fields are redacted by migration `0010_awesome_hairball.sql`.
 - Migration `0011_spicy_ben_parker.sql` adds legal acknowledgement fields to `nurses`.
+- Migration `0012_cold_serpent_society.sql` adds `auth_sessions.device_type`.
 
 ## Optimization performance caches
 
-CareFlow uses process-local in-memory caches for expensive routing dependencies:
+Routefy uses process-local in-memory caches for expensive routing dependencies:
 
 - Geocoding cache (`src/app/api/optimize-route/geocoding.ts`)
   - TTL: 24 hours

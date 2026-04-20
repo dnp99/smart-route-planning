@@ -1,13 +1,9 @@
-import { useEffect, useState } from "react";
-import nurseQuotes from "../../data/nurseQuotes";
+import { useEffect } from "react";
 import { formatNameWords } from "../patients/patientName";
 import { responsiveStyles } from "../responsiveStyles";
 import { useScrollShrink } from "../hooks/useScrollShrink";
 import { useClickOutside } from "../hooks/useClickOutside";
 
-const HEADER_QUOTE_STORAGE_KEY = "careflow.headerQuote";
-
-type Quote = { content: string };
 type AuthUser = { displayName?: string; email?: string; homeAddress?: string } | null;
 
 interface AppHeaderProps {
@@ -16,25 +12,6 @@ interface AppHeaderProps {
   onOpenAccountSettings: () => void;
   onLogout: () => void;
 }
-
-const pickRandomQuote = (currentQuote: Quote | null = null): Quote | null => {
-  if (!Array.isArray(nurseQuotes) || nurseQuotes.length === 0) return null;
-  if (nurseQuotes.length === 1) return nurseQuotes[0];
-  let next = nurseQuotes[Math.floor(Math.random() * nurseQuotes.length)];
-  if (currentQuote?.content) {
-    while (next.content === currentQuote.content) {
-      next = nurseQuotes[Math.floor(Math.random() * nurseQuotes.length)];
-    }
-  }
-  return next;
-};
-
-const readStoredHeaderQuote = (): Quote | null => {
-  if (typeof window === "undefined") return null;
-  const stored = window.localStorage.getItem(HEADER_QUOTE_STORAGE_KEY);
-  if (!stored) return null;
-  return (nurseQuotes as Quote[]).find((q) => q.content === stored) ?? null;
-};
 
 const resolveAccountInitials = (displayName?: string, email?: string) => {
   const normalizedDisplayName = formatNameWords(displayName ?? "");
@@ -70,30 +47,11 @@ export default function AppHeader({
   const [isAccountMenuOpen, setIsAccountMenuOpen, accountMenuRef] =
     useClickOutside<HTMLDivElement>();
   const headerScrolled = useScrollShrink();
-  const [headerQuote, setHeaderQuote] = useState<Quote | null>(() => readStoredHeaderQuote());
 
   // Close menu when logged out
   useEffect(() => {
     if (!isAuthenticated) setIsAccountMenuOpen(false);
   }, [isAuthenticated, setIsAccountMenuOpen]);
-
-  // Quote management
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setHeaderQuote(null);
-      if (typeof window !== "undefined") {
-        window.localStorage.removeItem(HEADER_QUOTE_STORAGE_KEY);
-      }
-      return;
-    }
-    setHeaderQuote((current) => {
-      const next = current ?? readStoredHeaderQuote() ?? pickRandomQuote();
-      if (next && typeof window !== "undefined") {
-        window.localStorage.setItem(HEADER_QUOTE_STORAGE_KEY, next.content);
-      }
-      return next;
-    });
-  }, [isAuthenticated]);
 
   const formattedDisplayName =
     typeof authUser?.displayName === "string" ? formatNameWords(authUser.displayName) : "";
@@ -129,7 +87,7 @@ export default function AppHeader({
           </div>
           <div className="min-w-0">
             <p className="m-0 text-base font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 sm:text-lg">
-              CareFlow
+              Routefy
             </p>
             <p
               className={[
@@ -143,10 +101,6 @@ export default function AppHeader({
         </div>
 
         <div className="ml-auto flex min-w-0 items-center gap-2">
-          {isAuthenticated && headerQuote && !headerScrolled && (
-            <p className={responsiveStyles.headerQuote}>&ldquo;{headerQuote.content}&rdquo;</p>
-          )}
-
           {!isAuthenticated && (
             <p className="m-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
               {new Date().toLocaleDateString("en-US", {

@@ -1,4 +1,4 @@
-# CareFlow — Entity Relationship Diagram
+# Routefy — Entity Relationship Diagram
 
 ## Schema diagram
 

@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { SUPPORT_EMAIL, SUPPORT_EMAIL_MAILTO } from "../../constants/support";
 
 export default function PrivacyPage() {
   return (
@@ -14,8 +15,8 @@ export default function PrivacyPage() {
         <section>
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">1. Overview</h2>
           <p className="m-0">
-            CareFlow is a nurse-focused route planning and client management tool designed to
-            support daily visit scheduling and operational workflows.
+            Routefy is a nurse-focused route planning and client management tool designed to support
+            daily visit scheduling and operational workflows.
           </p>
           <p className="m-0 mt-2">
             We are committed to protecting the privacy and security of all personal information
@@ -187,7 +188,7 @@ export default function PrivacyPage() {
             10. Jurisdiction
           </h2>
           <p className="m-0">
-            CareFlow is intended for use in Canada. Data handling practices are designed to align
+            Routefy is intended for use in Canada. Data handling practices are designed to align
             with applicable Canadian privacy laws, including Ontario&apos;s Personal Health
             Information Protection Act (PHIPA), where applicable.
           </p>
@@ -196,13 +197,13 @@ export default function PrivacyPage() {
         <section>
           <h2 className="m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200">11. Contact</h2>
           <p className="m-0">For privacy-related questions or requests, please contact:</p>
-          <p className="m-0 mt-2 font-semibold">CareFlow Privacy Contact</p>
+          <p className="m-0 mt-2 font-semibold">Routefy Privacy Contact</p>
           <p className="m-0 mt-2">
             <a
-              href="mailto:dpate1995@yahoo.com"
+              href={SUPPORT_EMAIL_MAILTO}
               className="text-blue-600 underline hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
             >
-              dpate1995@yahoo.com
+              {SUPPORT_EMAIL}
             </a>
           </p>
         </section>
