@@ -130,4 +130,23 @@ describe("AppRoutes", () => {
       }),
     );
   });
+
+  it("renders legal pages in modal when backgroundLocation is present", async () => {
+    render(
+      <MemoryRouter
+        initialEntries={[
+          {
+            pathname: "/legal/terms",
+            state: { backgroundLocation: { pathname: "/home" } },
+          },
+        ]}
+      >
+        <AppRoutes {...buildProps({ isAuthenticated: true, authUser: { id: "u1" } })} />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Home Page Mock" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: "Terms Page Mock" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Close legal document" })).toBeTruthy();
+  });
 });

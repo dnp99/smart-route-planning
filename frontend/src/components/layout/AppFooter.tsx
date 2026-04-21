@@ -1,8 +1,10 @@
-import { NavLink } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { SUPPORT_EMAIL_MAILTO } from "../../constants/support";
 import { responsiveStyles } from "../responsiveStyles";
 
 export default function AppFooter() {
+  const location = useLocation();
+
   return (
     <footer className={responsiveStyles.appFooter}>
       <div className={responsiveStyles.appFooterInner}>
@@ -40,30 +42,34 @@ export default function AppFooter() {
           >
             Contact Us
           </a>
-          <NavLink
+          <Link
             to="/legal/terms"
+            state={{ backgroundLocation: location }}
             className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
           >
             Terms
-          </NavLink>
-          <NavLink
+          </Link>
+          <Link
             to="/legal/privacy"
+            state={{ backgroundLocation: location }}
             className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
           >
             Privacy
-          </NavLink>
-          <NavLink
+          </Link>
+          <Link
             to="/legal/license"
+            state={{ backgroundLocation: location }}
             className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
           >
             License
-          </NavLink>
-          <NavLink
+          </Link>
+          <Link
             to="/legal/trademark"
+            state={{ backgroundLocation: location }}
             className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
           >
             Trademark
-          </NavLink>
+          </Link>
         </nav>
       </div>
     </footer>
