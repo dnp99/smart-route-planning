@@ -46,10 +46,10 @@ const buildDefaultSchedule = (
 
 const resolveNextStep = (user: AuthUser | null): SetupStep => {
   const missing = user?.setupMissing ?? [];
-  if (missing.includes("displayName")) {
+  if (missing.indexOf("displayName") >= 0) {
     return "profile";
   }
-  if (missing.includes("workingHours")) {
+  if (missing.indexOf("workingHours") >= 0) {
     return "workingHours";
   }
   return "optimizationObjective";
@@ -137,7 +137,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
 
     if (
       breakGapEnabled &&
-      (parsedBreakGap === null || Number.isNaN(parsedBreakGap) || parsedBreakGap < 1)
+      (parsedBreakGap === null || isNaN(parsedBreakGap) || parsedBreakGap < 1)
     ) {
       setError("Break reminder minutes must be a positive number.");
       return;

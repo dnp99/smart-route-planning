@@ -98,7 +98,7 @@ const resolveLastUpdatedLabel = (summary: DashboardSummaryResponse | null) => {
   }
 
   const parsed = new Date(summary.asOf);
-  if (Number.isNaN(parsed.getTime())) {
+  if (isNaN(parsed.getTime())) {
     return null;
   }
 
@@ -286,7 +286,7 @@ export default function HomePage({
       action: "setup" | "settings";
     }> = [];
 
-    if (setupMissing.includes("displayName")) {
+    if (setupMissing.indexOf("displayName") >= 0) {
       nudges.push({
         id: "display-name",
         message: "Add a display name to complete workspace setup.",
@@ -295,7 +295,7 @@ export default function HomePage({
       });
     }
 
-    if (setupMissing.includes("workingHours")) {
+    if (setupMissing.indexOf("workingHours") >= 0) {
       nudges.push({
         id: "working-hours",
         message: "Set up working hours to complete workspace setup.",
@@ -304,7 +304,7 @@ export default function HomePage({
       });
     }
 
-    if (setupMissing.includes("optimizationObjective")) {
+    if (setupMissing.indexOf("optimizationObjective") >= 0) {
       nudges.push({
         id: "optimization-objective",
         message: "Choose route priority (time or distance) to complete setup.",
@@ -326,7 +326,7 @@ export default function HomePage({
   }, [authUser?.homeAddress, authUser?.setupMissing, isAuthenticated]);
   const [dismissedNudgeIds, setDismissedNudgeIds] = useState<string[]>([]);
   const visibleNudges = useMemo(
-    () => profileNudges.filter((nudge) => !dismissedNudgeIds.includes(nudge.id)),
+    () => profileNudges.filter((nudge) => dismissedNudgeIds.indexOf(nudge.id) < 0),
     [dismissedNudgeIds, profileNudges],
   );
   const greetingName = resolveGreetingName(authUser?.displayName);
@@ -430,7 +430,7 @@ export default function HomePage({
                 className="rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
                 onClick={() =>
                   setDismissedNudgeIds((current) =>
-                    current.includes(nudge.id) ? current : [...current, nudge.id],
+                    current.indexOf(nudge.id) >= 0 ? current : [...current, nudge.id],
                   )
                 }
               >
