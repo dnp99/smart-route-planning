@@ -40,6 +40,8 @@ Use two environments:
   - Default: `1h`.
 - `GOOGLE_MAPS_API_KEY`
   - Required for route legs and address autocomplete.
+- `SESSION_CLEANUP_CRON_SECRET`
+  - Required in production to authorize `GET/POST /api/internal/session-cleanup` cron invocations.
 
 ### Frontend SPA routing
 
@@ -142,3 +144,11 @@ Track at minimum:
 - Route optimization latency
 
 Set alerts on sustained 5xx or sudden 429 spikes.
+
+---
+
+## 9) Vercel Cron Limits (Hobby)
+
+- Vercel Hobby cron jobs can run once per day only.
+- Backend cron schedule is configured in `backend/vercel.json` as `0 2 * * *` (daily at 02:00 UTC).
+- Avoid hourly or sub-daily cron expressions on Hobby, or deployments will fail validation.

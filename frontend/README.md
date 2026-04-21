@@ -11,13 +11,13 @@ This folder contains the Vite + React frontend for Routefy.
 - Render the optimized route with Leaflet.
 - Support manual stop reordering with recalculated ETA flow.
 - Keep optimization results in memory only (no browser storage persistence).
+- Restore the latest optimization result from in-memory runtime cache when navigating away and back (same tab/session state).
 - Persist only non-sensitive route-planner draft state in localStorage (IDs/order/flags/date/objective/UI step).
 - Keep quote/header workspace behavior consistent across auth sessions.
 - Require first-use legal acknowledgement via blocking modal (`I Agree`) and re-prompt when legal notice version changes.
 - Present unified overflow action menus in client list rows.
 - Serve legal pages (Terms, Privacy, License, Trademark) at `/legal/*` routes.
-- Show a persistent privacy reminder banner on Clients page.
-- Show a scheduling notice banner on Route Planner page.
+- Show policy reminders from info icons on Clients and Route Planner pages.
 - Mobile-first route planner with wizard step flow (Trip → Clients → Review), always-expanded sections on mobile, step completion indicators, and safe-area-aware sticky footer CTA.
 - Use Client/Clients wording in UI copy while keeping `/api/patients` endpoints and `patient*` contract fields for backend compatibility.
 - Use cookie-based auth (`credentials: "include"`) with no JWT/token storage in localStorage/sessionStorage.
@@ -69,14 +69,14 @@ or:
 ## Key files
 
 - `src/App.jsx` - global layout, sticky header with logo + rotating nurse quote, footer with legal links, account settings modal, legal acknowledgement flow
-- `src/components/RoutePlanner.tsx` - route planner composition and workflow orchestration
-- `src/components/routePlanner/routePlannerHelpers.ts` - destination-to-visit mapping and client search filtering
-- `src/components/routePlanner/routePlannerSubmission.ts` - submit-time validation and request builders
-- `src/components/routePlanner/routePlannerDraft.ts` - minimized localStorage draft persistence and mobile step state
-- `src/components/routePlanner/useCreatePatientForm.ts` - create-patient modal/form state and handlers
-- `src/components/routePlanner/useManualReorder.ts` - manual stop drag/reorder with stale-order tracking
-- `src/components/routePlanner/useRouteOptimization.ts` - optimization request state (memory-only result lifecycle)
-- `src/components/routePlanner/OptimizedRouteResult.tsx` - dispatch plan view (stat cards, route timeline, map, warnings)
+- `src/features/route-planner/ui/RoutePlanner.tsx` - route planner composition and workflow orchestration
+- `src/features/route-planner/domain/routePlannerHelpers.ts` - destination-to-visit mapping and client search filtering
+- `src/features/route-planner/domain/routePlannerSubmission.ts` - submit-time validation and request builders
+- `src/features/route-planner/state/routePlannerDraft.ts` - minimized localStorage draft persistence and mobile step state
+- `src/features/route-planner/hooks/useCreatePatientForm.ts` - create-client modal/form state and handlers
+- `src/features/route-planner/hooks/useManualReorder.ts` - manual stop drag/reorder with stale-order tracking
+- `src/features/route-planner/hooks/useRouteOptimization.ts` - optimization request state and runtime result cache lifecycle
+- `src/features/route-planner/ui/OptimizedRouteResult.tsx` - dispatch plan view (stat cards, route timeline, map, warnings)
 - `src/components/auth/authSession.ts` - in-memory auth user session helper and auth-change cleanup
 - `src/components/auth/LoginPage.tsx` - login screen
 - `src/components/auth/authFetch.ts` - authenticated backend fetch helper
