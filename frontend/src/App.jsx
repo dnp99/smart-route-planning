@@ -31,6 +31,7 @@ import AccountSettingsModal from "./components/modals/AccountSettingsModal";
 import LegalAcknowledgementModal from "./components/modals/LegalAcknowledgementModal";
 import ScrollToTopButton from "./components/layout/ScrollToTopButton";
 import HomePage from "./components/HomePage";
+import LandingPage from "./components/LandingPage";
 
 const resolveTabClassName = ({ isActive }) =>
   [
@@ -287,10 +288,18 @@ function App() {
         )}
         <Routes>
           <Route
-            path="/login"
+            path="/"
             element={
-              isAuthenticated ? <Navigate to={defaultProtectedPath} replace /> : <LoginPage />
+              <LandingPage
+                isAuthenticated={isAuthenticated}
+                authUser={authUser}
+                onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+              />
             }
+          />
+          <Route
+            path="/login"
+            element={isAuthenticated ? <Navigate to="/home" replace /> : <LoginPage />}
           />
           <Route path="/patients" element={renderProtectedRoute(<PatientsPage />)} />
           <Route
@@ -310,7 +319,7 @@ function App() {
           <Route path="/legal/license" element={<LicensePage />} />
           <Route path="/legal/trademark" element={<TrademarkPage />} />
           <Route
-            path="/"
+            path="/home"
             element={renderProtectedRoute(
               <HomePage
                 isAuthenticated={isAuthenticated}

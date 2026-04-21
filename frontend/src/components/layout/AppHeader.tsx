@@ -59,6 +59,9 @@ export default function AppHeader({
   const workspaceSubtitle = formattedDisplayName
     ? `Operations workspace for ${formattedDisplayName}`
     : "Operations workspace";
+  const headerInnerClassName = isAuthenticated
+    ? responsiveStyles.appHeaderInner
+    : "mx-auto flex w-full max-w-7xl items-center justify-center px-6";
 
   return (
     <header
@@ -68,11 +71,7 @@ export default function AppHeader({
         "dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96)_0%,rgba(15,23,42,0.94)_60%,rgba(8,47,73,0.9)_100%)]",
       ].join(" ")}
     >
-      <div
-        className={[responsiveStyles.appHeaderInner, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(
-          " ",
-        )}
-      >
+      <div className={[headerInnerClassName, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(" ")}>
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
             <svg
@@ -98,18 +97,8 @@ export default function AppHeader({
           </div>
         </div>
 
-        <div className="ml-auto flex min-w-0 items-center gap-2">
-          {!isAuthenticated && (
-            <p className="m-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
-          )}
-
-          {isAuthenticated && (
+        {isAuthenticated && (
+          <div className="ml-auto flex min-w-0 items-center gap-2">
             <div ref={accountMenuRef} className="relative">
               <button
                 type="button"
@@ -188,8 +177,8 @@ export default function AppHeader({
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </header>
   );
