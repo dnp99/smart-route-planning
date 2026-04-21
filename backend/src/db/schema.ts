@@ -10,6 +10,7 @@ import {
   text,
   time,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 export const nurses = pgTable("nurses", {
@@ -82,7 +83,7 @@ export const patientVisitWindows = pgTable(
   },
   (table) => [
     index("patient_visit_windows_patient_id_idx").on(table.patientId),
-    index("patient_visit_windows_patient_time_idx").on(
+    uniqueIndex("patient_visit_windows_patient_time_unique_idx").on(
       table.patientId,
       table.startTime,
       table.endTime,
