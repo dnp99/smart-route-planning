@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import type {
   AuthUser,
   DashboardBusiestDay,
@@ -95,6 +95,7 @@ export default function HomePage({
   onOpenAccountSettings,
 }: HomePageProps) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummaryResponse | null>(null);
   const [dashboardError, setDashboardError] = useState("");
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
@@ -254,7 +255,7 @@ export default function HomePage({
 
   const renderAuthenticatedActions = () => (
     <>
-      <Link to="/patients" className={responsiveStyles.primaryButton}>
+      <Link to="/clients" className={responsiveStyles.primaryButton}>
         Go to Clients
       </Link>
       <Link to="/route-planner" className={responsiveStyles.secondaryButton}>
@@ -268,7 +269,11 @@ export default function HomePage({
       <Link to="/login" className={responsiveStyles.primaryButton}>
         Sign in to Routefy
       </Link>
-      <Link to="/legal/terms" className={responsiveStyles.secondaryButton}>
+      <Link
+        to="/legal/terms"
+        state={{ backgroundLocation: location }}
+        className={responsiveStyles.secondaryButton}
+      >
         Review terms
       </Link>
     </>

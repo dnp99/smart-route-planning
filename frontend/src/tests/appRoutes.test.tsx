@@ -150,7 +150,7 @@ describe("Footer", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -168,7 +168,7 @@ describe("Footer", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -184,7 +184,7 @@ describe("Footer", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -251,7 +251,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/home"]}>
         <App />
       </MemoryRouter>,
     );
@@ -262,7 +262,7 @@ describe("App routing", () => {
     });
   });
 
-  it("renders login page at / for signed-out users", async () => {
+  it("renders landing page at / for signed-out users", async () => {
     fetchMeMock.mockReset();
     fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
     render(
@@ -271,10 +271,15 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Login" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", {
+        name: "Organize clients and plan better daily routes.",
+      }),
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login");
   });
 
-  it("renders home page at / for signed-in users", async () => {
+  it("renders authenticated landing page at / for signed-in users", async () => {
     seedAuthenticatedSession();
 
     render(
@@ -284,7 +289,6 @@ describe("App routing", () => {
     );
 
     expect(await screen.findByText(/Good (morning|afternoon|evening), Nurse/i)).toBeTruthy();
-    expect(screen.getByText(/Add a home address for default start and end points/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBe("page");
   });
 
@@ -304,7 +308,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/home"]}>
         <App />
       </MemoryRouter>,
     );
@@ -366,7 +370,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/home"]}>
         <App />
       </MemoryRouter>,
     );
@@ -410,7 +414,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/"]}>
+      <MemoryRouter initialEntries={["/home"]}>
         <App />
       </MemoryRouter>,
     );
@@ -485,34 +489,20 @@ describe("App routing", () => {
     seedAuthenticatedSession("nUrSe oNe");
 
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );
 
     await waitForPatientsPage();
     expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
-  });
-
-  it("renders patients page at /patients and marks nav active", async () => {
-    seedAuthenticatedSession();
-
-    render(
-      <MemoryRouter initialEntries={["/patients"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitForPatientsPage();
-    expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Clients" }).getAttribute("aria-current")).toBe("page");
   });
 
   it("shows account options menu items", async () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -533,7 +523,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -569,7 +559,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -597,7 +587,7 @@ describe("App routing", () => {
     fetchMeMock.mockReset();
     fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -610,7 +600,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );

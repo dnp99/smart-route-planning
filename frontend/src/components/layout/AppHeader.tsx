@@ -3,6 +3,7 @@ import { formatNameWords } from "../patients/patientName";
 import { responsiveStyles } from "../responsiveStyles";
 import { useScrollShrink } from "../hooks/useScrollShrink";
 import { useClickOutside } from "../hooks/useClickOutside";
+import RoutefyBrandMark from "../brand/RoutefyBrandMark";
 
 type AuthUser = { displayName?: string; email?: string; homeAddress?: string } | null;
 
@@ -59,6 +60,9 @@ export default function AppHeader({
   const workspaceSubtitle = formattedDisplayName
     ? `Operations workspace for ${formattedDisplayName}`
     : "Operations workspace";
+  const headerInnerClassName = isAuthenticated
+    ? responsiveStyles.appHeaderInner
+    : "mx-auto flex w-full max-w-7xl items-center justify-center px-6";
 
   return (
     <header
@@ -68,28 +72,10 @@ export default function AppHeader({
         "dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96)_0%,rgba(15,23,42,0.94)_60%,rgba(8,47,73,0.9)_100%)]",
       ].join(" ")}
     >
-      <div
-        className={[responsiveStyles.appHeaderInner, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(
-          " ",
-        )}
-      >
+      <div className={[headerInnerClassName, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(" ")}>
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="h-5 w-5 text-blue-600 dark:text-blue-400"
-            >
-              <path d="M1 12 L5 12 L7 5 L9 19 L11 12 L13 12" />
-              <path d="M19 5C16.8 5 15 6.8 15 9C15 11.8 19 17 19 17C19 17 23 11.8 23 9C23 6.8 21.2 5 19 5Z" />
-              <circle cx="19" cy="9" r="1.8" fill="currentColor" strokeWidth="0" />
-            </svg>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 sm:h-12 sm:w-12 lg:h-12 lg:w-12 dark:bg-blue-950/40">
+            <RoutefyBrandMark className="h-6 w-6 text-blue-600 sm:h-7 sm:w-7 lg:h-8 lg:w-8 dark:text-blue-400" />
           </div>
           <div className="min-w-0">
             <p className="m-0 text-base sm:text-lg lg:text-2xl font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">
@@ -98,18 +84,8 @@ export default function AppHeader({
           </div>
         </div>
 
-        <div className="ml-auto flex min-w-0 items-center gap-2">
-          {!isAuthenticated && (
-            <p className="m-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
-          )}
-
-          {isAuthenticated && (
+        {isAuthenticated && (
+          <div className="ml-auto flex min-w-0 items-center gap-2">
             <div ref={accountMenuRef} className="relative">
               <button
                 type="button"
@@ -188,8 +164,8 @@ export default function AppHeader({
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </header>
   );

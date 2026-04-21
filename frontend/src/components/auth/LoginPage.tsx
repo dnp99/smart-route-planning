@@ -112,8 +112,8 @@ const LoginPage = () => {
 
         <p className={responsiveStyles.authDescription}>
           {mode === "signup"
-            ? "Create your Routefy account to manage clients and route-planning data."
-            : "Sign in to continue managing clients and route-planning data."}
+            ? "Create your Routefy account to organize clients, plan efficient routes, and stay ahead of delays."
+            : "Sign in to manage clients, optimize routes, and keep daily visits on track."}
         </p>
 
         <form className={responsiveStyles.authForm} onSubmit={handleSubmit}>

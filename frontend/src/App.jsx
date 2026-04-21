@@ -1,7 +1,4 @@
 import { useEffect, useState } from "react";
-import { Navigate, NavLink, Route, Routes } from "react-router-dom";
-import RoutePlanner from "./features/route-planner/ui/RoutePlanner";
-import LoginPage from "./components/auth/LoginPage";
 import {
   acknowledgeLegalNotice,
   fetchLegalNoticeStatus,
@@ -19,26 +16,14 @@ import {
   recordAuthBootstrapTimeout,
   setStoredAuthUser,
 } from "./components/auth/authSession";
-import LicensePage from "./components/legal/LicensePage";
-import PrivacyPage from "./components/legal/PrivacyPage";
-import TermsPage from "./components/legal/TermsPage";
-import TrademarkPage from "./components/legal/TrademarkPage";
-import PatientsPage from "./features/patients/ui/PatientsPage";
 import { responsiveStyles } from "./components/responsiveStyles";
 import AppHeader from "./components/layout/AppHeader";
 import AppFooter from "./components/layout/AppFooter";
 import AccountSettingsModal from "./components/modals/AccountSettingsModal";
 import LegalAcknowledgementModal from "./components/modals/LegalAcknowledgementModal";
 import ScrollToTopButton from "./components/layout/ScrollToTopButton";
-import HomePage from "./components/HomePage";
-
-const resolveTabClassName = ({ isActive }) =>
-  [
-    "group flex items-center gap-2 border-b-[3px] px-1 pb-3 pt-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
-    isActive
-      ? "border-blue-700 text-blue-700 dark:border-blue-400 dark:text-blue-300"
-      : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200",
-  ].join(" ");
+import AppRoutes from "./components/navigation/AppRoutes";
+import AppTabs from "./components/navigation/AppTabs";
 
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 
@@ -165,12 +150,7 @@ function App() {
   };
 
   const optimizationObjective = authUser?.optimizationObjective ?? "distance";
-  const defaultProtectedPath = "/";
-  const renderProtectedRoute = (element) => {
-    if (isAuthenticated) return element;
-    if (isBootstrapping) return null;
-    return <Navigate to="/login" replace />;
-  };
+  const defaultProtectedPath = "/home";
 
   if (!isAuthResolved && isBootstrapping) {
     return (
@@ -193,137 +173,17 @@ function App() {
           clearAuthSession();
         }}
       />
-      {/*Tabs: Main content area with tab navigation for authenticated users and route outlet for
-      page content * */}
+
       <div className={responsiveStyles.contentWrapper}>
-        {isAuthenticated && (
-          <nav className={responsiveStyles.tabNav}>
-            <NavLink to="/" end aria-label="Home" className={resolveTabClassName}>
-              {({ isActive }) => (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                    className={[
-                      "h-4 w-4 shrink-0",
-                      isActive
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
-                    ].join(" ")}
-                  >
-                    <path d="M3 11.5 12 4l9 7.5" />
-                    <path d="M5.5 10.5V20h13V10.5" />
-                    <path d="M10 20v-5h4v5" />
-                  </svg>
-                  Home
-                </>
-              )}
-            </NavLink>
-            <NavLink to="/patients" aria-label="Clients" className={resolveTabClassName}>
-              {({ isActive }) => (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                    className={[
-                      "h-4 w-4 shrink-0",
-                      isActive
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
-                    ].join(" ")}
-                  >
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                    <circle cx="9" cy="7" r="4" />
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                  </svg>
-                  Clients
-                </>
-              )}
-            </NavLink>
-            <NavLink to="/route-planner" aria-label="Route Planner" className={resolveTabClassName}>
-              {({ isActive }) => (
-                <>
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.75"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                    className={[
-                      "h-4 w-4 shrink-0",
-                      isActive
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
-                    ].join(" ")}
-                  >
-                    <circle cx="3" cy="6" r="2" />
-                    <circle cx="21" cy="6" r="2" />
-                    <circle cx="12" cy="18" r="2" />
-                    <path d="M5 6h6l4.5 6H21" />
-                    <path d="M3 6l4.5 6H12" />
-                    <path d="M12 16V8" />
-                  </svg>
-                  Route Planner
-                </>
-              )}
-            </NavLink>
-          </nav>
-        )}
-        <Routes>
-          <Route
-            path="/login"
-            element={
-              isAuthenticated ? <Navigate to={defaultProtectedPath} replace /> : <LoginPage />
-            }
-          />
-          <Route path="/patients" element={renderProtectedRoute(<PatientsPage />)} />
-          <Route
-            path="/route-planner"
-            element={renderProtectedRoute(
-              <RoutePlanner
-                nurseHomeAddress={authUser?.homeAddress ?? null}
-                nurseWorkingHours={authUser?.workingHours ?? null}
-                nurseBreakGapThresholdMinutes={authUser?.breakGapThresholdMinutes ?? null}
-                onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
-                optimizationObjective={optimizationObjective}
-              />,
-            )}
-          />
-          <Route path="/legal/terms" element={<TermsPage />} />
-          <Route path="/legal/privacy" element={<PrivacyPage />} />
-          <Route path="/legal/license" element={<LicensePage />} />
-          <Route path="/legal/trademark" element={<TrademarkPage />} />
-          <Route
-            path="/"
-            element={renderProtectedRoute(
-              <HomePage
-                isAuthenticated={isAuthenticated}
-                authUser={authUser}
-                onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
-              />,
-            )}
-          />
-          <Route
-            path="*"
-            element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
-          />
-        </Routes>
+        {isAuthenticated && <AppTabs />}
+        <AppRoutes
+          isAuthenticated={isAuthenticated}
+          isBootstrapping={isBootstrapping}
+          authUser={authUser}
+          onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+          optimizationObjective={optimizationObjective}
+          defaultProtectedPath={defaultProtectedPath}
+        />
       </div>
       <AppFooter />
       <AccountSettingsModal
