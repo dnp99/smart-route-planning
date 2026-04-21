@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { SUPPORT_EMAIL_MAILTO } from "../../constants/support";
 import { responsiveStyles } from "../responsiveStyles";
-import RoutefyBrandMark from "../brand/RoutefyBrandMark";
+import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
 
 export default function AppFooter() {
   const location = useLocation();

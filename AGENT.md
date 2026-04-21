@@ -34,3 +34,13 @@ For this repository, **never start work from a stale branch and never commit dir
 1. Create a new branch from the current commit on `main`.
 2. Reset local `main` back to `origin/main`.
 3. Continue work from the new branch.
+
+## PHI Handling Rule (Mandatory)
+
+For this repository, **always protect PHI (Protected Health Information)** in code, logging, storage, and telemetry.
+
+### Required PHI safeguards
+1. Never store PHI in browser storage (`localStorage`, `sessionStorage`, IndexedDB) or URL/query params.
+2. Never write PHI to client/server logs, analytics events, error messages, or debug output.
+3. Keep patient-identifying data in memory only when required for active UI/API flows.
+4. Prefer non-sensitive placeholders/metadata for persistence (IDs/order/flags only), and document exceptions explicitly.

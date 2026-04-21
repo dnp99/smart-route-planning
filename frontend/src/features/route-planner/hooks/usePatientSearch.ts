@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Patient } from "../../../../../shared/contracts";
-import { listPatients } from "../patients/patientService";
+import { listPatients } from "../../patients/api/patientService";
 
 type UsePatientSearchOptions = {
   query: string;

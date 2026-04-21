@@ -3,7 +3,7 @@ import { formatNameWords } from "../../features/patients/domain/patientName";
 import { responsiveStyles } from "../responsiveStyles";
 import { useScrollShrink } from "../hooks/useScrollShrink";
 import { useClickOutside } from "../hooks/useClickOutside";
-import RoutefyBrandMark from "../brand/RoutefyBrandMark";
+import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
 
 type AuthUser = { displayName?: string; email?: string; homeAddress?: string } | null;
 

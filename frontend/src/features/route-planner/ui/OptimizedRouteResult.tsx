@@ -5,7 +5,7 @@ import { responsiveStyles } from "../../../components/responsiveStyles";
 import RouteMap from "../RouteMap";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlannerUtils";
 import { expectedStartTimeFormatter, formatVisitDurationMinutes } from "./routePlannerResultUtils";
-import { formatNameWords } from "../patients/patientName";
+import { formatNameWords } from "../../patients/domain/patientName";
 import { OptimizedStopList } from "./OptimizedStopList";
 
 const unscheduledReasonLabels = {

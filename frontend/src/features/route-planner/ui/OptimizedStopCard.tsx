@@ -5,7 +5,7 @@ import {
   formatExpectedStartTimeText,
   formatVisitDurationMinutes,
 } from "./routePlannerResultUtils";
-import { formatNameWords } from "../patients/patientName";
+import { formatNameWords } from "../../patients/domain/patientName";
 
 type TaskResult = OrderedStop["tasks"][number];
 
