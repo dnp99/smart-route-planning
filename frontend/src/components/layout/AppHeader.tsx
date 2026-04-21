@@ -64,9 +64,8 @@ export default function AppHeader({
     <header
       className={[
         responsiveStyles.appHeader,
-        headerScrolled
-          ? "bg-white/95 dark:bg-slate-950/95"
-          : "bg-[linear-gradient(135deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.94)_58%,rgba(236,254,255,0.92)_100%)] dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96)_0%,rgba(15,23,42,0.94)_60%,rgba(8,47,73,0.9)_100%)]",
+        "bg-[linear-gradient(135deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.94)_58%,rgba(236,254,255,0.92)_100%)]",
+        "dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96)_0%,rgba(15,23,42,0.94)_60%,rgba(8,47,73,0.9)_100%)]",
       ].join(" ")}
     >
       <div
