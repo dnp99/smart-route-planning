@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   isLoginRequest,
+  resolveIsSetupComplete,
+  resolveSetupMissingFields,
   type AuthUser,
   type WeeklyWorkingHours,
 } from "../../../../../../shared/contracts";
@@ -38,6 +40,18 @@ const toAuthUser = (value: {
     value.optimizationObjective === "time" || value.optimizationObjective === "distance"
       ? value.optimizationObjective
       : null,
+  isSetupComplete: resolveIsSetupComplete({
+    displayName: value.displayName,
+    homeAddress: value.homeAddress ?? null,
+    workingHours: value.workingHours ?? null,
+    optimizationObjective: value.optimizationObjective ?? null,
+  }),
+  setupMissing: resolveSetupMissingFields({
+    displayName: value.displayName,
+    homeAddress: value.homeAddress ?? null,
+    workingHours: value.workingHours ?? null,
+    optimizationObjective: value.optimizationObjective ?? null,
+  }),
 });
 
 export async function OPTIONS(request: Request) {
