@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { responsiveStyles } from "../responsiveStyles";
 
 export default function LegalDocumentModal({ title, onClose, children }) {
   useEffect(() => {
@@ -16,7 +17,7 @@ export default function LegalDocumentModal({ title, onClose, children }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 sm:items-center sm:p-4"
+      className={responsiveStyles.modalBackdrop}
       onPointerDown={(event) => {
         if (event.target === event.currentTarget) {
           onClose();

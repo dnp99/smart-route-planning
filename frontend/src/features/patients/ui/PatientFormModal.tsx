@@ -91,7 +91,7 @@ export const PatientFormModal = ({
     formValues.address.trim().length > 0;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/45 p-0 sm:items-center sm:p-4">
+    <div className={responsiveStyles.modalBackdrop}>
       <div
         role="dialog"
         aria-modal="true"
