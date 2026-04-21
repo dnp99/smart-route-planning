@@ -164,18 +164,26 @@ function App() {
 
   return (
     <div className={responsiveStyles.appShell}>
-      <AppHeader
-        isAuthenticated={isAuthenticated}
-        authUser={authUser}
-        onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
-        onLogout={() => {
-          void logout();
-          clearAuthSession();
-        }}
-      />
+      <div className={responsiveStyles.stickyHeaderShell}>
+        <AppHeader
+          isAuthenticated={isAuthenticated}
+          authUser={authUser}
+          onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+          onLogout={() => {
+            void logout();
+            clearAuthSession();
+          }}
+        />
+        {isAuthenticated && (
+          <div className={responsiveStyles.tabStrip}>
+            <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
+              <AppTabs />
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className={responsiveStyles.contentWrapper}>
-        {isAuthenticated && <AppTabs />}
         <AppRoutes
           isAuthenticated={isAuthenticated}
           isBootstrapping={isBootstrapping}
