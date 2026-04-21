@@ -1,4 +1,4 @@
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNotNull, isNull, lt, or } from "drizzle-orm";
 import { getDb } from "../../db";
 import { authSessions, nurses } from "../../db/schema";
 import { resolveDeviceTypeFromUserAgent } from "./deviceType";
@@ -90,4 +90,31 @@ export const revokeAuthSession = async (sessionId: string) => {
       lastSeenAt: now,
     })
     .where(eq(authSessions.id, sessionId));
+};
+
+export const cleanupAuthSessions = async ({
+  now = new Date(),
+  revokedRetentionDays = 30,
+}: {
+  now?: Date;
+  revokedRetentionDays?: number;
+} = {}) => {
+  const retentionWindowMs = Math.max(1, revokedRetentionDays) * 24 * 60 * 60 * 1000;
+  const revokedCutoff = new Date(now.getTime() - retentionWindowMs);
+
+  const deletedRows = await getDb()
+    .delete(authSessions)
+    .where(
+      or(
+        lt(authSessions.expiresAt, now),
+        and(isNotNull(authSessions.revokedAt), lt(authSessions.revokedAt, revokedCutoff)),
+      ),
+    )
+    .returning({ id: authSessions.id });
+
+  return {
+    deletedCount: deletedRows.length,
+    now,
+    revokedCutoff,
+  };
 };

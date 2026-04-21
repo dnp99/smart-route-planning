@@ -237,6 +237,8 @@ export const authSessions = pgTable(
   (table) => [
     index("auth_sessions_nurse_id_idx").on(table.nurseId),
     index("auth_sessions_nurse_expires_idx").on(table.nurseId, table.expiresAt),
+    index("auth_sessions_expires_idx").on(table.expiresAt),
+    index("auth_sessions_revoked_idx").on(table.revokedAt),
     check(
       "auth_sessions_device_type_chk",
       sql`${table.deviceType} in ('desktop', 'mobile', 'tablet', 'bot', 'unknown')`,

@@ -91,6 +91,13 @@ Production/runtime behavior:
   - Optional.
   - Optimize-route rate-limit window in milliseconds.
   - Default: `60000`.
+- `SESSION_CLEANUP_CRON_SECRET`
+  - Required in production when running scheduled session cleanup.
+  - Secret used by `GET/POST /api/internal/session-cleanup` via `Authorization: Bearer <secret>` (or `x-session-cleanup-key`).
+- `SESSION_CLEANUP_REVOKED_RETENTION_DAYS`
+  - Optional.
+  - Number of days to keep revoked sessions before cleanup deletes them.
+  - Default: `30`.
 - `OPTIMIZE_ROUTE_V3_SHADOW_COMPARE`
   - Optional.
   - When `true`, `POST /api/optimize-route/v3` logs seed-vs-ILS diagnostics to the server console.
@@ -122,6 +129,8 @@ ALLOWED_ORIGINS=http://localhost:5173
 OPTIMIZE_ROUTE_API_KEY=your_optional_optimize_route_key
 OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS=30
 OPTIMIZE_ROUTE_RATE_LIMIT_WINDOW_MS=60000
+SESSION_CLEANUP_CRON_SECRET=replace_with_a_long_random_secret
+SESSION_CLEANUP_REVOKED_RETENTION_DAYS=30
 OPTIMIZE_ROUTE_V3_SHADOW_COMPARE=false
 OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
 ```
@@ -217,16 +226,27 @@ Authentication behavior:
   - Returns up to 5 suggestions
   - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
 
+### Internal maintenance
+
+- `GET /api/internal/session-cleanup` / `POST /api/internal/session-cleanup`
+  - Requires `SESSION_CLEANUP_CRON_SECRET` via `Authorization: Bearer <secret>` (or `x-session-cleanup-key`).
+  - Deletes expired sessions and stale revoked sessions.
+  - Intended for scheduled invocations (for example Vercel Cron).
+  - Current cron schedule (`backend/vercel.json`): `0 2 * * *` (daily at 02:00 UTC).
+  - Note: Vercel Hobby supports daily cron frequency only.
+
 ## Security and Privacy Hardening (Current)
 
 - Auth uses server-managed sessions in `auth_sessions`.
 - Session records also store derived `device_type` (`desktop`, `mobile`, `tablet`, `bot`, `unknown`) inferred from the request `user_agent`.
+- Scheduled session cleanup removes expired rows and revoked rows older than configured retention.
 - Legal acknowledgement is tracked per nurse via `nurses.legal_notice_accepted_at` and `nurses.legal_notice_accepted_version`.
 - Audit events are persisted in `audit_events` for patient read/write, optimize-route access, and dashboard access.
 - Route optimization history is minimized: identifying task fields (`patient_name`, `address`) are no longer written.
 - Existing identifying optimization-task fields are redacted by migration `0010_awesome_hairball.sql`.
 - Migration `0011_spicy_ben_parker.sql` adds legal acknowledgement fields to `nurses`.
 - Migration `0012_cold_serpent_society.sql` adds `auth_sessions.device_type`.
+- Migration `0014_curvy_eternals.sql` adds cleanup indexes on `auth_sessions.expires_at` and `auth_sessions.revoked_at`.
 
 ## Optimization performance caches
 

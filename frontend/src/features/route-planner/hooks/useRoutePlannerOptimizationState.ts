@@ -79,7 +79,8 @@ export function useRoutePlannerOptimizationState({
     selectedDestinations
       .filter((destination) => destination.isIncluded)
       .map(
-        (destination) => `${destination.visitKey}:${destination.windowStart}:${destination.windowEnd}`,
+        (destination) =>
+          `${destination.patientId}:${destination.windowStart}:${destination.windowEnd}:${destination.address}`,
       )
       .sort()
       .join(","),
@@ -102,7 +103,9 @@ export function useRoutePlannerOptimizationState({
     return selectedDestinations.filter(
       (destination) =>
         destination.isIncluded &&
-        !scheduledKeys.has(`${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`),
+        !scheduledKeys.has(
+          `${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`,
+        ),
     ).length;
   }, [isManualOrderStale, manuallyOrderedStops, result, selectedDestinations]);
 
@@ -171,8 +174,9 @@ export function useRoutePlannerOptimizationState({
     }
 
     const scheduledKeys = new Set(
-      destinationsInManualOrder.map((destination) =>
-        `${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`,
+      destinationsInManualOrder.map(
+        (destination) =>
+          `${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`,
       ),
     );
 
@@ -180,7 +184,9 @@ export function useRoutePlannerOptimizationState({
       .filter(
         (destination) =>
           destination.isIncluded &&
-          !scheduledKeys.has(`${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`),
+          !scheduledKeys.has(
+            `${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`,
+          ),
       )
       .map((destination) => ({
         patientId: destination.patientId,
@@ -212,6 +218,7 @@ export function useRoutePlannerOptimizationState({
     setPlannerOptimizationObjective,
     localValidationError,
     hasChangedSinceLastOptimize,
+    currentOptimizeSnapshot,
     unscheduledResubmitCount,
     handleSubmit,
     handleRecalculateManualOrder,

@@ -273,7 +273,7 @@ export const PatientSelectorSection = ({
                         patient.lastName,
                       );
                       return (
-                        <li key={patient.id}>
+                        <li key={patient.id} className="pr-2">
                           <button
                             type="button"
                             onClick={() => onAddPatient(patient)}

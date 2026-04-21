@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   requestOptimizedRoute,
   type OptimizeRouteDestinationInput,
@@ -19,6 +19,40 @@ type OptimizeRouteInput = {
   workingHours?: WeeklyWorkingHours | null;
   optimizationObjective?: "time" | "distance";
 };
+
+type RouteOptimizationRuntimeCache = {
+  snapshot: string;
+  result: OptimizeRouteResponse;
+};
+
+let runtimeCache: RouteOptimizationRuntimeCache | null = null;
+
+const buildOptimizationSnapshot = ({
+  planningDate,
+  optimizationObjective,
+  startAddress,
+  endAddress,
+  destinations,
+}: {
+  planningDate?: string;
+  optimizationObjective?: "time" | "distance";
+  startAddress: string;
+  endAddress: string;
+  destinations: OptimizeRouteDestinationInput[];
+}) =>
+  [
+    planningDate ?? "",
+    optimizationObjective ?? "distance",
+    startAddress,
+    endAddress,
+    destinations
+      .map(
+        (destination) =>
+          `${destination.patientId}:${destination.windowStart}:${destination.windowEnd}:${destination.address}`,
+      )
+      .sort()
+      .join(","),
+  ].join("||");
 
 export const useRouteOptimization = () => {
   const [result, setResult] = useState<OptimizeRouteResponse | null>(null);
@@ -56,6 +90,16 @@ export const useRouteOptimization = () => {
       window.clearTimeout(timeoutId);
     };
   }, [showOptimizeFlash]);
+
+  const restoreCachedResult = useCallback((snapshot: string) => {
+    if (!runtimeCache || runtimeCache.snapshot !== snapshot) {
+      return false;
+    }
+
+    setError("");
+    setResult(runtimeCache.result);
+    return true;
+  }, []);
 
   const optimizeRoute = async ({
     startAddress,
@@ -99,6 +143,16 @@ export const useRouteOptimization = () => {
       });
 
       setResult(optimizedResult);
+      runtimeCache = {
+        snapshot: buildOptimizationSnapshot({
+          planningDate,
+          optimizationObjective,
+          startAddress,
+          endAddress,
+          destinations,
+        }),
+        result: optimizedResult,
+      };
       setShowOptimizeSuccess(true);
       setShowOptimizeFlash(true);
     } catch (apiError) {
@@ -117,6 +171,7 @@ export const useRouteOptimization = () => {
     showOptimizeSuccess,
     showOptimizeFlash,
     hasAttemptedOptimize,
+    restoreCachedResult,
     optimizeRoute,
   };
 };

@@ -162,7 +162,7 @@ export const responsiveStyles = {
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
 
   // ── Selectable list (patient search results) ───────────────────────────────
-  selectableList: "m-0 min-h-0 flex-1 list-none space-y-2 overflow-y-auto p-0",
+  selectableList: "m-0 min-h-0 flex-1 list-none space-y-2 overflow-y-auto p-0 pr-2",
   selectableItemButton:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm transition hover:bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900",
 

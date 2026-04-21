@@ -48,6 +48,7 @@ export function useRoutePlannerController({
     showOptimizeSuccess,
     showOptimizeFlash,
     hasAttemptedOptimize,
+    restoreCachedResult,
     optimizeRoute,
   } = useRouteOptimization();
 
@@ -186,6 +187,7 @@ export function useRoutePlannerController({
     setPlannerOptimizationObjective,
     localValidationError,
     hasChangedSinceLastOptimize,
+    currentOptimizeSnapshot,
     unscheduledResubmitCount,
     handleSubmit,
     handleRecalculateManualOrder,
@@ -206,6 +208,16 @@ export function useRoutePlannerController({
     optimizeRoute,
     onOptimizationStarted: () => setIsPatientSearchExpanded(false),
   });
+
+  useEffect(() => {
+    if (result || isLoading) {
+      return;
+    }
+
+    if (typeof restoreCachedResult === "function") {
+      restoreCachedResult(currentOptimizeSnapshot);
+    }
+  }, [currentOptimizeSnapshot, isLoading, restoreCachedResult, result]);
 
   const {
     expandedResultTaskIds,

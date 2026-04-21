@@ -10,6 +10,7 @@ Routefy is a nurse-focused route planning app with a React frontend and Next.js 
 - Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
 - Keeps optimized route results in memory only for the current tab lifecycle.
+- Restores the last optimized route result from in-memory runtime cache when navigating away and back within the same tab/session state.
 - Provides an authenticated global workspace header with sticky positioning, app logo, and rotating nurse quotes.
 - Keeps header quote selection stable across browser refresh during a signed-in session.
 - Uses HttpOnly cookie-based sessions (no frontend token storage).
@@ -18,7 +19,8 @@ Routefy is a nurse-focused route planning app with a React frontend and Next.js 
 - Clears session-scoped browser storage (draft, header quote) on auth changes.
 - Uses a consistent overflow action menu pattern for client row actions.
 - Includes legal pages (Terms, Privacy, License, Trademark) accessible from the footer.
-- Shows in-app policy reminders on Clients and Route Planner pages.
+- Shows in-app policy reminders via info icons on Clients and Route Planner pages.
+- Dashboard KPIs include deleted clients (last 30 days) and drive hours (last 7 days).
 - Mobile-optimized route planner with wizard-style step flow and safe-area-aware sticky footer.
 - Uses in-memory geocoding and travel-matrix caching (with in-flight request deduplication) to reduce repeated optimization latency.
 

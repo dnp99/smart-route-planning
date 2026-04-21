@@ -373,7 +373,7 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.queryByText("Include this visit in route")).toBeNull();
     // Jane Doe button in the search results list should be gone (duplicate prevention);
     // only the destination row name button (title="Jane Doe") should remain
-    expect(screen.getAllByRole("button", { name: /^Jane Doe$/i })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /^Jane Doe(?: · .+)?$/i })).toHaveLength(1);
   });
 
   it("shows a clear hint when ending point is not selected", () => {
@@ -607,7 +607,7 @@ describe("RoutePlanner patient selection integration", () => {
       );
     });
 
-    expect(screen.getByText("New Patient")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /^New Patient(?: · .+)?$/i })).toBeTruthy();
     expect(screen.queryByRole("heading", { name: "Add New Client" })).toBeNull();
   });
 
@@ -887,6 +887,7 @@ describe("RoutePlanner patient selection integration", () => {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Mina Lee/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Toggle windows for Mina Lee" }));
     for (const toggle of screen.getAllByRole("button", { name: "Edit window" })) {
       fireEvent.click(toggle);
     }

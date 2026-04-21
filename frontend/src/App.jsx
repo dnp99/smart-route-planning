@@ -14,6 +14,8 @@ import {
   clearAuthSession,
   getAuthChangedEventName,
   getAuthUser,
+  recordAuthBootstrapFailure,
+  recordAuthBootstrapTimeout,
   setStoredAuthUser,
 } from "./components/auth/authSession";
 import LicensePage from "./components/legal/LicensePage";
@@ -36,6 +38,8 @@ const resolveTabClassName = ({ isActive }) =>
       ? "border-blue-700 text-blue-700 dark:border-blue-400 dark:text-blue-300"
       : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200",
   ].join(" ");
+
+const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 
 function App() {
   const [authUser, setAuthUser] = useState(() => getAuthUser());
@@ -65,6 +69,13 @@ function App() {
     if (hasCachedAuthUser) {
       beginAuthBootstrap();
     }
+    const bootstrapTimeoutId =
+      hasCachedAuthUser && typeof window !== "undefined"
+        ? window.setTimeout(() => {
+            recordAuthBootstrapTimeout(AUTH_BOOTSTRAP_TIMEOUT_MS);
+            completeAuthBootstrap();
+          }, AUTH_BOOTSTRAP_TIMEOUT_MS)
+        : null;
 
     let active = true;
     void fetchMe()
@@ -74,8 +85,11 @@ function App() {
           setIsAuthResolved(true);
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (active) {
+          if (hasCachedAuthUser) {
+            recordAuthBootstrapFailure(error);
+          }
           if (getAuthUser()) {
             clearAuthSession();
           }
@@ -86,10 +100,16 @@ function App() {
         }
       })
       .finally(() => {
+        if (bootstrapTimeoutId !== null && typeof window !== "undefined") {
+          window.clearTimeout(bootstrapTimeoutId);
+        }
         completeAuthBootstrap();
       });
     return () => {
       active = false;
+      if (bootstrapTimeoutId !== null && typeof window !== "undefined") {
+        window.clearTimeout(bootstrapTimeoutId);
+      }
       completeAuthBootstrap();
     };
   }, []);

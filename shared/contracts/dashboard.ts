@@ -43,8 +43,8 @@ export type DashboardSummaryResponse = {
     routesToday: number;
     visitsScheduledToday: number;
     onTimeRatePercent7d: number | null;
-    unscheduledVisitsToday: number;
-    driveHoursToday: number;
+    deletedClientsLast30Days: number;
+    driveHoursLast7Days: number;
     activePatientCount: number;
   };
   alerts: DashboardAlert[];
@@ -114,8 +114,8 @@ export const isDashboardSummaryResponse = (value: unknown): value is DashboardSu
     typeof value.kpis.visitsScheduledToday !== "number" ||
     (value.kpis.onTimeRatePercent7d !== null &&
       typeof value.kpis.onTimeRatePercent7d !== "number") ||
-    typeof value.kpis.unscheduledVisitsToday !== "number" ||
-    typeof value.kpis.driveHoursToday !== "number" ||
+    typeof value.kpis.deletedClientsLast30Days !== "number" ||
+    typeof value.kpis.driveHoursLast7Days !== "number" ||
     typeof value.kpis.activePatientCount !== "number" ||
     !Array.isArray(value.alerts) ||
     !value.alerts.every(isAlert) ||

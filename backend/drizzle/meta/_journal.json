@@ -99,6 +99,13 @@
       "when": 1776540207228,
       "tag": "0013_abandoned_white_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1776693297310,
+      "tag": "0014_curvy_eternals",
+      "breakpoints": true
     }
   ]
 }

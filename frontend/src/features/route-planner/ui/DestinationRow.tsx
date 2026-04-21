@@ -101,6 +101,11 @@ const PatientInfoModal = ({
 type DestinationRowProps = {
   destination: SelectedPatientDestination;
   index: number;
+  showIndex?: boolean;
+  compact?: boolean;
+  displayName?: string;
+  inputLabelPrefix?: string;
+  removeAriaLabel?: string;
   isExpanded: boolean;
   onToggleDetails: () => void;
   onRemove: () => void;
@@ -112,6 +117,11 @@ type DestinationRowProps = {
 export const DestinationRow = ({
   destination,
   index,
+  showIndex = true,
+  compact = false,
+  displayName,
+  inputLabelPrefix,
+  removeAriaLabel,
   isExpanded,
   onToggleDetails,
   onRemove,
@@ -120,13 +130,18 @@ export const DestinationRow = ({
   onSetPersistWindow,
 }: DestinationRowProps) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const visibleName = displayName ?? destination.patientName;
+  const fieldLabelPrefix = inputLabelPrefix ?? destination.patientName;
+  const removeLabel = removeAriaLabel ?? `Remove ${destination.patientName}`;
 
   return (
     <li
-      className={`flex min-h-14 flex-col justify-center rounded-xl border border-transparent px-2 py-2 text-sm text-slate-900 dark:border-transparent dark:text-slate-200 ${destination.isIncluded ? "" : "opacity-60"}`}
+      className={`flex flex-col justify-center rounded-xl border border-slate-200 bg-white px-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 ${
+        compact ? "min-h-11 py-1.5" : "min-h-14 py-2"
+      } ${destination.isIncluded ? "" : "opacity-60"}`}
     >
       <div className="flex items-center gap-2">
-        <span className={responsiveStyles.destinationIndex}>{index + 1}.</span>
+        {showIndex && <span className={responsiveStyles.destinationIndex}>{index + 1}.</span>}
         <div className="min-w-0 flex-1">
           <button
             type="button"
@@ -134,7 +149,7 @@ export const DestinationRow = ({
             className={responsiveStyles.destinationNameButton}
             title={destination.patientName}
           >
-            {destination.patientName}
+            {visibleName}
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-1">
@@ -147,7 +162,7 @@ export const DestinationRow = ({
           </button>
           <button
             type="button"
-            aria-label={`Remove ${destination.patientName}`}
+            aria-label={removeLabel}
             onClick={onRemove}
             className={responsiveStyles.destinationRemoveIcon}
           >
@@ -176,14 +191,14 @@ export const DestinationRow = ({
               <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
                 <input
                   type="time"
-                  aria-label={`${destination.patientName} start`}
+                  aria-label={`${fieldLabelPrefix} start`}
                   value={destination.windowStart}
                   onChange={(e) => onUpdateWindow("windowStart", e.target.value)}
                   className={responsiveStyles.timeInput}
                 />
                 <input
                   type="time"
-                  aria-label={`${destination.patientName} end`}
+                  aria-label={`${fieldLabelPrefix} end`}
                   value={destination.windowEnd}
                   onChange={(e) => onUpdateWindow("windowEnd", e.target.value)}
                   className={responsiveStyles.timeInput}
