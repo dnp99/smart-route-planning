@@ -14,6 +14,7 @@ import {
   clearAuthSession,
   getAuthChangedEventName,
   getAuthUser,
+  getSessionPresenceFlag,
   recordAuthBootstrapFailure,
   recordAuthBootstrapTimeout,
   setStoredAuthUser,
@@ -43,7 +44,8 @@ const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 
 function App() {
   const [authUser, setAuthUser] = useState(() => getAuthUser());
-  const [isAuthResolved, setIsAuthResolved] = useState(() => getAuthUser() !== null);
+  const [isAuthResolved, setIsAuthResolved] = useState(() => getSessionPresenceFlag());
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [isLegalNoticeRequired, setIsLegalNoticeRequired] = useState(false);
   const [isLegalNoticeSubmitting, setIsLegalNoticeSubmitting] = useState(false);
@@ -65,12 +67,12 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const hasCachedAuthUser = getAuthUser() !== null;
-    if (hasCachedAuthUser) {
+    const hasPresenceFlag = getSessionPresenceFlag();
+    if (hasPresenceFlag) {
       beginAuthBootstrap();
     }
     const bootstrapTimeoutId =
-      hasCachedAuthUser && typeof window !== "undefined"
+      hasPresenceFlag && typeof window !== "undefined"
         ? window.setTimeout(() => {
             recordAuthBootstrapTimeout(AUTH_BOOTSTRAP_TIMEOUT_MS);
             completeAuthBootstrap();
@@ -83,11 +85,12 @@ function App() {
         if (active) {
           setStoredAuthUser(result.user);
           setIsAuthResolved(true);
+          setIsBootstrapping(false);
         }
       })
       .catch((error) => {
         if (active) {
-          if (hasCachedAuthUser) {
+          if (hasPresenceFlag) {
             recordAuthBootstrapFailure(error);
           }
           if (getAuthUser()) {
@@ -97,6 +100,7 @@ function App() {
           setIsLegalNoticeRequired(false);
           setLegalNoticeError("");
           setIsAuthResolved(true);
+          setIsBootstrapping(false);
         }
       })
       .finally(() => {
@@ -164,10 +168,13 @@ function App() {
 
   const optimizationObjective = authUser?.optimizationObjective ?? "distance";
   const defaultProtectedPath = "/";
-  const renderProtectedRoute = (element) =>
-    isAuthenticated ? element : <Navigate to="/login" replace />;
+  const renderProtectedRoute = (element) => {
+    if (isAuthenticated) return element;
+    if (isBootstrapping) return null;
+    return <Navigate to="/login" replace />;
+  };
 
-  if (!isAuthResolved) {
+  if (!isAuthResolved && isBootstrapping) {
     return (
       <div className="mx-auto w-full max-w-7xl p-3 sm:p-4 md:p-6">
         <main className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">

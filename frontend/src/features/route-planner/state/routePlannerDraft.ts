@@ -4,10 +4,6 @@ export type MobilePlannerStep = "trip" | "patients" | "review";
 
 export type RoutePlannerDraft = {
   version: 1;
-  startAddress: string;
-  manualEndAddress: string;
-  startGooglePlaceId: string | null;
-  manualEndGooglePlaceId: string | null;
   activeMobileStep: MobilePlannerStep;
   selectedDestinationStates: RoutePlannerDraftDestinationState[];
   planningDate?: string;
@@ -69,14 +65,7 @@ export const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
       return null;
     }
 
-    if (
-      typeof parsed.startAddress !== "string" ||
-      typeof parsed.manualEndAddress !== "string" ||
-      (parsed.startGooglePlaceId !== null && typeof parsed.startGooglePlaceId !== "string") ||
-      (parsed.manualEndGooglePlaceId !== null &&
-        typeof parsed.manualEndGooglePlaceId !== "string") ||
-      !isMobilePlannerStep(parsed.activeMobileStep)
-    ) {
+    if (!isMobilePlannerStep(parsed.activeMobileStep)) {
       return null;
     }
 
@@ -101,10 +90,6 @@ export const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
 
     return {
       version: 1,
-      startAddress: parsed.startAddress,
-      manualEndAddress: parsed.manualEndAddress,
-      startGooglePlaceId: parsed.startGooglePlaceId,
-      manualEndGooglePlaceId: parsed.manualEndGooglePlaceId,
       activeMobileStep: parsed.activeMobileStep,
       selectedDestinationStates,
       ...(typeof parsed.planningDate === "string" ? { planningDate: parsed.planningDate } : {}),
@@ -122,8 +107,10 @@ export const persistRoutePlannerDraft = (draft: RoutePlannerDraft): void => {
   window.localStorage.setItem(
     ROUTE_PLANNER_DRAFT_STORAGE_KEY,
     JSON.stringify({
-      ...draft,
+      version: 1,
+      activeMobileStep: draft.activeMobileStep,
       selectedDestinationStates: draft.selectedDestinationStates,
+      ...(typeof draft.planningDate === "string" ? { planningDate: draft.planningDate } : {}),
     }),
   );
 };

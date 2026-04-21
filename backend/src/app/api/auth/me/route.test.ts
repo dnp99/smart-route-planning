@@ -3,6 +3,7 @@ import { HttpError } from "../../../../lib/http";
 
 const {
   requireAuthMock,
+  touchAuthSessionMock,
   findNurseByIdMock,
   updateNurseDisplayNameMock,
   updateNurseHomeAddressMock,
@@ -10,6 +11,7 @@ const {
   updateNurseOptimizationObjectiveMock,
 } = vi.hoisted(() => ({
   requireAuthMock: vi.fn(),
+  touchAuthSessionMock: vi.fn(),
   findNurseByIdMock: vi.fn(),
   updateNurseDisplayNameMock: vi.fn(),
   updateNurseHomeAddressMock: vi.fn(),
@@ -19,6 +21,10 @@ const {
 
 vi.mock("../../../../lib/auth/requireAuth", () => ({
   requireAuth: requireAuthMock,
+}));
+
+vi.mock("../../../../lib/auth/sessionRepository", () => ({
+  touchAuthSession: touchAuthSessionMock,
 }));
 
 vi.mock("../../../../lib/patients/patientRepository", () => ({
@@ -39,6 +45,7 @@ describe("/api/auth/me route", () => {
     process.env.ALLOWED_ORIGINS = "http://localhost:5173";
     delete process.env.AUTH_ENFORCE_HTTPS;
     requireAuthMock.mockReset();
+    touchAuthSessionMock.mockReset();
     findNurseByIdMock.mockReset();
     updateNurseDisplayNameMock.mockReset();
     updateNurseHomeAddressMock.mockReset();
@@ -47,7 +54,9 @@ describe("/api/auth/me route", () => {
     requireAuthMock.mockResolvedValue({
       nurseId: "nurse-1",
       email: "nurse@example.com",
+      sessionId: "session-1",
     });
+    touchAuthSessionMock.mockResolvedValue(undefined);
   });
 
   afterEach(() => {

@@ -61,7 +61,6 @@ Notes:
 
 - UI terminology uses **Client/Clients** for care recipients.
 - API paths and shared contract field names remain `/api/patients`, `patientId`, and `patientName` for compatibility.
-- During migration grace period, backend accepts cookie sessions first and legacy bearer tokens second.
 
 ## Local run
 

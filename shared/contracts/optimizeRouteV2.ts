@@ -91,6 +91,7 @@ export type OptimizeRouteV2ScheduleWarning =
       type: "fixed_late" | "flexible_late";
       patientId: string;
       patientName: string;
+      lateMinutes: number;
       message: string;
     }
   | {
@@ -274,7 +275,11 @@ const isScheduleWarning = (value: unknown): value is OptimizeRouteV2ScheduleWarn
   }
 
   if (value.type === "fixed_late" || value.type === "flexible_late") {
-    return typeof value.patientId === "string" && typeof value.patientName === "string";
+    return (
+      typeof value.patientId === "string" &&
+      typeof value.patientName === "string" &&
+      typeof value.lateMinutes === "number"
+    );
   }
 
   if (value.type === "outside_working_hours") {
