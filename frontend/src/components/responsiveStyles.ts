@@ -24,9 +24,11 @@ export const responsiveStyles = {
   // ── App shell (layout components) ─────────────────────────────────────────
   appShell:
     "flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white dark:bg-none dark:bg-slate-950",
+  stickyHeaderShell: "sticky top-0 z-30 w-full",
   appHeader:
-    "sticky top-0 z-30 w-full bg-[linear-gradient(270deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] backdrop-blur-md dark:bg-[linear-gradient(270deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
+    "w-full bg-[linear-gradient(270deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] backdrop-blur-md dark:bg-[linear-gradient(270deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
   appHeaderInner: "mx-auto flex w-full max-w-7xl items-center justify-between px-6",
+  tabStrip: "w-full bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
   appFooter:
     "w-full bg-[linear-gradient(90deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] dark:bg-[linear-gradient(90deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
   appFooterInner: "mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4",

@@ -72,13 +72,34 @@ export default function AppHeader({
         "dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96)_0%,rgba(15,23,42,0.94)_60%,rgba(8,47,73,0.9)_100%)]",
       ].join(" ")}
     >
-      <div className={[headerInnerClassName, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(" ")}>
+      <div
+        className={[
+          headerInnerClassName,
+          headerScrolled ? "py-1" : "py-3 sm:py-4",
+          "transition-all duration-300",
+        ].join(" ")}
+      >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 sm:h-12 sm:w-12 lg:h-12 lg:w-12 dark:bg-blue-950/40">
-            <RoutefyBrandMark className="h-6 w-6 text-blue-600 sm:h-7 sm:w-7 lg:h-8 lg:w-8 dark:text-blue-400" />
+          <div
+            className={[
+              "flex shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 transition-all duration-300",
+              headerScrolled ? "h-9 w-9" : "h-11 w-11 sm:h-12 sm:w-12 lg:h-12 lg:w-12",
+            ].join(" ")}
+          >
+            <RoutefyBrandMark
+              className={[
+                "text-blue-600 dark:text-blue-400 transition-all duration-300",
+                headerScrolled ? "h-5 w-5" : "h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8",
+              ].join(" ")}
+            />
           </div>
           <div className="min-w-0">
-            <p className="m-0 text-base sm:text-lg lg:text-2xl font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">
+            <p
+              className={[
+                "m-0 font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 transition-all duration-300",
+                headerScrolled ? "text-sm" : "text-base sm:text-lg lg:text-2xl",
+              ].join(" ")}
+            >
               Routefy
             </p>
           </div>
