@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import type { OptimizeRouteResponse } from "../types";
 import { exportRouteImage } from "./routeImageExport";
-import { responsiveStyles } from "../responsiveStyles";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 import RouteMap from "../RouteMap";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlannerUtils";
 import { expectedStartTimeFormatter, formatVisitDurationMinutes } from "./routePlannerResultUtils";

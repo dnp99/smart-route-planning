@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { divIcon } from "leaflet";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";
-import { responsiveStyles } from "../responsiveStyles";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 import { emitRouteMapUnavailable } from "../utils/routePlannerTelemetry";
 import type { GeocodedStop, OrderedStop, RouteLeg } from "../types";
 

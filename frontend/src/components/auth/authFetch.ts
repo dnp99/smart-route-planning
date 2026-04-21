@@ -1,5 +1,5 @@
 import { extractApiErrorMessage } from "../../../../shared/contracts";
-import { resolveApiBaseUrl } from "../apiBaseUrl";
+import { resolveApiBaseUrl } from "../shared/apiBaseUrl";
 import { clearAuthSession, waitForAuthBootstrap } from "./authSession";
 
 export const requestAuthedJson = async (

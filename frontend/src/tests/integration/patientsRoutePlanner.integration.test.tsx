@@ -255,7 +255,7 @@ vi.mock("../../components/auth/authService", () => ({
   acknowledgeLegalNotice: acknowledgeLegalNoticeMock,
 }));
 
-vi.mock("../../components/AddressAutocompleteInput", () => ({
+vi.mock("../../components/shared/AddressAutocompleteInput", () => ({
   default: ({
     id,
     label,

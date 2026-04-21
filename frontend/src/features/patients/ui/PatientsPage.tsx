@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
-import { responsiveStyles } from "../responsiveStyles";
-import ConfirmDialog from "../modals/ConfirmDialog";
+import { responsiveStyles } from "../../../components/responsiveStyles";
+import ConfirmDialog from "../../../components/modals/ConfirmDialog";
 import type { Patient, VisitTimeType } from "../../../../../shared/contracts";
 import { PatientFormModal } from "./PatientFormModal";
 import { PatientsTable } from "./PatientsTable";

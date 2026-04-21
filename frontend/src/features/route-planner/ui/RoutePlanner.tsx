@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { responsiveStyles } from "../responsiveStyles";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { WeeklyWorkingHours } from "../../../../../shared/contracts";
-import { PatientFormModal } from "../modals/PatientFormModal";
+import { PatientFormModal } from "../../patients/ui/PatientFormModal";
 import { useRoutePlannerController } from "../hooks/useRoutePlannerController";
 import { TripSetupSection } from "./TripSetupSection";
 import { PatientSelectorSection } from "./PatientSelectorSection";

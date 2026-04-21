@@ -202,10 +202,11 @@ export const responsiveStyles = {
   // Fixed    → bg-blue-100 text-blue-700
   // Flexible → bg-emerald-100 text-emerald-700  (see renderVisitTypePill in PatientsTable)
   visitTypePillBase:
-    "inline-flex w-fit rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+    "inline-flex w-fit justify-self-start rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
   visitTypePillFixed: "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200",
   visitTypePillFlexible:
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200",
+  visitTypePillMixed: "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200",
   countPill:
     "rounded-full bg-slate-200 px-3 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200 sm:text-sm",
 
@@ -390,4 +391,40 @@ export const responsiveStyles = {
     "rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300",
   dashboardRiskBadgeRose:
     "rounded-full bg-rose-100 px-2.5 py-1 text-xs font-semibold text-rose-700 dark:bg-rose-900/40 dark:text-rose-300",
+
+  // ── Form fields ────────────────────────────────────────────────────────────
+  formLabel: "text-sm font-semibold text-slate-800 dark:text-slate-200",
+  formInput:
+    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+  requiredBadge:
+    "rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300",
+
+  // ── Tables ────────────────────────────────────────────────────────────────
+  tableCard:
+    "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900",
+  tableRow: "group transition hover:bg-slate-50 dark:hover:bg-slate-800/40",
+  tableEmptyState:
+    "rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
+  tableIconButton:
+    "inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200",
+  tableIconButtonDestructive:
+    "inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
+
+  // ── Dropdown menus ────────────────────────────────────────────────────────
+  dropdownMenu:
+    "absolute right-0 z-20 mt-1 min-w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900",
+  dropdownMenuItem:
+    "inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800",
+  dropdownMenuItemDestructive:
+    "inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300 dark:hover:bg-red-950/30",
+
+  // ── Mobile client cards ────────────────────────────────────────────────────
+  mobileClientCard:
+    "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900",
+  mobileActionButton:
+    "inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800",
+
+  // ── Modal variants ────────────────────────────────────────────────────────
+  modalSurfaceLarge:
+    "animate-slide-up motion-reduce:animate-none sm:animate-none max-h-[82vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:max-h-[92vh] sm:max-w-2xl sm:rounded-3xl sm:p-6",
 };

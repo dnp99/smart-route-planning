@@ -6,7 +6,7 @@ import {
   type PatientVisitWindowInput,
   type WeeklyWorkingHours,
 } from "../../../../../shared/contracts";
-import { requestAuthedJson } from "../auth/authFetch";
+import { requestAuthedJson } from "../../../components/auth/authFetch";
 import { resolveOptimizeRoutePath } from "./optimizeRouteEndpoint";
 import type { OptimizeRouteResponse } from "../types";
 

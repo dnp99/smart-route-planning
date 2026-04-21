@@ -6,9 +6,9 @@ import PrivacyPage from "../legal/PrivacyPage";
 import TermsPage from "../legal/TermsPage";
 import TrademarkPage from "../legal/TrademarkPage";
 import PatientsPage from "../../features/patients/ui/PatientsPage";
-import HomePage from "../HomePage";
+import HomePage from "../home/HomePage";
 import LandingPage from "../LandingPage";
-import LegalDocumentModal from "./LegalDocumentModal";
+import LegalDocumentModal from "../modals/LegalDocumentModal";
 
 export default function AppRoutes({
   isAuthenticated,

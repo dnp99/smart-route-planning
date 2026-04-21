@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import type { AddressSuggestion } from "./types";
-import { parseAddressAutocompleteResponse } from "../../../shared/contracts";
-import { requestAuthedJson } from "./auth/authFetch";
+import type { AddressSuggestion } from "../types";
+import { parseAddressAutocompleteResponse } from "../../../../shared/contracts";
+import { requestAuthedJson } from "../auth/authFetch";
 
 type AddressAutocompleteInputProps = {
   id: string;

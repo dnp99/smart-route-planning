@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import AddressAutocompleteInput from "../AddressAutocompleteInput";
+import AddressAutocompleteInput from "../shared/AddressAutocompleteInput";
 import ConfirmDialog from "./ConfirmDialog";
 import { responsiveStyles } from "../responsiveStyles";
 import { useAccountSettings, DAYS, buildDefaultSchedule } from "../hooks/useAccountSettings";

@@ -7,7 +7,7 @@ import {
   updateProfileHomeAddress,
 } from "../../components/auth/authService";
 
-vi.mock("../../components/apiBaseUrl", () => ({
+vi.mock("../../components/shared/apiBaseUrl", () => ({
   resolveApiBaseUrl: () => "http://api.example.com",
 }));
 

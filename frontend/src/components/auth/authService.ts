@@ -6,7 +6,7 @@ import {
   type SignupResponse,
   type WeeklyWorkingHours,
 } from "../../../../shared/contracts";
-import { resolveApiBaseUrl } from "../apiBaseUrl";
+import { resolveApiBaseUrl } from "../shared/apiBaseUrl";
 
 export type LegalNoticeStatus = {
   required: boolean;

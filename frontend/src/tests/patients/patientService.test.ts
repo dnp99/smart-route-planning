@@ -7,7 +7,7 @@ import {
 } from "../../features/patients/api/patientService";
 import { setAuthSession } from "../../components/auth/authSession";
 
-vi.mock("../../components/apiBaseUrl", () => ({
+vi.mock("../../components/shared/apiBaseUrl", () => ({
   resolveApiBaseUrl: () => "http://api.example.com",
 }));
 

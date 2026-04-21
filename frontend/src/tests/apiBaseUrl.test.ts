@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { resolveApiBaseUrl } from "../components/apiBaseUrl";
+import { resolveApiBaseUrl } from "../components/shared/apiBaseUrl";
 
 describe("resolveApiBaseUrl", () => {
   afterEach(() => {

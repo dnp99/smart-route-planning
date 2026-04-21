@@ -6,7 +6,7 @@ import {
 } from "../../features/route-planner/api/routePlannerService";
 import { setAuthSession } from "../../components/auth/authSession";
 
-vi.mock("../../components/apiBaseUrl", () => ({
+vi.mock("../../components/shared/apiBaseUrl", () => ({
   resolveApiBaseUrl: () => "http://api.example.com",
 }));
 

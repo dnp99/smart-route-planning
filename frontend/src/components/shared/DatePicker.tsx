@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { responsiveStyles } from "./responsiveStyles";
+import { responsiveStyles } from "../responsiveStyles";
 
 type DatePickerProps = {
   value: string;
