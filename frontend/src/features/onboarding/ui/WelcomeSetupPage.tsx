@@ -7,6 +7,7 @@ import {
   updateWorkingHours,
 } from "../../../components/auth/authService";
 import { setStoredAuthUser } from "../../../components/auth/authSession";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 
 const DAYS = [
   { key: "monday" as const, label: "Mon" },
@@ -164,8 +165,8 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
   };
 
   return (
-    <main className="mt-3">
-      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7">
+    <main className={responsiveStyles.onboardingSetupViewport}>
+      <section className={responsiveStyles.onboardingSetupCard}>
         <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">
           Workspace setup
         </p>
