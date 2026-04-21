@@ -166,7 +166,7 @@ function App() {
   };
 
   const optimizationObjective = authUser?.optimizationObjective ?? "distance";
-  const defaultProtectedPath = "/";
+  const defaultProtectedPath = "/home";
   const renderProtectedRoute = (element) => {
     if (isAuthenticated) return element;
     if (isBootstrapping) return null;
@@ -199,7 +199,7 @@ function App() {
       <div className={responsiveStyles.contentWrapper}>
         {isAuthenticated && (
           <nav className={responsiveStyles.tabNav}>
-            <NavLink to="/" end aria-label="Home" className={resolveTabClassName}>
+            <NavLink to="/home" end aria-label="Home" className={resolveTabClassName}>
               {({ isActive }) => (
                 <>
                   <svg
@@ -226,7 +226,7 @@ function App() {
                 </>
               )}
             </NavLink>
-            <NavLink to="/patients" aria-label="Clients" className={resolveTabClassName}>
+            <NavLink to="/clients" aria-label="Clients" className={resolveTabClassName}>
               {({ isActive }) => (
                 <>
                   <svg
@@ -289,19 +289,20 @@ function App() {
         <Routes>
           <Route
             path="/"
-            element={
+            element={isAuthenticated ? <Navigate to="/home" replace /> : (
               <LandingPage
                 isAuthenticated={isAuthenticated}
                 authUser={authUser}
                 onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
               />
-            }
+            )}
           />
           <Route
             path="/login"
             element={isAuthenticated ? <Navigate to="/home" replace /> : <LoginPage />}
           />
-          <Route path="/patients" element={renderProtectedRoute(<PatientsPage />)} />
+          <Route path="/clients" element={renderProtectedRoute(<PatientsPage />)} />
+          <Route path="/patients" element={<Navigate to="/clients" replace />} />
           <Route
             path="/route-planner"
             element={renderProtectedRoute(

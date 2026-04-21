@@ -254,7 +254,7 @@ export default function HomePage({
 
   const renderAuthenticatedActions = () => (
     <>
-      <Link to="/patients" className={responsiveStyles.primaryButton}>
+      <Link to="/clients" className={responsiveStyles.primaryButton}>
         Go to Clients
       </Link>
       <Link to="/route-planner" className={responsiveStyles.secondaryButton}>

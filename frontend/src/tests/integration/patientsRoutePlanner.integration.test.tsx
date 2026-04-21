@@ -338,9 +338,9 @@ describe("patients and route planner integration", () => {
     cleanup();
   });
 
-  it("supports create -> search -> edit -> delete lifecycle on /patients", async () => {
+  it("supports create -> search -> edit -> delete lifecycle on /clients", async () => {
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -394,7 +394,7 @@ describe("patients and route planner integration", () => {
 
   it("makes created patients available on /route-planner and preserves patient context in optimization", async () => {
     render(
-      <MemoryRouter initialEntries={["/patients"]}>
+      <MemoryRouter initialEntries={["/clients"]}>
         <App />
       </MemoryRouter>,
     );

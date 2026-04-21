@@ -85,7 +85,9 @@ describe("LoginPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Sign up" }));
 
     expect(
-      screen.getByText("Create your Routefy account to manage clients and route-planning data."),
+      screen.getByText(
+        "Create your Routefy account to organize clients, plan efficient routes, and stay ahead of delays.",
+      ),
     ).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("Display name"), {

@@ -41,7 +41,7 @@ function LandingPage({ isAuthenticated, authUser, onOpenAccountSettings }: Landi
             <div className="mt-8 flex flex-wrap gap-3">
               <button
                 type="button"
-                onClick={() => navigate("/patients")}
+                onClick={() => navigate("/clients")}
                 className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
               >
                 Go to Clients
