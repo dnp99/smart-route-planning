@@ -10,8 +10,8 @@ import {
   type PatientFormVisitWindow,
   toCreateRequest,
   validateForm,
-} from "../patients/patientForm";
-import { createPatient } from "../patients/patientService";
+} from "../../patients/domain/patientForm";
+import { createPatient } from "../../patients/api/patientService";
 
 type UseCreatePatientFormOptions = {
   onPatientCreated: (patient: Patient) => void;

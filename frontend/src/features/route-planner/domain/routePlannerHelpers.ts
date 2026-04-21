@@ -1,5 +1,5 @@
 import type { Patient } from "../../../../../shared/contracts";
-import { formatNameWords, formatPatientNameFromParts } from "../patients/patientName";
+import { formatNameWords, formatPatientNameFromParts } from "../../patients/domain/patientName";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 
 export const toWindowTime = (value: string) => value.slice(0, 5);

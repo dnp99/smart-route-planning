@@ -2,7 +2,7 @@ import { responsiveStyles } from "../../../components/responsiveStyles";
 import { SelectedDestinationsSection } from "./SelectedDestinationsSection";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 import type { Patient } from "../../../../shared/contracts";
-import { formatPatientNameFromParts } from "../patients/patientName";
+import { formatPatientNameFromParts } from "../../patients/domain/patientName";
 
 type PatientSelectorSectionProps = {
   isVisible: boolean;

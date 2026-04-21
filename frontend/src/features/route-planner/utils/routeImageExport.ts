@@ -1,7 +1,7 @@
 import type { OptimizeRouteResponse } from "../types";
 import { expectedStartTimeFormatter, formatBreakGap } from "./routePlannerResultUtils";
 import { formatDuration } from "./routePlannerUtils";
-import { formatNameWords } from "../patients/patientName";
+import { formatNameWords } from "../../patients/domain/patientName";
 
 const CANVAS_WIDTH = 800;
 const PAD_X = 32;
