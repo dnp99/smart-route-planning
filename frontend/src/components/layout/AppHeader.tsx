@@ -3,6 +3,7 @@ import { formatNameWords } from "../patients/patientName";
 import { responsiveStyles } from "../responsiveStyles";
 import { useScrollShrink } from "../hooks/useScrollShrink";
 import { useClickOutside } from "../hooks/useClickOutside";
+import RoutefyBrandMark from "../brand/RoutefyBrandMark";
 
 type AuthUser = { displayName?: string; email?: string; homeAddress?: string } | null;
 
@@ -73,22 +74,8 @@ export default function AppHeader({
     >
       <div className={[headerInnerClassName, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(" ")}>
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="h-5 w-5 text-blue-600 dark:text-blue-400"
-            >
-              <path d="M1 12 L5 12 L7 5 L9 19 L11 12 L13 12" />
-              <path d="M19 5C16.8 5 15 6.8 15 9C15 11.8 19 17 19 17C19 17 23 11.8 23 9C23 6.8 21.2 5 19 5Z" />
-              <circle cx="19" cy="9" r="1.8" fill="currentColor" strokeWidth="0" />
-            </svg>
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 sm:h-12 sm:w-12 lg:h-12 lg:w-12 dark:bg-blue-950/40">
+            <RoutefyBrandMark className="h-6 w-6 text-blue-600 sm:h-7 sm:w-7 lg:h-8 lg:w-8 dark:text-blue-400" />
           </div>
           <div className="min-w-0">
             <p className="m-0 text-base sm:text-lg lg:text-2xl font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">
