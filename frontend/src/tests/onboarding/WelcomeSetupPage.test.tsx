@@ -29,6 +29,35 @@ vi.mock("../../components/auth/authSession", () => ({
   setStoredAuthUser: setStoredAuthUserMock,
 }));
 
+vi.mock("../../components/shared/AddressAutocompleteInput", () => ({
+  default: ({
+    id,
+    label,
+    value,
+    onChange,
+    disabled,
+    errorText,
+  }: {
+    id: string;
+    label: string;
+    value: string;
+    onChange: (value: string) => void;
+    disabled?: boolean;
+    errorText?: string;
+  }) => (
+    <div>
+      <label htmlFor={id}>{label}</label>
+      <input
+        id={id}
+        value={value}
+        disabled={Boolean(disabled)}
+        onChange={(event) => onChange((event.target as HTMLInputElement).value)}
+      />
+      {errorText ? <p>{errorText}</p> : null}
+    </div>
+  ),
+}));
+
 describe("WelcomeSetupPage", () => {
   beforeEach(() => {
     updateProfileMock.mockReset();
@@ -68,7 +97,7 @@ describe("WelcomeSetupPage", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.change(screen.getByLabelText("Display name"), {
+    fireEvent.change(screen.getByRole("textbox", { name: /display name/i }), {
       target: { value: "Nurse One" },
     });
     fireEvent.change(screen.getByLabelText("Home address"), {
@@ -162,5 +191,33 @@ describe("WelcomeSetupPage", () => {
       expect(updateOptimizationObjectiveMock).toHaveBeenCalledWith("distance");
     });
     expect(await screen.findByRole("heading", { name: "Home Page" })).toBeTruthy();
+  });
+
+  it("shows red validation errors when required profile fields are missing", async () => {
+    render(
+      <MemoryRouter>
+        <WelcomeSetupPage
+          authUser={{
+            id: "n1",
+            email: "nurse@example.com",
+            displayName: "",
+            homeAddress: null,
+            isSetupComplete: false,
+            setupMissing: ["displayName", "homeAddress"],
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByRole("textbox", { name: /display name/i }), {
+      target: { value: "" },
+    });
+    fireEvent.change(screen.getByLabelText("Home address"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+
+    expect(await screen.findByText("Display name is required.")).toBeTruthy();
+    expect(screen.getByText("Home address is required.")).toBeTruthy();
   });
 });

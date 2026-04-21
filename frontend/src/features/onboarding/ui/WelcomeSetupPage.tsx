@@ -8,6 +8,7 @@ import {
 } from "../../../components/auth/authService";
 import { setStoredAuthUser } from "../../../components/auth/authSession";
 import { responsiveStyles } from "../../../components/responsiveStyles";
+import AddressAutocompleteInput from "../../../components/shared/AddressAutocompleteInput";
 
 const DAYS = [
   { key: "monday" as const, label: "Mon" },
@@ -77,6 +78,10 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");
+  const [profileFieldErrors, setProfileFieldErrors] = useState<{
+    displayName?: string;
+    homeAddress?: string;
+  }>({});
 
   const completionPercent = useMemo(() => {
     if (step === "profile") return 33;
@@ -97,16 +102,21 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
     event.preventDefault();
     const nextDisplayName = displayNameInput.trim();
     const nextHomeAddress = homeAddressInput.trim();
+    const nextErrors: { displayName?: string; homeAddress?: string } = {};
 
     if (!nextDisplayName) {
-      setError("Display name is required.");
-      return;
+      nextErrors.displayName = "Display name is required.";
     }
     if (!nextHomeAddress) {
-      setError("Home address is required.");
+      nextErrors.homeAddress = "Home address is required.";
+    }
+
+    if (nextErrors.displayName || nextErrors.homeAddress) {
+      setProfileFieldErrors(nextErrors);
       return;
     }
 
+    setProfileFieldErrors({});
     setError("");
     setIsSaving(true);
     try {
@@ -185,32 +195,66 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
           />
         </div>
 
-        {error && (
+        {error && step !== "profile" && (
           <p className="m-0 mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/20 dark:text-rose-200">
             {error}
           </p>
         )}
 
         {step === "profile" && (
-          <form onSubmit={handleProfileSave} className="mt-5 grid gap-4">
+          <form noValidate onSubmit={handleProfileSave} className="mt-5 grid gap-4">
             <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-200">
-              Display name
+              <span>
+                Display name
+                <span className="ml-2 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
+                  Required
+                </span>
+              </span>
               <input
                 value={displayNameInput}
-                onChange={(event) => setDisplayNameInput(event.target.value)}
+                onChange={(event) => {
+                  setDisplayNameInput(event.target.value);
+                  if (profileFieldErrors.displayName) {
+                    setProfileFieldErrors((current) => ({
+                      ...current,
+                      displayName: undefined,
+                    }));
+                  }
+                }}
                 autoComplete="name"
-                className="rounded-xl border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                aria-invalid={Boolean(profileFieldErrors.displayName)}
+                className={[
+                  "rounded-xl border px-3 py-2 text-sm outline-none transition focus:ring-2 dark:bg-slate-950",
+                  profileFieldErrors.displayName
+                    ? "border-red-400 text-slate-900 ring-red-500 focus:border-red-500 dark:border-red-700 dark:text-slate-100 dark:focus:border-red-500"
+                    : "border-slate-300 text-slate-900 ring-blue-500 focus:border-blue-500 dark:border-slate-700 dark:text-slate-100",
+                ].join(" ")}
               />
+              {profileFieldErrors.displayName && (
+                <span className="text-xs text-red-600 dark:text-red-400">
+                  {profileFieldErrors.displayName}
+                </span>
+              )}
             </label>
-            <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-200">
-              Home address
-              <input
+            <div>
+              <AddressAutocompleteInput
+                id="setup-home-address"
+                label="Home address"
+                placeholder="Search address"
                 value={homeAddressInput}
-                onChange={(event) => setHomeAddressInput(event.target.value)}
-                autoComplete="street-address"
-                className="rounded-xl border border-slate-300 px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950"
+                required
+                errorText={profileFieldErrors.homeAddress}
+                onChange={(value) => {
+                  setHomeAddressInput(value);
+                  if (profileFieldErrors.homeAddress) {
+                    setProfileFieldErrors((current) => ({
+                      ...current,
+                      homeAddress: undefined,
+                    }));
+                  }
+                }}
               />
-            </label>
+            </div>
             <button
               type="submit"
               disabled={isSaving}
