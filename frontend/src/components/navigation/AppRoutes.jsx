@@ -23,9 +23,17 @@ export default function AppRoutes({
   const backgroundLocation = location.state?.backgroundLocation;
   const isLegalRoute = /^\/legal\/(terms|privacy|license|trademark)$/.test(location.pathname);
 
+  const renderBootstrappingFallback = () => (
+    <main className="mt-3 grid gap-4 sm:gap-5">
+      <section className="rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300 sm:p-5">
+        Validating session...
+      </section>
+    </main>
+  );
+
   const renderProtectedRoute = (element) => {
     if (isAuthenticated) return element;
-    if (isBootstrapping) return null;
+    if (isBootstrapping) return renderBootstrappingFallback();
     return <Navigate to="/login" replace />;
   };
 
