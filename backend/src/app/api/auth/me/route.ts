@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   isUpdateMeRequest,
+  resolveIsSetupComplete,
+  resolveSetupMissingFields,
   type AuthUser,
   type WeeklyWorkingHours,
 } from "../../../../../../shared/contracts";
@@ -40,6 +42,18 @@ const toAuthUser = (value: {
     value.optimizationObjective === "time" || value.optimizationObjective === "distance"
       ? value.optimizationObjective
       : null,
+  isSetupComplete: resolveIsSetupComplete({
+    displayName: value.displayName,
+    homeAddress: value.homeAddress ?? null,
+    workingHours: value.workingHours ?? null,
+    optimizationObjective: value.optimizationObjective ?? null,
+  }),
+  setupMissing: resolveSetupMissingFields({
+    displayName: value.displayName,
+    homeAddress: value.homeAddress ?? null,
+    workingHours: value.workingHours ?? null,
+    optimizationObjective: value.optimizationObjective ?? null,
+  }),
 });
 
 const parseHhMm = (value: unknown, fieldName: string): string => {

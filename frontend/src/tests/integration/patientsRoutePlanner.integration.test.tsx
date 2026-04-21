@@ -296,6 +296,8 @@ describe("patients and route planner integration", () => {
         email: "nurse@example.com",
         displayName: "Nurse One",
         homeAddress: null,
+        isSetupComplete: true,
+        setupMissing: [],
       },
     });
     fetchLegalNoticeStatusMock.mockReset();
@@ -318,6 +320,8 @@ describe("patients and route planner integration", () => {
       email: "nurse@example.com",
       displayName: "Nurse One",
       homeAddress: null,
+      isSetupComplete: true,
+      setupMissing: [],
     });
 
     patientStore = [];

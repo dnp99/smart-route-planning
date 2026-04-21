@@ -92,6 +92,26 @@ const resolveDraftDateLabel = (planningDate?: string) => {
   });
 };
 
+const resolveLastUpdatedLabel = (summary: DashboardSummaryResponse | null) => {
+  if (!summary?.asOf) {
+    return null;
+  }
+
+  const parsed = new Date(summary.asOf);
+  if (isNaN(parsed.getTime())) {
+    return null;
+  }
+
+  const timezone = summary.timezone && summary.timezone.trim() ? summary.timezone : undefined;
+  return parsed.toLocaleString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    month: "short",
+    day: "numeric",
+    ...(timezone ? { timeZone: timezone } : {}),
+  });
+};
+
 export default function HomePage({
   isAuthenticated,
   authUser = null,
@@ -159,24 +179,32 @@ export default function HomePage({
           value: "—",
           delta: "Run your first optimization",
           tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
         },
         {
-          label: "Total Active Clients",
+          label: "Active clients",
           value: "—",
           delta: "All time",
           tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/clients",
         },
         {
           label: "Scheduled visits",
           value: "—",
           delta: "Today",
           tone: "text-blue-600",
+          trend: "No baseline yet",
+          href: "/route-planner",
         },
         {
           label: "Drive hours",
           value: "—",
           delta: "Last 7 days",
           tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
         },
       ];
     }
@@ -187,12 +215,18 @@ export default function HomePage({
         value: String(dashboardSummary.kpis.routesToday),
         delta: `${dashboardSummary.kpis.visitsScheduledToday} visits planned`,
         tone: "text-blue-600",
+        trend:
+          dashboardSummary.kpis.routesToday > 0 ? "Live routing activity" : "No routes run yet",
+        href: "/route-planner",
       },
       {
-        label: "Total Active Clients",
+        label: "Active clients",
         value: String(dashboardSummary.kpis.activePatientCount),
         delta: "All time",
         tone: "text-blue-600",
+        trend:
+          dashboardSummary.kpis.activePatientCount > 0 ? "Roster in use" : "No active clients yet",
+        href: "/clients",
       },
       {
         label: "Deleted clients",
@@ -202,12 +236,22 @@ export default function HomePage({
           dashboardSummary.kpis.deletedClientsLast30Days > 0
             ? "text-amber-600"
             : "text-emerald-600",
+        trend:
+          dashboardSummary.kpis.deletedClientsLast30Days > 0
+            ? "Review retention patterns"
+            : "No recent removals",
+        href: "/clients",
       },
       {
         label: "Drive hours",
         value: `${dashboardSummary.kpis.driveHoursLast7Days.toFixed(1)}h`,
         delta: "Last 7 days",
         tone: "text-emerald-600",
+        trend:
+          dashboardSummary.kpis.driveHoursLast7Days > 0
+            ? "Field time recorded"
+            : "No drive time yet",
+        href: "/route-planner",
       },
     ];
   }, [dashboardSummary]);
@@ -234,35 +278,69 @@ export default function HomePage({
       return [];
     }
 
-    const nudges: Array<{ id: string; message: string }> = [];
+    const setupMissing = authUser?.setupMissing ?? [];
+    const nudges: Array<{
+      id: string;
+      message: string;
+      rationale: string;
+      action: "setup" | "settings";
+    }> = [];
 
-    if (!authUser?.homeAddress) {
+    if (setupMissing.indexOf("displayName") >= 0) {
       nudges.push({
-        id: "home-address",
-        message: "Add a home address for default start and end points.",
+        id: "display-name",
+        message: "Add a display name to complete workspace setup.",
+        rationale: "Needed for profile identification across your workspace.",
+        action: "setup",
       });
     }
 
-    if (!authUser?.workingHours) {
+    if (setupMissing.indexOf("workingHours") >= 0) {
       nudges.push({
         id: "working-hours",
-        message: "Set up working hours so today's schedule appears automatically.",
+        message: "Set up working hours to complete workspace setup.",
+        rationale: "Needed to keep route feasibility and workday timing accurate.",
+        action: "setup",
+      });
+    }
+
+    if (setupMissing.indexOf("optimizationObjective") >= 0) {
+      nudges.push({
+        id: "optimization-objective",
+        message: "Choose route priority (time or distance) to complete setup.",
+        rationale: "Needed so route optimization uses your preferred planning strategy.",
+        action: "setup",
+      });
+    }
+
+    if (!authUser?.homeAddress) {
+      nudges.push({
+        id: "home-address-optional",
+        message: "Add a home address for default start and end points.",
+        rationale: "Needed so route optimization starts and ends from your base automatically.",
+        action: "settings",
       });
     }
 
     return nudges;
-  }, [authUser?.homeAddress, authUser?.workingHours, isAuthenticated]);
+  }, [authUser?.homeAddress, authUser?.setupMissing, isAuthenticated]);
+  const [dismissedNudgeIds, setDismissedNudgeIds] = useState<string[]>([]);
+  const visibleNudges = useMemo(
+    () => profileNudges.filter((nudge) => dismissedNudgeIds.indexOf(nudge.id) < 0),
+    [dismissedNudgeIds, profileNudges],
+  );
   const greetingName = resolveGreetingName(authUser?.displayName);
   const greetingPrefix = resolveGreetingPrefix();
   const todayHoursDisplay = resolveTodayHoursDisplay(authUser?.workingHours);
+  const lastUpdatedLabel = resolveLastUpdatedLabel(dashboardSummary);
 
   const renderAuthenticatedActions = () => (
     <>
-      <Link to="/clients" className={responsiveStyles.primaryButton}>
-        Go to Clients
-      </Link>
-      <Link to="/route-planner" className={responsiveStyles.secondaryButton}>
+      <Link to="/route-planner" className={responsiveStyles.primaryButton}>
         Open Route Planner
+      </Link>
+      <Link to="/clients" className={responsiveStyles.secondaryButton}>
+        Go to Clients
       </Link>
     </>
   );
@@ -287,7 +365,7 @@ export default function HomePage({
       <section className={responsiveStyles.dashboardHeroSection}>
         <div
           aria-hidden="true"
-          className="dashboard-grid-bg pointer-events-none absolute inset-0 opacity-70"
+          className="dashboard-grid-bg pointer-events-none absolute inset-0 opacity-35"
         />
         <div
           aria-hidden="true"
@@ -297,8 +375,10 @@ export default function HomePage({
           aria-hidden="true"
           className="pointer-events-none absolute -bottom-16 -left-24 h-48 w-48 rounded-full bg-orange-100/70 blur-2xl dark:bg-orange-900/20"
         />
-        <div className="relative max-w-2xl">
-          <p className={responsiveStyles.dashboardEyebrow}>Routefy Mission Control</p>
+        <div className="relative max-w-[48rem]">
+          <p className={`${responsiveStyles.dashboardEyebrow} opacity-85`}>
+            Routefy Mission Control
+          </p>
           <h1 className={responsiveStyles.dashboardHeroHeading}>
             {greetingPrefix}, {greetingName}
           </h1>
@@ -315,6 +395,51 @@ export default function HomePage({
           </div>
         </div>
       </section>
+
+      {visibleNudges.map((nudge) => (
+        <section key={nudge.id} className={responsiveStyles.dashboardNudgeCard}>
+          <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
+            <div className="min-w-0">
+              <p className="m-0 text-xs font-semibold uppercase tracking-[0.14em] text-amber-800 dark:text-amber-300">
+                Setup Priority
+              </p>
+              <p className="m-0 mt-1 text-sm font-semibold text-amber-900 dark:text-amber-200">
+                {nudge.message}
+              </p>
+              <p className="m-0 mt-1 text-sm text-amber-800/90 dark:text-amber-300/90">
+                {nudge.rationale}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                className={responsiveStyles.warningBannerButton}
+                onClick={() => {
+                  if (nudge.action === "setup") {
+                    navigate("/welcome-setup");
+                    return;
+                  }
+
+                  onOpenAccountSettings?.();
+                }}
+              >
+                {nudge.action === "setup" ? "Complete setup" : "Open Settings"}
+              </button>
+              <button
+                type="button"
+                className="rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                onClick={() =>
+                  setDismissedNudgeIds((current) =>
+                    current.indexOf(nudge.id) >= 0 ? current : [...current, nudge.id],
+                  )
+                }
+              >
+                Dismiss
+              </button>
+            </div>
+          </div>
+        </section>
+      ))}
 
       {isAuthenticated && (dashboardError || isDashboardLoading) && (
         <section
@@ -349,14 +474,26 @@ export default function HomePage({
       )}
 
       <section className={responsiveStyles.dashboardKpiGrid}>
-        {kpis.map((kpi) => (
-          <article key={kpi.label} className={responsiveStyles.dashboardKpiCard}>
-            <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
-            <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
-            <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
-          </article>
-        ))}
+        {kpis.map((kpi) => {
+          const to = isAuthenticated ? kpi.href : "/login";
+          return (
+            <Link key={kpi.label} to={to} className={`${responsiveStyles.dashboardKpiCard} group`}>
+              <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
+              <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
+              <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
+              <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                {kpi.trend}
+              </p>
+            </Link>
+          );
+        })}
       </section>
+
+      {lastUpdatedLabel && (
+        <p className="m-0 -mt-2 text-right text-xs font-medium text-slate-500 dark:text-slate-400">
+          Last updated: {lastUpdatedLabel}
+        </p>
+      )}
 
       {hasRouteDraft && (
         <section className={responsiveStyles.dashboardCard}>
@@ -382,21 +519,6 @@ export default function HomePage({
           </div>
         </section>
       )}
-
-      {profileNudges.map((nudge) => (
-        <section key={nudge.id} className={responsiveStyles.dashboardNudgeCard}>
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <p className={responsiveStyles.cardDescription}>⚠ {nudge.message}</p>
-            <button
-              type="button"
-              className={responsiveStyles.warningBannerButton}
-              onClick={() => onOpenAccountSettings?.()}
-            >
-              Open Settings
-            </button>
-          </div>
-        </section>
-      ))}
 
       <section className="dashboard-reveal grid gap-4 xl:grid-cols-2">
         <article className={responsiveStyles.dashboardCard}>

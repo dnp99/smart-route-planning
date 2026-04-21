@@ -302,6 +302,8 @@ describe("/api/auth/signup route", () => {
         workingHours: null,
         breakGapThresholdMinutes: null,
         optimizationObjective: null,
+        setupMissing: ["workingHours", "optimizationObjective"],
+        isSetupComplete: false,
       },
     });
     expect(response.headers.get("set-cookie")).toContain("careflow_session=session-2");

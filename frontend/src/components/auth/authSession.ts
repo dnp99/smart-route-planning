@@ -176,7 +176,16 @@ const parseAuthUser = (value: unknown): AuthUser | null => {
       (parsed.optimizationObjective !== undefined &&
         parsed.optimizationObjective !== null &&
         parsed.optimizationObjective !== "time" &&
-        parsed.optimizationObjective !== "distance")
+        parsed.optimizationObjective !== "distance") ||
+      (parsed.isSetupComplete !== undefined && typeof parsed.isSetupComplete !== "boolean") ||
+      (parsed.setupMissing !== undefined &&
+        (!Array.isArray(parsed.setupMissing) ||
+          !parsed.setupMissing.every(
+            (entry) =>
+              entry === "displayName" ||
+              entry === "workingHours" ||
+              entry === "optimizationObjective",
+          )))
     ) {
       return null;
     }
@@ -189,6 +198,8 @@ const parseAuthUser = (value: unknown): AuthUser | null => {
       workingHours: parsed.workingHours ?? null,
       breakGapThresholdMinutes: parsed.breakGapThresholdMinutes ?? null,
       optimizationObjective: parsed.optimizationObjective ?? null,
+      isSetupComplete: parsed.isSetupComplete ?? false,
+      setupMissing: parsed.setupMissing ?? [],
     };
   } catch {
     return null;

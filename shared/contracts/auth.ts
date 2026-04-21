@@ -22,6 +22,11 @@ export type WeeklyWorkingHours = {
   sunday?: DaySchedule;
 };
 
+export type SetupMissingField =
+  | "displayName"
+  | "workingHours"
+  | "optimizationObjective";
+
 export type AuthUser = {
   id: string;
   email: string;
@@ -30,6 +35,8 @@ export type AuthUser = {
   workingHours?: WeeklyWorkingHours | null;
   breakGapThresholdMinutes?: number | null;
   optimizationObjective?: "time" | "distance" | null;
+  isSetupComplete?: boolean;
+  setupMissing?: SetupMissingField[];
 };
 
 export type LoginRequest = {
@@ -94,8 +101,78 @@ export const isAuthUser = (value: unknown): value is AuthUser => {
     return false;
   }
 
+  if (value.isSetupComplete !== undefined && typeof value.isSetupComplete !== "boolean") {
+    return false;
+  }
+
+  if (
+    value.setupMissing !== undefined &&
+    (!Array.isArray(value.setupMissing) ||
+      !value.setupMissing.every(
+        (entry) =>
+          entry === "displayName" ||
+          entry === "workingHours" ||
+          entry === "optimizationObjective",
+      ))
+  ) {
+    return false;
+  }
+
   return true;
 };
+
+const hasAtLeastOneEnabledWorkingDay = (
+  workingHours: WeeklyWorkingHours | null | undefined,
+): boolean => {
+  if (!workingHours || typeof workingHours !== "object") {
+    return false;
+  }
+
+  const dayKeys = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ] as const;
+
+  return dayKeys.some((dayKey) => {
+    const day = workingHours[dayKey];
+    return Boolean(day?.enabled);
+  });
+};
+
+export const resolveSetupMissingFields = (user: {
+  displayName?: string | null;
+  homeAddress?: string | null;
+  workingHours?: WeeklyWorkingHours | null;
+  optimizationObjective?: "time" | "distance" | null | string;
+}): SetupMissingField[] => {
+  const missing: SetupMissingField[] = [];
+
+  if (typeof user.displayName !== "string" || user.displayName.trim().length === 0) {
+    missing.push("displayName");
+  }
+
+  if (!hasAtLeastOneEnabledWorkingDay(user.workingHours ?? null)) {
+    missing.push("workingHours");
+  }
+
+  if (user.optimizationObjective !== "time" && user.optimizationObjective !== "distance") {
+    missing.push("optimizationObjective");
+  }
+
+  return missing;
+};
+
+export const resolveIsSetupComplete = (user: {
+  displayName?: string | null;
+  homeAddress?: string | null;
+  workingHours?: WeeklyWorkingHours | null;
+  optimizationObjective?: "time" | "distance" | null | string;
+}) => resolveSetupMissingFields(user).length === 0;
 
 export const isLoginRequest = (value: unknown): value is LoginRequest => {
   if (!isObject(value)) {

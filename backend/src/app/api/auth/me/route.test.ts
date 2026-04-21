@@ -174,6 +174,8 @@ describe("/api/auth/me route", () => {
         workingHours: null,
         breakGapThresholdMinutes: null,
         optimizationObjective: null,
+        setupMissing: ["workingHours", "optimizationObjective"],
+        isSetupComplete: false,
       },
     });
   });
@@ -221,6 +223,8 @@ describe("/api/auth/me route", () => {
         workingHours: null,
         breakGapThresholdMinutes: null,
         optimizationObjective: null,
+        setupMissing: ["workingHours", "optimizationObjective"],
+        isSetupComplete: false,
       },
     });
   });
@@ -265,6 +269,8 @@ describe("/api/auth/me route", () => {
         workingHours: null,
         breakGapThresholdMinutes: null,
         optimizationObjective: null,
+        setupMissing: ["workingHours", "optimizationObjective"],
+        isSetupComplete: false,
       },
     });
   });

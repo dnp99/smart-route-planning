@@ -10,6 +10,7 @@ import HomePage from "../home/HomePage";
 import LandingPage from "../LandingPage";
 import LegalDocumentModal from "../modals/LegalDocumentModal";
 import { responsiveStyles } from "../responsiveStyles";
+import WelcomeSetupPage from "../../features/onboarding/ui/WelcomeSetupPage";
 
 export default function AppRoutes({
   isAuthenticated,
@@ -101,9 +102,26 @@ export default function AppRoutes({
   );
 
   const renderProtectedRoute = (element) => {
-    if (isAuthenticated) return element;
+    if (!isAuthenticated) {
+      if (isBootstrapping) return renderBootstrappingFallback();
+      return <Navigate to="/login" replace />;
+    }
+    return element;
+  };
+
+  const renderLandingRoute = () => {
+    if (!isAuthenticated) {
+      return (
+        <LandingPage
+          isAuthenticated={isAuthenticated}
+          authUser={authUser}
+          onOpenAccountSettings={onOpenAccountSettings}
+        />
+      );
+    }
+
     if (isBootstrapping) return renderBootstrappingFallback();
-    return <Navigate to="/login" replace />;
+    return <Navigate to={defaultProtectedPath} replace />;
   };
 
   return (
@@ -111,21 +129,15 @@ export default function AppRoutes({
       <Routes location={backgroundLocation || location}>
         <Route
           path="/"
-          element={
-            isAuthenticated ? (
-              <Navigate to="/home" replace />
-            ) : (
-              <LandingPage
-                isAuthenticated={isAuthenticated}
-                authUser={authUser}
-                onOpenAccountSettings={onOpenAccountSettings}
-              />
-            )
-          }
+          element={renderLandingRoute()}
         />
         <Route
           path="/login"
-          element={isAuthenticated ? <Navigate to="/home" replace /> : <LoginPage />}
+          element={isAuthenticated ? <Navigate to={defaultProtectedPath} replace /> : <LoginPage />}
+        />
+        <Route
+          path="/welcome-setup"
+          element={renderProtectedRoute(<WelcomeSetupPage authUser={authUser} />)}
         />
         <Route path="/clients" element={renderProtectedRoute(<PatientsPage />)} />
         <Route path="/patients" element={<Navigate to="/clients" replace />} />

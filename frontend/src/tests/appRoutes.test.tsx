@@ -108,6 +108,8 @@ beforeEach(() => {
       email: "nurse@example.com",
       displayName: "Nurse One",
       homeAddress: null,
+      isSetupComplete: true,
+      setupMissing: [],
     },
   });
   fetchLegalNoticeStatusMock.mockResolvedValue({
@@ -122,6 +124,8 @@ beforeEach(() => {
       email: "nurse@example.com",
       displayName: "Nurse One",
       homeAddress: "1 Main Street, Toronto, ON",
+      isSetupComplete: true,
+      setupMissing: [],
     },
   });
 });
@@ -138,6 +142,8 @@ const seedAuthenticatedSession = (displayName = "Nurse One", homeAddress: string
     email: "nurse@example.com",
     displayName,
     homeAddress,
+    isSetupComplete: true,
+    setupMissing: [],
   });
 };
 
@@ -453,6 +459,8 @@ describe("App routing", () => {
         email: "nurse@example.com",
         displayName: "Nurse One",
         homeAddress: "3361 Ingram Road, Mississauga, ON",
+        isSetupComplete: true,
+        setupMissing: [],
       },
     });
     seedAuthenticatedSession("Nurse One", "3361 Ingram Road, Mississauga, ON");
@@ -483,10 +491,12 @@ describe("App routing", () => {
         id: "nurse-1",
         email: "nurse@example.com",
         displayName: "nUrSe oNe",
-        homeAddress: null,
+        homeAddress: "3361 Ingram Road, Mississauga, ON",
+        isSetupComplete: true,
+        setupMissing: [],
       },
     });
-    seedAuthenticatedSession("nUrSe oNe");
+    seedAuthenticatedSession("nUrSe oNe", "3361 Ingram Road, Mississauga, ON");
 
     render(
       <MemoryRouter initialEntries={["/clients"]}>

@@ -101,6 +101,10 @@ export const responsiveStyles = {
     "text-xs font-medium text-blue-600 underline-offset-2 transition hover:underline dark:text-blue-300",
   authHelperButton:
     "text-xs font-medium text-blue-600 underline-offset-2 transition hover:underline dark:text-blue-300",
+  onboardingSetupViewport:
+    "mx-auto flex min-h-[calc(100vh-16rem)] w-full max-w-5xl items-start py-6 sm:py-10",
+  onboardingSetupCard:
+    "w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6",
 
   // ── Input ─────────────────────────────────────────────────────────────────
   // bg-white · border-slate-200 · hover:border-slate-300 · focus:ring-blue-100
@@ -355,17 +359,17 @@ export const responsiveStyles = {
   dashboardCard:
     "dashboard-reveal rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
   dashboardHeroSection:
-    "dashboard-surface dashboard-reveal relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-7",
+    "dashboard-surface dashboard-reveal relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6",
   dashboardEyebrow:
-    "m-0 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300",
+    "m-0 text-[11px] font-medium uppercase tracking-[0.18em] text-blue-700 dark:text-blue-300",
   dashboardHeroHeading:
-    "m-0 mt-3 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-4xl",
+    "m-0 mt-2 text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-[2.1rem]",
   dashboardHeroMeta: "m-0 mt-2 text-sm font-medium text-slate-500 dark:text-slate-400 sm:text-base",
   dashboardHeroBody: "m-0 mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300 sm:text-base",
   dashboardHeroActions: "mt-6 flex flex-wrap gap-2.5",
   dashboardKpiGrid: "dashboard-reveal grid gap-3 sm:grid-cols-2 xl:grid-cols-4",
   dashboardKpiCard:
-    "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+    "block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-5",
   dashboardKpiLabel:
     "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
   dashboardKpiValue: "m-0 mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100",

@@ -75,6 +75,7 @@ export default function AccountSettingsModal({
   authUser,
   onHomeAddressSaved,
 }: AccountSettingsModalProps) {
+  const [showBreakReminderInfo, setShowBreakReminderInfo] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<"profile" | "working-hours" | "route">(
     "profile",
   );
@@ -472,16 +473,33 @@ export default function AccountSettingsModal({
                   onSubmit={handleScheduleSubmit}
                 >
                   <div className="grid gap-1">
-                    <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      <input
-                        type="checkbox"
-                        checked={breakGapEnabled}
-                        onChange={(e) => setBreakGapEnabled(e.target.checked)}
-                        disabled={scheduleControlsDisabled}
-                        className={responsiveStyles.scheduleEditorToggle}
-                      />
-                      Break reminders
-                    </label>
+                    <div className="inline-flex items-center gap-2">
+                      <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        <input
+                          type="checkbox"
+                          checked={breakGapEnabled}
+                          onChange={(e) => setBreakGapEnabled(e.target.checked)}
+                          disabled={scheduleControlsDisabled}
+                          className={responsiveStyles.scheduleEditorToggle}
+                        />
+                        Break reminders
+                      </label>
+                      <button
+                        type="button"
+                        aria-label="Show break reminder info"
+                        aria-expanded={showBreakReminderInfo}
+                        onClick={() => setShowBreakReminderInfo((current) => !current)}
+                        className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30"
+                      >
+                        i
+                      </button>
+                    </div>
+                    {showBreakReminderInfo && (
+                      <p className="m-0 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm font-normal text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+                        Break reminders suggest a break card when there is at least this many idle
+                        minutes between visits.
+                      </p>
+                    )}
                     {breakGapEnabled && (
                       <div className="flex items-center gap-1.5 pl-6 text-sm text-slate-600 dark:text-slate-400">
                         <span>Suggest break at gaps ≥</span>
