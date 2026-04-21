@@ -156,9 +156,7 @@ function App() {
       })
       .catch((error) => {
         setLegalNoticeError(
-          error instanceof Error
-            ? error.message
-            : "Unable to save legal notice acknowledgement.",
+          error instanceof Error ? error.message : "Unable to save legal notice acknowledgement.",
         );
       })
       .finally(() => {
@@ -195,7 +193,8 @@ function App() {
           clearAuthSession();
         }}
       />
-
+      {/*Tabs: Main content area with tab navigation for authenticated users and route outlet for
+      page content * */}
       <div className={responsiveStyles.contentWrapper}>
         {isAuthenticated && (
           <nav className={responsiveStyles.tabNav}>
@@ -234,7 +233,7 @@ function App() {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="1.75"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     aria-hidden="true"
@@ -245,9 +244,10 @@ function App() {
                         : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
                     ].join(" ")}
                   >
-                    <path d="M4.8 2.3A.3.3 0 1 0 5 2H4a2 2 0 0 0-2 2v5a6 6 0 0 0 6 6 6 6 0 0 0 6-6V4a2 2 0 0 0-2-2h-1a.2.2 0 1 0 .3.3" />
-                    <path d="M8 15v1a6 6 0 0 0 6 6v0a6 6 0 0 0 6-6v-4" />
-                    <circle cx="20" cy="10" r="2" />
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
                   Clients
                 </>
@@ -325,9 +325,7 @@ function App() {
           />
         </Routes>
       </div>
-
       <AppFooter />
-
       <AccountSettingsModal
         isOpen={isAccountSettingsOpen}
         onClose={() => setIsAccountSettingsOpen(false)}
@@ -337,14 +335,12 @@ function App() {
           setStoredAuthUser(updatedUser);
         }}
       />
-
       <LegalAcknowledgementModal
         isOpen={isAuthenticated && isLegalNoticeRequired}
         isSubmitting={isLegalNoticeSubmitting}
         error={legalNoticeError}
         onAgree={handleLegalNoticeAgree}
       />
-
       <ScrollToTopButton />
     </div>
   );
