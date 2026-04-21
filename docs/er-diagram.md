@@ -86,4 +86,6 @@ nurses  ──< audit_events  (nullable — events outlive deleted nurses)
 - `route_optimization_tasks` carries a direct `nurse_id` FK in addition to `run_id` so the dashboard can query a nurse's task history without joining through runs.
 - `patients` and `nurses` use soft deletion (`is_active`) rather than hard deletes to preserve route history referential integrity.
 - `audit_events.actor_nurse_id` uses `ON DELETE SET NULL` so audit records are never lost when a nurse account is removed.
+- `auth_sessions` stores both raw `user_agent` and derived `device_type` for session context/auditing.
+- `patient_visit_windows` enforces unique window ranges per patient on `(patient_id, start_time, end_time)`.
 - All other FK relationships use `ON DELETE CASCADE`.

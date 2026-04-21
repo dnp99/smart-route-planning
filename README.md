@@ -6,6 +6,7 @@ Routefy is a nurse-focused route planning app with a React frontend and Next.js 
 
 - Requires authenticated access for client and route-planner workflows.
 - Manages client records and visit windows.
+- Prevents duplicate client visit windows (same start/end pair) at API and DB layers.
 - Optimizes daily visits with time windows, travel distance/time, and visit duration; planning date defaults to tomorrow and is configurable per session.
 - Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
@@ -30,6 +31,9 @@ Routefy is a nurse-focused route planning app with a React frontend and Next.js 
 - `backend/`: Next.js (App Router) + TypeScript
 - `shared/`: shared contracts and validators
 - Database: Postgres via Drizzle migrations
+
+Recent schema hardening:
+- Migration `0015_true_chat.sql` removes legacy duplicate rows in `patient_visit_windows` and adds a unique index on `(patient_id, start_time, end_time)`.
 
 ## Core APIs
 

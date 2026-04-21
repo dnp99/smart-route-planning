@@ -196,10 +196,12 @@ Authentication behavior:
 - `POST /api/patients`
   - Requires authenticated session
   - Creates a patient for the authenticated nurse
+  - Rejects duplicate visit windows in payload (same `startTime` + `endTime`)
   - Returns `201` with created patient JSON
 - `PATCH /api/patients/:id`
   - Requires authenticated session
   - Partially updates a patient owned by the authenticated nurse
+  - Rejects duplicate visit windows in payload (same `startTime` + `endTime`)
   - If `address` changes and `googlePlaceId` is omitted, clears `googlePlaceId` to prevent stale mismatches
   - Returns updated patient JSON
 - `DELETE /api/patients/:id`
@@ -247,6 +249,7 @@ Authentication behavior:
 - Migration `0011_spicy_ben_parker.sql` adds legal acknowledgement fields to `nurses`.
 - Migration `0012_cold_serpent_society.sql` adds `auth_sessions.device_type`.
 - Migration `0014_curvy_eternals.sql` adds cleanup indexes on `auth_sessions.expires_at` and `auth_sessions.revoked_at`.
+- Migration `0015_true_chat.sql` de-duplicates existing `patient_visit_windows` rows and enforces unique windows per patient via `(patient_id, start_time, end_time)`.
 
 ## Optimization performance caches
 
