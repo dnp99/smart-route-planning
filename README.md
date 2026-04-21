@@ -6,6 +6,7 @@ Routefy is a nurse-focused route planning app with a React frontend and Next.js 
 
 - Requires authenticated access for client and route-planner workflows.
 - Manages client records and visit windows.
+- Prevents duplicate client visit windows (same start/end pair) at API and DB layers.
 - Optimizes daily visits with time windows, travel distance/time, and visit duration; planning date defaults to tomorrow and is configurable per session.
 - Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
@@ -30,6 +31,9 @@ Routefy is a nurse-focused route planning app with a React frontend and Next.js 
 - `backend/`: Next.js (App Router) + TypeScript
 - `shared/`: shared contracts and validators
 - Database: Postgres via Drizzle migrations
+
+Recent schema hardening:
+- Migration `0015_true_chat.sql` removes legacy duplicate rows in `patient_visit_windows` and adds a unique index on `(patient_id, start_time, end_time)`.
 
 ## Core APIs
 
@@ -133,75 +137,6 @@ Frontend still supports rollback routing:
 
 `v3` and `v2` keep the same request/response contract, so UI render paths remain compatible.
 For production parity, set `VITE_ENABLE_ILS_OPTIMIZER=true` in deployed frontend environments.
-
-## Route optimizer scheduling logic (v3 production)
-
-`POST /api/optimize-route/v3` runs in two stages:
-
-1. Greedy seeded construction (depth 2, beam width 8) with window-aware priority tiers.
-2. Deterministic seeded ILS refinement (request-id-seeded perturbations) under fixed-window safety guards.
-
-### Step 1 — Candidate pool selection
-
-At each step, the algorithm selects from a prioritised pool:
-
-```text
-Any FIXED patients remaining?
-├── YES
-│   ├── Any FIXED already late?
-│   │   └── Pool: late fixed patients only
-│   └── None late
-│       └── Pool: near-due fixed patients only
-│           - time mode: fixed with wait <= 30 min
-│           - distance mode: fixed with wait <= 45 min
-│       (if none are near-due, fall through to flexible tiers)
-└── NO
-    ├── Any windowed FLEXIBLE already late?
-    │   └── Pool: late flexible patients only
-    ├── Any windowed FLEXIBLE within 90 min of deadline?
-    │   └── Pool: urgent flexible patients, sorted tightest deadline first (EDF)
-    ├── Any remaining windowed FLEXIBLE?
-    │   └── Pool: all remaining windowed flexible patients
-    └── Otherwise
-        └── Pool: all remaining patients (including no-window flexible)
-```
-
-### Step 2 — Seed scoring (depth-2 lookahead)
-
-Within the pool, each candidate is scored across 5 dimensions (lower = better):
-
-| Priority | Dimension | What it measures |
-| --- | --- | --- |
-| 1 | `fixedLateCount` | Number of fixed patients that end up late |
-| 2 | `fixedLateSeconds` | Total lateness for fixed patients |
-| 3 | `totalLateSeconds` | Total lateness for all patients |
-| 4 | `totalWaitSeconds` | Idle wait time at stops |
-| 5 | `totalTravelSeconds` | Total drive time (distance proxy) |
-
-Priorities 4–5 are objective-dependent: `"distance"` (default) minimises wait then travel separately; `"time"` minimises their sum.
-
-The beam search evaluates 2 steps ahead across the top 8 candidates, so lateness from future steps folds back into the current decision.
-
-### Step 3 — Gap filler / sequence fill
-
-If the selected anchor has a large idle gap before service start, the optimizer tries to fill that gap with feasible nearby visits (single filler or planned filler sequence), while preserving anchor feasibility.
-
-### Step 4 — Deterministic ILS refinement
-
-After the greedy seed is built, v3 runs deterministic ILS local search:
-
-- perturbations are reproducible per `requestId` seed;
-- accepted moves must not worsen fixed-window safety;
-- objective-specific ranking is applied only after fixed-window/lateness safety precedence.
-
-### Key properties
-
-- Fixed-window safety is strict: accepted moves cannot worsen fixed late-count, fixed late-seconds, or fixed slack consumption.
-- Distance mode prioritizes lower travel, with bounded idle-gap tradeoffs to reduce extreme idle blocks.
-- Distance mode has a fixed-safety guardrail: if the distance solution is strictly worse than the time benchmark on fixed-window safety, v3 falls back to the time benchmark.
-- Time mode prioritizes lower elapsed time (`wait + travel`) with bounded idle smoothing; if a less-driving candidate finishes earlier and is equally safe, time mode adopts it.
-- Flexible patients within 90 min of deadline are elevated to urgent EDF ordering to prevent avoidable lateness.
-- Nearby clustering is enforced as a scheduling preference: visits within `0.5 km` are scored to be consecutive unless doing so creates a fixed-window conflict.
 
 ## Additional docs
 

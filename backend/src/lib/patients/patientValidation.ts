@@ -115,7 +115,22 @@ const parseVisitWindows = (value: unknown, fieldName: string): PatientVisitWindo
     throw new HttpError(400, `${fieldName} must be an array.`);
   }
 
-  return value.map((entry, index) => parseVisitWindow(entry, index));
+  const parsedWindows = value.map((entry, index) => parseVisitWindow(entry, index));
+  const seenWindowRanges = new Set<string>();
+
+  for (const window of parsedWindows) {
+    const windowKey = `${window.startTime}-${window.endTime}`;
+    if (seenWindowRanges.has(windowKey)) {
+      throw new HttpError(
+        400,
+        `${fieldName} contains duplicate time windows. Each start/end pair must be unique.`,
+      );
+    }
+
+    seenWindowRanges.add(windowKey);
+  }
+
+  return parsedWindows;
 };
 
 export const validateCreatePatientPayload = (payload: unknown): CreatePatientRequest => {

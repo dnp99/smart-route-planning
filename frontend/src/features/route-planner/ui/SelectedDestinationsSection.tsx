@@ -132,11 +132,11 @@ export const SelectedDestinationsSection = ({
                     className="mb-0.5 flex w-full items-center gap-2 rounded-lg px-1 py-1 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
                   >
                     <span className={responsiveStyles.destinationIndex}>{groupIndex + 1}.</span>
-                    <p className="m-0 truncate font-semibold text-slate-900 dark:text-slate-100">
+                    <p className="m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                       {group.patientName}
                     </p>
                     <span className={responsiveStyles.countPill}>{group.destinations.length}</span>
-                    <span className="ml-auto text-xs text-slate-500 dark:text-slate-400">
+                    <span className="ml-auto text-sm text-slate-500 dark:text-slate-400">
                       {group.destinations.length} windows
                     </span>
                     <svg

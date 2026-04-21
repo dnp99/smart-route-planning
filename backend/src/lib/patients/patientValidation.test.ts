@@ -259,4 +259,45 @@ describe("patientValidation", () => {
       },
     ]);
   });
+
+  it("rejects duplicate time-window ranges in create payloads", () => {
+    expect(() =>
+      validateCreatePatientPayload({
+        firstName: "Jane",
+        lastName: "Doe",
+        address: "123 Main St",
+        visitWindows: [
+          {
+            startTime: "09:00",
+            endTime: "10:00",
+            visitTimeType: "fixed",
+          },
+          {
+            startTime: "09:00",
+            endTime: "10:00",
+            visitTimeType: "flexible",
+          },
+        ],
+      }),
+    ).toThrow("visitWindows contains duplicate time windows. Each start/end pair must be unique.");
+  });
+
+  it("rejects duplicate time-window ranges in update payloads", () => {
+    expect(() =>
+      validateUpdatePatientPayload({
+        visitWindows: [
+          {
+            startTime: "08:30",
+            endTime: "09:00",
+            visitTimeType: "fixed",
+          },
+          {
+            startTime: "08:30",
+            endTime: "09:00",
+            visitTimeType: "fixed",
+          },
+        ],
+      }),
+    ).toThrow("visitWindows contains duplicate time windows. Each start/end pair must be unique.");
+  });
 });
