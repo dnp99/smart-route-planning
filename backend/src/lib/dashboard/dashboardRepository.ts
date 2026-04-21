@@ -491,6 +491,10 @@ export const getDashboardSummaryForNurse = async ({
   );
 
   const scheduledVisits7d = recentRuns.reduce((total, run) => total + run.scheduledVisitCount, 0);
+  const totalDuration7dSeconds = recentRuns.reduce(
+    (total, run) => total + run.totalDurationSeconds,
+    0,
+  );
   const onTimeVisits7d = recentRuns.reduce((total, run) => total + run.onTimeVisitCount, 0);
   const onTimeRatePercent7d =
     scheduledVisits7d > 0 ? Math.round((onTimeVisits7d / scheduledVisits7d) * 100) : null;
@@ -509,6 +513,18 @@ export const getDashboardSummaryForNurse = async ({
     .where(and(eq(patients.nurseId, nurseId), eq(patients.isActive, true)));
   const activePatientCount = activePatientRow?.count ?? 0;
 
+  const [deletedPatientsRow] = await getDb()
+    .select({ count: sql<number>`count(*)::int` })
+    .from(patients)
+    .where(
+      and(
+        eq(patients.nurseId, nurseId),
+        eq(patients.isActive, false),
+        gte(patients.updatedAt, new Date(now.getTime() - 30 * DAY_MS)),
+      ),
+    );
+  const deletedClientsLast30Days = deletedPatientsRow?.count ?? 0;
+
   return {
     asOf: now.toISOString(),
     timezone,
@@ -516,8 +532,8 @@ export const getDashboardSummaryForNurse = async ({
       routesToday: todayRuns.length,
       visitsScheduledToday: scheduledVisitsToday,
       onTimeRatePercent7d,
-      unscheduledVisitsToday,
-      driveHoursToday: roundToOneDecimal(totalDurationTodaySeconds / 3600),
+      deletedClientsLast30Days,
+      driveHoursLast7Days: roundToOneDecimal(totalDuration7dSeconds / 3600),
       activePatientCount,
     },
     alerts: buildAlerts({

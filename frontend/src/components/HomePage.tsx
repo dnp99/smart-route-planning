@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import type {
   AuthUser,
-  DashboardAlert,
   DashboardBusiestDay,
   DashboardPatientRisk,
   DashboardSummaryResponse,
@@ -29,24 +28,6 @@ const EMPTY_TREND: DashboardTrendPoint[] = [
   { date: "", label: "Sat", onTimeRatePercent: 0 },
   { date: "", label: "Sun", onTimeRatePercent: 0 },
 ];
-
-const toAlertLabel = (level: DashboardAlert["level"]) => {
-  if (level === "action_needed") return "Action needed";
-  if (level === "at_risk") return "At risk";
-  return "Heads up";
-};
-
-const toAlertTone = (level: DashboardAlert["level"]) => {
-  if (level === "action_needed") {
-    return "text-rose-600 dark:text-rose-300";
-  }
-
-  if (level === "at_risk") {
-    return "text-amber-600 dark:text-amber-300";
-  }
-
-  return "text-sky-600 dark:text-sky-300";
-};
 
 const toStopStatusLabel = (status: DashboardUpcomingStop["status"]) => {
   if (status === "at_risk") return "At risk";
@@ -190,7 +171,7 @@ export default function HomePage({
         {
           label: "Drive hours",
           value: "—",
-          delta: "Today",
+          delta: "Last 7 days",
           tone: "text-slate-500",
         },
       ];
@@ -210,57 +191,22 @@ export default function HomePage({
         tone: "text-blue-600",
       },
       {
-        label: "Unscheduled visits",
-        value: String(dashboardSummary.kpis.unscheduledVisitsToday),
-        delta: "Today",
+        label: "Deleted clients",
+        value: String(dashboardSummary.kpis.deletedClientsLast30Days),
+        delta: "Last 30 days",
         tone:
-          dashboardSummary.kpis.unscheduledVisitsToday > 0 ? "text-amber-600" : "text-emerald-600",
+          dashboardSummary.kpis.deletedClientsLast30Days > 0
+            ? "text-amber-600"
+            : "text-emerald-600",
       },
       {
         label: "Drive hours",
-        value: `${dashboardSummary.kpis.driveHoursToday.toFixed(1)}h`,
-        delta: "Today",
+        value: `${dashboardSummary.kpis.driveHoursLast7Days.toFixed(1)}h`,
+        delta: "Last 7 days",
         tone: "text-emerald-600",
       },
     ];
   }, [dashboardSummary]);
-
-  const alerts = useMemo(() => {
-    const nextAlerts = dashboardSummary?.alerts ?? [];
-
-    if (dashboardError && !dashboardSummary) {
-      return [
-        {
-          title: "Dashboard unavailable",
-          detail: dashboardError,
-          level: "heads_up",
-        } satisfies DashboardAlert,
-      ];
-    }
-
-    if (dashboardError && dashboardSummary) {
-      return [
-        {
-          title: "Dashboard refresh failed",
-          detail: `Showing your last loaded snapshot. ${dashboardError}`,
-          level: "heads_up",
-        } satisfies DashboardAlert,
-        ...nextAlerts,
-      ].slice(0, 3);
-    }
-
-    if (nextAlerts.length === 0) {
-      return [
-        {
-          title: "No route alerts",
-          detail: "Optimize a route to generate actionable alerts.",
-          level: "heads_up",
-        } satisfies DashboardAlert,
-      ];
-    }
-
-    return nextAlerts;
-  }, [dashboardError, dashboardSummary]);
 
   const upcomingStops = dashboardSummary?.upcomingStops ?? [];
   const trendBars =
@@ -519,26 +465,6 @@ export default function HomePage({
             </ul>
           )}
         </article>
-      </section>
-
-      <section className={responsiveStyles.dashboardCard}>
-        <h2 className={responsiveStyles.cardTitle}>Route Alerts</h2>
-        <ul className="m-0 mt-4 list-none space-y-3 p-0">
-          {alerts.map((alert) => (
-            <li
-              key={`${alert.title}-${alert.detail}`}
-              className={responsiveStyles.dashboardAlertItem}
-            >
-              <p className={responsiveStyles.cardTitle}>{alert.title}</p>
-              <p className={responsiveStyles.cardDescription}>{alert.detail}</p>
-              <p
-                className={`${responsiveStyles.dashboardKpiDelta} uppercase tracking-wide ${toAlertTone(alert.level)}`}
-              >
-                {toAlertLabel(alert.level)}
-              </p>
-            </li>
-          ))}
-        </ul>
       </section>
 
       <section className="dashboard-reveal grid gap-4 xl:grid-cols-2">

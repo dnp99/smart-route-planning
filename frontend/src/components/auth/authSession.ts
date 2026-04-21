@@ -6,8 +6,10 @@ const PERSISTED_AUTH_USER_KEY = "careflow.auth-user.v1";
 let authBootstrapInFlight = false;
 let authBootstrapPromise: Promise<void> | null = null;
 let resolveAuthBootstrap: (() => void) | null = null;
+let authBootstrapStartedAtMs: number | null = null;
 
 const AUTH_CHANGED_EVENT = "careflow-auth-changed";
+const AUTH_BOOTSTRAP_EVENT = "careflow-auth-bootstrap";
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
@@ -74,6 +76,25 @@ const emitAuthChanged = () => {
 };
 
 export const getAuthChangedEventName = () => AUTH_CHANGED_EVENT;
+export const getAuthBootstrapEventName = () => AUTH_BOOTSTRAP_EVENT;
+
+const emitAuthBootstrapEvent = (
+  phase: "started" | "completed" | "failed" | "timed_out",
+  metadata?: Record<string, unknown>,
+) => {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(AUTH_BOOTSTRAP_EVENT, {
+      detail: {
+        phase,
+        ...(metadata ?? {}),
+      },
+    }),
+  );
+};
 
 export const beginAuthBootstrap = () => {
   if (authBootstrapInFlight) {
@@ -81,6 +102,10 @@ export const beginAuthBootstrap = () => {
   }
 
   authBootstrapInFlight = true;
+  authBootstrapStartedAtMs = Date.now();
+  emitAuthBootstrapEvent("started", {
+    hasCachedUser: currentAuthUser !== null,
+  });
   authBootstrapPromise = new Promise<void>((resolve) => {
     resolveAuthBootstrap = resolve;
   });
@@ -91,11 +116,33 @@ export const completeAuthBootstrap = () => {
     return;
   }
 
+  const durationMs =
+    authBootstrapStartedAtMs === null ? null : Math.max(0, Date.now() - authBootstrapStartedAtMs);
   authBootstrapInFlight = false;
+  authBootstrapStartedAtMs = null;
   const resolve = resolveAuthBootstrap;
   authBootstrapPromise = null;
   resolveAuthBootstrap = null;
+  emitAuthBootstrapEvent("completed", { durationMs });
   resolve?.();
+};
+
+export const recordAuthBootstrapFailure = (error: unknown) => {
+  const durationMs =
+    authBootstrapStartedAtMs === null ? null : Math.max(0, Date.now() - authBootstrapStartedAtMs);
+  emitAuthBootstrapEvent("failed", {
+    durationMs,
+    message: error instanceof Error ? error.message : "Unknown auth bootstrap error.",
+  });
+};
+
+export const recordAuthBootstrapTimeout = (timeoutMs: number) => {
+  const durationMs =
+    authBootstrapStartedAtMs === null ? null : Math.max(0, Date.now() - authBootstrapStartedAtMs);
+  emitAuthBootstrapEvent("timed_out", {
+    durationMs,
+    timeoutMs,
+  });
 };
 
 export const waitForAuthBootstrap = async () => {

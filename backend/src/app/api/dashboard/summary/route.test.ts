@@ -38,8 +38,8 @@ describe("/api/dashboard/summary route", () => {
         routesToday: 3,
         visitsScheduledToday: 12,
         onTimeRatePercent7d: 92,
-        unscheduledVisitsToday: 1,
-        driveHoursToday: 7.5,
+        deletedClientsLast30Days: 1,
+        driveHoursLast7Days: 7.5,
         activePatientCount: 24,
       },
       alerts: [
