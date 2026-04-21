@@ -24,13 +24,14 @@ export const responsiveStyles = {
   // ── App shell (layout components) ─────────────────────────────────────────
   appShell:
     "flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white dark:bg-none dark:bg-slate-950",
-  appHeader: "sticky top-0 z-30 w-full bg-white/90 backdrop-blur-md dark:bg-slate-950/90",
+  appHeader:
+    "sticky top-0 z-30 w-full bg-[linear-gradient(270deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] backdrop-blur-md dark:bg-[linear-gradient(270deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
   appHeaderInner: "mx-auto flex w-full max-w-7xl items-center justify-between px-6",
-  appFooter: "w-full bg-transparent dark:bg-transparent",
-  appFooterInner:
-    "mx-auto flex w-full max-w-7xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-6 sm:py-4",
+  appFooter:
+    "w-full bg-[linear-gradient(90deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] dark:bg-[linear-gradient(90deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
+  appFooterInner: "mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4",
   contentWrapper: "mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6",
-  tabNav: "flex gap-6 border-b border-slate-200 dark:border-slate-800",
+  tabNav: "flex gap-6 border-b border-slate-200/50 dark:border-slate-800/50",
   // ── Account menu ──────────────────────────────────────────────────────────
   accountMenuButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-100 to-blue-50 text-sm font-bold uppercase tracking-[0.02em] text-blue-800 shadow-sm transition hover:from-blue-200 hover:to-blue-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-blue-700 dark:from-blue-900/70 dark:to-blue-950/60 dark:text-blue-100 dark:hover:from-blue-800 dark:hover:to-blue-900",
