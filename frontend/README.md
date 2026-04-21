@@ -15,6 +15,7 @@ This folder contains the Vite + React frontend for Routefy.
 - Persist only non-sensitive route-planner draft state in localStorage (IDs/order/flags/date/objective/UI step — no addresses or place IDs).
 - Keep quote/header workspace behavior consistent across auth sessions.
 - Require first-use legal acknowledgement via blocking modal (`I Agree`) and re-prompt when legal notice version changes.
+- Route authenticated users with incomplete setup to `/welcome-setup` and require profile, working hours, and route objective before standard app pages.
 - Present unified overflow action menus in client list rows.
 - Serve legal pages (Terms, Privacy, License, Trademark) at `/legal/*` routes.
 - Show policy reminders from info icons on Clients and Route Planner pages.
@@ -22,6 +23,7 @@ This folder contains the Vite + React frontend for Routefy.
 - Use Client/Clients wording in UI copy while keeping `/api/patients` endpoints and `patient*` contract fields for backend compatibility.
 - Use cookie-based auth (`credentials: "include"`) with no JWT/token storage in localStorage/sessionStorage.
 - Enforce PHI-safe handling: never persist PHI to browser storage, URL params, logs, analytics, or telemetry.
+- Treat onboarding data with the same PHI safeguards as the rest of the product (no PHI storage/logging/telemetry leakage).
 
 ## Local development
 
