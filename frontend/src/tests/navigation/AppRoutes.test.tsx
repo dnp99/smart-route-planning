@@ -44,6 +44,10 @@ vi.mock("../../components/legal/TrademarkPage", () => ({
   default: () => <h1>Trademark Page Mock</h1>,
 }));
 
+vi.mock("../../features/onboarding/ui/WelcomeSetupPage", () => ({
+  default: () => <h1>Welcome Setup Page Mock</h1>,
+}));
+
 const LocationProbe = () => {
   const location = useLocation();
   return <div data-testid="location-pathname">{location.pathname}</div>;
@@ -77,7 +81,12 @@ describe("AppRoutes", () => {
   it("redirects signed-in users from / to /home", async () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
-        <AppRoutes {...buildProps({ isAuthenticated: true, authUser: { id: "u1" } })} />
+        <AppRoutes
+          {...buildProps({
+            isAuthenticated: true,
+            authUser: { id: "u1", isSetupComplete: true },
+          })}
+        />
         <LocationProbe />
       </MemoryRouter>,
     );
@@ -86,10 +95,24 @@ describe("AppRoutes", () => {
     expect(screen.getByTestId("location-pathname").textContent).toBe("/home");
   });
 
+  it("redirects signed-in users with incomplete setup to /welcome-setup", async () => {
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <AppRoutes {...buildProps({ isAuthenticated: true, authUser: { id: "u1" } })} />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Welcome Setup Page Mock" })).toBeTruthy();
+    expect(screen.getByTestId("location-pathname").textContent).toBe("/welcome-setup");
+  });
+
   it("redirects /patients to /clients", async () => {
     render(
       <MemoryRouter initialEntries={["/patients"]}>
-        <AppRoutes {...buildProps({ isAuthenticated: true, authUser: { id: "u1" } })} />
+        <AppRoutes
+          {...buildProps({ isAuthenticated: true, authUser: { id: "u1", isSetupComplete: true } })}
+        />
         <LocationProbe />
       </MemoryRouter>,
     );
@@ -108,6 +131,7 @@ describe("AppRoutes", () => {
             isAuthenticated: true,
             authUser: {
               id: "u1",
+              isSetupComplete: true,
               homeAddress: "1 Main St",
               workingHours: { monday: { enabled: true, start: "08:00", end: "16:00" } },
               breakGapThresholdMinutes: 45,
@@ -131,6 +155,46 @@ describe("AppRoutes", () => {
     );
   });
 
+  it("redirects protected routes to setup page when setup is incomplete", async () => {
+    render(
+      <MemoryRouter initialEntries={["/clients"]}>
+        <AppRoutes
+          {...buildProps({
+            isAuthenticated: true,
+            authUser: {
+              id: "u1",
+              isSetupComplete: false,
+            },
+          })}
+        />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Welcome Setup Page Mock" })).toBeTruthy();
+    expect(screen.getByTestId("location-pathname").textContent).toBe("/welcome-setup");
+  });
+
+  it("redirects setup page back to /home when setup is complete", async () => {
+    render(
+      <MemoryRouter initialEntries={["/welcome-setup"]}>
+        <AppRoutes
+          {...buildProps({
+            isAuthenticated: true,
+            authUser: {
+              id: "u1",
+              isSetupComplete: true,
+            },
+          })}
+        />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole("heading", { name: "Home Page Mock" })).toBeTruthy();
+    expect(screen.getByTestId("location-pathname").textContent).toBe("/home");
+  });
+
   it("renders legal pages in modal when backgroundLocation is present", async () => {
     render(
       <MemoryRouter
@@ -141,7 +205,9 @@ describe("AppRoutes", () => {
           },
         ]}
       >
-        <AppRoutes {...buildProps({ isAuthenticated: true, authUser: { id: "u1" } })} />
+        <AppRoutes
+          {...buildProps({ isAuthenticated: true, authUser: { id: "u1", isSetupComplete: true } })}
+        />
       </MemoryRouter>,
     );
 
