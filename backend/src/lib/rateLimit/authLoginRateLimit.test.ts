@@ -3,6 +3,7 @@ import { __resetAuthLoginRateLimitForTests, enforceAuthLoginRateLimit } from "./
 
 describe("authLoginRateLimit", () => {
   const fetchMock = vi.fn();
+  const originalNodeEnv = process.env.NODE_ENV;
   const originalWindow = process.env.AUTH_LOGIN_RATE_LIMIT_WINDOW_MS;
   const originalMax = process.env.AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS;
   const originalLockout = process.env.AUTH_LOGIN_RATE_LIMIT_LOCKOUT_SECONDS;
@@ -61,6 +62,12 @@ describe("authLoginRateLimit", () => {
     } else {
       process.env.AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_TOKEN = originalUpstashToken;
     }
+
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
   });
 
   it("applies lockout with retry-after headers in memory mode", async () => {
@@ -94,6 +101,29 @@ describe("authLoginRateLimit", () => {
     ).rejects.toThrow("Too many login attempts. Please try again shortly.");
 
     expect(fetchMock).toHaveBeenCalled();
+  });
+
+  it("requires centralized limiter config in production", async () => {
+    process.env.NODE_ENV = "production";
+    delete process.env.AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_URL;
+    delete process.env.AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_TOKEN;
+
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.91" })).rejects.toMatchObject({
+      status: 503,
+      message: "Centralized auth rate limiting is required in production. Configure Upstash Redis.",
+    });
+  });
+
+  it("returns 503 in production when centralized limiter is unavailable", async () => {
+    process.env.NODE_ENV = "production";
+    process.env.AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_URL = "https://upstash.example.com";
+    process.env.AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_TOKEN = "token";
+    fetchMock.mockRejectedValue(new Error("network unavailable"));
+
+    await expect(enforceAuthLoginRateLimit({ clientKey: "203.0.113.92" })).rejects.toMatchObject({
+      status: 503,
+      message: "Centralized auth rate limiting is temporarily unavailable.",
+    });
   });
 
   it("falls back to default config values when env values are invalid", async () => {

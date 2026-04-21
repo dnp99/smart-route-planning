@@ -34,11 +34,7 @@ const resolveAllowedOrigin = (request: Request, originPolicy: CorsOriginPolicy) 
   const configuredOrigins = resolveConfiguredOrigins();
 
   if (!configuredOrigins || configuredOrigins.length === 0) {
-    if (originPolicy === "strict") {
-      throw new HttpError(500, "Server is missing ALLOWED_ORIGINS configuration.");
-    }
-
-    return "*";
+    throw new HttpError(500, "Server is missing ALLOWED_ORIGINS configuration.");
   }
 
   const requestOrigin = request.headers.get("origin");

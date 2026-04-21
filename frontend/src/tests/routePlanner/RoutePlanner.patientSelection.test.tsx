@@ -340,7 +340,7 @@ describe("RoutePlanner patient selection integration", () => {
     );
   });
 
-  it("keeps draft trip values over nurse home address defaults", () => {
+  it("ignores stored draft trip values and uses nurse home address defaults", () => {
     window.localStorage.setItem(
       "careflow.route-planner.draft.v1",
       JSON.stringify({
@@ -360,8 +360,14 @@ describe("RoutePlanner patient selection integration", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
-    expect(screen.getByLabelText("Starting point")).toHaveProperty("value", "Draft Start");
-    expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "Draft End");
+    expect(screen.getByLabelText("Starting point")).toHaveProperty(
+      "value",
+      "1 Home Way, Mississauga, ON",
+    );
+    expect(screen.getByLabelText("Ending point")).toHaveProperty(
+      "value",
+      "1 Home Way, Mississauga, ON",
+    );
   });
 
   it("adds destination patients and prevents duplicate selection", () => {
@@ -402,7 +408,7 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.queryByRole("button", { name: "+1 more" })).toBeNull();
   });
 
-  it("restores draft selections after remounting route planner", () => {
+  it("restores draft selections after remounting route planner without restoring trip addresses", () => {
     const { unmount } = render(<RoutePlanner />);
 
     fireEvent.change(screen.getByLabelText("Ending point"), {
@@ -413,7 +419,11 @@ describe("RoutePlanner patient selection integration", () => {
     unmount();
     render(<RoutePlanner />);
 
-    expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "Airport");
+    expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "");
+
+    fireEvent.change(screen.getByLabelText("Ending point"), {
+      target: { value: "Airport" },
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 

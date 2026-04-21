@@ -18,10 +18,6 @@ const draftDestinationState = {
 
 const validDraft: RoutePlannerDraft = {
   version: 1,
-  startAddress: "Start",
-  manualEndAddress: "End",
-  startGooglePlaceId: "start-place",
-  manualEndGooglePlaceId: null,
   activeMobileStep: "review",
   selectedDestinationStates: [draftDestinationState],
 };

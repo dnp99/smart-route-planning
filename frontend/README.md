@@ -12,7 +12,7 @@ This folder contains the Vite + React frontend for Routefy.
 - Support manual stop reordering with recalculated ETA flow.
 - Keep optimization results in memory only (no browser storage persistence).
 - Restore the latest optimization result from in-memory runtime cache when navigating away and back (same tab/session state).
-- Persist only non-sensitive route-planner draft state in localStorage (IDs/order/flags/date/objective/UI step).
+- Persist only non-sensitive route-planner draft state in localStorage (IDs/order/flags/date/objective/UI step — no addresses or place IDs).
 - Keep quote/header workspace behavior consistent across auth sessions.
 - Require first-use legal acknowledgement via blocking modal (`I Agree`) and re-prompt when legal notice version changes.
 - Present unified overflow action menus in client list rows.
@@ -77,7 +77,7 @@ or:
 - `src/features/route-planner/hooks/useManualReorder.ts` - manual stop drag/reorder with stale-order tracking
 - `src/features/route-planner/hooks/useRouteOptimization.ts` - optimization request state and runtime result cache lifecycle
 - `src/features/route-planner/ui/OptimizedRouteResult.tsx` - dispatch plan view (stat cards, route timeline, map, warnings)
-- `src/components/auth/authSession.ts` - in-memory auth user session helper and auth-change cleanup
+- `src/components/auth/authSession.ts` - in-memory auth user store, session-presence flag (`careflow.session-presence.v1`) for optimistic bootstrap, and auth-change cleanup
 - `src/components/auth/LoginPage.tsx` - login screen
 - `src/components/auth/authFetch.ts` - authenticated backend fetch helper
 - `src/components/legal/` - Terms, Privacy, License, Trademark static pages

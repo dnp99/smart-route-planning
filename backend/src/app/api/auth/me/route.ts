@@ -215,9 +215,7 @@ export async function GET(request: Request) {
     requireSecureAuthTransport(request);
 
     const auth = await requireAuth(request);
-    if (auth.authMethod === "session_cookie" && auth.sessionId) {
-      await touchAuthSession(auth.sessionId);
-    }
+    await touchAuthSession(auth.sessionId);
     const nurse = await findNurseById(auth.nurseId);
     if (!nurse || !nurse.isActive) {
       return NextResponse.json(
@@ -277,9 +275,7 @@ export async function PATCH(request: Request) {
     requireSecureAuthTransport(request);
 
     const auth = await requireAuth(request);
-    if (auth.authMethod === "session_cookie" && auth.sessionId) {
-      await touchAuthSession(auth.sessionId);
-    }
+    await touchAuthSession(auth.sessionId);
     let nurse = await findNurseById(auth.nurseId);
     if (!nurse || !nurse.isActive) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401, headers: corsHeaders });

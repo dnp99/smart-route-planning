@@ -1,39 +1,28 @@
 import { useEffect, useMemo, useState } from "react";
-import type { RoutePlannerDraft } from "../state/routePlannerDraft";
 import type { AddressSuggestion } from "../../../components/types";
 
 const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
 
 type UseRoutePlannerAddressesParams = {
-  initialDraft: RoutePlannerDraft | null;
   normalizedHomeAddress: string;
   hasAttemptedOptimize: boolean;
 };
 
 export function useRoutePlannerAddresses({
-  initialDraft,
   normalizedHomeAddress,
   hasAttemptedOptimize,
 }: UseRoutePlannerAddressesParams) {
   const [startAddress, setStartAddress] = useState(
-    initialDraft?.startAddress ??
-      (normalizedHomeAddress.length > 0 ? normalizedHomeAddress : DEFAULT_START_ADDRESS),
+    normalizedHomeAddress.length > 0 ? normalizedHomeAddress : DEFAULT_START_ADDRESS,
   );
-  const [manualEndAddress, setManualEndAddress] = useState(
-    initialDraft?.manualEndAddress ?? normalizedHomeAddress,
-  );
-  const [startGooglePlaceId, setStartGooglePlaceId] = useState<string | null>(
-    initialDraft?.startGooglePlaceId ?? null,
-  );
-  const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<string | null>(
-    initialDraft?.manualEndGooglePlaceId ?? null,
-  );
+  const [manualEndAddress, setManualEndAddress] = useState(normalizedHomeAddress);
+  const [startGooglePlaceId, setStartGooglePlaceId] = useState<string | null>(null);
+  const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<string | null>(null);
   const [startTouched, setStartTouched] = useState(false);
   const [endTouched, setEndTouched] = useState(false);
 
-  // Sync home address into start/end when no draft exists
+  // Sync home address into start/end when profile data arrives.
   useEffect(() => {
-    if (initialDraft) return;
     if (normalizedHomeAddress.length === 0) return;
 
     if (startAddress.trim().length === 0 || startAddress === DEFAULT_START_ADDRESS) {
@@ -45,7 +34,7 @@ export function useRoutePlannerAddresses({
       setManualEndAddress(normalizedHomeAddress);
       setManualEndGooglePlaceId(null);
     }
-  }, [initialDraft, manualEndAddress, normalizedHomeAddress, startAddress]);
+  }, [manualEndAddress, normalizedHomeAddress, startAddress]);
 
   const handleStartAddressChange = (value: string) => {
     setStartAddress(value);

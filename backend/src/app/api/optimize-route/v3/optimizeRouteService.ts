@@ -2845,6 +2845,7 @@ export const optimizeRouteV3 = async (
           type: "fixed_late",
           patientId: task.patientId,
           patientName: task.patientName,
+          lateMinutes,
           message: `${task.patientName} has a fixed window and will be served ${lateMinutes} min late.`,
         });
       } else if (
@@ -2858,6 +2859,7 @@ export const optimizeRouteV3 = async (
           type: "flexible_late",
           patientId: task.patientId,
           patientName: task.patientName,
+          lateMinutes,
           message: `${task.patientName} has a preferred window and will be served ${lateMinutes} min late.`,
         });
       }

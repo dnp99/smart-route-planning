@@ -86,7 +86,7 @@ export function useRoutePlannerController({
     startFieldError,
     endFieldError,
     optimizeEndpointHint,
-  } = useRoutePlannerAddresses({ initialDraft, normalizedHomeAddress, hasAttemptedOptimize });
+  } = useRoutePlannerAddresses({ normalizedHomeAddress, hasAttemptedOptimize });
 
   const {
     locallyCreatedPatients,
@@ -168,10 +168,6 @@ export function useRoutePlannerController({
     useRoutePlannerDraftState({
       initialDraft,
       resolveDefaultPlanningDate: defaultPlanningDate,
-      startAddress,
-      manualEndAddress,
-      startGooglePlaceId,
-      manualEndGooglePlaceId,
       selectedDestinations,
       destinationSearchPatients,
       isDestinationSearchLoading,

@@ -300,7 +300,7 @@ const parseVisit = (value: unknown, index: number): VisitV2 => {
     ) {
       throw new HttpError(
         400,
-        `${patientName} flexible visit window must include both start and end time when one value is provided.`,
+        `visits[${index}] flexible visit window must include both start and end time when one value is provided.`,
       );
     }
 
@@ -309,7 +309,7 @@ const parseVisit = (value: unknown, index: number): VisitV2 => {
   }
 
   if (windowType === "fixed" && (!windowStart || !windowEnd)) {
-    throw new HttpError(400, `${patientName} fixed visits must include start and end time.`);
+    throw new HttpError(400, `visits[${index}] fixed visits must include start and end time.`);
   }
 
   if (!windowStart && !windowEnd) {
@@ -340,7 +340,7 @@ const parseVisit = (value: unknown, index: number): VisitV2 => {
     const minuteLabel = serviceDurationMinutes === 1 ? "minute" : "minutes";
     throw new HttpError(
       400,
-      `${patientName} fixed window must be at least ${serviceDurationMinutes} ${minuteLabel} long as per patient's profile.`,
+      `visits[${index}] fixed window must be at least ${serviceDurationMinutes} ${minuteLabel} long as per patient's profile.`,
     );
   }
 
@@ -348,7 +348,7 @@ const parseVisit = (value: unknown, index: number): VisitV2 => {
     const minuteLabel = serviceDurationMinutes === 1 ? "minute" : "minutes";
     throw new HttpError(
       400,
-      `${patientName} flexible preferred window must be at least ${serviceDurationMinutes} ${minuteLabel} long as per patient's profile.`,
+      `visits[${index}] flexible preferred window must be at least ${serviceDurationMinutes} ${minuteLabel} long as per patient's profile.`,
     );
   }
 

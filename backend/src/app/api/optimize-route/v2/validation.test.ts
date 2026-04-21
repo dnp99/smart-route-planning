@@ -296,7 +296,7 @@ describe("optimize-route v2 request validation", () => {
     expectHttpError(
       () => parseAndValidateBody(payload),
       400,
-      "John Doe flexible visit window must include both start and end time when one value is provided.",
+      "visits[1] flexible visit window must include both start and end time when one value is provided.",
     );
   });
 
@@ -349,7 +349,7 @@ describe("optimize-route v2 request validation", () => {
     expectHttpError(
       () => parseAndValidateBody(payload),
       400,
-      "Jane Doe fixed window must be at least 45 minutes long as per patient's profile.",
+      "visits[0] fixed window must be at least 45 minutes long as per patient's profile.",
     );
   });
 
@@ -362,7 +362,7 @@ describe("optimize-route v2 request validation", () => {
     expectHttpError(
       () => parseAndValidateBody(payload),
       400,
-      "John Doe flexible preferred window must be at least 30 minutes long as per patient's profile.",
+      "visits[1] flexible preferred window must be at least 30 minutes long as per patient's profile.",
     );
   });
 

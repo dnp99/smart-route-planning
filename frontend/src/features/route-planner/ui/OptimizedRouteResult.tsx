@@ -29,6 +29,16 @@ const resolveWarningMessage = (warning: NonNullable<OptimizeRouteResponse["warni
     }
   }
 
+  if (warning.type === "window_conflict") {
+    const names = warning.patientNames.join(" and ");
+    return `${names} have overlapping fixed windows. Only one can be served on time.`;
+  }
+
+  if (warning.type === "fixed_late" || warning.type === "flexible_late") {
+    const windowLabel = warning.type === "fixed_late" ? "fixed" : "preferred";
+    return `${warning.patientName} has a ${windowLabel} window and will be served ${warning.lateMinutes} min late.`;
+  }
+
   return warning.message;
 };
 

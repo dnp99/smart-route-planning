@@ -12,27 +12,12 @@ describe("http helpers", () => {
     }
   });
 
-  it("uses wildcard CORS origin when ALLOWED_ORIGINS is not configured", () => {
-    delete process.env.ALLOWED_ORIGINS;
-
-    const headers = buildCorsHeaders(new Request("http://localhost:3000/api/test"), {
-      methods: "GET, OPTIONS",
-    });
-
-    expect(headers).toEqual({
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    });
-  });
-
-  it("throws when strict policy is used without ALLOWED_ORIGINS", () => {
+  it("throws when ALLOWED_ORIGINS is not configured", () => {
     delete process.env.ALLOWED_ORIGINS;
 
     expect(() =>
       buildCorsHeaders(new Request("http://localhost:3000/api/test"), {
         methods: "GET, OPTIONS",
-        originPolicy: "strict",
       }),
     ).toThrowError("Server is missing ALLOWED_ORIGINS configuration.");
   });

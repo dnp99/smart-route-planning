@@ -16,7 +16,7 @@ Routefy is a nurse-focused route planning app with a React frontend and Next.js 
 - Keeps header quote selection stable across browser refresh during a signed-in session.
 - Uses HttpOnly cookie-based sessions (no frontend token storage).
 - Requires a first-use legal/privacy acknowledgement (`I Agree`) per signed-in user, stored server-side and re-prompted when policy version changes.
-- Persists only non-sensitive route-planner draft fields in browser storage (IDs, ordering, inclusion flags, date/objective/UI step).
+- Persists only non-sensitive route-planner draft fields in browser storage (IDs, ordering, inclusion flags, date/objective/UI step — no addresses or place IDs).
 - Clears session-scoped browser storage (draft, header quote) on auth changes.
 - Uses a consistent overflow action menu pattern for client row actions.
 - Includes legal pages (Terms, Privacy, License, Trademark) accessible from the footer.
@@ -61,7 +61,6 @@ Notes:
 
 - UI terminology uses **Client/Clients** for care recipients.
 - API paths and shared contract field names remain `/api/patients`, `patientId`, and `patientName` for compatibility.
-- During migration grace period, backend accepts cookie sessions first and legacy bearer tokens second.
 
 ## Local run
 

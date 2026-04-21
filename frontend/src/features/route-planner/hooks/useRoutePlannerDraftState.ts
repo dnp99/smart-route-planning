@@ -12,10 +12,6 @@ const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
 type UseRoutePlannerDraftStateParams = {
   initialDraft: RoutePlannerDraft | null;
   resolveDefaultPlanningDate: () => string;
-  startAddress: string;
-  manualEndAddress: string;
-  startGooglePlaceId: string | null;
-  manualEndGooglePlaceId: string | null;
   selectedDestinations: SelectedPatientDestination[];
   destinationSearchPatients: Patient[];
   isDestinationSearchLoading: boolean;
@@ -29,10 +25,6 @@ type UseRoutePlannerDraftStateParams = {
 export function useRoutePlannerDraftState({
   initialDraft,
   resolveDefaultPlanningDate,
-  startAddress,
-  manualEndAddress,
-  startGooglePlaceId,
-  manualEndGooglePlaceId,
   selectedDestinations,
   destinationSearchPatients,
   isDestinationSearchLoading,
@@ -98,10 +90,6 @@ export function useRoutePlannerDraftState({
 
     persistRoutePlannerDraft({
       version: 1,
-      startAddress,
-      manualEndAddress,
-      startGooglePlaceId,
-      manualEndGooglePlaceId,
       activeMobileStep,
       selectedDestinationStates: selectedDestinations,
       planningDate,
@@ -110,12 +98,8 @@ export function useRoutePlannerDraftState({
     activeMobileStep,
     hasHydratedDraftDestinations,
     initialDraft?.selectedDestinationStates?.length,
-    manualEndAddress,
-    manualEndGooglePlaceId,
     planningDate,
     selectedDestinations,
-    startAddress,
-    startGooglePlaceId,
   ]);
 
   useEffect(() => {

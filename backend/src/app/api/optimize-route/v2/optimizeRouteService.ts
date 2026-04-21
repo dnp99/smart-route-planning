@@ -902,7 +902,7 @@ const detectWindowConflicts = (
           type: "window_conflict",
           patientIds: [a.patientId, b.patientId],
           patientNames: [a.patientName, b.patientName],
-          message: `${a.patientName} and ${b.patientName} have overlapping fixed windows. Only one can be served on time.`,
+          message: `Two patients have overlapping fixed windows. Only one can be served on time.`,
         });
       }
     }
@@ -1467,7 +1467,8 @@ export const optimizeRouteV2 = async (
           type: "fixed_late",
           patientId: task.patientId,
           patientName: task.patientName,
-          message: `${task.patientName} has a fixed window and will be served ${lateMinutes} min late.`,
+          lateMinutes,
+          message: `Patient has a fixed window and will be served ${lateMinutes} min late.`,
         });
       } else if (
         task.windowType === "flexible" &&
@@ -1480,7 +1481,8 @@ export const optimizeRouteV2 = async (
           type: "flexible_late",
           patientId: task.patientId,
           patientName: task.patientName,
-          message: `${task.patientName} has a preferred window and will be served ${lateMinutes} min late.`,
+          lateMinutes,
+          message: `Patient has a preferred window and will be served ${lateMinutes} min late.`,
         });
       }
     }

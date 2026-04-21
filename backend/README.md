@@ -10,7 +10,7 @@ This folder contains the Next.js backend for Routefy.
 - Expose auth endpoints for signup, login, logout, current-user identity, and password updates.
 - Geocode addresses through Google Places API.
 - Fetch address suggestions through Google Places autocomplete.
-- Enforce authenticated access on business endpoints (cookie sessions, with temporary legacy bearer fallback), plus validation, timeouts, CORS, and lightweight rate limiting.
+- Enforce authenticated access on business endpoints (cookie sessions), plus validation, timeouts, CORS, and lightweight rate limiting.
 - Reduce optimize-route latency with in-memory geocode and travel-matrix caching plus in-flight request deduplication.
 
 ## Local development
@@ -40,18 +40,11 @@ Production/runtime behavior:
 ## Environment variables
 
 - `ALLOWED_ORIGINS`
-  - Optional comma-separated CORS allowlist.
+  - Required comma-separated CORS allowlist.
   - Example: `http://localhost:5173`
 - `DATABASE_URL`
   - Required for patient persistence.
   - Neon/Postgres connection string.
-- `JWT_SECRET`
-  - Required only while legacy bearer-token compatibility remains enabled.
-  - Used for verifying legacy bearer access tokens during migration.
-- `JWT_EXPIRES_IN`
-  - Optional.
-  - Legacy bearer-token TTL accepted by `jose` (for example `1h`, `30m`).
-  - Default: `1h`.
 - `AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS`
   - Optional.
   - Max auth login/signup attempts per client/account bucket within the auth rate-limit window.
@@ -65,11 +58,11 @@ Production/runtime behavior:
   - Lockout duration in seconds after exceeding auth login/signup limits.
   - Default: `30`.
 - `AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_URL`
-  - Optional.
+  - Required in production.
   - Upstash Redis REST URL used for centralized auth login/signup rate limiting across instances.
-  - When omitted, auth rate limiting falls back to in-memory process-local buckets.
+  - In non-production, when omitted, auth rate limiting falls back to in-memory process-local buckets.
 - `AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_TOKEN`
-  - Optional.
+  - Required in production.
   - Upstash Redis REST token for centralized auth login/signup rate limiting.
 - `AUTH_ENFORCE_HTTPS`
   - Optional.
@@ -112,15 +105,12 @@ Example local file:
 
 ```bash
 DATABASE_URL=postgres://username:password@host:5432/database
-# Legacy bearer-token fallback only (can be removed after hard cutover):
-JWT_SECRET=replace_with_a_long_random_secret
-JWT_EXPIRES_IN=1h
 AUTH_LOGIN_RATE_LIMIT_MAX_REQUESTS=5
 AUTH_LOGIN_RATE_LIMIT_WINDOW_MS=60000
 AUTH_LOGIN_RATE_LIMIT_LOCKOUT_SECONDS=30
-# Optional centralized auth limiter:
-# AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_URL=https://<your-upstash-endpoint>
-# AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_TOKEN=<your-upstash-token>
+# Required in production for centralized auth limiter:
+AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_URL=https://<your-upstash-endpoint>
+AUTH_LOGIN_RATE_LIMIT_UPSTASH_REDIS_REST_TOKEN=<your-upstash-token>
 # Optional local/proxy transport hardening override:
 # AUTH_ENFORCE_HTTPS=true
 GOOGLE_MAPS_API_KEY=your_google_maps_api_key
@@ -158,16 +148,13 @@ OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
   - Revokes current session and clears `careflow_session` cookie
 - `GET /api/auth/me`
   - Requires valid auth session cookie (`careflow_session`)
-  - Legacy bearer token remains accepted during migration grace period
   - Returns current authenticated user including `homeAddress`
 - `PATCH /api/auth/me`
   - Requires valid auth session cookie (`careflow_session`)
-  - Legacy bearer token remains accepted during migration grace period
   - Accepts `{ homeAddress }` to update the nurse's saved home address
   - Returns updated profile
 - `POST /api/auth/update-password`
   - Requires valid auth session cookie (`careflow_session`)
-  - Legacy bearer token remains accepted during migration grace period
   - Accepts `{ currentPassword, newPassword }`
   - Verifies current password before updating
   - Rejects no-op changes and weak passwords
@@ -184,7 +171,6 @@ Authentication behavior:
 
 - Missing/invalid/revoked/expired session returns `401`.
 - `careflow_session` cookie attributes: `HttpOnly`, `Path=/`, 1-day max-age, `Secure` in production, `SameSite=Lax` in local dev and `SameSite=None` in production.
-- Legacy bearer tokens are still accepted during migration grace period.
 - Auth endpoints include baseline security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and emit HSTS on HTTPS requests.
 
 ### Patients

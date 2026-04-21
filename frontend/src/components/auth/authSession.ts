@@ -2,7 +2,7 @@ import type { AuthUser } from "../../../../shared/contracts";
 
 const SESSION_SCOPED_KEYS = ["careflow.route-planner.draft.v1"];
 const SESSION_STORAGE_SCOPED_KEYS = ["careflow_route_optimization_result"];
-const PERSISTED_AUTH_USER_KEY = "careflow.auth-user.v1";
+const SESSION_PRESENCE_KEY = "careflow.session-presence.v1";
 let authBootstrapInFlight = false;
 let authBootstrapPromise: Promise<void> | null = null;
 let resolveAuthBootstrap: (() => void) | null = null;
@@ -195,39 +195,26 @@ const parseAuthUser = (value: unknown): AuthUser | null => {
   }
 };
 
-const persistAuthUser = (user: AuthUser): void => {
-  if (typeof window === "undefined") {
-    return;
-  }
+let currentAuthUser: AuthUser | null = null;
+
+export const getSessionPresenceFlag = (): boolean => {
+  if (typeof window === "undefined") return false;
+  return window.localStorage.getItem(SESSION_PRESENCE_KEY) === "1";
+};
+
+const setSessionPresenceFlag = (): void => {
+  if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(PERSISTED_AUTH_USER_KEY, JSON.stringify(user));
+    window.localStorage.setItem(SESSION_PRESENCE_KEY, "1");
   } catch {
     // ignore quota errors
   }
 };
 
-const clearPersistedAuthUser = (): void => {
-  if (typeof window === "undefined") {
-    return;
-  }
-  window.localStorage.removeItem(PERSISTED_AUTH_USER_KEY);
+const clearSessionPresenceFlag = (): void => {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(SESSION_PRESENCE_KEY);
 };
-
-// Initialize from localStorage so returning users don't hit a blocking fetchMe() gate
-let currentAuthUser: AuthUser | null = (() => {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  try {
-    const raw = window.localStorage.getItem(PERSISTED_AUTH_USER_KEY);
-    if (!raw) {
-      return null;
-    }
-    return parseAuthUser(JSON.parse(raw) as unknown);
-  } catch {
-    return null;
-  }
-})();
 
 export const getAuthToken = () => {
   return null;
@@ -245,13 +232,13 @@ export const setAuthSession = (user: AuthUser) => {
   SESSION_SCOPED_KEYS.forEach((key) => window.localStorage.removeItem(key));
   SESSION_STORAGE_SCOPED_KEYS.forEach((key) => window.sessionStorage.removeItem(key));
   currentAuthUser = user;
-  persistAuthUser(user);
+  setSessionPresenceFlag();
   emitAuthChanged();
 };
 
 export const setStoredAuthUser = (user: AuthUser) => {
   currentAuthUser = user;
-  persistAuthUser(user);
+  setSessionPresenceFlag();
   emitAuthChanged();
 };
 
@@ -261,7 +248,7 @@ export const clearAuthSession = () => {
   }
 
   currentAuthUser = null;
-  clearPersistedAuthUser();
+  clearSessionPresenceFlag();
   SESSION_SCOPED_KEYS.forEach((key) => window.localStorage.removeItem(key));
   SESSION_STORAGE_SCOPED_KEYS.forEach((key) => window.sessionStorage.removeItem(key));
   emitAuthChanged();

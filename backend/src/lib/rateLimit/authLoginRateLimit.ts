@@ -57,6 +57,19 @@ const resolveUpstashConfig = (): UpstashConfig | null => {
   return { url, token };
 };
 
+const isProduction = () => process.env.NODE_ENV === "production";
+
+const requireCentralizedLimiterInProduction = () => {
+  if (!isProduction()) {
+    return;
+  }
+
+  throw new HttpError(
+    503,
+    "Centralized auth rate limiting is required in production. Configure Upstash Redis.",
+  );
+};
+
 const parsePipelineResults = (payload: unknown): unknown[] => {
   if (!Array.isArray(payload)) {
     throw new Error("Upstash pipeline response is invalid.");
@@ -200,6 +213,11 @@ export const enforceAuthLoginRateLimit = async ({
 }: EnforceLoginRateLimitParams) => {
   const config = resolveRateLimitConfig();
   const upstash = resolveUpstashConfig();
+
+  if (!upstash) {
+    requireCentralizedLimiterInProduction();
+  }
+
   const bucketKeys = [
     buildBucketKey("client", clientKey),
     ...(accountKey ? [buildBucketKey("account", accountKey)] : []),
@@ -218,7 +236,11 @@ export const enforceAuthLoginRateLimit = async ({
         throw error;
       }
 
-      // Fall back to process-local limiter if centralized limiter is unavailable.
+      if (isProduction()) {
+        throw new HttpError(503, "Centralized auth rate limiting is temporarily unavailable.");
+      }
+
+      // Fall back to process-local limiter in non-production environments only.
       enforceBucketMemory(bucketKey, config);
     }
   }

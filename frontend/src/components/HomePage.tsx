@@ -356,7 +356,6 @@ export default function HomePage({
           <p className={responsiveStyles.cardDescription}>
             Planning for {resolveDraftDateLabel(routePlannerDraft?.planningDate)} ·{" "}
             {draftSelectedCount} client{draftSelectedCount === 1 ? "" : "s"}
-            {routePlannerDraft?.startAddress ? ` · Start: ${routePlannerDraft.startAddress}` : ""}
           </p>
           <div className={responsiveStyles.dashboardDraftActions}>
             <Link to="/route-planner" className={responsiveStyles.primaryButton}>

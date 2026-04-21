@@ -30,14 +30,14 @@ Use two environments:
 ### Backend (Vercel Project: backend)
 
 - `ALLOWED_ORIGINS`
+  - Required in all environments. Controls CORS and cookie domain validation.
   - Staging: `https://app-staging.yourdomain.com`
   - Production: `https://app.yourdomain.com`
-- `JWT_SECRET`
-  - Required only during legacy bearer-token migration grace period.
-  - Used to verify legacy bearer tokens if still accepted.
-- `JWT_EXPIRES_IN`
-  - Optional legacy bearer-token TTL (for example `1h`, `30m`).
-  - Default: `1h`.
+  - Requests from unlisted origins are rejected — do not leave this unset or use a wildcard.
+- `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
+  - Required in production for centralized auth rate limiting.
+  - Without these, the backend returns `503` for all auth requests in `NODE_ENV=production`.
+  - In non-production environments, the server falls back to in-memory rate limiting.
 - `GOOGLE_MAPS_API_KEY`
   - Required for route legs and address autocomplete.
 - `SESSION_CLEANUP_CRON_SECRET`
@@ -112,7 +112,8 @@ If you add a deploy workflow later (for example `.github/workflows/deploy.yml`),
 
 Before first prod cut:
 
-1. Verify backend CORS allows only frontend domain.
+1. Verify backend CORS allows only frontend domain and `ALLOWED_ORIGINS` is set correctly.
+1a. Confirm `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set — `POST /api/auth/login` will return `503` otherwise.
 2. Confirm API health and cookie-session auth:
    - `POST /api/auth/login`
    - `GET /api/auth/me` with session cookie (`credentials: include`)
