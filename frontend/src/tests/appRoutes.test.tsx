@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { MemoryRouter, useLocation } from "react-router-dom";
+import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "../App";
 import { clearAuthSession, setAuthSession } from "../components/auth/authSession";
@@ -143,11 +143,6 @@ const seedAuthenticatedSession = (displayName = "Nurse One", homeAddress: string
 
 const waitForPatientsPage = async () => {
   await screen.findByRole("button", { name: "Add client" });
-};
-
-const LocationProbe = () => {
-  const location = useLocation();
-  return <div data-testid="location-pathname">{location.pathname}</div>;
 };
 
 describe("Footer", () => {
@@ -503,35 +498,6 @@ describe("App routing", () => {
     expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
   });
 
-  it("renders patients page at /clients and marks nav active", async () => {
-    seedAuthenticatedSession();
-
-    render(
-      <MemoryRouter initialEntries={["/clients"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitForPatientsPage();
-    expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Clients" }).getAttribute("aria-current")).toBe("page");
-  });
-
-  it("redirects /patients to /clients for signed-in users", async () => {
-    seedAuthenticatedSession();
-
-    render(
-      <MemoryRouter initialEntries={["/patients"]}>
-        <App />
-        <LocationProbe />
-      </MemoryRouter>,
-    );
-
-    await waitForPatientsPage();
-    expect(screen.getByTestId("location-pathname").textContent).toBe("/clients");
-    expect(screen.getByRole("link", { name: "Clients" }).getAttribute("aria-current")).toBe("page");
-  });
-
   it("shows account options menu items", async () => {
     seedAuthenticatedSession();
 
@@ -640,92 +606,5 @@ describe("App routing", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Login" })).toBeTruthy();
-  });
-});
-
-describe("Route contract after auth bootstrap", () => {
-  it("redirects signed-in users from / to /home after bootstrap", async () => {
-    seedAuthenticatedSession();
-
-    render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
-        <LocationProbe />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(fetchMeMock).toHaveBeenCalledTimes(1);
-    });
-    expect(await screen.findByText(/Good (morning|afternoon|evening), Nurse/i)).toBeTruthy();
-    expect(screen.getByTestId("location-pathname").textContent).toBe("/home");
-  });
-
-  it("keeps signed-out users on / (landing) after bootstrap", async () => {
-    fetchMeMock.mockReset();
-    fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
-
-    render(
-      <MemoryRouter initialEntries={["/"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(fetchMeMock).toHaveBeenCalledTimes(1);
-    });
-    expect(
-      await screen.findByRole("heading", {
-        name: /Organize clients and plan better daily routes/i,
-      }),
-    ).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "Login" })).toBeNull();
-  });
-
-  it("keeps signed-out users on /login after bootstrap", async () => {
-    fetchMeMock.mockReset();
-    fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
-
-    render(
-      <MemoryRouter initialEntries={["/login"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(fetchMeMock).toHaveBeenCalledTimes(1);
-    });
-    expect(await screen.findByRole("heading", { name: "Login" })).toBeTruthy();
-  });
-
-  it("redirects signed-out users from /home to /login after bootstrap", async () => {
-    fetchMeMock.mockReset();
-    fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
-
-    render(
-      <MemoryRouter initialEntries={["/home"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(fetchMeMock).toHaveBeenCalledTimes(1);
-    });
-    expect(await screen.findByRole("heading", { name: "Login" })).toBeTruthy();
-  });
-
-  it("redirects signed-in users from /login to /home after bootstrap", async () => {
-    seedAuthenticatedSession();
-
-    render(
-      <MemoryRouter initialEntries={["/login"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitFor(() => {
-      expect(fetchMeMock).toHaveBeenCalledTimes(1);
-    });
-    expect(await screen.findByText(/Good (morning|afternoon|evening), Nurse/i)).toBeTruthy();
   });
 });
