@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { formatNameWords } from "../patients/patientName";
+import { formatNameWords } from "../../features/patients/domain/patientName";
 import { responsiveStyles } from "../responsiveStyles";
 import { useScrollShrink } from "../hooks/useScrollShrink";
 import { useClickOutside } from "../hooks/useClickOutside";

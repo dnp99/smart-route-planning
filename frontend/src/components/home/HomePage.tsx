@@ -8,10 +8,13 @@ import type {
   DashboardTrendPoint,
   DashboardUpcomingStop,
   WeeklyWorkingHours,
-} from "../../../shared/contracts";
-import { fetchDashboardSummary } from "./home/homeDashboardService";
-import { clearRoutePlannerDraft, readRoutePlannerDraft } from "./routePlanner/routePlannerDraft";
-import { responsiveStyles } from "./responsiveStyles";
+} from "../../../../shared/contracts";
+import { fetchDashboardSummary } from "./homeDashboardService";
+import {
+  clearRoutePlannerDraft,
+  readRoutePlannerDraft,
+} from "../../features/route-planner/state/routePlannerDraft";
+import { responsiveStyles } from "../responsiveStyles";
 
 type HomePageProps = {
   isAuthenticated: boolean;

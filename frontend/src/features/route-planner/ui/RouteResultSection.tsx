@@ -1,4 +1,4 @@
-import { responsiveStyles } from "../responsiveStyles";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 import { OptimizedRouteResult } from "./OptimizedRouteResult";
 import type { MobilePlannerStep } from "./routePlannerDraft";
 import type { OptimizeRouteResponse, OrderedStop } from "../types";

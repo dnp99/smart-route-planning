@@ -51,7 +51,7 @@ vi.mock("../../features/patients/api/patientService", () => ({
   createPatient: (...args: unknown[]) => createPatientMock(...args),
 }));
 
-vi.mock("../../components/AddressAutocompleteInput", () => ({
+vi.mock("../../components/shared/AddressAutocompleteInput", () => ({
   default: ({
     id,
     label,

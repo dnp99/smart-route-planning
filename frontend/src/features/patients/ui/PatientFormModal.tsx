@@ -1,7 +1,7 @@
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
-import AddressAutocompleteInput from "../AddressAutocompleteInput";
-import { responsiveStyles } from "../responsiveStyles";
+import AddressAutocompleteInput from "../../../components/shared/AddressAutocompleteInput";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { Patient, VisitTimeType } from "../../../../../shared/contracts";
 import type {
   FormFieldErrors,
@@ -96,7 +96,7 @@ export const PatientFormModal = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="patient-modal-title"
-        className="animate-slide-up motion-reduce:animate-none sm:animate-none max-h-[82vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:max-h-[92vh] sm:max-w-2xl sm:rounded-3xl sm:p-6"
+        className={responsiveStyles.modalSurfaceLarge}
       >
         <div className="sm:hidden -mx-5 -mt-5 mb-2 flex justify-center pb-1 pt-2.5">
           <div className="h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
@@ -133,21 +133,16 @@ export const PatientFormModal = ({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1">
               <div className="flex items-center gap-2">
-                <label
-                  htmlFor="patient-first-name"
-                  className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-                >
+                <label htmlFor="patient-first-name" className={responsiveStyles.formLabel}>
                   First name
                 </label>
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
-                  Required
-                </span>
+                <span className={responsiveStyles.requiredBadge}>Required</span>
               </div>
               <input
                 id="patient-first-name"
                 value={formValues.firstName}
                 onChange={(event) => onFieldChange("firstName", event.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className={responsiveStyles.formInput}
               />
               {formErrors.firstName && (
                 <p className="m-0 text-xs text-red-600 dark:text-red-400">{formErrors.firstName}</p>
@@ -156,21 +151,16 @@ export const PatientFormModal = ({
 
             <div className="grid gap-1">
               <div className="flex items-center gap-2">
-                <label
-                  htmlFor="patient-last-name"
-                  className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-                >
+                <label htmlFor="patient-last-name" className={responsiveStyles.formLabel}>
                   Last name
                 </label>
-                <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
-                  Required
-                </span>
+                <span className={responsiveStyles.requiredBadge}>Required</span>
               </div>
               <input
                 id="patient-last-name"
                 value={formValues.lastName}
                 onChange={(event) => onFieldChange("lastName", event.target.value)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className={responsiveStyles.formInput}
               />
               {formErrors.lastName && (
                 <p className="m-0 text-xs text-red-600 dark:text-red-400">{formErrors.lastName}</p>
@@ -193,17 +183,14 @@ export const PatientFormModal = ({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1">
-              <label
-                htmlFor="patient-visit-type"
-                className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-              >
+              <label htmlFor="patient-visit-type" className={responsiveStyles.formLabel}>
                 Visit type
               </label>
               <select
                 id="patient-visit-type"
                 value={selectedVisitType}
                 onChange={(event) => onVisitTypeChange(event.target.value as VisitTimeType)}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className={responsiveStyles.formInput}
               >
                 <option value="fixed">Fixed</option>
                 <option value="flexible">Flexible</option>
@@ -211,10 +198,7 @@ export const PatientFormModal = ({
             </div>
 
             <div className="grid gap-1">
-              <label
-                htmlFor="patient-visit-duration"
-                className="text-sm font-semibold text-slate-800 dark:text-slate-200"
-              >
+              <label htmlFor="patient-visit-duration" className={responsiveStyles.formLabel}>
                 Visit duration (minutes)
               </label>
               <input
@@ -229,7 +213,7 @@ export const PatientFormModal = ({
                   const safeValue = parsed !== parsed ? 0 : parsed;
                   onFieldChange("visitDurationMinutes", safeValue);
                 }}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                className={responsiveStyles.formInput}
               />
               {formErrors.visitDurationMinutes && (
                 <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -273,7 +257,7 @@ export const PatientFormModal = ({
                       onChange={(event) =>
                         onVisitWindowChange(window.id, "startTime", event.target.value)
                       }
-                      className="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                      className={`appearance-none ${responsiveStyles.formInput}`}
                     />
                     {formErrors.visitWindowRows?.[index]?.startTime && (
                       <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -296,7 +280,7 @@ export const PatientFormModal = ({
                       onChange={(event) =>
                         onVisitWindowChange(window.id, "endTime", event.target.value)
                       }
-                      className="w-full appearance-none rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                      className={`appearance-none ${responsiveStyles.formInput}`}
                     />
                     {formErrors.visitWindowRows?.[index]?.endTime &&
                       formErrors.visitWindowRows[index].endTime !== fixedWindowDurationError && (

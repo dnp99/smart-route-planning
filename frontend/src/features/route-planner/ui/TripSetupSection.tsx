@@ -1,6 +1,6 @@
-import AddressAutocompleteInput from "../AddressAutocompleteInput";
-import { DatePicker } from "../DatePicker";
-import { responsiveStyles } from "../responsiveStyles";
+import AddressAutocompleteInput from "../../../components/shared/AddressAutocompleteInput";
+import { DatePicker } from "../../../components/shared/DatePicker";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { AddressSuggestion } from "../types";
 
 type TripSetupSectionProps = {

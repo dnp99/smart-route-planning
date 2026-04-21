@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { responsiveStyles } from "../responsiveStyles";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 
 const TrashIcon = ({ className }: { className?: string }) => (

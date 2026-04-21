@@ -6,7 +6,7 @@ import {
   type Patient,
   type UpdatePatientRequest,
 } from "../../../../../shared/contracts";
-import { requestAuthedJson } from "../auth/authFetch";
+import { requestAuthedJson } from "../../../components/auth/authFetch";
 
 const requestJson = async (path: string, init: RequestInit, fallbackMessage: string) => {
   return requestAuthedJson(path, init, fallbackMessage);

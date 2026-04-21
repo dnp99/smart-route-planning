@@ -6,7 +6,7 @@ vi.mock("../../features/patients/api/patientService", () => ({
 }));
 
 import { listPatients } from "../../features/patients/api/patientService";
-import { usePatientSearch } from "../../components/hooks/usePatientSearch";
+import { usePatientSearch } from "../../features/route-planner/hooks/usePatientSearch";
 
 const mockedListPatients = vi.mocked(listPatients);
 

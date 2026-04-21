@@ -9,7 +9,7 @@ vi.mock("../../components/LandingPage", () => ({
   default: () => <h1>Landing Page Mock</h1>,
 }));
 
-vi.mock("../../components/HomePage", () => ({
+vi.mock("../../components/home/HomePage", () => ({
   default: () => <h1>Home Page Mock</h1>,
 }));
 

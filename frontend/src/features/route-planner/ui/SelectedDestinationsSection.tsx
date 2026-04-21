@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { responsiveStyles } from "../responsiveStyles";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 import { DestinationRow } from "./DestinationRow";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 

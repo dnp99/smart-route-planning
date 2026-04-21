@@ -8,7 +8,7 @@ vi.mock("../../features/patients/api/patientService", () => ({
   deletePatient: vi.fn(),
 }));
 
-vi.mock("../../components/AddressAutocompleteInput", () => ({
+vi.mock("../../components/shared/AddressAutocompleteInput", () => ({
   default: ({
     id,
     label,
