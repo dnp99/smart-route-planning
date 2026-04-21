@@ -278,26 +278,52 @@ export default function HomePage({
       return [];
     }
 
-    const nudges: Array<{ id: string; message: string; rationale: string }> = [];
+    const setupMissing = authUser?.setupMissing ?? [];
+    const nudges: Array<{
+      id: string;
+      message: string;
+      rationale: string;
+      action: "setup" | "settings";
+    }> = [];
 
-    if (!authUser?.homeAddress) {
+    if (setupMissing.includes("displayName")) {
       nudges.push({
-        id: "home-address",
-        message: "Add a home address for default start and end points.",
-        rationale: "Needed so route optimization starts and ends from your base automatically.",
+        id: "display-name",
+        message: "Add a display name to complete workspace setup.",
+        rationale: "Needed for profile identification across your workspace.",
+        action: "setup",
       });
     }
 
-    if (!authUser?.workingHours) {
+    if (setupMissing.includes("workingHours")) {
       nudges.push({
         id: "working-hours",
-        message: "Set up working hours so today's schedule appears automatically.",
+        message: "Set up working hours to complete workspace setup.",
         rationale: "Needed to keep route feasibility and workday timing accurate.",
+        action: "setup",
+      });
+    }
+
+    if (setupMissing.includes("optimizationObjective")) {
+      nudges.push({
+        id: "optimization-objective",
+        message: "Choose route priority (time or distance) to complete setup.",
+        rationale: "Needed so route optimization uses your preferred planning strategy.",
+        action: "setup",
+      });
+    }
+
+    if (!authUser?.homeAddress) {
+      nudges.push({
+        id: "home-address-optional",
+        message: "Add a home address for default start and end points.",
+        rationale: "Needed so route optimization starts and ends from your base automatically.",
+        action: "settings",
       });
     }
 
     return nudges;
-  }, [authUser?.homeAddress, authUser?.workingHours, isAuthenticated]);
+  }, [authUser?.homeAddress, authUser?.setupMissing, isAuthenticated]);
   const [dismissedNudgeIds, setDismissedNudgeIds] = useState<string[]>([]);
   const visibleNudges = useMemo(
     () => profileNudges.filter((nudge) => !dismissedNudgeIds.includes(nudge.id)),
@@ -388,9 +414,16 @@ export default function HomePage({
               <button
                 type="button"
                 className={responsiveStyles.warningBannerButton}
-                onClick={() => onOpenAccountSettings?.()}
+                onClick={() => {
+                  if (nudge.action === "setup") {
+                    navigate("/welcome-setup");
+                    return;
+                  }
+
+                  onOpenAccountSettings?.();
+                }}
               >
-                Open Settings
+                {nudge.action === "setup" ? "Complete setup" : "Open Settings"}
               </button>
               <button
                 type="button"

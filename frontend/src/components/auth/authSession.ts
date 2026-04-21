@@ -183,7 +183,6 @@ const parseAuthUser = (value: unknown): AuthUser | null => {
           !parsed.setupMissing.every(
             (entry) =>
               entry === "displayName" ||
-              entry === "homeAddress" ||
               entry === "workingHours" ||
               entry === "optimizationObjective",
           )))

@@ -91,7 +91,7 @@ describe("WelcomeSetupPage", () => {
             displayName: "",
             homeAddress: null,
             isSetupComplete: false,
-            setupMissing: ["displayName", "homeAddress", "workingHours"],
+            setupMissing: ["displayName", "workingHours"],
           }}
         />
       </MemoryRouter>,
@@ -193,7 +193,7 @@ describe("WelcomeSetupPage", () => {
     expect(await screen.findByRole("heading", { name: "Home Page" })).toBeTruthy();
   });
 
-  it("shows red validation errors when required profile fields are missing", async () => {
+  it("shows red validation error only for missing display name", async () => {
     render(
       <MemoryRouter>
         <WelcomeSetupPage
@@ -203,7 +203,7 @@ describe("WelcomeSetupPage", () => {
             displayName: "",
             homeAddress: null,
             isSetupComplete: false,
-            setupMissing: ["displayName", "homeAddress"],
+            setupMissing: ["displayName"],
           }}
         />
       </MemoryRouter>,
@@ -218,6 +218,48 @@ describe("WelcomeSetupPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
 
     expect(await screen.findByText("Display name is required.")).toBeTruthy();
-    expect(screen.getByText("Home address is required.")).toBeTruthy();
+    expect(screen.queryByText("Home address is required.")).toBeNull();
+  });
+
+  it("allows saving profile with blank home address", async () => {
+    updateProfileMock.mockResolvedValueOnce({
+      user: {
+        id: "n1",
+        email: "nurse@example.com",
+        displayName: "Nurse One",
+        homeAddress: null,
+        isSetupComplete: false,
+        setupMissing: ["workingHours"],
+      },
+    });
+
+    render(
+      <MemoryRouter>
+        <WelcomeSetupPage
+          authUser={{
+            id: "n1",
+            email: "nurse@example.com",
+            displayName: "",
+            homeAddress: null,
+            isSetupComplete: false,
+            setupMissing: ["displayName", "workingHours"],
+          }}
+        />
+      </MemoryRouter>,
+    );
+
+    fireEvent.change(screen.getByRole("textbox", { name: /display name/i }), {
+      target: { value: "Nurse One" },
+    });
+    fireEvent.change(screen.getByLabelText("Home address"), {
+      target: { value: "" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save and continue" }));
+
+    await waitFor(() => {
+      expect(updateProfileMock).toHaveBeenCalledWith({
+        displayName: "Nurse One",
+      });
+    });
   });
 });

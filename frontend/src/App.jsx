@@ -37,7 +37,6 @@ function App() {
   const [isLegalNoticeSubmitting, setIsLegalNoticeSubmitting] = useState(false);
   const [legalNoticeError, setLegalNoticeError] = useState("");
   const isAuthenticated = Boolean(authUser);
-  const isSetupComplete = Boolean(authUser?.isSetupComplete);
 
   useEffect(() => {
     const handleAuthChange = () => {
@@ -170,7 +169,7 @@ function App() {
             clearAuthSession();
           }}
         />
-        {isAuthenticated && isSetupComplete && (
+        {isAuthenticated && (
           <div className={responsiveStyles.tabStrip}>
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
               <AppTabs />

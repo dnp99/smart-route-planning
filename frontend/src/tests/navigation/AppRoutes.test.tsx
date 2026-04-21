@@ -95,7 +95,7 @@ describe("AppRoutes", () => {
     expect(screen.getByTestId("location-pathname").textContent).toBe("/home");
   });
 
-  it("redirects signed-in users with incomplete setup to /welcome-setup", async () => {
+  it("redirects signed-in users from / to /home even when setup is incomplete", async () => {
     render(
       <MemoryRouter initialEntries={["/"]}>
         <AppRoutes {...buildProps({ isAuthenticated: true, authUser: { id: "u1" } })} />
@@ -103,8 +103,8 @@ describe("AppRoutes", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Welcome Setup Page Mock" })).toBeTruthy();
-    expect(screen.getByTestId("location-pathname").textContent).toBe("/welcome-setup");
+    expect(await screen.findByRole("heading", { name: "Home Page Mock" })).toBeTruthy();
+    expect(screen.getByTestId("location-pathname").textContent).toBe("/home");
   });
 
   it("redirects /patients to /clients", async () => {
@@ -155,7 +155,7 @@ describe("AppRoutes", () => {
     );
   });
 
-  it("redirects protected routes to setup page when setup is incomplete", async () => {
+  it("allows protected routes when setup is incomplete", async () => {
     render(
       <MemoryRouter initialEntries={["/clients"]}>
         <AppRoutes
@@ -171,11 +171,11 @@ describe("AppRoutes", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Welcome Setup Page Mock" })).toBeTruthy();
-    expect(screen.getByTestId("location-pathname").textContent).toBe("/welcome-setup");
+    expect(await screen.findByRole("heading", { name: "Clients Page Mock" })).toBeTruthy();
+    expect(screen.getByTestId("location-pathname").textContent).toBe("/clients");
   });
 
-  it("redirects setup page back to /home when setup is complete", async () => {
+  it("allows setup route when authenticated", async () => {
     render(
       <MemoryRouter initialEntries={["/welcome-setup"]}>
         <AppRoutes
@@ -191,8 +191,8 @@ describe("AppRoutes", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Home Page Mock" })).toBeTruthy();
-    expect(screen.getByTestId("location-pathname").textContent).toBe("/home");
+    expect(await screen.findByRole("heading", { name: "Welcome Setup Page Mock" })).toBeTruthy();
+    expect(screen.getByTestId("location-pathname").textContent).toBe("/welcome-setup");
   });
 
   it("renders legal pages in modal when backgroundLocation is present", async () => {

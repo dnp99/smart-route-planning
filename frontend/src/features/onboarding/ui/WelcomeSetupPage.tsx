@@ -46,7 +46,7 @@ const buildDefaultSchedule = (
 
 const resolveNextStep = (user: AuthUser | null): SetupStep => {
   const missing = user?.setupMissing ?? [];
-  if (missing.includes("displayName") || missing.includes("homeAddress")) {
+  if (missing.includes("displayName")) {
     return "profile";
   }
   if (missing.includes("workingHours")) {
@@ -80,7 +80,6 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
   const [error, setError] = useState("");
   const [profileFieldErrors, setProfileFieldErrors] = useState<{
     displayName?: string;
-    homeAddress?: string;
   }>({});
 
   const completionPercent = useMemo(() => {
@@ -102,16 +101,13 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
     event.preventDefault();
     const nextDisplayName = displayNameInput.trim();
     const nextHomeAddress = homeAddressInput.trim();
-    const nextErrors: { displayName?: string; homeAddress?: string } = {};
+    const nextErrors: { displayName?: string } = {};
 
     if (!nextDisplayName) {
       nextErrors.displayName = "Display name is required.";
     }
-    if (!nextHomeAddress) {
-      nextErrors.homeAddress = "Home address is required.";
-    }
 
-    if (nextErrors.displayName || nextErrors.homeAddress) {
+    if (nextErrors.displayName) {
       setProfileFieldErrors(nextErrors);
       return;
     }
@@ -120,10 +116,11 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
     setError("");
     setIsSaving(true);
     try {
-      const updated = await updateProfile({
-        displayName: nextDisplayName,
-        homeAddress: nextHomeAddress,
-      });
+      const updated = await updateProfile(
+        nextHomeAddress.length > 0
+          ? { displayName: nextDisplayName, homeAddress: nextHomeAddress }
+          : { displayName: nextDisplayName },
+      );
       setStoredAuthUser(updated.user);
       goToNextStep(updated.user);
     } catch (saveError) {
@@ -242,17 +239,8 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
                 label="Home address"
                 placeholder="Search address"
                 value={homeAddressInput}
-                required
-                errorText={profileFieldErrors.homeAddress}
-                onChange={(value) => {
-                  setHomeAddressInput(value);
-                  if (profileFieldErrors.homeAddress) {
-                    setProfileFieldErrors((current) => ({
-                      ...current,
-                      homeAddress: undefined,
-                    }));
-                  }
-                }}
+                helperText="Optional"
+                onChange={setHomeAddressInput}
               />
             </div>
             <button

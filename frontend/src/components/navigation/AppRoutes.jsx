@@ -24,8 +24,6 @@ export default function AppRoutes({
   const navigate = useNavigate();
   const backgroundLocation = location.state?.backgroundLocation;
   const isLegalRoute = /^\/legal\/(terms|privacy|license|trademark)$/.test(location.pathname);
-  const isSetupComplete = Boolean(authUser?.isSetupComplete);
-  const authenticatedDefaultPath = isSetupComplete ? defaultProtectedPath : "/welcome-setup";
 
   const resolveBootstrappingCopy = () => {
     if (location.pathname.indexOf("/clients") === 0) {
@@ -108,24 +106,6 @@ export default function AppRoutes({
       if (isBootstrapping) return renderBootstrappingFallback();
       return <Navigate to="/login" replace />;
     }
-
-    if (!isSetupComplete) {
-      return <Navigate to="/welcome-setup" replace />;
-    }
-
-    return element;
-  };
-
-  const renderSetupRoute = (element) => {
-    if (!isAuthenticated) {
-      if (isBootstrapping) return renderBootstrappingFallback();
-      return <Navigate to="/login" replace />;
-    }
-
-    if (isSetupComplete) {
-      return <Navigate to={defaultProtectedPath} replace />;
-    }
-
     return element;
   };
 
@@ -141,7 +121,7 @@ export default function AppRoutes({
     }
 
     if (isBootstrapping) return renderBootstrappingFallback();
-    return <Navigate to={authenticatedDefaultPath} replace />;
+    return <Navigate to={defaultProtectedPath} replace />;
   };
 
   return (
@@ -153,13 +133,11 @@ export default function AppRoutes({
         />
         <Route
           path="/login"
-          element={
-            isAuthenticated ? <Navigate to={authenticatedDefaultPath} replace /> : <LoginPage />
-          }
+          element={isAuthenticated ? <Navigate to={defaultProtectedPath} replace /> : <LoginPage />}
         />
         <Route
           path="/welcome-setup"
-          element={renderSetupRoute(<WelcomeSetupPage authUser={authUser} />)}
+          element={renderProtectedRoute(<WelcomeSetupPage authUser={authUser} />)}
         />
         <Route path="/clients" element={renderProtectedRoute(<PatientsPage />)} />
         <Route path="/patients" element={<Navigate to="/clients" replace />} />
@@ -191,7 +169,7 @@ export default function AppRoutes({
         />
         <Route
           path="*"
-          element={<Navigate to={isAuthenticated ? authenticatedDefaultPath : "/login"} replace />}
+          element={<Navigate to={isAuthenticated ? defaultProtectedPath : "/login"} replace />}
         />
       </Routes>
 

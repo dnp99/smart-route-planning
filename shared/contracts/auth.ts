@@ -24,7 +24,6 @@ export type WeeklyWorkingHours = {
 
 export type SetupMissingField =
   | "displayName"
-  | "homeAddress"
   | "workingHours"
   | "optimizationObjective";
 
@@ -112,7 +111,6 @@ export const isAuthUser = (value: unknown): value is AuthUser => {
       !value.setupMissing.every(
         (entry) =>
           entry === "displayName" ||
-          entry === "homeAddress" ||
           entry === "workingHours" ||
           entry === "optimizationObjective",
       ))
@@ -156,10 +154,6 @@ export const resolveSetupMissingFields = (user: {
 
   if (typeof user.displayName !== "string" || user.displayName.trim().length === 0) {
     missing.push("displayName");
-  }
-
-  if (typeof user.homeAddress !== "string" || user.homeAddress.trim().length === 0) {
-    missing.push("homeAddress");
   }
 
   if (!hasAtLeastOneEnabledWorkingDay(user.workingHours ?? null)) {
