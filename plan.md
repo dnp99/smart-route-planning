@@ -1789,3 +1789,79 @@ This root file exists to preserve the repository convention that `plan.md` is up
 - Frontend:
   - `npm run lint` ✅
   - `npm run test` ✅
+
+### Improved refresh UX with PHI-safe auth bootstrap shell and documented PHI handling rules
+
+#### Files
+
+- Updated:
+  - `frontend/src/App.jsx`
+  - `frontend/src/components/auth/authSession.ts`
+  - `README.md`
+  - `frontend/README.md`
+  - `AGENT.md`
+  - `plan.md`
+
+#### Why
+
+- Full refresh on protected routes showed a sparse/blank-feeling loading state while `/api/auth/me` validated.
+- We replaced that with a full-page shimmer shell that contains no user-identifying content, improving perceived performance while keeping the flow PHI-safe.
+- A short-lived attempt to persist auth user context in browser storage was explicitly reverted because PHI must not be stored client-side.
+- Added explicit PHI rules to project docs so future changes consistently avoid PHI persistence/logging/telemetry exposure.
+
+#### Verification
+
+- Frontend:
+  - `npm test -- src/tests/appRoutes.test.tsx src/tests/navigation/AppRoutes.test.tsx src/tests/auth/authSessionBootstrap.test.ts` ✅
+
+### Replaced auth bootstrap screen with branded Routefy step-based loader (PHI-safe)
+
+#### Files
+
+- Updated:
+  - `frontend/src/App.jsx`
+  - `plan.md`
+
+#### What changed
+
+- Replaced the previous simple session-validation loader with a branded Routefy loader inspired by `routefy-loader.jsx`.
+- New loader includes:
+  - Routefy mark + wordmark
+  - animated ring/center mark treatment
+  - rotating status steps (`Checking credentials`, `Loading your routes`, `Syncing client data`, `Almost there`)
+  - animated ellipsis, progress bar, and step dots
+- Copy remains PHI-safe and generic (no patient/client identifiers).
+
+#### Why
+
+- Provide a cleaner, more intentional loading experience that matches Routefy branding while keeping session validation feedback simple and consistent across all pages.
+
+#### Verification
+
+- Frontend:
+  - `npm test -- src/tests/appRoutes.test.tsx src/tests/navigation/AppRoutes.test.tsx src/tests/auth/authSessionBootstrap.test.ts` ✅
+
+### Extracted auth bootstrap loader into shared component
+
+#### Files
+
+- Added:
+  - `frontend/src/components/shared/AuthBootstrapLoader.jsx`
+- Updated:
+  - `frontend/src/App.jsx`
+  - `plan.md`
+
+#### What changed
+
+- Moved the new Routefy session-validation loader UI and animation logic out of `App.jsx` into a reusable shared component.
+- `App.jsx` now imports and renders `AuthBootstrapLoader` while `isBootstrapping` is true.
+
+#### Why
+
+- Keeps `App.jsx` focused on app orchestration logic and reduces inline UI complexity.
+- Improves reuse/readability by keeping shared loading UI in `components/shared`.
+
+#### Verification
+
+- Frontend:
+  - `npm test -- src/tests/appRoutes.test.tsx src/tests/navigation/AppRoutes.test.tsx src/tests/auth/authSessionBootstrap.test.ts` ✅

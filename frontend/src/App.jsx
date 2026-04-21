@@ -24,6 +24,7 @@ import LegalAcknowledgementModal from "./components/modals/LegalAcknowledgementM
 import ScrollToTopButton from "./components/layout/ScrollToTopButton";
 import AppRoutes from "./components/navigation/AppRoutes";
 import AppTabs from "./components/navigation/AppTabs";
+import AuthBootstrapLoader from "./components/shared/AuthBootstrapLoader";
 
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 
@@ -152,14 +153,8 @@ function App() {
   const optimizationObjective = authUser?.optimizationObjective ?? "distance";
   const defaultProtectedPath = "/home";
 
-  if (!isAuthResolved && isBootstrapping) {
-    return (
-      <div className="mx-auto w-full max-w-7xl p-3 sm:p-4 md:p-6">
-        <main className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
-          Validating session...
-        </main>
-      </div>
-    );
+  if (isBootstrapping) {
+    return <AuthBootstrapLoader />;
   }
 
   return (

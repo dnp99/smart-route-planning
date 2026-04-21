@@ -15,6 +15,7 @@ Routefy is a nurse-focused route planning app with a React frontend and Next.js 
 - Provides an authenticated global workspace header with sticky positioning, app logo, and rotating nurse quotes.
 - Keeps header quote selection stable across browser refresh during a signed-in session.
 - Uses HttpOnly cookie-based sessions (no frontend token storage).
+- Enforces PHI-safe client behavior: no PHI in browser persistence, URL params, logs, or telemetry.
 - Requires a first-use legal/privacy acknowledgement (`I Agree`) per signed-in user, stored server-side and re-prompted when policy version changes.
 - Persists only non-sensitive route-planner draft fields in browser storage (IDs, ordering, inclusion flags, date/objective/UI step — no addresses or place IDs).
 - Clears session-scoped browser storage (draft, header quote) on auth changes.

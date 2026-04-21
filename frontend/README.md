@@ -21,6 +21,7 @@ This folder contains the Vite + React frontend for Routefy.
 - Mobile-first route planner with wizard step flow (Trip → Clients → Review), always-expanded sections on mobile, step completion indicators, and safe-area-aware sticky footer CTA.
 - Use Client/Clients wording in UI copy while keeping `/api/patients` endpoints and `patient*` contract fields for backend compatibility.
 - Use cookie-based auth (`credentials: "include"`) with no JWT/token storage in localStorage/sessionStorage.
+- Enforce PHI-safe handling: never persist PHI to browser storage, URL params, logs, analytics, or telemetry.
 
 ## Local development
 
@@ -50,6 +51,12 @@ Route optimizer engine selection is controlled by `VITE_ENABLE_ILS_OPTIMIZER`:
 - unset / `false`: calls `POST /api/optimize-route/v2` (legacy fallback)
 
 The `v3` path keeps the same response contract as `v2`.
+
+## PHI policy (frontend)
+
+- PHI (Protected Health Information) must not be persisted in `localStorage`, `sessionStorage`, IndexedDB, or URL/query parameters.
+- PHI must not be sent to analytics/telemetry or written to logs/error text.
+- Browser persistence is limited to non-sensitive metadata required for UX continuity (for example: IDs/order/flags/date/objective/UI step).
 
 Example:
 
