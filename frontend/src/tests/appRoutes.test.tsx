@@ -437,7 +437,6 @@ describe("App routing", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Smart Route Planner" })).toBeTruthy();
-    expect(screen.getByText("Operations workspace for Nurse One")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Route Planner" }).getAttribute("aria-current")).toBe(
       "page",
     );
@@ -493,7 +492,6 @@ describe("App routing", () => {
 
     await waitForPatientsPage();
     expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
-    expect(screen.getByText("Operations workspace for Nurse One")).toBeTruthy();
   });
 
   it("renders patients page at /patients and marks nav active", async () => {

@@ -61,7 +61,14 @@ export default function AppHeader({
     : "Operations workspace";
 
   return (
-    <header className={responsiveStyles.appHeader}>
+    <header
+      className={[
+        responsiveStyles.appHeader,
+        headerScrolled
+          ? "bg-white/95 dark:bg-slate-950/95"
+          : "bg-[linear-gradient(135deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.94)_58%,rgba(236,254,255,0.92)_100%)] dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96)_0%,rgba(15,23,42,0.94)_60%,rgba(8,47,73,0.9)_100%)]",
+      ].join(" ")}
+    >
       <div
         className={[responsiveStyles.appHeaderInner, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(
           " ",
@@ -86,16 +93,8 @@ export default function AppHeader({
             </svg>
           </div>
           <div className="min-w-0">
-            <p className="m-0 text-base font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 sm:text-lg">
+            <p className="m-0 text-base sm:text-lg lg:text-2xl font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300">
               Routefy
-            </p>
-            <p
-              className={[
-                "m-0 mt-0.5 truncate text-xs text-slate-500 transition-all duration-300 sm:text-sm dark:text-slate-400",
-                headerScrolled ? "max-h-0 overflow-hidden opacity-0" : "max-h-8 opacity-100",
-              ].join(" ")}
-            >
-              {workspaceSubtitle}
             </p>
           </div>
         </div>
