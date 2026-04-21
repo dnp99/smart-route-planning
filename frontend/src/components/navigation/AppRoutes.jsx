@@ -157,7 +157,10 @@ export default function AppRoutes({
             isAuthenticated ? <Navigate to={authenticatedDefaultPath} replace /> : <LoginPage />
           }
         />
-        <Route path="/welcome-setup" element={renderSetupRoute(<WelcomeSetupPage />)} />
+        <Route
+          path="/welcome-setup"
+          element={renderSetupRoute(<WelcomeSetupPage authUser={authUser} />)}
+        />
         <Route path="/clients" element={renderProtectedRoute(<PatientsPage />)} />
         <Route path="/patients" element={<Navigate to="/clients" replace />} />
         <Route
