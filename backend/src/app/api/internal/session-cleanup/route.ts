@@ -10,7 +10,7 @@ const parsePositiveInteger = (rawValue: string | undefined, fallback: number) =>
   }
 
   const parsedValue = Number(rawValue);
-  if (!Number.isFinite(parsedValue) || parsedValue < 1) {
+  if (!isFinite(parsedValue) || parsedValue < 1) {
     return fallback;
   }
 

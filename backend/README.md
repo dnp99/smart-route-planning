@@ -232,6 +232,8 @@ Authentication behavior:
   - Requires `SESSION_CLEANUP_CRON_SECRET` via `Authorization: Bearer <secret>` (or `x-session-cleanup-key`).
   - Deletes expired sessions and stale revoked sessions.
   - Intended for scheduled invocations (for example Vercel Cron).
+  - Current cron schedule (`backend/vercel.json`): `0 2 * * *` (daily at 02:00 UTC).
+  - Note: Vercel Hobby supports daily cron frequency only.
 
 ## Security and Privacy Hardening (Current)
 

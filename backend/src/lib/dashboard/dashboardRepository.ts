@@ -481,10 +481,6 @@ export const getDashboardSummaryForNurse = async ({
     (total, run) => total + run.unscheduledVisitCount,
     0,
   );
-  const totalDurationTodaySeconds = todayRuns.reduce(
-    (total, run) => total + run.totalDurationSeconds,
-    0,
-  );
   const totalDistanceTodayMeters = todayRuns.reduce(
     (total, run) => total + run.totalDistanceMeters,
     0,
