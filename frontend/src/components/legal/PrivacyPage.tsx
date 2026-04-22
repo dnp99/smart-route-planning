@@ -32,7 +32,7 @@ export default function PrivacyPage({ isModal = false }: LegalPageProps) {
             <li>Email address</li>
             <li>Optional home address (for route planning defaults)</li>
           </ul>
-          <p className="m-0 mt-3 font-semibold">b) Client (Patient) Visit Information</p>
+          <p className="m-0 mt-3 font-semibold">b) Client Visit Information</p>
           <p className="m-0 mt-2">Users may enter client-related information, including:</p>
           <ul className="m-0 mt-2 list-disc pl-5">
             <li>Name</li>
@@ -60,7 +60,7 @@ export default function PrivacyPage({ isModal = false }: LegalPageProps) {
           </ul>
           <p className="m-0 mt-2">
             Audit metadata is limited to IDs, counts, timestamps, and request context. We avoid
-            storing patient names and addresses in audit payloads.
+            storing client names and addresses in audit payloads.
           </p>
         </section>
 
@@ -94,7 +94,7 @@ export default function PrivacyPage({ isModal = false }: LegalPageProps) {
             <li>Audit logging of system activity and access</li>
           </ul>
           <p className="m-0 mt-2">
-            We do <strong>not store client (patient) data in browser storage</strong> such as
+            We do <strong>not store client data in browser storage</strong> such as
             localStorage or sessionStorage. Authentication is managed through secure server-side
             sessions with HttpOnly cookies.
           </p>
@@ -111,7 +111,7 @@ export default function PrivacyPage({ isModal = false }: LegalPageProps) {
             <li>Meet applicable legal or professional requirements</li>
           </ul>
           <p className="m-0">
-            Client (patient) data may be retained in accordance with healthcare record-keeping
+            Client data may be retained in accordance with healthcare record-keeping
             expectations (for example, up to 10 years, depending on applicable regulations and user
             obligations).
           </p>

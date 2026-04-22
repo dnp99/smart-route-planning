@@ -251,3 +251,94 @@ export const parseListPatientsResponse = (payload: unknown): ListPatientsRespons
     patients: payload.patients.map(toPatient).filter((patient): patient is Patient => patient !== null),
   };
 };
+
+export const isRecurringVisitTemplateWindow = (
+  value: unknown,
+): value is RecurringVisitTemplateWindow => {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.dayOfWeek === "number" &&
+    Number.isInteger(value.dayOfWeek) &&
+    value.dayOfWeek >= 0 &&
+    value.dayOfWeek <= 6 &&
+    typeof value.startTime === "string" &&
+    typeof value.endTime === "string" &&
+    isVisitTimeType(value.visitTimeType)
+  );
+};
+
+export const isRecurringVisitTemplate = (value: unknown): value is RecurringVisitTemplate => {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.nurseId === "string" &&
+    typeof value.patientId === "string" &&
+    (typeof value.name === "string" || value.name === null) &&
+    typeof value.timezone === "string" &&
+    typeof value.recurrenceRule === "string" &&
+    typeof value.startDate === "string" &&
+    (typeof value.endDate === "string" || value.endDate === null) &&
+    isVisitDurationMinutes(value.serviceDurationMinutes) &&
+    typeof value.isActive === "boolean" &&
+    Array.isArray(value.windows) &&
+    value.windows.every((window) => isRecurringVisitTemplateWindow(window)) &&
+    typeof value.createdAt === "string" &&
+    typeof value.updatedAt === "string"
+  );
+};
+
+export const parseListRecurringVisitTemplatesResponse = (
+  payload: unknown,
+): ListRecurringVisitTemplatesResponse => {
+  if (!isObject(payload) || !Array.isArray(payload.templates)) {
+    return { templates: [] };
+  }
+
+  return {
+    templates: payload.templates.filter((template): template is RecurringVisitTemplate =>
+      isRecurringVisitTemplate(template),
+    ),
+  };
+};
+
+export const isVisitInstance = (value: unknown): value is VisitInstance => {
+  if (!isObject(value)) {
+    return false;
+  }
+
+  return (
+    typeof value.id === "string" &&
+    typeof value.nurseId === "string" &&
+    typeof value.patientId === "string" &&
+    (typeof value.templateId === "string" || value.templateId === null) &&
+    typeof value.occurrenceKey === "string" &&
+    typeof value.planningDate === "string" &&
+    typeof value.address === "string" &&
+    (typeof value.googlePlaceId === "string" || value.googlePlaceId === null) &&
+    typeof value.windowStart === "string" &&
+    typeof value.windowEnd === "string" &&
+    isVisitTimeType(value.visitTimeType) &&
+    isVisitDurationMinutes(value.serviceDurationMinutes) &&
+    (value.status === "scheduled" || value.status === "cancelled") &&
+    typeof value.isManualOverride === "boolean" &&
+    typeof value.createdAt === "string" &&
+    typeof value.updatedAt === "string"
+  );
+};
+
+export const parseListVisitInstancesResponse = (payload: unknown): ListVisitInstancesResponse => {
+  if (!isObject(payload) || !Array.isArray(payload.instances)) {
+    return { instances: [] };
+  }
+
+  return {
+    instances: payload.instances.filter((instance): instance is VisitInstance => isVisitInstance(instance)),
+  };
+};

@@ -240,9 +240,19 @@ vi.mock("../../features/patients/api/patientService", () => ({
   deletePatient: (patientId: string) => deletePatientMock(patientId),
 }));
 
+vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({
+  listRecurringVisitTemplates: vi.fn(async () => []),
+  createRecurringVisitTemplate: vi.fn(),
+  updateRecurringVisitTemplate: vi.fn(),
+  deleteRecurringVisitTemplate: vi.fn(),
+}));
+
 vi.mock("../../features/route-planner/api/routePlannerService", () => ({
   requestOptimizedRoute: (request: Parameters<typeof requestOptimizedRouteMock>[0]) =>
     requestOptimizedRouteMock(request),
+  persistPlanningWindows: vi.fn(async () => undefined),
+  requestVisitInstances: vi.fn(async () => []),
+  resolveWorkingHoursForDate: () => null,
 }));
 
 vi.mock("../../components/auth/authService", () => ({

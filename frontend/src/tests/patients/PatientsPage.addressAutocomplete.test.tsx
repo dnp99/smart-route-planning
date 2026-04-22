@@ -8,6 +8,13 @@ vi.mock("../../features/patients/api/patientService", () => ({
   deletePatient: vi.fn(),
 }));
 
+vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({
+  listRecurringVisitTemplates: vi.fn(async () => []),
+  createRecurringVisitTemplate: vi.fn(),
+  updateRecurringVisitTemplate: vi.fn(),
+  deleteRecurringVisitTemplate: vi.fn(),
+}));
+
 vi.mock("../../components/AddressAutocompleteInput", () => ({
   default: ({
     id,

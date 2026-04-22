@@ -14,6 +14,7 @@ const { routeOptimizationState } = vi.hoisted(() => ({
 
 const optimizeRouteMock = vi.fn();
 const persistPlanningWindowsMock = vi.fn();
+const requestVisitInstancesMock = vi.fn();
 const createPatientMock = vi.fn();
 const usePatientSearchMock = vi.fn<
   (args: { query: string; enabled: boolean }) => {
@@ -45,6 +46,8 @@ vi.mock("../../features/route-planner/hooks/usePatientSearch", () => ({
 
 vi.mock("../../features/route-planner/api/routePlannerService", () => ({
   persistPlanningWindows: (...args: unknown[]) => persistPlanningWindowsMock(...args),
+  requestVisitInstances: (...args: unknown[]) => requestVisitInstancesMock(...args),
+  resolveWorkingHoursForDate: () => null,
 }));
 
 vi.mock("../../features/patients/api/patientService", () => ({
@@ -280,8 +283,10 @@ describe("RoutePlanner patient selection integration", () => {
     window.localStorage.clear();
     optimizeRouteMock.mockReset();
     persistPlanningWindowsMock.mockReset();
+    requestVisitInstancesMock.mockReset();
     createPatientMock.mockReset();
     persistPlanningWindowsMock.mockResolvedValue(undefined);
+    requestVisitInstancesMock.mockResolvedValue([]);
     createPatientMock.mockResolvedValue({
       id: "patient-5",
       nurseId: "nurse-1",
@@ -510,6 +515,53 @@ describe("RoutePlanner patient selection integration", () => {
     });
   });
 
+  it("hydrates selected destinations from visit instances for planning date", async () => {
+    requestVisitInstancesMock.mockResolvedValueOnce([
+      {
+        id: "instance-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        templateId: "template-1",
+        occurrenceKey: "patient-1:2026-03-14:0",
+        planningDate: "2026-03-14",
+        address: "123 Main St",
+        googlePlaceId: "place-1",
+        windowStart: "08:00",
+        windowEnd: "08:30",
+        visitTimeType: "fixed",
+        serviceDurationMinutes: 30,
+        status: "scheduled",
+        isManualOverride: false,
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+
+    render(<RoutePlanner />);
+
+    await waitFor(() => {
+      expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        destinations: [
+          expect.objectContaining({
+            visitId: "instance-1",
+            windowStart: "08:00",
+            windowEnd: "08:30",
+          }),
+        ],
+      }),
+    );
+  });
+
   it("shows home-address warning banner and supports account settings action when home address is missing", () => {
     const openAccountSettingsMock = vi.fn();
     render(<RoutePlanner onOpenAccountSettings={openAccountSettingsMock} />);
@@ -607,8 +659,8 @@ describe("RoutePlanner patient selection integration", () => {
   it("creates a new patient from destination card and auto-selects it", async () => {
     render(<RoutePlanner />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Add New Client" }));
-    expect(screen.getByRole("heading", { name: "Add New Client" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Add Client" }));
+    expect(screen.getByRole("heading", { name: "Add Client" })).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Olivia" },
@@ -632,7 +684,7 @@ describe("RoutePlanner patient selection integration", () => {
     });
 
     expect(screen.getByRole("button", { name: /^New Patient(?: · .+)?$/i })).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "Add New Client" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Add Client" })).toBeNull();
   });
 
   it("requires at least one selected client before optimizing", () => {

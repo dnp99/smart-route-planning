@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { Patient } from "../../../../../shared/contracts";
+import type { Patient, RecurringVisitTemplate } from "../../../../../shared/contracts";
 import { getPatientDisplayName, toTimeInput } from "../domain/patientForm";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 
@@ -14,6 +14,7 @@ type PatientsTableProps = {
   searchQuery: string;
   onDelete: (patientId: string) => Promise<void> | void;
   onEdit: (patient: Patient) => void;
+  recurringTemplatesByPatientId: Map<string, RecurringVisitTemplate[]>;
 };
 
 const TrashIcon = ({ className }: { className?: string }) => (
@@ -132,6 +133,20 @@ const resolveVisitTypeLabel = (patient: Patient): "fixed" | "flexible" | "mixed"
   return visitTypes.has("flexible") ? "flexible" : "fixed";
 };
 
+const formatRecurringSummary = (templates: RecurringVisitTemplate[] | undefined) => {
+  if (!templates || templates.length === 0) {
+    return "No recurring templates configured yet.";
+  }
+
+  const activeCount = templates.filter((template) => template.isActive).length;
+  if (activeCount === 0) {
+    return "All recurring templates are paused.";
+  }
+
+  const templateLabel = activeCount === 1 ? "recurring template" : "recurring templates";
+  return `${activeCount} active ${templateLabel}`;
+};
+
 const renderVisitTypePill = (visitType: "fixed" | "flexible" | "mixed") => {
   const typeClassName =
     visitType === "fixed"
@@ -230,6 +245,7 @@ export const PatientsTable = ({
   searchQuery,
   onDelete,
   onEdit,
+  recurringTemplatesByPatientId,
 }: PatientsTableProps) => {
   const [openActionsMenuKey, setOpenActionsMenuKey] = useState<string | null>(null);
   const actionsMenuRef = useRef<HTMLDivElement | null>(null);
@@ -421,6 +437,7 @@ export const PatientsTable = ({
           const patientDisplayName = getPatientDisplayName(patient);
           const mobileMenuKey = `mobile:${patient.id}`;
           const isMobileMenuOpen = openActionsMenuKey === mobileMenuKey;
+          const recurringSummary = formatRecurringSummary(recurringTemplatesByPatientId.get(patient.id));
 
           const isExpanded = expandedPatients.has(patient.id);
 
@@ -544,6 +561,12 @@ export const PatientsTable = ({
                       <dd className="m-0 text-slate-600 dark:text-slate-400">
                         {patient.visitDurationMinutes} min
                       </dd>
+                      <dt className={`mt-2 ${responsiveStyles.recurrenceLabel}`}>
+                        Recurrence
+                      </dt>
+                      <dd className={responsiveStyles.recurrenceValue}>
+                        {recurringSummary}
+                      </dd>
                     </div>
                   </div>
                 </dl>
@@ -649,6 +672,7 @@ export const PatientsTable = ({
                 const windowRows = resolvePatientWindowRows(patient);
                 const visitType = resolveVisitTypeLabel(patient);
                 const patientDisplayName = getPatientDisplayName(patient);
+                const recurringSummary = formatRecurringSummary(recurringTemplatesByPatientId.get(patient.id));
                 return (
                   <tr key={patient.id} className={responsiveStyles.tableRow}>
                     <td className="px-6 py-5">
@@ -730,6 +754,9 @@ export const PatientsTable = ({
                         </svg>
                         {patient.visitDurationMinutes} min
                       </span>
+                      <p className={`mt-1 ${responsiveStyles.recurrenceValue}`}>
+                        {recurringSummary}
+                      </p>
                     </td>
                     <td className="px-4 py-5 text-right">
                       <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">

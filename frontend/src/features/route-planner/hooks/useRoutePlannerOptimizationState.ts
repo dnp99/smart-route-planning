@@ -61,6 +61,16 @@ export function useRoutePlannerOptimizationState({
   optimizeRoute,
   onOptimizationStarted,
 }: UseRoutePlannerOptimizationStateParams) {
+  const resolveDestinationIdentity = (destination: {
+    visitId?: string;
+    patientId: string;
+    windowStart: string;
+    windowEnd: string;
+  }) =>
+    typeof destination.visitId === "string" && destination.visitId.trim().length > 0
+      ? destination.visitId
+      : `${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`;
+
   const [plannerOptimizationObjective, setPlannerOptimizationObjective] = useState<
     "time" | "distance"
   >(optimizationObjective);
@@ -94,15 +104,12 @@ export function useRoutePlannerOptimizationState({
     const scheduledKeys = new Set(
       manuallyOrderedStops
         .filter((stop) => !stop.isEndingPoint && stop.tasks.length > 0)
-        .flatMap((stop) =>
-          stop.tasks.map((task) => `${task.patientId}:${task.windowStart}:${task.windowEnd}`),
-        ),
+        .flatMap((stop) => stop.tasks.map((task) => resolveDestinationIdentity(task))),
     );
 
     return selectedDestinations.filter(
       (destination) =>
-        destination.isIncluded &&
-        !scheduledKeys.has(`${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`),
+        destination.isIncluded && !scheduledKeys.has(resolveDestinationIdentity(destination)),
     ).length;
   }, [isManualOrderStale, manuallyOrderedStops, result, selectedDestinations]);
 
@@ -155,6 +162,7 @@ export function useRoutePlannerOptimizationState({
       .filter((stop) => !stop.isEndingPoint && stop.tasks.length > 0)
       .flatMap((stop) =>
         stop.tasks.map((task) => ({
+          visitId: task.visitId,
           patientId: task.patientId,
           patientName: task.patientName,
           address: task.address,
@@ -171,18 +179,16 @@ export function useRoutePlannerOptimizationState({
     }
 
     const scheduledKeys = new Set(
-      destinationsInManualOrder.map((destination) =>
-        `${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`,
-      ),
+      destinationsInManualOrder.map((destination) => resolveDestinationIdentity(destination)),
     );
 
     const unscheduledDestinations = selectedDestinations
       .filter(
         (destination) =>
-          destination.isIncluded &&
-          !scheduledKeys.has(`${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`),
+          destination.isIncluded && !scheduledKeys.has(resolveDestinationIdentity(destination)),
       )
       .map((destination) => ({
+        visitId: destination.visitId,
         patientId: destination.patientId,
         patientName: destination.patientName,
         address: destination.address,

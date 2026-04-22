@@ -4,14 +4,24 @@ import type { Patient, VisitTimeType } from "../../../../../shared/contracts";
 import type { AddressSuggestion } from "../types";
 import {
   EMPTY_FORM,
+  buildRecurringTemplateMutationPlan,
+  createEmptyRecurringTemplate,
+  createEmptyRecurringTemplateWindow,
   createEmptyVisitWindow,
   type FormFieldErrors,
+  type PatientFormRecurringTemplate,
+  type PatientFormRecurringTemplateWindow,
   type PatientFormValues,
   type PatientFormVisitWindow,
   toCreateRequest,
   validateForm,
 } from "../patients/patientForm";
 import { createPatient } from "../patients/patientService";
+import {
+  createRecurringVisitTemplate,
+  deleteRecurringVisitTemplate,
+  updateRecurringVisitTemplate,
+} from "../patients/recurringVisitTemplateService";
 
 type UseCreatePatientFormOptions = {
   onPatientCreated: (patient: Patient) => void;
@@ -139,6 +149,123 @@ export const useCreatePatientForm = ({ onPatientCreated }: UseCreatePatientFormO
     }));
   };
 
+  const handleCreateRecurringTemplateChange = <K extends keyof PatientFormRecurringTemplate>(
+    templateId: string,
+    field: K,
+    value: PatientFormRecurringTemplate[K],
+  ) => {
+    setCreatePatientFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) =>
+        template.id === templateId ? { ...template, [field]: value } : template,
+      ),
+    }));
+    setCreatePatientFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleAddCreateRecurringTemplate = () => {
+    setCreatePatientFormValues((current) => ({
+      ...current,
+      recurringTemplates: [...current.recurringTemplates, createEmptyRecurringTemplate()],
+    }));
+    setCreatePatientFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleRemoveCreateRecurringTemplate = (templateId: string) => {
+    setCreatePatientFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.filter((template) => template.id !== templateId),
+    }));
+    setCreatePatientFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleAddCreateRecurringTemplateWindow = (templateId: string) => {
+    setCreatePatientFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) => {
+        if (template.id !== templateId) {
+          return template;
+        }
+
+        return {
+          ...template,
+          windows: [
+            ...template.windows,
+            createEmptyRecurringTemplateWindow(template.windows.length + 1),
+          ],
+        };
+      }),
+    }));
+    setCreatePatientFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleRemoveCreateRecurringTemplateWindow = (templateId: string, windowId: string) => {
+    setCreatePatientFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) => {
+        if (template.id !== templateId) {
+          return template;
+        }
+
+        return {
+          ...template,
+          windows: template.windows.filter((window) => window.id !== windowId),
+        };
+      }),
+    }));
+    setCreatePatientFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleCreateRecurringTemplateWindowChange = <
+    K extends keyof PatientFormRecurringTemplateWindow,
+  >(
+    templateId: string,
+    windowId: string,
+    field: K,
+    value: PatientFormRecurringTemplateWindow[K],
+  ) => {
+    setCreatePatientFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) => {
+        if (template.id !== templateId) {
+          return template;
+        }
+
+        return {
+          ...template,
+          windows: template.windows.map((window) =>
+            window.id === windowId ? { ...window, [field]: value } : window,
+          ),
+        };
+      }),
+    }));
+    setCreatePatientFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
   const handleCreatePatientAddressChange = (value: string) => {
     setCreatePatientFormValues((current) => ({
       ...current,
@@ -173,6 +300,20 @@ export const useCreatePatientForm = ({ onPatientCreated }: UseCreatePatientFormO
     setIsCreatingPatient(true);
     try {
       const createdPatient = await createPatient(toCreateRequest(createPatientFormValues));
+      const mutationPlan = buildRecurringTemplateMutationPlan(
+        createdPatient.id,
+        createPatientFormValues,
+        [],
+      );
+      await Promise.all(mutationPlan.remove.map((templateId) => deleteRecurringVisitTemplate(templateId)));
+      await Promise.all(
+        mutationPlan.create.map((request) => createRecurringVisitTemplate(request)),
+      );
+      await Promise.all(
+        mutationPlan.update.map(({ templateId, request }) =>
+          updateRecurringVisitTemplate(templateId, request),
+        ),
+      );
 
       setLocallyCreatedPatients((current) => {
         const next = current.filter((patient) => patient.id !== createdPatient.id);
@@ -203,6 +344,12 @@ export const useCreatePatientForm = ({ onPatientCreated }: UseCreatePatientFormO
     handleAddCreatePatientVisitWindow,
     handleRemoveCreatePatientVisitWindow,
     handleCreatePatientVisitTypeChange,
+    handleCreateRecurringTemplateChange,
+    handleAddCreateRecurringTemplate,
+    handleRemoveCreateRecurringTemplate,
+    handleAddCreateRecurringTemplateWindow,
+    handleRemoveCreateRecurringTemplateWindow,
+    handleCreateRecurringTemplateWindowChange,
     handleCreatePatientAddressChange,
     handleCreatePatientAddressPick,
     handleCreatePatientSubmit,

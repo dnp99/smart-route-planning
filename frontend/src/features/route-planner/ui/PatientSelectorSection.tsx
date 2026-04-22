@@ -232,14 +232,14 @@ export const PatientSelectorSection = ({
                       aria-label="Destination client search"
                       value={destinationSearchQuery}
                       onChange={(e) => onSearchQueryChange(e.target.value)}
-                      placeholder="Search saved clients by first or last name"
+                      placeholder="Search clients by first or last name"
                       className={`${responsiveStyles.searchInputCompact} pl-9 sm:pl-10`}
                     />
                   </div>
                   <button
                     type="button"
                     onClick={onOpenCreatePatient}
-                    aria-label="Add New Client"
+                    aria-label="Add Client"
                     className={`${responsiveStyles.secondaryIconButton} sm:h-auto sm:w-auto sm:px-3 sm:py-1.5`}
                   >
                     <svg
@@ -256,7 +256,7 @@ export const PatientSelectorSection = ({
                       <path d="M12 5v14" />
                       <path d="M5 12h14" />
                     </svg>
-                    <span className="hidden sm:inline">Add New Client</span>
+                    <span className="hidden sm:inline">Add Client</span>
                   </button>
                 </div>
                 {isSearchLoading && (

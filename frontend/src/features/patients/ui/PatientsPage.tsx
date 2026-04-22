@@ -3,14 +3,19 @@ import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import { responsiveStyles } from "../responsiveStyles";
 import ConfirmDialog from "../modals/ConfirmDialog";
-import type { Patient, VisitTimeType } from "../../../../../shared/contracts";
+import type { Patient, RecurringVisitTemplate, VisitTimeType } from "../../../../../shared/contracts";
 import { PatientFormModal } from "./PatientFormModal";
 import { PatientsTable } from "./PatientsTable";
 import {
   EMPTY_FORM,
+  buildRecurringTemplateMutationPlan,
+  createEmptyRecurringTemplate,
+  createEmptyRecurringTemplateWindow,
   createEmptyVisitWindow,
   type FormFieldErrors,
   type FormMode,
+  type PatientFormRecurringTemplate,
+  type PatientFormRecurringTemplateWindow,
   type PatientFormValues,
   type PatientFormVisitWindow,
   toCreateRequest,
@@ -18,6 +23,12 @@ import {
   validateForm,
 } from "../domain/patientForm";
 import { createPatient, deletePatient, listPatients, updatePatient } from "../api/patientService";
+import {
+  createRecurringVisitTemplate,
+  deleteRecurringVisitTemplate,
+  listRecurringVisitTemplates,
+  updateRecurringVisitTemplate,
+} from "../api/recurringVisitTemplateService";
 
 const PlusIcon = ({ className }: { className?: string }) => (
   <svg
@@ -51,6 +62,9 @@ const PatientsPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPrivacyReminder, setShowPrivacyReminder] = useState(false);
+  const [recurringTemplatesByPatientId, setRecurringTemplatesByPatientId] = useState<
+    Map<string, RecurringVisitTemplate[]>
+  >(new Map());
 
   const selectedPatient = useMemo(
     () => patients.find((patient) => patient.id === selectedPatientId) ?? null,
@@ -63,8 +77,18 @@ const PatientsPage = () => {
     setPageError("");
 
     try {
-      const nextPatients = await listPatients(query);
+      const [nextPatients, recurringTemplates] = await Promise.all([
+        listPatients(query),
+        listRecurringVisitTemplates(),
+      ]);
       setPatients(nextPatients);
+      const nextRecurringTemplatesByPatientId = new Map<string, RecurringVisitTemplate[]>();
+      recurringTemplates.forEach((template) => {
+        const current = nextRecurringTemplatesByPatientId.get(template.patientId) ?? [];
+        current.push(template);
+        nextRecurringTemplatesByPatientId.set(template.patientId, current);
+      });
+      setRecurringTemplatesByPatientId(nextRecurringTemplatesByPatientId);
       if (!query) setTotalPatientCount(nextPatients.length);
 
       if (selectedPatientId && !nextPatients.some((patient) => patient.id === selectedPatientId)) {
@@ -102,7 +126,7 @@ const PatientsPage = () => {
   const openEditModal = (patient: Patient) => {
     setSelectedPatientId(patient.id);
     setFormMode("edit");
-    setFormValues(toFormValues(patient));
+    setFormValues(toFormValues(patient, recurringTemplatesByPatientId.get(patient.id) ?? []));
     setFormErrors({});
     setPageError("");
     setIsModalOpen(true);
@@ -162,6 +186,143 @@ const PatientsPage = () => {
       visitWindows: undefined,
       visitWindowRows: undefined,
     }));
+  };
+
+  const handleRecurringTemplateChange = <K extends keyof PatientFormRecurringTemplate>(
+    templateId: string,
+    field: K,
+    value: PatientFormRecurringTemplate[K],
+  ) => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) =>
+        template.id === templateId ? { ...template, [field]: value } : template,
+      ),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleAddRecurringTemplate = () => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: [...current.recurringTemplates, createEmptyRecurringTemplate()],
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleRemoveRecurringTemplate = (templateId: string) => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.filter((template) => template.id !== templateId),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleAddRecurringTemplateWindow = (templateId: string) => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) => {
+        if (template.id !== templateId) {
+          return template;
+        }
+
+        return {
+          ...template,
+          windows: [
+            ...template.windows,
+            createEmptyRecurringTemplateWindow(template.windows.length + 1),
+          ],
+        };
+      }),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleRemoveRecurringTemplateWindow = (templateId: string, windowId: string) => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) => {
+        if (template.id !== templateId) {
+          return template;
+        }
+
+        return {
+          ...template,
+          windows: template.windows.filter((window) => window.id !== windowId),
+        };
+      }),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleRecurringTemplateWindowChange = <K extends keyof PatientFormRecurringTemplateWindow>(
+    templateId: string,
+    windowId: string,
+    field: K,
+    value: PatientFormRecurringTemplateWindow[K],
+  ) => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) => {
+        if (template.id !== templateId) {
+          return template;
+        }
+
+        return {
+          ...template,
+          windows: template.windows.map((window) =>
+            window.id === windowId ? { ...window, [field]: value } : window,
+          ),
+        };
+      }),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const syncRecurringTemplatesForPatient = async (
+    patientId: string,
+    values: PatientFormValues,
+    existingTemplates: RecurringVisitTemplate[],
+  ) => {
+    const mutationPlan = buildRecurringTemplateMutationPlan(patientId, values, existingTemplates);
+
+    await Promise.all(mutationPlan.remove.map((templateId) => deleteRecurringVisitTemplate(templateId)));
+
+    const created = await Promise.all(
+      mutationPlan.create.map((request) => createRecurringVisitTemplate(request)),
+    );
+
+    const updated = await Promise.all(
+      mutationPlan.update.map(({ templateId, request }) =>
+        updateRecurringVisitTemplate(templateId, request),
+      ),
+    );
+
+    return [...created, ...updated];
   };
 
   const handleVisitTypeChange = (visitTimeType: VisitTimeType) => {
@@ -227,7 +388,8 @@ const PatientsPage = () => {
 
     try {
       if (formMode === "create") {
-        await createPatient(toCreateRequest(formValues));
+        const createdPatient = await createPatient(toCreateRequest(formValues));
+        await syncRecurringTemplatesForPatient(createdPatient.id, formValues, []);
         closeModal();
         setSearchQuery("");
         await fetchPatients("");
@@ -240,9 +402,14 @@ const PatientsPage = () => {
       }
 
       const updated = await updatePatient(selectedPatientId, toCreateRequest(formValues));
+      await syncRecurringTemplatesForPatient(
+        selectedPatientId,
+        formValues,
+        recurringTemplatesByPatientId.get(selectedPatientId) ?? [],
+      );
       setSelectedPatientId(updated.id);
       setFormMode("edit");
-      setFormValues(toFormValues(updated));
+      setFormValues(toFormValues(updated, recurringTemplatesByPatientId.get(updated.id) ?? []));
       await fetchPatients(searchQuery);
       setIsModalOpen(false);
     } catch (error) {
@@ -398,6 +565,7 @@ const PatientsPage = () => {
             searchQuery={searchQuery}
             onDelete={handleDelete}
             onEdit={openEditModal}
+            recurringTemplatesByPatientId={recurringTemplatesByPatientId}
           />
         </div>
 
@@ -426,6 +594,12 @@ const PatientsPage = () => {
           onVisitWindowChange={handleVisitWindowChange}
           onAddVisitWindow={handleAddVisitWindow}
           onRemoveVisitWindow={handleRemoveVisitWindow}
+          onRecurringTemplateChange={handleRecurringTemplateChange}
+          onAddRecurringTemplate={handleAddRecurringTemplate}
+          onRemoveRecurringTemplate={handleRemoveRecurringTemplate}
+          onAddRecurringTemplateWindow={handleAddRecurringTemplateWindow}
+          onRemoveRecurringTemplateWindow={handleRemoveRecurringTemplateWindow}
+          onRecurringTemplateWindowChange={handleRecurringTemplateWindowChange}
           selectedVisitType={selectedVisitType}
           onVisitTypeChange={handleVisitTypeChange}
           onAddressChange={handleAddressChange}

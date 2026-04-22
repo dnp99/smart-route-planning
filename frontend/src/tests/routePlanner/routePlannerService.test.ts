@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   persistPlanningWindows,
+  requestVisitInstances,
   requestOptimizedRoute,
   resolveWorkingHoursForDate,
 } from "../../features/route-planner/api/routePlannerService";
@@ -440,6 +441,75 @@ describe("requestOptimizedRoute", () => {
         windowType: "fixed",
       },
     ]);
+  });
+
+  it("uses destination visitId when provided", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => buildValidResponse(),
+    } as Response);
+
+    await requestOptimizedRoute({
+      startAddress: "Start",
+      endAddress: "End",
+      planningDate: "2026-03-13",
+      timezone: "America/Toronto",
+      destinations: [
+        {
+          visitId: "instance-123",
+          address: "A",
+          patientId: "patient-1",
+          patientName: "Jane Doe",
+          windowStart: "09:00",
+          windowEnd: "09:30",
+          windowType: "fixed",
+        },
+      ],
+    });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse(String(init.body)).visits).toEqual([
+      expect.objectContaining({
+        visitId: "instance-123",
+        patientId: "patient-1",
+      }),
+    ]);
+  });
+
+  it("loads visit instances from API", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        instances: [
+          {
+            id: "instance-1",
+            nurseId: "nurse-1",
+            patientId: "patient-1",
+            templateId: null,
+            occurrenceKey: "patient-1:2026-03-13:0",
+            planningDate: "2026-03-13",
+            address: "123 Main St",
+            googlePlaceId: null,
+            windowStart: "09:00",
+            windowEnd: "10:00",
+            visitTimeType: "fixed",
+            serviceDurationMinutes: 30,
+            status: "scheduled",
+            isManualOverride: false,
+            createdAt: "2026-03-10T12:00:00.000Z",
+            updatedAt: "2026-03-10T12:00:00.000Z",
+          },
+        ],
+      }),
+    } as Response);
+
+    const instances = await requestVisitInstances({ planningDate: "2026-03-13" });
+
+    expect(instances).toHaveLength(1);
+    expect(instances[0].id).toBe("instance-1");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://api.example.com/api/visit-instances?planningDate=2026-03-13");
+    expect(init.method).toBe("GET");
   });
 
   it("keeps unscheduled task untouched when visitId is not found in request map", async () => {

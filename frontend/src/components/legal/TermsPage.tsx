@@ -75,7 +75,7 @@ export default function TermsPage({ isModal = false }: LegalPageProps) {
 
         <section>
           <h2 className={responsiveStyles.legalSectionTitle}>
-            5. Client (Patient) Data
+            5. Client Data
           </h2>
           <p className="m-0">You are solely responsible for:</p>
           <ul className="m-0 mt-2 list-disc pl-5">

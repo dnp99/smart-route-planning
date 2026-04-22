@@ -35,6 +35,13 @@ vi.mock("../features/patients/api/patientService", () => ({
   listPatients: listPatientsMock,
 }));
 
+vi.mock("../features/patients/api/recurringVisitTemplateService", () => ({
+  listRecurringVisitTemplates: vi.fn(async () => []),
+  createRecurringVisitTemplate: vi.fn(),
+  updateRecurringVisitTemplate: vi.fn(),
+  deleteRecurringVisitTemplate: vi.fn(),
+}));
+
 vi.mock("../components/home/homeDashboardService", () => ({
   fetchDashboardSummary: fetchDashboardSummaryMock,
 }));
