@@ -437,7 +437,6 @@ describe("App routing", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Smart Route Planner" })).toBeTruthy();
-    expect(screen.getByText("Operations workspace for Nurse One")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Route Planner" }).getAttribute("aria-current")).toBe(
       "page",
     );
@@ -474,7 +473,7 @@ describe("App routing", () => {
     );
   });
 
-  it("capitalizes nurse display name in the workspace subtitle", async () => {
+  it("normalizes mixed-case nurse display name into account initials", async () => {
     fetchMeMock.mockResolvedValue({
       user: {
         id: "nurse-1",
@@ -493,7 +492,9 @@ describe("App routing", () => {
 
     await waitForPatientsPage();
     expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
-    expect(screen.getByText("Operations workspace for Nurse One")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open account options menu" }).textContent).toBe(
+      "NO",
+    );
   });
 
   it("renders patients page at /patients and marks nav active", async () => {

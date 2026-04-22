@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   updateProfile,
   updateOptimizationObjective,
@@ -100,32 +100,53 @@ export function useAccountSettings({
   const [scheduleError, setScheduleError] = useState("");
   const [scheduleSuccess, setScheduleSuccess] = useState("");
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+  const wasOpenRef = useRef(false);
 
   const isBusy =
     isSavingAccountSettings || isUpdatingPassword || isSavingSchedule || isSavingObjective;
 
-  // Reset all form state when modal opens
+  // Reset all form state only when modal transitions from closed -> open.
   useEffect(() => {
-    if (!isOpen) return;
-    setDisplayNameInput(authUser?.displayName ?? "");
-    setHomeAddressInput(authUser?.homeAddress ?? "");
+    if (isOpen && !wasOpenRef.current) {
+      setDisplayNameInput(authUser?.displayName ?? "");
+      setHomeAddressInput(authUser?.homeAddress ?? "");
+      setAccountSettingsError("");
+      setAccountSettingsSuccess("");
+      setCurrentPasswordInput("");
+      setNewPasswordInput("");
+      setConfirmPasswordInput("");
+      setPasswordError("");
+      setPasswordSuccess("");
+      setShowCurrentPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmPassword(false);
+      setScheduleInput(buildDefaultSchedule(authUser?.workingHours));
+      setBreakGapEnabled(authUser?.breakGapThresholdMinutes != null);
+      setBreakGapInput(String(authUser?.breakGapThresholdMinutes ?? DEFAULT_BREAK_GAP_THRESHOLD));
+      setScheduleError("");
+      setScheduleSuccess("");
+      setObjectiveError("");
+    }
+
+    wasOpenRef.current = isOpen;
+  }, [
+    authUser?.breakGapThresholdMinutes,
+    authUser?.displayName,
+    authUser?.homeAddress,
+    authUser?.workingHours,
+    isOpen,
+  ]);
+
+  const handleClose = useCallback(() => {
+    if (isBusy) return;
     setAccountSettingsError("");
     setAccountSettingsSuccess("");
-    setCurrentPasswordInput("");
-    setNewPasswordInput("");
-    setConfirmPasswordInput("");
     setPasswordError("");
     setPasswordSuccess("");
-    setShowCurrentPassword(false);
-    setShowNewPassword(false);
-    setShowConfirmPassword(false);
-    setScheduleInput(buildDefaultSchedule(authUser?.workingHours));
-    setBreakGapEnabled(authUser?.breakGapThresholdMinutes != null);
-    setBreakGapInput(String(authUser?.breakGapThresholdMinutes ?? DEFAULT_BREAK_GAP_THRESHOLD));
     setScheduleError("");
     setScheduleSuccess("");
-    setObjectiveError("");
-  }, [isOpen]); // eslint-disable-line react-hooks/exhaustive-deps
+    onClose();
+  }, [isBusy, onClose]);
 
   // Escape to close (re-registers whenever busy state changes)
   useEffect(() => {
@@ -135,18 +156,7 @@ export function useAccountSettings({
     };
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, isSavingAccountSettings, isUpdatingPassword, isSavingSchedule]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const handleClose = () => {
-    if (isBusy) return;
-    setAccountSettingsError("");
-    setAccountSettingsSuccess("");
-    setPasswordError("");
-    setPasswordSuccess("");
-    setScheduleError("");
-    setScheduleSuccess("");
-    onClose();
-  };
+  }, [handleClose, isOpen]);
 
   const handleAccountSettingsSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

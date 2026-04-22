@@ -1,8 +1,9 @@
 import { useEffect } from "react";
-import { formatNameWords } from "../patients/patientName";
+import { formatNameWords } from "../../features/patients/domain/patientName";
 import { responsiveStyles } from "../responsiveStyles";
 import { useScrollShrink } from "../hooks/useScrollShrink";
 import { useClickOutside } from "../hooks/useClickOutside";
+import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
 
 type AuthUser = { displayName?: string; email?: string; homeAddress?: string } | null;
 
@@ -53,65 +54,50 @@ export default function AppHeader({
     if (!isAuthenticated) setIsAccountMenuOpen(false);
   }, [isAuthenticated, setIsAccountMenuOpen]);
 
-  const formattedDisplayName =
-    typeof authUser?.displayName === "string" ? formatNameWords(authUser.displayName) : "";
   const accountInitials = resolveAccountInitials(authUser?.displayName, authUser?.email);
-  const workspaceSubtitle = formattedDisplayName
-    ? `Operations workspace for ${formattedDisplayName}`
-    : "Operations workspace";
+  const headerInnerClassName = isAuthenticated
+    ? responsiveStyles.appHeaderInner
+    : "mx-auto flex w-full max-w-7xl items-center justify-center px-6";
 
   return (
-    <header className={responsiveStyles.appHeader}>
+    <header
+      className={[responsiveStyles.appHeader, responsiveStyles.appHeaderBackgroundGradient].join(" ")}
+    >
       <div
-        className={[responsiveStyles.appHeaderInner, headerScrolled ? "py-2" : "py-3 sm:py-4"].join(
-          " ",
-        )}
+        className={[
+          headerInnerClassName,
+          headerScrolled ? "py-1" : "py-3 sm:py-4",
+          "transition-all duration-300",
+        ].join(" ")}
       >
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.75"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="h-5 w-5 text-blue-600 dark:text-blue-400"
-            >
-              <path d="M1 12 L5 12 L7 5 L9 19 L11 12 L13 12" />
-              <path d="M19 5C16.8 5 15 6.8 15 9C15 11.8 19 17 19 17C19 17 23 11.8 23 9C23 6.8 21.2 5 19 5Z" />
-              <circle cx="19" cy="9" r="1.8" fill="currentColor" strokeWidth="0" />
-            </svg>
+          <div
+            className={[
+              "flex shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 transition-all duration-300",
+              headerScrolled ? "h-9 w-9" : "h-11 w-11 sm:h-12 sm:w-12 lg:h-12 lg:w-12",
+            ].join(" ")}
+          >
+            <RoutefyBrandMark
+              className={[
+                "text-blue-600 dark:text-blue-400 transition-all duration-300",
+                headerScrolled ? "h-5 w-5" : "h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8",
+              ].join(" ")}
+            />
           </div>
           <div className="min-w-0">
-            <p className="m-0 text-base font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 sm:text-lg">
-              Routefy
-            </p>
             <p
               className={[
-                "m-0 mt-0.5 truncate text-xs text-slate-500 transition-all duration-300 sm:text-sm dark:text-slate-400",
-                headerScrolled ? "max-h-0 overflow-hidden opacity-0" : "max-h-8 opacity-100",
+                "m-0 font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 transition-all duration-300",
+                headerScrolled ? "text-sm" : "text-base sm:text-lg lg:text-2xl",
               ].join(" ")}
             >
-              {workspaceSubtitle}
+              Routefy
             </p>
           </div>
         </div>
 
-        <div className="ml-auto flex min-w-0 items-center gap-2">
-          {!isAuthenticated && (
-            <p className="m-0 text-xs font-semibold text-slate-500 dark:text-slate-400">
-              {new Date().toLocaleDateString("en-US", {
-                weekday: "short",
-                month: "short",
-                day: "numeric",
-              })}
-            </p>
-          )}
-
-          {isAuthenticated && (
+        {isAuthenticated && (
+          <div className="ml-auto flex min-w-0 items-center gap-2">
             <div ref={accountMenuRef} className="relative">
               <button
                 type="button"
@@ -140,7 +126,7 @@ export default function AppHeader({
                       setIsAccountMenuOpen(false);
                       onOpenAccountSettings();
                     }}
-                    className="flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                    className={responsiveStyles.accountMenuItem}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -167,7 +153,7 @@ export default function AppHeader({
                       setIsAccountMenuOpen(false);
                       onLogout();
                     }}
-                    className="flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                    className={responsiveStyles.accountMenuItemDestructive}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -190,8 +176,8 @@ export default function AppHeader({
                 </div>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </header>
   );

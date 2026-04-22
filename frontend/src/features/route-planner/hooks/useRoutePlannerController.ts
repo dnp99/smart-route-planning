@@ -48,6 +48,7 @@ export function useRoutePlannerController({
     showOptimizeSuccess,
     showOptimizeFlash,
     hasAttemptedOptimize,
+    restoreCachedResult,
     optimizeRoute,
   } = useRouteOptimization();
 
@@ -71,7 +72,6 @@ export function useRoutePlannerController({
     startAddress,
     manualEndAddress,
     startGooglePlaceId,
-    manualEndGooglePlaceId,
     setStartTouched,
     setEndTouched,
     handleStartAddressChange,
@@ -85,7 +85,7 @@ export function useRoutePlannerController({
     startFieldError,
     endFieldError,
     optimizeEndpointHint,
-  } = useRoutePlannerAddresses({ initialDraft, normalizedHomeAddress, hasAttemptedOptimize });
+  } = useRoutePlannerAddresses({ normalizedHomeAddress, hasAttemptedOptimize });
 
   const {
     locallyCreatedPatients,
@@ -167,10 +167,6 @@ export function useRoutePlannerController({
     useRoutePlannerDraftState({
       initialDraft,
       resolveDefaultPlanningDate: defaultPlanningDate,
-      startAddress,
-      manualEndAddress,
-      startGooglePlaceId,
-      manualEndGooglePlaceId,
       selectedDestinations,
       destinationSearchPatients,
       isDestinationSearchLoading,
@@ -186,6 +182,7 @@ export function useRoutePlannerController({
     setPlannerOptimizationObjective,
     localValidationError,
     hasChangedSinceLastOptimize,
+    currentOptimizeSnapshot,
     unscheduledResubmitCount,
     handleSubmit,
     handleRecalculateManualOrder,
@@ -206,6 +203,16 @@ export function useRoutePlannerController({
     optimizeRoute,
     onOptimizationStarted: () => setIsPatientSearchExpanded(false),
   });
+
+  useEffect(() => {
+    if (result || isLoading) {
+      return;
+    }
+
+    if (typeof restoreCachedResult === "function") {
+      restoreCachedResult(currentOptimizeSnapshot);
+    }
+  }, [currentOptimizeSnapshot, isLoading, restoreCachedResult, result]);
 
   const {
     expandedResultTaskIds,

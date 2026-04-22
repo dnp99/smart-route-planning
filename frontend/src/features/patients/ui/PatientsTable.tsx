@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Patient } from "../../../../../shared/contracts";
 import { getPatientDisplayName, toTimeInput } from "../domain/patientForm";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 
 type SortField = "name" | "duration" | null;
 type SortDir = "asc" | "desc";
@@ -134,18 +135,13 @@ const resolveVisitTypeLabel = (patient: Patient): "fixed" | "flexible" | "mixed"
 const renderVisitTypePill = (visitType: "fixed" | "flexible" | "mixed") => {
   const typeClassName =
     visitType === "fixed"
-      ? "bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-200"
+      ? responsiveStyles.visitTypePillFixed
       : visitType === "flexible"
-        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200"
-        : "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200";
+        ? responsiveStyles.visitTypePillFlexible
+        : responsiveStyles.visitTypePillMixed;
 
   return (
-    <span
-      className={[
-        "inline-flex w-fit justify-self-start rounded-full px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
-        typeClassName,
-      ].join(" ")}
-    >
+    <span className={[responsiveStyles.visitTypePillBase, typeClassName].join(" ")}>
       {visitType}
     </span>
   );
@@ -361,17 +357,14 @@ export const PatientsTable = ({
         {/* Mobile skeleton cards */}
         <div className="grid gap-3 md:hidden">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div
-              key={i}
-              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-            >
+            <div key={i} className={responsiveStyles.mobileClientCard}>
               <div className="h-5 w-2/5 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
               <div className="mt-3 h-4 w-3/5 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
             </div>
           ))}
         </div>
         {/* Desktop skeleton table */}
-        <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 md:block">
+        <div className={["hidden md:block", responsiveStyles.tableCard].join(" ")}>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
               <colgroup>
@@ -409,7 +402,7 @@ export const PatientsTable = ({
 
   if (patients.length === 0) {
     return (
-      <div className="rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400">
+      <div className={responsiveStyles.tableEmptyState}>
         {searchQuery.trim() ? "No clients match this search." : "No clients added yet."}
       </div>
     );
@@ -422,7 +415,7 @@ export const PatientsTable = ({
   return (
     <>
       <div className="grid gap-3 md:hidden">
-        {sortedFilteredPatients.map((patient, index) => {
+        {sortedFilteredPatients.map((patient) => {
           const windowRows = resolvePatientWindowRows(patient);
           const visitType = resolveVisitTypeLabel(patient);
           const patientDisplayName = getPatientDisplayName(patient);
@@ -432,10 +425,7 @@ export const PatientsTable = ({
           const isExpanded = expandedPatients.has(patient.id);
 
           return (
-            <article
-              key={patient.id}
-              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900"
-            >
+            <article key={patient.id} className={responsiveStyles.mobileClientCard}>
               <div className="grid grid-cols-[1fr_auto] items-center gap-x-1">
                 <button
                   type="button"
@@ -464,12 +454,12 @@ export const PatientsTable = ({
                         current === mobileMenuKey ? null : mobileMenuKey,
                       )
                     }
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+                    className={responsiveStyles.mobileActionButton}
                   >
                     <MoreActionsIcon className="h-4 w-4" />
                   </button>
                   {isMobileMenuOpen && (
-                    <div className="absolute right-0 z-20 mt-1 min-w-28 rounded-lg border border-slate-200 bg-white p-1 shadow-lg dark:border-slate-700 dark:bg-slate-900">
+                    <div className={responsiveStyles.dropdownMenu}>
                       <button
                         type="button"
                         onClick={() => {
@@ -477,7 +467,7 @@ export const PatientsTable = ({
                           onEdit(patient);
                         }}
                         aria-label={`Edit client ${patientDisplayName}`}
-                        className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                        className={responsiveStyles.dropdownMenuItem}
                       >
                         <EditIcon className="h-3.5 w-3.5" />
                         Edit
@@ -490,7 +480,7 @@ export const PatientsTable = ({
                         }}
                         disabled={isSubmitting}
                         aria-label={`Delete client ${patientDisplayName}`}
-                        className="inline-flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-300 dark:hover:bg-red-950/30"
+                        className={responsiveStyles.dropdownMenuItemDestructive}
                       >
                         <TrashIcon className="h-3.5 w-3.5" />
                         Remove
@@ -576,16 +566,16 @@ export const PatientsTable = ({
             <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/80">
               <tr>
                 <th className="px-6 py-3 text-left">
-                  <button
-                    type="button"
-                    onClick={() => handleSortClick("name")}
-                    className={[
-                      "inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
-                      sortField === "name"
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-slate-500 dark:text-slate-400",
-                    ].join(" ")}
-                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSortClick("name")}
+                      className={[
+                        responsiveStyles.tableSortButtonBase,
+                        sortField === "name"
+                          ? responsiveStyles.tableSortButtonActive
+                          : responsiveStyles.tableSortButtonInactive,
+                      ].join(" ")}
+                    >
                     Name
                     <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
                   </button>
@@ -594,16 +584,16 @@ export const PatientsTable = ({
                   Address
                 </th>
                 <th className="px-6 py-3 text-left">
-                  <button
-                    type="button"
-                    onClick={cycleWindowFilter}
-                    className={[
-                      "inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
-                      windowFilterActive
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-slate-500 dark:text-slate-400",
-                    ].join(" ")}
-                  >
+                    <button
+                      type="button"
+                      onClick={cycleWindowFilter}
+                      className={[
+                        responsiveStyles.tableSortButtonFilterBase,
+                        windowFilterActive
+                          ? responsiveStyles.tableSortButtonActive
+                          : responsiveStyles.tableSortButtonInactive,
+                      ].join(" ")}
+                    >
                     Window
                     {windowFilterLabel ? (
                       <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] normal-case tracking-normal text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
@@ -627,16 +617,16 @@ export const PatientsTable = ({
                   </button>
                 </th>
                 <th className="px-4 py-3 text-right">
-                  <button
-                    type="button"
-                    onClick={() => handleSortClick("duration")}
-                    className={[
-                      "inline-flex w-full items-center justify-end gap-1 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
-                      sortField === "duration"
-                        ? "text-blue-600 dark:text-blue-400"
-                        : "text-slate-500 dark:text-slate-400",
-                    ].join(" ")}
-                  >
+                    <button
+                      type="button"
+                      onClick={() => handleSortClick("duration")}
+                      className={[
+                        responsiveStyles.tableSortButtonBaseEnd,
+                        sortField === "duration"
+                          ? responsiveStyles.tableSortButtonActive
+                          : responsiveStyles.tableSortButtonInactive,
+                      ].join(" ")}
+                    >
                     Duration
                     <SortIcon field="duration" sortField={sortField} sortDir={sortDir} />
                   </button>
@@ -655,15 +645,12 @@ export const PatientsTable = ({
                   </td>
                 </tr>
               )}
-              {sortedFilteredPatients.map((patient, index) => {
+              {sortedFilteredPatients.map((patient) => {
                 const windowRows = resolvePatientWindowRows(patient);
                 const visitType = resolveVisitTypeLabel(patient);
                 const patientDisplayName = getPatientDisplayName(patient);
                 return (
-                  <tr
-                    key={patient.id}
-                    className="group transition hover:bg-slate-50 dark:hover:bg-slate-800/40"
-                  >
+                  <tr key={patient.id} className={responsiveStyles.tableRow}>
                     <td className="px-6 py-5">
                       <p className="m-0 line-clamp-2 text-sm font-bold text-slate-900 dark:text-slate-100">
                         {patientDisplayName}
@@ -751,7 +738,7 @@ export const PatientsTable = ({
                           onClick={() => onEdit(patient)}
                           aria-label={`Edit ${patientDisplayName}`}
                           title="Edit"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200"
+                          className={responsiveStyles.tableIconButton}
                         >
                           <EditIcon className="h-3.5 w-3.5" />
                         </button>
@@ -761,7 +748,7 @@ export const PatientsTable = ({
                           disabled={isSubmitting}
                           aria-label={`Delete ${patientDisplayName}`}
                           title="Delete"
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                          className={responsiveStyles.tableIconButtonDestructive}
                         >
                           <TrashIcon className="h-3.5 w-3.5" />
                         </button>

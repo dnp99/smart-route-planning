@@ -1,28 +1,19 @@
 import { useEffect, useState } from "react";
-import AddressAutocompleteInput from "../AddressAutocompleteInput";
+import AddressAutocompleteInput from "../shared/AddressAutocompleteInput";
 import ConfirmDialog from "./ConfirmDialog";
 import { responsiveStyles } from "../responsiveStyles";
 import { useAccountSettings, DAYS, buildDefaultSchedule } from "../hooks/useAccountSettings";
-import type { WeeklyWorkingHours } from "../../../../shared/contracts";
+import type { AuthUser as SharedAuthUser } from "../../../../shared/contracts";
 
 const MAX_HOME_ADDRESS_LENGTH = 200;
 const MAX_DISPLAY_NAME_LENGTH = 120;
 const PROFILE_MODAL_HOME_ADDRESS_ID = "account-settings-home-address";
 
-type AuthUser = {
-  displayName?: string;
-  email?: string;
-  homeAddress?: string;
-  workingHours?: WeeklyWorkingHours | null;
-  breakGapThresholdMinutes?: number | null;
-  optimizationObjective?: "time" | "distance" | null;
-} | null;
-
 interface AccountSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  authUser: AuthUser;
-  onHomeAddressSaved: (updatedUser: AuthUser) => void;
+  authUser: SharedAuthUser | null;
+  onHomeAddressSaved: (updatedUser: SharedAuthUser | null) => void;
 }
 
 const EyeIcon = ({ className }: { className?: string }) => (
@@ -63,10 +54,10 @@ const EyeOffIcon = ({ className }: { className?: string }) => (
 
 const resolveSettingsTabClassName = (isActive: boolean) =>
   [
-    "border-b-[3px] px-1 pb-3 pt-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
+    responsiveStyles.settingsTabButtonBase,
     isActive
-      ? "border-blue-700 text-blue-700 dark:border-blue-400 dark:text-blue-300"
-      : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200",
+      ? responsiveStyles.settingsTabButtonActive
+      : responsiveStyles.settingsTabButtonInactive,
   ].join(" ");
 
 export default function AccountSettingsModal({
@@ -75,6 +66,7 @@ export default function AccountSettingsModal({
   authUser,
   onHomeAddressSaved,
 }: AccountSettingsModalProps) {
+  const [showBreakReminderInfo, setShowBreakReminderInfo] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<"profile" | "working-hours" | "route">(
     "profile",
   );
@@ -257,15 +249,15 @@ export default function AccountSettingsModal({
         }}
       >
         <div className={`${responsiveStyles.modalSurface} flex flex-col overflow-hidden`}>
-          <div className="sm:hidden -mx-4 -mt-4 mb-3 flex justify-center pb-1 pt-2.5">
-            <div className="h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-600" />
+          <div className={responsiveStyles.modalSheetHandleWrap}>
+            <div className={responsiveStyles.modalSheetHandle} />
           </div>
-          <div className="mb-4 flex items-start justify-between gap-3">
+          <div className={responsiveStyles.infoModalHeader}>
             <div>
-              <h2 className="m-0 text-lg font-semibold text-slate-900 dark:text-slate-100">
+              <h2 className={responsiveStyles.accountSettingsTitle}>
                 Account settings
               </h2>
-              <p className="m-0 mt-1 text-sm text-slate-600 dark:text-slate-300">
+              <p className={responsiveStyles.accountSettingsDescription}>
                 Manage account profile details for route-planning defaults.
               </p>
             </div>
@@ -274,7 +266,7 @@ export default function AccountSettingsModal({
               onClick={handleClose}
               disabled={isBusy}
               aria-label="Close modal"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
+              className={responsiveStyles.modalCloseButton}
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <path
@@ -324,7 +316,7 @@ export default function AccountSettingsModal({
                   className="grid gap-4"
                   onSubmit={handleProfileSubmit}
                 >
-                  <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
+                  <label className={responsiveStyles.accountSettingsFieldLabel}>
                     <span className="font-medium">Display name</span>
                     <input
                       type="text"
@@ -335,18 +327,18 @@ export default function AccountSettingsModal({
                       }}
                       autoComplete="name"
                       disabled={isSavingAccountSettings}
-                      className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:px-4 sm:py-3"
+                      className={responsiveStyles.accountSettingsInput}
                     />
                   </label>
 
-                  <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-300">
+                  <label className={responsiveStyles.accountSettingsFieldLabel}>
                     <span className="font-medium">Email</span>
                     <input
                       type="email"
                       value={authUser?.email ?? ""}
                       readOnly
                       disabled
-                      className="w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-600 outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:px-4 sm:py-3"
+                      className={responsiveStyles.accountSettingsReadOnlyInput}
                     />
                   </label>
 
@@ -364,12 +356,12 @@ export default function AccountSettingsModal({
                   />
 
                   {accountSettingsError && (
-                    <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+                    <p className={responsiveStyles.inlineErrorBanner}>
                       {accountSettingsError}
                     </p>
                   )}
                   {accountSettingsSuccess && (
-                    <p className="m-0 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <p className={responsiveStyles.inlineSuccessBanner}>
                       {accountSettingsSuccess}
                     </p>
                   )}
@@ -418,7 +410,7 @@ export default function AccountSettingsModal({
                     return (
                       <label
                         key={field}
-                        className="grid gap-1 text-sm text-slate-700 dark:text-slate-300"
+                        className={responsiveStyles.accountSettingsFieldLabel}
                       >
                         <span className="font-medium">{label}</span>
                         <div className="relative">
@@ -429,7 +421,7 @@ export default function AccountSettingsModal({
                             autoComplete={autoComplete}
                             disabled={isUpdatingPassword}
                             className={[
-                              "w-full rounded-xl border bg-white px-3 py-2.5 pr-10 text-sm text-slate-900 outline-none transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-100 sm:px-4 sm:py-3",
+                              responsiveStyles.accountSettingsPasswordInputBase,
                               isConfirm
                                 ? confirmBorderClass
                                 : "border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700",
@@ -439,7 +431,7 @@ export default function AccountSettingsModal({
                             type="button"
                             onClick={() => setShow((v) => !v)}
                             aria-label={show ? "Hide password" : "Show password"}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+                            className={responsiveStyles.passwordVisibilityButton}
                           >
                             {show ? (
                               <EyeOffIcon className="h-4 w-4" />
@@ -453,12 +445,12 @@ export default function AccountSettingsModal({
                   })}
 
                   {passwordError && (
-                    <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+                    <p className={responsiveStyles.inlineErrorBanner}>
                       {passwordError}
                     </p>
                   )}
                   {passwordSuccess && (
-                    <p className="m-0 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <p className={responsiveStyles.inlineSuccessBanner}>
                       {passwordSuccess}
                     </p>
                   )}
@@ -472,16 +464,33 @@ export default function AccountSettingsModal({
                   onSubmit={handleScheduleSubmit}
                 >
                   <div className="grid gap-1">
-                    <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      <input
-                        type="checkbox"
-                        checked={breakGapEnabled}
-                        onChange={(e) => setBreakGapEnabled(e.target.checked)}
-                        disabled={scheduleControlsDisabled}
-                        className={responsiveStyles.scheduleEditorToggle}
-                      />
-                      Break reminders
-                    </label>
+                    <div className="inline-flex items-center gap-2">
+                      <label className="inline-flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        <input
+                          type="checkbox"
+                          checked={breakGapEnabled}
+                          onChange={(e) => setBreakGapEnabled(e.target.checked)}
+                          disabled={scheduleControlsDisabled}
+                          className={responsiveStyles.scheduleEditorToggle}
+                        />
+                        Break reminders
+                      </label>
+                      <button
+                        type="button"
+                        aria-label="Show break reminder info"
+                        aria-expanded={showBreakReminderInfo}
+                        onClick={() => setShowBreakReminderInfo((current) => !current)}
+                        className={responsiveStyles.onboardingBreakToggleButton}
+                      >
+                        i
+                      </button>
+                    </div>
+                    {showBreakReminderInfo && (
+                      <p className={responsiveStyles.breakReminderInfoBanner}>
+                        Break reminders suggest a break card when there is at least this many idle
+                        minutes between visits.
+                      </p>
+                    )}
                     {breakGapEnabled && (
                       <div className="flex items-center gap-1.5 pl-6 text-sm text-slate-600 dark:text-slate-400">
                         <span>Suggest break at gaps ≥</span>
@@ -509,7 +518,7 @@ export default function AccountSettingsModal({
                     Used to bound route optimization and set lunch break preferences.
                   </p>
 
-                  <div className="rounded-xl border border-slate-200 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900">
+                  <div className={responsiveStyles.accountSettingsScheduleCard}>
                     {DAYS.map(({ key, label }) => {
                       const day = scheduleInput[key]!;
                       return (
@@ -610,12 +619,12 @@ export default function AccountSettingsModal({
                   </div>
 
                   {scheduleError && (
-                    <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+                    <p className={responsiveStyles.inlineErrorBanner}>
                       {scheduleError}
                     </p>
                   )}
                   {scheduleSuccess && (
-                    <p className="m-0 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300">
+                    <p className={responsiveStyles.inlineSuccessBanner}>
                       {scheduleSuccess}
                     </p>
                   )}
@@ -698,7 +707,7 @@ export default function AccountSettingsModal({
                           className="sr-only"
                         />
                         <div className="flex items-start gap-2">
-                          <span className="inline-flex h-5 w-5 items-center justify-center pt-px text-slate-500 dark:text-slate-400">
+                          <span className={responsiveStyles.objectiveSelectorIcon}>
                             {icon}
                           </span>
                           <div>
@@ -709,7 +718,7 @@ export default function AccountSettingsModal({
                               {description}
                             </p>
                             {badge && (
-                              <p className="m-0 mt-1 text-xs font-medium text-slate-600 dark:text-slate-400">
+                              <p className={responsiveStyles.objectiveSelectorBadge}>
                                 {badge}
                               </p>
                             )}
@@ -719,7 +728,7 @@ export default function AccountSettingsModal({
                     ))}
                   </div>
                   {objectiveError && (
-                    <p className="m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
+                    <p className={responsiveStyles.inlineErrorBanner}>
                       {objectiveError}
                     </p>
                   )}
@@ -728,12 +737,12 @@ export default function AccountSettingsModal({
             </div>
           </div>
 
-          <div className="-mx-4 mt-4 flex justify-end gap-2 border-t border-slate-200 bg-white px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 dark:border-slate-800 dark:bg-slate-900 sm:mx-0 sm:px-0 sm:pb-0">
+          <div className={responsiveStyles.accountSettingsFooterBar}>
             <button
               type="button"
               onClick={handleClose}
               disabled={isBusy}
-              className="rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
+              className={responsiveStyles.accountSettingsSecondaryButton}
             >
               Cancel
             </button>
@@ -741,7 +750,7 @@ export default function AccountSettingsModal({
               type="submit"
               form={activeFormId}
               disabled={isActiveSaveDisabled}
-              className="rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className={responsiveStyles.accountSettingsPrimaryButton}
             >
               {saveButtonLabel}
             </button>
