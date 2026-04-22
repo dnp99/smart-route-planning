@@ -16,6 +16,77 @@ export type PatientVisitWindowInput = {
   visitTimeType: VisitTimeType;
 };
 
+export type RecurringVisitTemplateWindow = {
+  id: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  visitTimeType: VisitTimeType;
+};
+
+export type RecurringVisitTemplateWindowInput = {
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  visitTimeType: VisitTimeType;
+};
+
+export type RecurringVisitTemplate = {
+  id: string;
+  nurseId: string;
+  patientId: string;
+  name: string | null;
+  timezone: string;
+  recurrenceRule: string;
+  startDate: string;
+  endDate: string | null;
+  serviceDurationMinutes: number;
+  isActive: boolean;
+  windows: RecurringVisitTemplateWindow[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type VisitInstanceStatus = "scheduled" | "cancelled";
+
+export type VisitInstance = {
+  id: string;
+  nurseId: string;
+  patientId: string;
+  templateId: string | null;
+  occurrenceKey: string;
+  planningDate: string;
+  address: string;
+  googlePlaceId: string | null;
+  windowStart: string;
+  windowEnd: string;
+  visitTimeType: VisitTimeType;
+  serviceDurationMinutes: number;
+  status: VisitInstanceStatus;
+  isManualOverride: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type VisitInstanceExceptionAction = "skip" | "reschedule" | "edit";
+
+export type VisitInstanceException = {
+  id: string;
+  nurseId: string;
+  visitInstanceId: string;
+  templateId: string | null;
+  exceptionDate: string;
+  action: VisitInstanceExceptionAction;
+  rescheduledDate: string | null;
+  overrideStartTime: string | null;
+  overrideEndTime: string | null;
+  overrideVisitTimeType: VisitTimeType | null;
+  overrideServiceDurationMinutes: number | null;
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Patient = {
   id: string;
   nurseId: string;
@@ -29,8 +100,32 @@ export type Patient = {
   preferredVisitEndTime: string;
   visitTimeType: VisitTimeType;
   visitWindows: PatientVisitWindow[];
+  recurringVisitTemplates?: RecurringVisitTemplate[];
   createdAt: string;
   updatedAt: string;
+};
+
+export type ListRecurringVisitTemplatesResponse = {
+  templates: RecurringVisitTemplate[];
+};
+
+export type CreateRecurringVisitTemplateRequest = {
+  patientId: string;
+  name?: string | null;
+  timezone: string;
+  recurrenceRule: string;
+  startDate: string;
+  endDate?: string | null;
+  serviceDurationMinutes: number;
+  windows: RecurringVisitTemplateWindowInput[];
+};
+
+export type UpdateRecurringVisitTemplateRequest = Partial<CreateRecurringVisitTemplateRequest> & {
+  isActive?: boolean;
+};
+
+export type ListVisitInstancesResponse = {
+  instances: VisitInstance[];
 };
 
 export type ListPatientsResponse = {
