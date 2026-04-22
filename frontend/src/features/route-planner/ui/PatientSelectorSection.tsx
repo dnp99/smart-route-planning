@@ -19,6 +19,14 @@ type PatientSelectorSectionProps = {
   isSearchLoading: boolean;
   searchError: string;
   createPatientError: string;
+  templateOptions: Array<{
+    id: string;
+    label: string;
+    instanceCount: number;
+    matchesPlanningDay: boolean;
+  }>;
+  selectedTemplateId: string;
+  onTemplateSelectionChange: (templateId: string) => void;
   selectedDestinations: SelectedPatientDestination[];
   expandedDestinationVisitKeys: Record<string, boolean>;
   onAddPatient: (patient: Patient) => void;
@@ -55,6 +63,9 @@ export const PatientSelectorSection = ({
   isSearchLoading,
   searchError,
   createPatientError,
+  templateOptions,
+  selectedTemplateId,
+  onTemplateSelectionChange,
   selectedDestinations,
   expandedDestinationVisitKeys,
   onAddPatient,
@@ -211,6 +222,30 @@ export const PatientSelectorSection = ({
                 Search clients ({destinationSearchResults.length})
               </p>
               <div className={responsiveStyles.patientSearchContainer}>
+                <div className="grid gap-1">
+                  <label
+                    htmlFor="route-template-filter"
+                    className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
+                  >
+                    Template
+                  </label>
+                  <select
+                    id="route-template-filter"
+                    aria-label="Template filter"
+                    value={selectedTemplateId}
+                    onChange={(event) => onTemplateSelectionChange(event.target.value)}
+                    className={responsiveStyles.formInput}
+                  >
+                    <option value="auto">Auto (planning day)</option>
+                    <option value="all">All templates</option>
+                    {templateOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.matchesPlanningDay ? "Today: " : ""}
+                        {option.label} ({option.instanceCount})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 {createPatientError && (
                   <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
                 )}

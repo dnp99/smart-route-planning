@@ -1,9 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
-import type { VisitInstance, WeeklyWorkingHours } from "../../../../../shared/contracts";
+import type {
+  RecurringVisitTemplate,
+  VisitInstance,
+  WeeklyWorkingHours,
+} from "../../../../../shared/contracts";
 import { usePatientSearch } from "./usePatientSearch";
 import { useRouteOptimization } from "./useRouteOptimization";
-import { requestVisitInstances, resolveWorkingHoursForDate } from "../api/routePlannerService";
-import { patientMatchesSearchQuery } from "../domain/routePlannerHelpers";
+import {
+  requestExpandVisitInstances,
+  requestRecurringVisitTemplates,
+  requestVisitInstances,
+  resolveWorkingHoursForDate,
+} from "../api/routePlannerService";
+import {
+  patientMatchesSearchQuery,
+  toSelectedVisitInstanceDestinations,
+} from "../domain/routePlannerHelpers";
 import { readRoutePlannerDraft, type MobilePlannerStep } from "../state/routePlannerDraft";
 import { useManualReorder } from "./useManualReorder";
 import { useCreatePatientForm } from "./useCreatePatientForm";
@@ -28,6 +40,17 @@ type UseRoutePlannerControllerParams = {
   nurseBreakGapThresholdMinutes?: number | null;
   onOpenAccountSettings?: () => void;
   optimizationObjective: "time" | "distance";
+};
+
+type TemplatePickerOption = {
+  id: string;
+  label: string;
+  instanceCount: number;
+  matchesPlanningDay: boolean;
+};
+
+const getPlanningDayOfWeek = (planningDate: string) => {
+  return new Date(`${planningDate}T12:00:00`).getDay();
 };
 
 export function useRoutePlannerController({
@@ -58,6 +81,7 @@ export function useRoutePlannerController({
     selectedDestinations,
     expandedDestinationVisitKeys,
     addDestinationPatient,
+    replaceSelectedDestinations,
     removeDestinationVisit,
     toggleDestinationDetails,
     updateDestinationPlanningWindow,
@@ -70,7 +94,11 @@ export function useRoutePlannerController({
   const [visitInstancesByPatientId, setVisitInstancesByPatientId] = useState<
     Map<string, VisitInstance[]>
   >(new Map());
+  const [visitInstances, setVisitInstances] = useState<VisitInstance[]>([]);
+  const [recurringTemplates, setRecurringTemplates] = useState<RecurringVisitTemplate[]>([]);
   const [visitInstancesError, setVisitInstancesError] = useState("");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("auto");
+  const [manualTemplateSelectionLock, setManualTemplateSelectionLock] = useState(false);
 
   const {
     startAddress,
@@ -90,6 +118,23 @@ export function useRoutePlannerController({
     endFieldError,
     optimizeEndpointHint,
   } = useRoutePlannerAddresses({ normalizedHomeAddress, hasAttemptedOptimize });
+
+  const {
+    patients: destinationSearchPatients,
+    isLoading: isDestinationSearchLoading,
+    error: destinationSearchError,
+  } = usePatientSearch({
+    query: destinationSearchQuery,
+    enabled: true,
+  });
+
+  const {
+    orderedStops: manuallyOrderedStops,
+    isStale: isManualOrderStale,
+    moveStop,
+    canMoveStop,
+    resetOrder,
+  } = useManualReorder(result);
 
   const {
     locallyCreatedPatients,
@@ -116,25 +161,8 @@ export function useRoutePlannerController({
     handleCreatePatientAddressPick,
     handleCreatePatientSubmit,
   } = useCreatePatientForm({
-    onPatientCreated: addDestinationPatient,
+    onPatientCreated: handleAddDestinationPatient,
   });
-
-  const {
-    patients: destinationSearchPatients,
-    isLoading: isDestinationSearchLoading,
-    error: destinationSearchError,
-  } = usePatientSearch({
-    query: destinationSearchQuery,
-    enabled: true,
-  });
-
-  const {
-    orderedStops: manuallyOrderedStops,
-    isStale: isManualOrderStale,
-    moveStop,
-    canMoveStop,
-    resetOrder,
-  } = useManualReorder(result);
 
   const [isPatientSearchExpanded, setIsPatientSearchExpanded] = useState(
     (initialDraft?.selectedDestinationStates?.length ?? 0) === 0,
@@ -189,12 +217,21 @@ export function useRoutePlannerController({
     });
 
   useEffect(() => {
+    setSelectedTemplateId("auto");
+    setManualTemplateSelectionLock(false);
+  }, [planningDate]);
+
+  useEffect(() => {
     let isSubscribed = true;
 
     const loadVisitInstances = async () => {
       setVisitInstancesError("");
       try {
-        const instances = await requestVisitInstances({ planningDate });
+        await requestExpandVisitInstances({ planningDate });
+        const [instances, templates] = await Promise.all([
+          requestVisitInstances({ planningDate }),
+          requestRecurringVisitTemplates(),
+        ]);
         if (!isSubscribed) {
           return;
         }
@@ -205,12 +242,16 @@ export function useRoutePlannerController({
           current.push(instance);
           nextInstancesByPatientId.set(instance.patientId, current);
         });
+        setVisitInstances(instances);
         setVisitInstancesByPatientId(nextInstancesByPatientId);
+        setRecurringTemplates(templates);
       } catch (error) {
         if (!isSubscribed) {
           return;
         }
+        setVisitInstances([]);
         setVisitInstancesByPatientId(new Map());
+        setRecurringTemplates([]);
         setVisitInstancesError(
           error instanceof Error ? error.message : "Unable to load visit instances.",
         );
@@ -224,8 +265,151 @@ export function useRoutePlannerController({
     };
   }, [planningDate]);
 
-  const handleAddDestinationPatient = (patient: Parameters<typeof addDestinationPatient>[0]) => {
+  const templateOptions = useMemo<TemplatePickerOption[]>(() => {
+    const planningDayOfWeek = getPlanningDayOfWeek(planningDate);
+    const scheduledCountsByTemplateId = new Map<string, number>();
+    visitInstances
+      .filter(
+        (instance) =>
+          instance.status === "scheduled" &&
+          typeof instance.templateId === "string" &&
+          instance.templateId.length > 0,
+      )
+      .forEach((instance) => {
+        const templateId = instance.templateId as string;
+        scheduledCountsByTemplateId.set(
+          templateId,
+          (scheduledCountsByTemplateId.get(templateId) ?? 0) + 1,
+        );
+      });
+
+    return recurringTemplates
+      .map((template) => {
+        const displayName = template.name?.trim() || `Template ${template.id.slice(0, 8)}`;
+        return {
+          id: template.id,
+          label: displayName,
+          instanceCount: scheduledCountsByTemplateId.get(template.id) ?? 0,
+          matchesPlanningDay: template.windows.some(
+            (window) => window.dayOfWeek === planningDayOfWeek,
+          ),
+        };
+      })
+      .sort((left, right) => {
+        if (left.matchesPlanningDay !== right.matchesPlanningDay) {
+          return left.matchesPlanningDay ? -1 : 1;
+        }
+        if (left.instanceCount !== right.instanceCount) {
+          return right.instanceCount - left.instanceCount;
+        }
+        return left.label.localeCompare(right.label);
+      });
+  }, [planningDate, recurringTemplates, visitInstances]);
+
+  const autoTemplateId = useMemo(() => {
+    const planningDayOfWeek = getPlanningDayOfWeek(planningDate);
+    const matchingOptions = templateOptions.filter((option) => option.matchesPlanningDay);
+    if (matchingOptions.length === 0) {
+      return null;
+    }
+
+    const optionWithInstances = matchingOptions.find((option) => option.instanceCount > 0);
+    if (optionWithInstances) {
+      return optionWithInstances.id;
+    }
+
+    const matchingTemplate = recurringTemplates.find(
+      (template) =>
+        template.id === matchingOptions[0].id &&
+        template.windows.some((window) => window.dayOfWeek === planningDayOfWeek),
+    );
+    return matchingTemplate?.id ?? matchingOptions[0].id;
+  }, [planningDate, recurringTemplates, templateOptions]);
+
+  const effectiveTemplateId = useMemo(() => {
+    if (selectedTemplateId === "all") {
+      return null;
+    }
+    if (selectedTemplateId === "auto") {
+      return autoTemplateId;
+    }
+    return selectedTemplateId;
+  }, [autoTemplateId, selectedTemplateId]);
+
+  useEffect(() => {
+    if (manualTemplateSelectionLock) {
+      return;
+    }
+    if (destinationSearchQuery.trim().length > 0) {
+      return;
+    }
+
+    const patientById = new Map(
+      [...destinationSearchPatients, ...locallyCreatedPatients].map((patient) => [
+        patient.id,
+        patient,
+      ]),
+    );
+    const filteredInstances =
+      effectiveTemplateId === null
+        ? visitInstances
+        : visitInstances.filter((instance) => instance.templateId === effectiveTemplateId);
+    const instancesByPatientId = new Map<string, VisitInstance[]>();
+    filteredInstances.forEach((instance) => {
+      const current = instancesByPatientId.get(instance.patientId) ?? [];
+      current.push(instance);
+      instancesByPatientId.set(instance.patientId, current);
+    });
+
+    const nextDestinations = [...instancesByPatientId.entries()].flatMap(
+      ([patientId, instances]) => {
+        const patient = patientById.get(patientId);
+        if (!patient) {
+          return [];
+        }
+        return toSelectedVisitInstanceDestinations(patient, instances);
+      },
+    );
+
+    const currentKeys = [...selectedDestinations.map((destination) => destination.visitKey)].sort();
+    const nextKeys = [...nextDestinations.map((destination) => destination.visitKey)].sort();
+    if (
+      currentKeys.length === nextKeys.length &&
+      currentKeys.every((visitKey, index) => visitKey === nextKeys[index])
+    ) {
+      return;
+    }
+
+    replaceSelectedDestinations(nextDestinations);
+  }, [
+    destinationSearchQuery,
+    destinationSearchPatients,
+    effectiveTemplateId,
+    locallyCreatedPatients,
+    manualTemplateSelectionLock,
+    replaceSelectedDestinations,
+    selectedDestinations,
+    visitInstances,
+  ]);
+
+  const handleTemplateSelectionChange = (nextTemplateId: string) => {
+    setSelectedTemplateId(nextTemplateId);
+    setManualTemplateSelectionLock(false);
+  };
+
+  function handleAddDestinationPatient(patient: Parameters<typeof addDestinationPatient>[0]) {
+    setManualTemplateSelectionLock(true);
     addDestinationPatient(patient, visitInstancesByPatientId.get(patient.id));
+  }
+
+  const handleRemoveDestinationVisit = (visitKey: string) => {
+    setManualTemplateSelectionLock(true);
+    removeDestinationVisit(visitKey);
+  };
+
+  const handleSetDestinationVisitIncluded = (visitKey: string, isIncluded: boolean) => {
+    setManualTemplateSelectionLock(true);
+    setDestinationVisitIncluded(visitKey, isIncluded);
   };
 
   const {
@@ -343,13 +527,16 @@ export function useRoutePlannerController({
     isSearchLoading: isDestinationSearchLoading,
     searchError: destinationSearchError || visitInstancesError || "",
     createPatientError: createPatientError ?? "",
+    templateOptions,
+    selectedTemplateId,
+    onTemplateSelectionChange: handleTemplateSelectionChange,
     selectedDestinations,
     expandedDestinationVisitKeys,
     onAddPatient: handleAddDestinationPatient,
     onOpenCreatePatient: openCreatePatientModal,
     onToggleDestinationDetails: toggleDestinationDetails,
-    onRemoveDestinationVisit: removeDestinationVisit,
-    onSetDestinationVisitIncluded: setDestinationVisitIncluded,
+    onRemoveDestinationVisit: handleRemoveDestinationVisit,
+    onSetDestinationVisitIncluded: handleSetDestinationVisitIncluded,
     onUpdateDestinationPlanningWindow: updateDestinationPlanningWindow,
     onSetDestinationPersistPlanningWindow: setDestinationPersistPlanningWindow,
     hasResult: !!result,

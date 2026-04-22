@@ -1,9 +1,11 @@
 import {
   parseListVisitInstancesResponse,
   parseListPatientsResponse,
+  parseListRecurringVisitTemplatesResponse,
   parseOptimizeRouteV2Response,
   type NurseWorkingHoursConstraint,
   type OptimizeRouteV2WindowType,
+  type RecurringVisitTemplate,
   type VisitInstance,
   type PatientVisitWindowInput,
   type WeeklyWorkingHours,
@@ -111,6 +113,11 @@ export type PersistPlanningWindowInput = {
 export type ListVisitInstancesInput = {
   planningDate: string;
   endDate?: string;
+};
+
+export type ExpandVisitInstancesInput = {
+  planningDate: string;
+  templateIds?: string[];
 };
 
 const WEEKDAY_NAMES = [
@@ -296,6 +303,46 @@ export const requestVisitInstances = async ({
   );
 
   return parseListVisitInstancesResponse(payload).instances;
+};
+
+export const requestExpandVisitInstances = async ({
+  planningDate,
+  templateIds,
+}: ExpandVisitInstancesInput): Promise<void> => {
+  const normalizedPlanningDate = planningDate.trim();
+  const normalizedTemplateIds =
+    Array.isArray(templateIds) && templateIds.length > 0
+      ? templateIds
+          .map((templateId) => templateId.trim())
+          .filter((templateId) => templateId.length > 0)
+      : [];
+
+  await requestAuthedJson(
+    "/api/visit-instances/expand",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        planningDate: normalizedPlanningDate,
+        ...(normalizedTemplateIds.length > 0 ? { templateIds: normalizedTemplateIds } : {}),
+      }),
+    },
+    "Unable to expand visit instances.",
+  );
+};
+
+export const requestRecurringVisitTemplates = async (): Promise<RecurringVisitTemplate[]> => {
+  const payload = await requestAuthedJson(
+    "/api/recurring-visit-templates",
+    {
+      method: "GET",
+    },
+    "Unable to load recurring templates.",
+  );
+
+  return parseListRecurringVisitTemplatesResponse(payload).templates;
 };
 
 export const requestOptimizedRoute = async ({

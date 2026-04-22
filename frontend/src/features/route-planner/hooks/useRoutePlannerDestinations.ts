@@ -66,6 +66,13 @@ export function useRoutePlannerDestinations({
     setDestinationSearchQuery("");
   };
 
+  const replaceSelectedDestinations = (destinations: SelectedPatientDestination[]) => {
+    setSelectedDestinations(destinations);
+    setExpandedDestinationVisitKeys(
+      Object.fromEntries(destinations.map((destination) => [destination.visitKey, false])),
+    );
+  };
+
   const removeDestinationVisit = (visitKey: string) => {
     setSelectedDestinations((current) => current.filter((entry) => entry.visitKey !== visitKey));
     setExpandedDestinationVisitKeys((current) => {
@@ -132,6 +139,7 @@ export function useRoutePlannerDestinations({
     selectedDestinations,
     expandedDestinationVisitKeys,
     addDestinationPatient,
+    replaceSelectedDestinations,
     removeDestinationVisit,
     toggleDestinationDetails,
     updateDestinationPlanningWindow,

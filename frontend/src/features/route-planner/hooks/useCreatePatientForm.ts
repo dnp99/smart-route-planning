@@ -16,7 +16,7 @@ import {
   toCreateRequest,
   validateForm,
 } from "../patients/patientForm";
-import { createPatient } from "../patients/patientService";
+import { createPatient } from "../../patients/api/patientService";
 import {
   createRecurringVisitTemplate,
   deleteRecurringVisitTemplate,
