@@ -87,6 +87,28 @@ export const MAX_VISIT_DURATION_MINUTES = 180;
 export const DEFAULT_VISIT_DURATION_MINUTES = 30;
 export const DEFAULT_RECURRING_TEMPLATE_TIMEZONE = "America/Toronto";
 export const DEFAULT_RECURRING_RULE = "FREQ=WEEKLY;INTERVAL=1";
+const DAY_INDEX_TO_RRULE_TOKEN = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
+
+const resolveDefaultRecurringTemplateTimezone = () => {
+  try {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (typeof timezone === "string" && timezone.trim().length > 0) {
+      return timezone.trim();
+    }
+  } catch {
+    // Fall back below when runtime cannot provide a timezone.
+  }
+
+  return DEFAULT_RECURRING_TEMPLATE_TIMEZONE;
+};
+
+const normalizeRecurringTemplateTimezone = (timezone: string | null | undefined) => {
+  if (typeof timezone === "string" && timezone.trim().length > 0) {
+    return timezone.trim();
+  }
+
+  return resolveDefaultRecurringTemplateTimezone();
+};
 
 type RecurringTemplateMutationPlan = {
   create: CreateRecurringVisitTemplateRequest[];
@@ -154,7 +176,7 @@ export const createEmptyRecurringTemplate = (
   id: createWindowId(),
   templateId: null,
   name: "",
-  timezone: DEFAULT_RECURRING_TEMPLATE_TIMEZONE,
+  timezone: resolveDefaultRecurringTemplateTimezone(),
   recurrenceRule: DEFAULT_RECURRING_RULE,
   startDate: "",
   endDate: "",
@@ -195,7 +217,7 @@ const toRecurringFormTemplate = (
   id: template.id,
   templateId: template.id,
   name: template.name ?? "",
-  timezone: template.timezone,
+  timezone: normalizeRecurringTemplateTimezone(template.timezone),
   recurrenceRule: template.recurrenceRule,
   startDate: template.startDate,
   endDate: template.endDate ?? "",
@@ -275,6 +297,18 @@ export const buildRecurringTemplateMutationPlan = (
 
   const create: CreateRecurringVisitTemplateRequest[] = [];
   const update: Array<{ templateId: string; request: UpdateRecurringVisitTemplateRequest }> = [];
+  const toWeeklyRecurrenceRule = (windows: Array<{ dayOfWeek: number }>): string => {
+    const dayTokens = [...new Set(windows.map((window) => window.dayOfWeek))]
+      .filter((dayOfWeek) => Number.isInteger(dayOfWeek) && dayOfWeek >= 0 && dayOfWeek <= 6)
+      .sort((left, right) => left - right)
+      .map((dayOfWeek) => DAY_INDEX_TO_RRULE_TOKEN[dayOfWeek]);
+
+    if (dayTokens.length === 0) {
+      return DEFAULT_RECURRING_RULE;
+    }
+
+    return `FREQ=WEEKLY;INTERVAL=1;BYDAY=${dayTokens.join(",")}`;
+  };
 
   values.recurringTemplates.forEach((template) => {
     const normalizedWindows = template.windows.map((window) => ({
@@ -287,8 +321,9 @@ export const buildRecurringTemplateMutationPlan = (
     const normalizedRequestBase = {
       patientId,
       name: template.name.trim() || null,
-      timezone: template.timezone.trim(),
-      recurrenceRule: template.recurrenceRule.trim(),
+      timezone: normalizeRecurringTemplateTimezone(template.timezone),
+      // Keep RRULE generation internal so nurses only manage day/time UI controls.
+      recurrenceRule: toWeeklyRecurrenceRule(normalizedWindows),
       startDate: template.startDate.trim(),
       endDate: template.endDate.trim() || null,
       serviceDurationMinutes: template.serviceDurationMinutes,
@@ -424,10 +459,6 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
         } catch {
           row.timezone = "Timezone must be a valid IANA timezone.";
         }
-      }
-
-      if (!template.recurrenceRule.trim()) {
-        row.recurrenceRule = "Recurrence rule is required.";
       }
 
       if (!DATE_PATTERN.test(template.startDate.trim())) {

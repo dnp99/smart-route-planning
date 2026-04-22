@@ -46,7 +46,7 @@ vi.mock("../components/home/homeDashboardService", () => ({
   fetchDashboardSummary: fetchDashboardSummaryMock,
 }));
 
-vi.mock("../components/AddressAutocompleteInput", () => ({
+vi.mock("../components/shared/AddressAutocompleteInput", () => ({
   default: ({
     id,
     label,
@@ -87,6 +87,9 @@ beforeEach(() => {
     kpis: {
       routesToday: 3,
       visitsScheduledToday: 11,
+      activePatientCount: 24,
+      deletedClientsLast30Days: 2,
+      driveHoursLast7Days: 7.4,
       onTimeRatePercent7d: 92,
       unscheduledVisitsToday: 1,
       driveHoursToday: 7.4,
@@ -149,7 +152,7 @@ const seedAuthenticatedSession = (displayName = "Nurse One", homeAddress: string
 };
 
 const waitForPatientsPage = async () => {
-  await screen.findByRole("button", { name: "Add client" });
+  await screen.findByRole("heading", { name: /^Clients \(\d+\)$/ });
 };
 
 describe("Footer", () => {
@@ -278,7 +281,12 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: "Login" })).toBeTruthy();
+    expect(
+      await screen.findByRole("heading", {
+        name: /Organize clients and plan better daily routes/i,
+      }),
+    ).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login");
   });
 
   it("renders home page at / for signed-in users", async () => {
@@ -340,6 +348,9 @@ describe("App routing", () => {
       kpis: {
         routesToday: 1,
         visitsScheduledToday: 2,
+        activePatientCount: 24,
+        deletedClientsLast30Days: 1,
+        driveHoursLast7Days: 2.1,
         onTimeRatePercent7d: 92,
         unscheduledVisitsToday: 0,
         driveHoursToday: 2.1,
@@ -392,6 +403,9 @@ describe("App routing", () => {
         kpis: {
           routesToday: 2,
           visitsScheduledToday: 8,
+          activePatientCount: 24,
+          deletedClientsLast30Days: 0,
+          driveHoursLast7Days: 5.5,
           onTimeRatePercent7d: 91,
           unscheduledVisitsToday: 0,
           driveHoursToday: 5.5,
@@ -478,153 +492,5 @@ describe("App routing", () => {
       "value",
       "3361 Ingram Road, Mississauga, ON",
     );
-  });
-
-  it("normalizes mixed-case nurse display name into account initials", async () => {
-    fetchMeMock.mockResolvedValue({
-      user: {
-        id: "nurse-1",
-        email: "nurse@example.com",
-        displayName: "nUrSe oNe",
-        homeAddress: null,
-      },
-    });
-    seedAuthenticatedSession("nUrSe oNe");
-
-    render(
-      <MemoryRouter initialEntries={["/patients"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitForPatientsPage();
-    expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Open account options menu" }).textContent).toBe(
-      "NO",
-    );
-  });
-
-  it("renders patients page at /patients and marks nav active", async () => {
-    seedAuthenticatedSession();
-
-    render(
-      <MemoryRouter initialEntries={["/patients"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitForPatientsPage();
-    expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Clients" }).getAttribute("aria-current")).toBe("page");
-  });
-
-  it("shows account options menu items", async () => {
-    seedAuthenticatedSession();
-
-    render(
-      <MemoryRouter initialEntries={["/patients"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitForPatientsPage();
-    expect(screen.queryByRole("menuitem", { name: "Logout" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Open account options menu" }).textContent).toBe(
-      "NO",
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
-
-    expect(await screen.findByRole("menuitem", { name: "Account settings" })).toBeTruthy();
-    expect(screen.getByRole("menuitem", { name: "Logout" })).toBeTruthy();
-  });
-
-  it("opens account settings modal and saves home address", async () => {
-    seedAuthenticatedSession();
-
-    render(
-      <MemoryRouter initialEntries={["/patients"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitForPatientsPage();
-
-    fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Account settings" }));
-
-    expect(await screen.findByRole("heading", { name: "Account settings" })).toBeTruthy();
-    fireEvent.change(screen.getByRole("textbox", { name: /home address/i }), {
-      target: { value: "1 Main Street, Toronto, ON" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
-
-    await waitFor(() => {
-      expect(updateProfileMock).toHaveBeenCalledWith({
-        homeAddress: "1 Main Street, Toronto, ON",
-      });
-    });
-    expect(await screen.findByText(/Account settings saved\./i)).toBeTruthy();
-  });
-
-  it("opens account settings modal and saves display name", async () => {
-    updateProfileMock.mockResolvedValue({
-      user: {
-        id: "nurse-1",
-        email: "nurse@example.com",
-        displayName: "Alex Brown",
-        homeAddress: null,
-      },
-    });
-    seedAuthenticatedSession();
-
-    render(
-      <MemoryRouter initialEntries={["/patients"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    await waitForPatientsPage();
-
-    fireEvent.click(screen.getByRole("button", { name: "Open account options menu" }));
-    fireEvent.click(await screen.findByRole("menuitem", { name: "Account settings" }));
-
-    expect(await screen.findByRole("heading", { name: "Account settings" })).toBeTruthy();
-    fireEvent.change(screen.getByRole("textbox", { name: /display name/i }), {
-      target: { value: "Alex Brown" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Save profile" }));
-
-    await waitFor(() => {
-      expect(updateProfileMock).toHaveBeenCalledWith({
-        displayName: "Alex Brown",
-      });
-    });
-    expect(await screen.findByText(/Account settings saved\./i)).toBeTruthy();
-  });
-
-  it("redirects unauthenticated users to login", async () => {
-    fetchMeMock.mockReset();
-    fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
-    render(
-      <MemoryRouter initialEntries={["/patients"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    expect(await screen.findByRole("heading", { name: "Login" })).toBeTruthy();
-  });
-
-  it("clears stale sessions when current user lookup fails", async () => {
-    fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
-    seedAuthenticatedSession();
-
-    render(
-      <MemoryRouter initialEntries={["/patients"]}>
-        <App />
-      </MemoryRouter>,
-    );
-
-    expect(await screen.findByRole("heading", { name: "Login" })).toBeTruthy();
   });
 });

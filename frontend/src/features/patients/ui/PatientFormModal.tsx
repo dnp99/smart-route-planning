@@ -398,7 +398,7 @@ export const PatientFormModal = ({
                     className="grid gap-3 rounded-xl border border-slate-200 p-3 dark:border-slate-800"
                   >
                     <div className="grid gap-2 sm:grid-cols-2">
-                      <div className="grid gap-1">
+                      <div className="grid gap-1 sm:col-span-2">
                         <label
                           htmlFor={`recurring-template-name-${templateKey}`}
                           className={responsiveStyles.recurrenceLabel}
@@ -415,57 +415,11 @@ export const PatientFormModal = ({
                         />
                       </div>
 
-                      <div className="grid gap-1">
-                        <label
-                          htmlFor={`recurring-template-timezone-${templateKey}`}
-                          className={responsiveStyles.recurrenceLabel}
-                        >
-                          Timezone
-                        </label>
-                        <input
-                          id={`recurring-template-timezone-${templateKey}`}
-                          value={template.timezone}
-                          onChange={(event) =>
-                            onRecurringTemplateChange(templateKey, "timezone", event.target.value)
-                          }
-                          className={responsiveStyles.recurrenceInput}
-                        />
-                        {templateErrors?.timezone && (
-                          <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                            {templateErrors.timezone}
-                          </p>
-                        )}
-                      </div>
-
                       <div className="grid gap-1 sm:col-span-2">
-                        <label
-                          htmlFor={`recurring-template-rule-${templateKey}`}
-                          className={responsiveStyles.recurrenceLabel}
-                        >
-                          Recurrence rule (RRULE)
-                        </label>
-                        <input
-                          id={`recurring-template-rule-${templateKey}`}
-                          value={template.recurrenceRule}
-                          onChange={(event) =>
-                            onRecurringTemplateChange(
-                              templateKey,
-                              "recurrenceRule",
-                              event.target.value,
-                            )
-                          }
-                          className={responsiveStyles.recurrenceInput}
-                        />
-                        {templateErrors?.recurrenceRule && (
-                          <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                            {templateErrors.recurrenceRule}
-                          </p>
-                        )}
-                        {!templateErrors?.recurrenceRule && (
-                          <p className={responsiveStyles.recurrenceValue}>
-                            Example: FREQ=WEEKLY;INTERVAL=1
-                          </p>
-                        )}
+                        <p className={responsiveStyles.recurrenceLabel}>Repeat pattern</p>
+                        <p className={responsiveStyles.recurrenceValue}>
+                          Repeats weekly based on the days you add under recurring windows.
+                        </p>
                       </div>
 
                       <div className="grid gap-1">

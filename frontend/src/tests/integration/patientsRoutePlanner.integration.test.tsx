@@ -251,6 +251,8 @@ vi.mock("../../features/route-planner/api/routePlannerService", () => ({
   requestOptimizedRoute: (request: Parameters<typeof requestOptimizedRouteMock>[0]) =>
     requestOptimizedRouteMock(request),
   persistPlanningWindows: vi.fn(async () => undefined),
+  requestExpandVisitInstances: vi.fn(async () => undefined),
+  requestRecurringVisitTemplates: vi.fn(async () => []),
   requestVisitInstances: vi.fn(async () => []),
   resolveWorkingHoursForDate: () => null,
 }));

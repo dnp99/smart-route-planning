@@ -336,6 +336,33 @@ export function useRoutePlannerController({
     return selectedTemplateId;
   }, [autoTemplateId, selectedTemplateId]);
 
+  const autoSeedTemplateLabel = useMemo(() => {
+    if (effectiveTemplateId === null) {
+      return "";
+    }
+
+    const selectedOption = templateOptions.find((option) => option.id === effectiveTemplateId);
+    if (selectedOption) {
+      return selectedOption.label;
+    }
+
+    const selectedTemplate = recurringTemplates.find(
+      (template) => template.id === effectiveTemplateId,
+    );
+    if (selectedTemplate) {
+      return selectedTemplate.name?.trim() || `Template ${selectedTemplate.id.slice(0, 8)}`;
+    }
+
+    return `Template ${effectiveTemplateId.slice(0, 8)}`;
+  }, [effectiveTemplateId, recurringTemplates, templateOptions]);
+
+  const autoSeedHint =
+    !manualTemplateSelectionLock &&
+    selectedDestinations.length > 0 &&
+    autoSeedTemplateLabel.length > 0
+      ? `Auto-seeded from ${autoSeedTemplateLabel}`
+      : "";
+
   useEffect(() => {
     if (manualTemplateSelectionLock) {
       return;
@@ -521,6 +548,7 @@ export function useRoutePlannerController({
     isExpanded: isPatientSearchExpanded,
     onSetExpanded: setIsPatientSearchExpanded,
     destinationCount,
+    autoSeedHint,
     destinationSearchResults,
     destinationSearchQuery,
     onSearchQueryChange: setDestinationSearchQuery,

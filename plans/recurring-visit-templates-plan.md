@@ -12,6 +12,7 @@ Add recurring visit templates as a first-class feature in client management, gen
 | Phase 1 — Data Model + Shared Contracts | ✅ Completed | Backend schema tables + migration and shared template/instance contracts are in place (`backend/src/db/schema.ts`, `backend/drizzle/0014_graceful_odin.sql`, `shared/contracts/patients.ts`). |
 | Phase 2 — Backend APIs + Expansion Engine | ✅ Completed | Recurring template CRUD and visit-instance expand/list/patch APIs are implemented, with idempotent expansion and optimizer integration fallback. |
 | Phase 3 — Frontend Integration | ✅ Completed | Recurrence authoring + template orchestration in Clients flows and visit-instance hydration in Route Planner are implemented. |
+| Phase 3.1 — Planner Auto-Expand + Auto-Preselect | ✅ Completed | Planner now expands first, hydrates date instances, auto-selects by template/day, supports manual override lock, and shows an auto-seed hint in the Clients card header. |
 | Phase 4 — Exceptions + Series Editing | ⏳ Not started | Skip/reschedule/edit-future behavior still pending. |
 | Phase 5 — Dashboard/History Linkage | ⏳ Not started | History linking to template/instance IDs still pending. |
 
@@ -163,6 +164,66 @@ Important: replace/reconcile recurrence handling in:
 - `frontend/src/features/route-planner/api/routePlannerService.ts`
 
 Do not persist recurrence-derived edits back as plain `visitWindows`.
+
+---
+
+## Phase 3.1 — Planner Auto-Expand + Auto-Preselect
+
+**Status:** ✅ Completed
+
+### Goal
+
+Reduce nurse clicks on Route Planner by automatically materializing recurring instances for the selected planning date and preselecting those clients in the planner selection list.
+
+### Implemented behavior
+
+1. On Route Planner load (and whenever `planningDate` changes), call:
+   - `POST /api/visit-instances/expand` for that date (idempotent)
+   - then `GET /api/visit-instances?planningDate=...`
+2. Template-aware selection state in controller:
+   - `selectedTemplateId`: `auto | all | <templateId>`
+   - template options built from fetched template list + instance counts
+3. Auto default on planning date change:
+   - resolve planning weekday
+   - prefer weekday-matching template (with instances), fallback to all/manual behavior
+4. Auto-seed selected clients from filtered scheduled instances:
+   - preserves instance windows/types and `visitId` bindings
+5. Manual override lock:
+   - after add/remove/include toggle, stop auto-reseeding for same date
+   - reset lock when date or template changes
+6. UI transparency:
+   - template dropdown above search list
+   - Clients card header hint: `Auto-seeded from <template>`
+7. Fallback path:
+   - if no matching instances/templates for date, manual search/add flow remains available
+
+### UX constraints
+
+- Auto-selection should feel deterministic and explainable:
+  - selected clients should correspond to concrete scheduled instances for the visible planning date
+- No hidden mutation side effects:
+  - planner must not persist recurrence-derived edits into `patients.visitWindows`
+- Keep mobile flow intact (no regressions in stepper behavior).
+
+### Technical touchpoints
+
+- `frontend/src/features/route-planner/hooks/useRoutePlannerController.ts`
+- `frontend/src/features/route-planner/hooks/useRoutePlannerDestinations.ts`
+- `frontend/src/features/route-planner/state/routePlannerDraft.ts` (if needed for seed guards)
+- `frontend/src/features/route-planner/api/routePlannerService.ts` (add expand call helper)
+- `backend/src/app/api/visit-instances/expand/route.ts` (reuse existing endpoint; no contract change expected)
+
+### Acceptance criteria
+
+1. ✅ Opening Route Planner for a date with recurring schedule produces selected clients without manual clicking.
+2. ✅ Changing planning date rehydrates selection from that date’s concrete instances.
+3. ✅ Users can manually add/remove/include-toggle clients and those actions are respected during the session.
+4. ✅ Existing optimize route flow (v2/v3 contracts) remains unchanged.
+5. ✅ Recurrence + planner tests pass with targeted updates for:
+   - expand-before-list load flow
+   - auto-seed/template selection behavior
+   - manual override lock behavior
+   - UI/template integration expectations
 
 ---
 

@@ -218,7 +218,7 @@ describe("PatientsPage", () => {
         expect.objectContaining({
           patientId: "patient-1",
           startDate: "2026-03-20",
-          timezone: "America/Toronto",
+          timezone: expect.any(String),
         }),
       );
     });

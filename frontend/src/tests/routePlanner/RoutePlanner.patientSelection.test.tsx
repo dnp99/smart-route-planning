@@ -14,6 +14,8 @@ const { routeOptimizationState } = vi.hoisted(() => ({
 
 const optimizeRouteMock = vi.fn();
 const persistPlanningWindowsMock = vi.fn();
+const requestExpandVisitInstancesMock = vi.fn();
+const requestRecurringVisitTemplatesMock = vi.fn();
 const requestVisitInstancesMock = vi.fn();
 const createPatientMock = vi.fn();
 const usePatientSearchMock = vi.fn<
@@ -46,6 +48,9 @@ vi.mock("../../features/route-planner/hooks/usePatientSearch", () => ({
 
 vi.mock("../../features/route-planner/api/routePlannerService", () => ({
   persistPlanningWindows: (...args: unknown[]) => persistPlanningWindowsMock(...args),
+  requestExpandVisitInstances: (...args: unknown[]) => requestExpandVisitInstancesMock(...args),
+  requestRecurringVisitTemplates: (...args: unknown[]) =>
+    requestRecurringVisitTemplatesMock(...args),
   requestVisitInstances: (...args: unknown[]) => requestVisitInstancesMock(...args),
   resolveWorkingHoursForDate: () => null,
 }));
@@ -283,9 +288,13 @@ describe("RoutePlanner patient selection integration", () => {
     window.localStorage.clear();
     optimizeRouteMock.mockReset();
     persistPlanningWindowsMock.mockReset();
+    requestExpandVisitInstancesMock.mockReset();
+    requestRecurringVisitTemplatesMock.mockReset();
     requestVisitInstancesMock.mockReset();
     createPatientMock.mockReset();
     persistPlanningWindowsMock.mockResolvedValue(undefined);
+    requestExpandVisitInstancesMock.mockResolvedValue(undefined);
+    requestRecurringVisitTemplatesMock.mockResolvedValue([]);
     requestVisitInstancesMock.mockResolvedValue([]);
     createPatientMock.mockResolvedValue({
       id: "patient-5",
@@ -443,6 +452,7 @@ describe("RoutePlanner patient selection integration", () => {
 
     expect(optimizeRouteMock).not.toHaveBeenCalled();
 
+    fireEvent.click(screen.getByRole("button", { name: "Expand client search" }));
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 
@@ -683,8 +693,14 @@ describe("RoutePlanner patient selection integration", () => {
       );
     });
 
-    expect(screen.getByRole("button", { name: /^New Patient(?: · .+)?$/i })).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "Add Client" })).toBeNull();
+    expect(
+      await screen.findByRole("button", {
+        name: /(?:^New Patient(?: · .+)?$|^Toggle windows for New Patient$)/i,
+      }),
+    ).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.queryByRole("heading", { name: "Add Client" })).toBeNull();
+    });
   });
 
   it("requires at least one selected client before optimizing", () => {
@@ -964,6 +980,7 @@ describe("RoutePlanner patient selection integration", () => {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Mina Lee/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Toggle windows for Mina Lee" }));
     for (const toggle of screen.getAllByRole("button", { name: "Edit window" })) {
       fireEvent.click(toggle);
     }

@@ -15,7 +15,7 @@ vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({
   deleteRecurringVisitTemplate: vi.fn(),
 }));
 
-vi.mock("../../components/AddressAutocompleteInput", () => ({
+vi.mock("../../components/shared/AddressAutocompleteInput", () => ({
   default: ({
     id,
     label,

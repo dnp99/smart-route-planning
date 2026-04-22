@@ -7,7 +7,7 @@ import {
   isRecurringVisitTemplate,
   parseListRecurringVisitTemplatesResponse,
 } from "../../../../../shared/contracts";
-import { requestAuthedJson } from "../auth/authFetch";
+import { requestAuthedJson } from "../../../components/auth/authFetch";
 
 const requestJson = async (path: string, init: RequestInit, fallbackMessage: string) =>
   requestAuthedJson(path, init, fallbackMessage);

@@ -13,6 +13,7 @@ type PatientSelectorSectionProps = {
   isExpanded: boolean;
   onSetExpanded: (v: boolean) => void;
   destinationCount: number;
+  autoSeedHint: string;
   destinationSearchResults: Patient[];
   destinationSearchQuery: string;
   onSearchQueryChange: (query: string) => void;
@@ -57,6 +58,7 @@ export const PatientSelectorSection = ({
   isExpanded,
   onSetExpanded,
   destinationCount,
+  autoSeedHint,
   destinationSearchResults,
   destinationSearchQuery,
   onSearchQueryChange,
@@ -145,10 +147,17 @@ export const PatientSelectorSection = ({
   return (
     <section className={responsiveStyles.panel}>
       <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <h2 className={responsiveStyles.cardTitle}>Clients</h2>
-          {destinationCount > 0 && (
-            <span className={responsiveStyles.countPill}>{destinationCount}</span>
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h2 className={responsiveStyles.cardTitle}>Clients</h2>
+            {destinationCount > 0 && (
+              <span className={responsiveStyles.countPill}>{destinationCount}</span>
+            )}
+          </div>
+          {autoSeedHint.length > 0 && (
+            <p className="m-0 mt-0.5 truncate text-xs text-blue-700 dark:text-blue-300">
+              {autoSeedHint}
+            </p>
           )}
         </div>
         <div className="flex shrink-0 items-center">
