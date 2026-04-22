@@ -7,6 +7,7 @@ import {
 } from "../../../../lib/audit/requestAuditContext";
 import { recordOptimizationRun } from "../../../../lib/dashboard/dashboardRepository";
 import { HttpError, toErrorResponse } from "../../../../lib/http";
+import { listScheduledVisitInstancesForOptimization } from "../../../../lib/recurrence/recurrenceRepository";
 import { optimizeRouteV3 } from "./optimizeRouteService";
 import { parseAndValidateBody } from "../v2/validation";
 import {
@@ -82,8 +83,26 @@ export async function POST(request: Request) {
     }
 
     const { auth, googleMapsApiKey, parsedRequest } = prepared;
+    let optimizerRequest = parsedRequest;
+    if (parsedRequest.visits.length === 0 && process.env.DATABASE_URL?.trim()) {
+      try {
+        const scheduledInstanceVisits = await listScheduledVisitInstancesForOptimization(
+          auth.nurseId,
+          parsedRequest.planningDate,
+        );
+        if (scheduledInstanceVisits.length > 0) {
+          optimizerRequest = {
+            ...parsedRequest,
+            visits: scheduledInstanceVisits,
+          };
+        }
+      } catch (error) {
+        console.error("Failed to resolve visit instances for optimize-route v3 fallback.", error);
+      }
+    }
+
     const requestId = resolveRequestId(request);
-    const result = await optimizeRouteV3(parsedRequest, googleMapsApiKey, {
+    const result = await optimizeRouteV3(optimizerRequest, googleMapsApiKey, {
       requestId,
       nurseId: auth.nurseId,
       shadowCompare: shouldLogShadowComparison(requestId),
@@ -98,7 +117,7 @@ export async function POST(request: Request) {
         nurseId: auth.nurseId,
         endpointVersion: "v3",
         requestId,
-        request: parsedRequest,
+        request: optimizerRequest,
         result,
       });
     } catch (error) {
@@ -110,8 +129,8 @@ export async function POST(request: Request) {
       resourceType: "route_optimization",
       outcome: "success",
       metadata: {
-        planningDate: parsedRequest.planningDate,
-        visitCount: parsedRequest.visits.length,
+        planningDate: optimizerRequest.planningDate,
+        visitCount: optimizerRequest.visits.length,
         scheduledCount: result.orderedStops.flatMap((stop) => stop.tasks).length,
       },
       ipAddress: resolveRequestIpAddress(request),
