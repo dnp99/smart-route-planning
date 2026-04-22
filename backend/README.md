@@ -131,14 +131,18 @@ OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
 
 - `POST /api/auth/signup`
   - Accepts `{ displayName, email, password }`
-  - Creates a nurse account and returns `{ user }`
+  - Creates a nurse account and returns `{ user }` with setup-progress fields:
+    - `isSetupComplete: boolean`
+    - `setupMissing: ("displayName" | "workingHours" | "optimizationObjective")[]`
   - Sets `careflow_session` HttpOnly cookie
   - Rejects duplicate emails with `409`
   - Enforces shared auth rate limiting by client IP and normalized account email
   - Enforces HTTPS in production (or when `AUTH_ENFORCE_HTTPS=true`)
 - `POST /api/auth/login`
   - Accepts `{ email, password }`
-  - Returns `{ user }` when credentials are valid
+  - Returns `{ user }` when credentials are valid, including:
+    - `isSetupComplete: boolean`
+    - `setupMissing: ("displayName" | "workingHours" | "optimizationObjective")[]`
   - Sets `careflow_session` HttpOnly cookie
   - Enforces auth rate limiting by client IP and normalized account email
   - Uses optional centralized Upstash Redis limiter when configured, otherwise in-memory fallback
@@ -148,10 +152,14 @@ OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
   - Revokes current session and clears `careflow_session` cookie
 - `GET /api/auth/me`
   - Requires valid auth session cookie (`careflow_session`)
-  - Returns current authenticated user including `homeAddress`
+  - Returns current authenticated user including `homeAddress` and setup-progress fields (`isSetupComplete`, `setupMissing`)
 - `PATCH /api/auth/me`
   - Requires valid auth session cookie (`careflow_session`)
-  - Accepts `{ homeAddress }` to update the nurse's saved home address
+  - Accepts one or more profile/setup fields:
+    - `{ displayName }`
+    - `{ homeAddress }`
+    - `{ workingHours, breakGapThresholdMinutes }`
+    - `{ optimizationObjective }`
   - Returns updated profile
 - `POST /api/auth/update-password`
   - Requires valid auth session cookie (`careflow_session`)
@@ -172,6 +180,7 @@ Authentication behavior:
 - Missing/invalid/revoked/expired session returns `401`.
 - `careflow_session` cookie attributes: `HttpOnly`, `Path=/`, 1-day max-age, `Secure` in production, `SameSite=Lax` in local dev and `SameSite=None` in production.
 - Auth endpoints include baseline security headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`) and emit HSTS on HTTPS requests.
+- Setup completeness is derived from `displayName`, `workingHours` (at least one enabled day), and `optimizationObjective`; `homeAddress` is optional and not part of required setup completion.
 
 ### Patients
 

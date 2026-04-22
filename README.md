@@ -19,6 +19,8 @@ Routefy is a nurse-focused route planning app with a React frontend and Next.js 
 - Requires all flows (including first-login onboarding) to remain PHI-safe: no PHI in browser storage, URL params, telemetry, or logs.
 - Requires a first-use legal/privacy acknowledgement (`I Agree`) per signed-in user, stored server-side and re-prompted when policy version changes.
 - Guides first-time users through `/welcome-setup` to save required profile, working-hours, and route-objective defaults.
+- Treats home address as optional during setup; incomplete optional profile data is surfaced via dashboard nudge cards instead of blocking app usage.
+- Adds break-reminder helper info (`i` icon) in both the onboarding setup flow and account settings working-hours form.
 - Persists only non-sensitive route-planner draft fields in browser storage (IDs, ordering, inclusion flags, date/objective/UI step — no addresses or place IDs).
 - Clears session-scoped browser storage (draft, header quote) on auth changes.
 - Uses a consistent overflow action menu pattern for client row actions.
@@ -64,6 +66,10 @@ Notes:
 
 - UI terminology uses **Client/Clients** for care recipients.
 - API paths and shared contract field names remain `/api/patients`, `patientId`, and `patientName` for compatibility.
+- Auth responses (`signup`, `login`, `me`) return setup progress fields on `user`:
+  - `isSetupComplete: boolean`
+  - `setupMissing: ("displayName" | "workingHours" | "optimizationObjective")[]`
+- Setup completeness is based on `displayName`, at least one enabled `workingHours` day, and `optimizationObjective`; `homeAddress` is optional.
 
 ## Local run
 

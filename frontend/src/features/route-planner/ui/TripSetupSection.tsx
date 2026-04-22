@@ -109,9 +109,11 @@ export const TripSetupSection = ({
         <div className="flex items-center justify-between gap-2">
           <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
-              Planning date
-            </span>
+            {!isMobileViewport && (
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+                Planning date
+              </span>
+            )}
             <DatePicker
               id="planningDate"
               value={planningDate}
@@ -144,7 +146,7 @@ export const TripSetupSection = ({
           </div>
         </div>
         <p className={responsiveStyles.cardDescription}>
-          Define where the nurse starts and how the route should end.
+          Define where you would like to start and where the route should end.
         </p>
       </div>
 

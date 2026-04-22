@@ -22,7 +22,10 @@ export default function AppFooter() {
             </p>
           </div>
         </div>
-        <nav aria-label="Legal and support links" className="flex flex-wrap gap-x-3 gap-y-0">
+        <nav
+          aria-label="Legal and support links"
+          className="grid w-full grid-cols-2 gap-x-4 gap-y-0.5 sm:w-auto sm:auto-cols-max sm:grid-flow-col sm:grid-cols-none sm:gap-x-3 sm:gap-y-0"
+        >
           <a
             href={SUPPORT_EMAIL_MAILTO}
             className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"

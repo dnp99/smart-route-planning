@@ -4,6 +4,9 @@ import type { SelectedPatientDestination } from "./routePlannerTypes";
 import type { Patient } from "../../../../shared/contracts";
 import { formatPatientNameFromParts } from "../../patients/domain/patientName";
 
+const MOBILE_SEARCH_VISIBLE_ROWS = 15;
+const MOBILE_SEARCH_ROW_HEIGHT_PX = 88;
+
 type PatientSelectorSectionProps = {
   isVisible: boolean;
   isMobileViewport: boolean;
@@ -74,6 +77,7 @@ export const PatientSelectorSection = ({
 
   const isContentVisible = isExpanded || isMobileViewport;
   const isCollapsedDesktop = !isExpanded && !isMobileViewport;
+  const mobileSearchListMaxHeight = `${MOBILE_SEARCH_VISIBLE_ROWS * MOBILE_SEARCH_ROW_HEIGHT_PX}px`;
 
   // Preview row: first 3 unique patient names abbreviated (e.g. "Ravi R")
   const uniquePreviewDestinations = selectedDestinations.filter((destination, index, all) => {
@@ -266,7 +270,10 @@ export const PatientSelectorSection = ({
                   <p className="m-0 text-xs text-amber-700 dark:text-amber-300">{searchError}</p>
                 )}
                 {destinationSearchResults.length > 0 && (
-                  <ul className={responsiveStyles.selectableList}>
+                  <ul
+                    className={responsiveStyles.selectableList}
+                    style={isMobileViewport ? { maxHeight: mobileSearchListMaxHeight } : undefined}
+                  >
                     {destinationSearchResults.map((patient) => {
                       const patientName = formatPatientNameFromParts(
                         patient.firstName,
@@ -295,6 +302,7 @@ export const PatientSelectorSection = ({
             </div>
 
             <SelectedDestinationsSection
+              isMobileViewport={isMobileViewport}
               selectedDestinations={selectedDestinations}
               expandedDestinationVisitKeys={expandedDestinationVisitKeys}
               onToggleDestinationDetails={onToggleDestinationDetails}
