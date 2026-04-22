@@ -50,9 +50,9 @@ function RoutePlanner({
           </div>
           <div className="flex items-center gap-2">
             <p className={responsiveStyles.cardDescription}>
-              Enter your starting point, ending point, and destination addresses. The planner
-              prioritizes time-window feasibility first, then distance, with the ending point as the
-              final stop.
+              {isMobileViewport
+                ? "Set start, end, and client addresses. Routefy prioritizes time-window feasibility first, then distance."
+                : "Enter your starting point, ending point, and destination addresses. The planner prioritizes time-window feasibility first, then distance, with the ending point as the final stop."}
             </p>
             <button
               type="button"

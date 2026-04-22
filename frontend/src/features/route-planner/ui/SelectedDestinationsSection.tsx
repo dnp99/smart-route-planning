@@ -4,6 +4,7 @@ import { DestinationRow } from "./DestinationRow";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 
 type SelectedDestinationsSectionProps = {
+  isMobileViewport: boolean;
   selectedDestinations: SelectedPatientDestination[];
   expandedDestinationVisitKeys: Record<string, boolean>;
   onToggleDestinationDetails: (visitKey: string) => void;
@@ -18,6 +19,7 @@ type SelectedDestinationsSectionProps = {
 };
 
 export const SelectedDestinationsSection = ({
+  isMobileViewport,
   selectedDestinations,
   expandedDestinationVisitKeys,
   onToggleDestinationDetails,
@@ -26,6 +28,11 @@ export const SelectedDestinationsSection = ({
   onUpdateDestinationPlanningWindow,
   onSetDestinationPersistPlanningWindow,
 }: SelectedDestinationsSectionProps) => {
+  const MOBILE_SELECTED_VISIBLE_ROWS = 15;
+  const MOBILE_SELECTED_ROW_HEIGHT_PX = 88;
+  const mobileSelectedListMaxHeight = `${
+    MOBILE_SELECTED_VISIBLE_ROWS * MOBILE_SELECTED_ROW_HEIGHT_PX
+  }px`;
   const [collapsedPatientGroups, setCollapsedPatientGroups] = useState<Record<string, boolean>>({});
 
   const selectedByPatient = useMemo(() => {
@@ -80,7 +87,10 @@ export const SelectedDestinationsSection = ({
   return (
     <div className="grid gap-2">
       <p className={responsiveStyles.patientColumnLabel}>Selected ({selectedByPatient.length})</p>
-      <div className={responsiveStyles.destinationList}>
+      <div
+        className={responsiveStyles.destinationList}
+        style={isMobileViewport ? { maxHeight: mobileSelectedListMaxHeight } : undefined}
+      >
         {selectedDestinations.length === 0 ? (
           <p className={responsiveStyles.panelEmptyText}>No clients selected yet.</p>
         ) : (

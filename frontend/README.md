@@ -16,9 +16,11 @@ This folder contains the Vite + React frontend for Routefy.
 - Keep quote/header workspace behavior consistent across auth sessions.
 - Require first-use legal acknowledgement via blocking modal (`I Agree`) and re-prompt when legal notice version changes.
 - Route authenticated users with incomplete setup to `/welcome-setup` and require profile, working hours, and route objective before standard app pages.
+- Keep home address optional during setup (non-blocking); if missing, surface completion nudges on the dashboard instead of blocking access.
 - Present unified overflow action menus in client list rows.
 - Serve legal pages (Terms, Privacy, License, Trademark) at `/legal/*` routes.
 - Show policy reminders from info icons on Clients and Route Planner pages.
+- Show break-reminder helper info (`i` icon) in both onboarding setup and account settings working-hours experiences.
 - Mobile-first route planner with wizard step flow (Trip → Clients → Review), always-expanded sections on mobile, step completion indicators, and safe-area-aware sticky footer CTA.
 - Use Client/Clients wording in UI copy while keeping `/api/patients` endpoints and `patient*` contract fields for backend compatibility.
 - Use cookie-based auth (`credentials: "include"`) with no JWT/token storage in localStorage/sessionStorage.
@@ -59,6 +61,7 @@ The `v3` path keeps the same response contract as `v2`.
 - PHI (Protected Health Information) must not be persisted in `localStorage`, `sessionStorage`, IndexedDB, or URL/query parameters.
 - PHI must not be sent to analytics/telemetry or written to logs/error text.
 - Browser persistence is limited to non-sensitive metadata required for UX continuity (for example: IDs/order/flags/date/objective/UI step).
+- Setup and onboarding flows follow the same PHI constraints as all other product surfaces.
 
 Example:
 

@@ -31,7 +31,8 @@ export const responsiveStyles = {
   tabStrip: "relative z-30 w-full bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
   appFooter:
     "w-full bg-[linear-gradient(90deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] dark:bg-[linear-gradient(90deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
-  appFooterInner: "mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-4",
+  appFooterInner:
+    "mx-auto flex w-full max-w-7xl flex-col items-start gap-3 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:pb-4",
   contentWrapper: "mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6",
   tabNav: "flex gap-6 border-b border-slate-200/50 dark:border-slate-800/50",
   // ── Account menu ──────────────────────────────────────────────────────────
@@ -52,7 +53,7 @@ export const responsiveStyles = {
     "rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60",
   // ── Scroll-to-top button ──────────────────────────────────────────────────
   scrollToTopButton:
-    "fixed bottom-[calc(1.5rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white/90 shadow-md backdrop-blur transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:bg-slate-800 lg:bottom-6 lg:left-[calc(50%+36rem+0.75rem)] lg:right-auto",
+    "fixed bottom-[calc(5.75rem+env(safe-area-inset-bottom))] right-4 z-40 flex h-10 w-10 items-center justify-center rounded-full border border-slate-300 bg-white/90 shadow-md backdrop-blur transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900/90 dark:hover:bg-slate-800 sm:bottom-[calc(1.5rem+env(safe-area-inset-bottom))] lg:bottom-6 lg:left-[calc(50%+36rem+0.75rem)] lg:right-auto",
 
   // ── Page / section shells ──────────────────────────────────────────────────
   page: "mt-2 w-full sm:mt-3",
@@ -156,7 +157,7 @@ export const responsiveStyles = {
   mobileReviewCard:
     "grid gap-2 rounded-2xl border border-slate-200 bg-slate-50/90 p-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200",
   stickyFooter:
-    "sticky bottom-2 z-30 rounded-2xl border border-slate-200 bg-white/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 sm:bottom-3 sm:pb-3",
+    "sticky bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 rounded-2xl border border-slate-200 bg-white/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 sm:bottom-3 sm:pb-3",
 
   // ── Patient selection two-column layout ────────────────────────────────────
   patientSelectionGrid: "grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start",
