@@ -54,23 +54,16 @@ export default function AppHeader({
     if (!isAuthenticated) setIsAccountMenuOpen(false);
   }, [isAuthenticated, setIsAccountMenuOpen]);
 
-  const formattedDisplayName =
-    typeof authUser?.displayName === "string" ? formatNameWords(authUser.displayName) : "";
   const accountInitials = resolveAccountInitials(authUser?.displayName, authUser?.email);
-  const workspaceSubtitle = formattedDisplayName
-    ? `Operations workspace for ${formattedDisplayName}`
-    : "Operations workspace";
   const headerInnerClassName = isAuthenticated
     ? responsiveStyles.appHeaderInner
     : "mx-auto flex w-full max-w-7xl items-center justify-center px-6";
 
   return (
     <header
-      className={[
-        responsiveStyles.appHeader,
-        "bg-[linear-gradient(135deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.94)_58%,rgba(236,254,255,0.92)_100%)]",
-        "dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96)_0%,rgba(15,23,42,0.94)_60%,rgba(8,47,73,0.9)_100%)]",
-      ].join(" ")}
+      className={[responsiveStyles.appHeader, responsiveStyles.appHeaderBackgroundGradient].join(
+        " ",
+      )}
     >
       <div
         className={[
@@ -135,7 +128,7 @@ export default function AppHeader({
                       setIsAccountMenuOpen(false);
                       onOpenAccountSettings();
                     }}
-                    className="flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+                    className={responsiveStyles.accountMenuItem}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -162,7 +155,7 @@ export default function AppHeader({
                       setIsAccountMenuOpen(false);
                       onLogout();
                     }}
-                    className="flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30"
+                    className={responsiveStyles.accountMenuItemDestructive}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

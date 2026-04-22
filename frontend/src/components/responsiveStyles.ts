@@ -27,6 +27,8 @@ export const responsiveStyles = {
   stickyHeaderShell: "sticky top-0 z-30 w-full",
   appHeader:
     "relative z-40 w-full bg-[linear-gradient(270deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] backdrop-blur-md dark:bg-[linear-gradient(270deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
+  appHeaderBackgroundGradient:
+    "bg-[linear-gradient(135deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.94)_58%,rgba(236,254,255,0.92)_100%)] dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96)_0%,rgba(15,23,42,0.94)_60%,rgba(8,47,73,0.9)_100%)]",
   appHeaderInner: "mx-auto flex w-full max-w-7xl items-center justify-between px-6",
   tabStrip: "relative z-30 w-full bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
   appFooter:
@@ -40,11 +42,23 @@ export const responsiveStyles = {
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-100 to-blue-50 text-sm font-bold uppercase tracking-[0.02em] text-blue-800 shadow-sm transition hover:from-blue-200 hover:to-blue-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-blue-700 dark:from-blue-900/70 dark:to-blue-950/60 dark:text-blue-100 dark:hover:from-blue-800 dark:hover:to-blue-900",
   accountMenuDropdown:
     "absolute right-0 z-50 mt-2 min-w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900",
+  accountMenuItem:
+    "flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800",
+  accountMenuItemDestructive:
+    "flex w-full items-center gap-2.5 whitespace-nowrap rounded-lg px-2.5 py-2 text-left text-sm font-medium text-red-600 transition hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/30",
   // ── Modal ─────────────────────────────────────────────────────────────────
   modalBackdrop:
     "fixed inset-0 z-50 flex items-end justify-center bg-slate-950/60 p-0 backdrop-blur-[4px] sm:items-center sm:p-3",
   modalSurface:
     "animate-slide-up motion-reduce:animate-none sm:animate-none max-h-[82vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-4 shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:max-h-[92vh] sm:max-w-xl sm:rounded-2xl sm:p-5",
+  legalDocumentModalSurface:
+    "max-h-[88vh] w-full overflow-hidden rounded-t-3xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:max-w-4xl sm:rounded-2xl",
+  legalDocumentModalHeader:
+    "flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-700 sm:px-5",
+  legalDocumentModalTitle: "m-0 text-sm font-semibold text-slate-900 dark:text-slate-100",
+  legalDocumentModalCloseButton:
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-slate-200",
+  legalDocumentModalBody: "max-h-[calc(88vh-3.5rem)] overflow-y-auto px-4 pb-4 sm:px-5 sm:pb-5",
   confirmDialogSurface:
     "animate-slide-up motion-reduce:animate-none sm:animate-none w-full rounded-t-3xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-900 sm:max-w-sm sm:rounded-2xl",
   confirmDialogTitle: "m-0 mb-1 text-base font-semibold text-slate-900 dark:text-slate-100",
@@ -73,6 +87,8 @@ export const responsiveStyles = {
   cardHeader: "mb-2 grid gap-1 sm:mb-3",
   cardTitle: "m-0 text-base font-semibold text-slate-900 dark:text-slate-100 sm:text-lg",
   cardDescription: "m-0 text-sm text-slate-600 dark:text-slate-300",
+  recurrenceLabel: "text-xs font-semibold text-slate-700 dark:text-slate-300",
+  recurrenceValue: "m-0 text-xs text-slate-500 dark:text-slate-400",
 
   // ── Form layout ────────────────────────────────────────────────────────────
   form: "grid gap-2.5 sm:gap-3",
@@ -103,9 +119,31 @@ export const responsiveStyles = {
   authHelperButton:
     "text-xs font-medium text-blue-600 underline-offset-2 transition hover:underline dark:text-blue-300",
   onboardingSetupViewport:
-    "mx-auto flex min-h-[calc(100vh-16rem)] w-full max-w-5xl items-start py-6 sm:py-10",
+    "mx-auto flex min-h-[calc(100vh-16rem)] w-full max-w-7xl items-start py-6 sm:py-10",
   onboardingSetupCard:
     "w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-6",
+  onboardingRequiredBadge:
+    "ml-2 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300",
+  onboardingSectionLabel:
+    "m-0 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300",
+  onboardingTitle: "m-0 mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100",
+  onboardingSubtitle: "m-0 mt-2 text-sm text-slate-600 dark:text-slate-300",
+  onboardingProgressTrack: "mt-4 h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700",
+  onboardingProgressFill: "h-2 rounded-full bg-blue-600 transition-all",
+  onboardingErrorBanner:
+    "m-0 mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/20 dark:text-rose-200",
+  onboardingPrimaryButton:
+    "inline-flex w-fit items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60",
+  onboardingFieldLabel: "grid gap-1 text-sm text-slate-700 dark:text-slate-200",
+  onboardingRadioLabel: "flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200",
+  onboardingTimeInput:
+    "rounded-lg border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-950",
+  onboardingBreakToggleButton:
+    "inline-flex h-5 w-5 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30",
+  onboardingBreakInput:
+    "w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-800",
+  onboardingObjectiveFieldset:
+    "grid gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700",
 
   // ── Input ─────────────────────────────────────────────────────────────────
   // bg-white · border-slate-200 · hover:border-slate-300 · focus:ring-blue-100
@@ -113,6 +151,8 @@ export const responsiveStyles = {
     "w-full rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:px-4 sm:py-3",
   searchInputCompact:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:px-4 sm:py-1.5",
+  recurrenceInput:
+    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
   dateInput:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
   dateInputTrigger:
@@ -273,6 +313,8 @@ export const responsiveStyles = {
     "mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300",
   inlineErrorBanner:
     "m-0 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300",
+  inlineSuccessBanner:
+    "m-0 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300",
 
   // ── Mobile planner ───────────────────────────────────────────────────────────
   mobileContinueButton:
@@ -315,6 +357,13 @@ export const responsiveStyles = {
   routeSkeletonMapStack: "mt-4 grid gap-3",
   routeSkeletonPulse:
     "route-loading-skeleton motion-reduce:animate-none rounded-xl bg-slate-200/80 dark:bg-slate-700/70",
+  bootstrapFallbackPage: "mt-3 grid gap-4 sm:gap-5",
+  bootstrapFallbackCard:
+    "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+  bootstrapFallbackSpinner:
+    "mt-0.5 inline-flex h-5 w-5 animate-spin items-center justify-center text-blue-600 dark:text-blue-300",
+  bootstrapFallbackTitle: "m-0 text-sm font-semibold text-slate-900 dark:text-slate-100",
+  bootstrapFallbackSubtitle: "m-0 mt-1 text-sm text-slate-600 dark:text-slate-300",
   routeSkeletonTitle: "h-3.5 w-28",
   routeSkeletonHeading: "h-7 w-52",
   routeSkeletonBody: "h-4 w-full max-w-2xl",
@@ -432,4 +481,64 @@ export const responsiveStyles = {
   // ── Modal variants ────────────────────────────────────────────────────────
   modalSurfaceLarge:
     "animate-slide-up motion-reduce:animate-none sm:animate-none max-h-[82vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-slate-900 sm:max-h-[92vh] sm:max-w-2xl sm:rounded-3xl sm:p-6",
+  modalCloseButton:
+    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800",
+
+  // ── Legal pages ───────────────────────────────────────────────────────────
+  legalPageContainer:
+    "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+  legalPageTitle: "m-0 text-xl font-semibold text-slate-900 dark:text-slate-100",
+  legalPageUpdatedAt: "mt-1 text-xs text-slate-500 dark:text-slate-400",
+  legalPageContent: "mt-4 grid gap-4 text-sm text-slate-700 dark:text-slate-300",
+  legalSectionTitle: "m-0 mb-1 font-semibold text-slate-800 dark:text-slate-200",
+  legalLink:
+    "text-blue-600 underline hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300",
+  legalFooter: "mt-5 border-t border-slate-200 pt-4 dark:border-slate-700",
+  legalBackLink:
+    "inline-flex items-center py-1 text-sm text-blue-600 underline hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300",
+
+  // ── Account settings modal ───────────────────────────────────────────────
+  modalSheetHandleWrap: "sm:hidden -mx-4 -mt-4 mb-3 flex justify-center pb-1 pt-2.5",
+  modalSheetHandle: "h-1.5 w-10 rounded-full bg-slate-300 dark:bg-slate-600",
+  accountSettingsTitle: "m-0 text-lg font-semibold text-slate-900 dark:text-slate-100",
+  accountSettingsDescription: "m-0 mt-1 text-sm text-slate-600 dark:text-slate-300",
+  accountSettingsFieldLabel: "grid gap-1 text-sm text-slate-700 dark:text-slate-300",
+  accountSettingsInput:
+    "w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 sm:px-4 sm:py-3",
+  accountSettingsReadOnlyInput:
+    "w-full rounded-xl border border-slate-200 bg-slate-100 px-3 py-2.5 text-sm text-slate-600 outline-none disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 sm:px-4 sm:py-3",
+  accountSettingsPasswordInputBase:
+    "w-full rounded-xl border bg-white px-3 py-2.5 pr-10 text-sm text-slate-900 outline-none transition hover:border-slate-300 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-100 sm:px-4 sm:py-3",
+  passwordVisibilityButton:
+    "absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300",
+  breakReminderInfoBanner:
+    "m-0 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm font-normal text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200",
+  accountSettingsScheduleCard:
+    "rounded-xl border border-slate-200 bg-white px-3 py-1 dark:border-slate-700 dark:bg-slate-900",
+  objectiveSelectorIcon:
+    "inline-flex h-5 w-5 items-center justify-center pt-px text-slate-500 dark:text-slate-400",
+  objectiveSelectorBadge: "m-0 mt-1 text-xs font-medium text-slate-600 dark:text-slate-400",
+  accountSettingsFooterBar:
+    "-mx-4 mt-4 flex justify-end gap-2 border-t border-slate-200 bg-white px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 dark:border-slate-800 dark:bg-slate-900 sm:mx-0 sm:px-0 sm:pb-0",
+  accountSettingsSecondaryButton:
+    "rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
+  accountSettingsPrimaryButton:
+    "rounded-xl bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60",
+
+  // ── Account settings modal tabs ──────────────────────────────────────────
+  settingsTabButtonBase:
+    "border-b-[3px] px-1 pb-3 pt-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
+  settingsTabButtonActive: "border-blue-700 text-blue-700 dark:border-blue-400 dark:text-blue-300",
+  settingsTabButtonInactive:
+    "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200",
+
+  // ── Table sort controls ────────────────────────────────────────────────────
+  tableSortButtonBase:
+    "inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
+  tableSortButtonFilterBase:
+    "inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
+  tableSortButtonBaseEnd:
+    "inline-flex w-full items-center justify-end gap-1 text-xs font-semibold uppercase tracking-normal transition hover:text-slate-700 dark:hover:text-slate-200",
+  tableSortButtonActive: "text-blue-600 dark:text-blue-400",
+  tableSortButtonInactive: "text-slate-500 dark:text-slate-400",
 };

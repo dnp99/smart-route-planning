@@ -35,11 +35,18 @@ vi.mock("../features/patients/api/patientService", () => ({
   listPatients: listPatientsMock,
 }));
 
+vi.mock("../features/patients/api/recurringVisitTemplateService", () => ({
+  listRecurringVisitTemplates: vi.fn(async () => []),
+  createRecurringVisitTemplate: vi.fn(),
+  updateRecurringVisitTemplate: vi.fn(),
+  deleteRecurringVisitTemplate: vi.fn(),
+}));
+
 vi.mock("../components/home/homeDashboardService", () => ({
   fetchDashboardSummary: fetchDashboardSummaryMock,
 }));
 
-vi.mock("../components/shared/AddressAutocompleteInput", () => ({
+vi.mock("../components/AddressAutocompleteInput", () => ({
   default: ({
     id,
     label,
@@ -81,8 +88,8 @@ beforeEach(() => {
       routesToday: 3,
       visitsScheduledToday: 11,
       onTimeRatePercent7d: 92,
-      deletedClientsLast30Days: 1,
-      driveHoursLast7Days: 7.4,
+      unscheduledVisitsToday: 1,
+      driveHoursToday: 7.4,
     },
     alerts: [],
     upcomingStops: [],
@@ -108,8 +115,6 @@ beforeEach(() => {
       email: "nurse@example.com",
       displayName: "Nurse One",
       homeAddress: null,
-      isSetupComplete: true,
-      setupMissing: [],
     },
   });
   fetchLegalNoticeStatusMock.mockResolvedValue({
@@ -124,8 +129,6 @@ beforeEach(() => {
       email: "nurse@example.com",
       displayName: "Nurse One",
       homeAddress: "1 Main Street, Toronto, ON",
-      isSetupComplete: true,
-      setupMissing: [],
     },
   });
 });
@@ -142,8 +145,6 @@ const seedAuthenticatedSession = (displayName = "Nurse One", homeAddress: string
     email: "nurse@example.com",
     displayName,
     homeAddress,
-    isSetupComplete: true,
-    setupMissing: [],
   });
 };
 
@@ -156,7 +157,7 @@ describe("Footer", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/clients"]}>
+      <MemoryRouter initialEntries={["/patients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -174,7 +175,7 @@ describe("Footer", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/clients"]}>
+      <MemoryRouter initialEntries={["/patients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -190,7 +191,7 @@ describe("Footer", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/clients"]}>
+      <MemoryRouter initialEntries={["/patients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -257,7 +258,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/home"]}>
+      <MemoryRouter initialEntries={["/"]}>
         <App />
       </MemoryRouter>,
     );
@@ -268,7 +269,7 @@ describe("App routing", () => {
     });
   });
 
-  it("renders landing page at / for signed-out users", async () => {
+  it("renders login page at / for signed-out users", async () => {
     fetchMeMock.mockReset();
     fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
     render(
@@ -277,15 +278,10 @@ describe("App routing", () => {
       </MemoryRouter>,
     );
 
-    expect(
-      await screen.findByRole("heading", {
-        name: "Organize clients and plan better daily routes.",
-      }),
-    ).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/login");
+    expect(await screen.findByRole("heading", { name: "Login" })).toBeTruthy();
   });
 
-  it("renders authenticated landing page at / for signed-in users", async () => {
+  it("renders home page at / for signed-in users", async () => {
     seedAuthenticatedSession();
 
     render(
@@ -295,6 +291,7 @@ describe("App routing", () => {
     );
 
     expect(await screen.findByText(/Good (morning|afternoon|evening), Nurse/i)).toBeTruthy();
+    expect(screen.getByText(/Add a home address for default start and end points/i)).toBeTruthy();
     expect(screen.getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBe("page");
   });
 
@@ -314,7 +311,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/home"]}>
+      <MemoryRouter initialEntries={["/"]}>
         <App />
       </MemoryRouter>,
     );
@@ -344,8 +341,8 @@ describe("App routing", () => {
         routesToday: 1,
         visitsScheduledToday: 2,
         onTimeRatePercent7d: 92,
-        deletedClientsLast30Days: 0,
-        driveHoursLast7Days: 2.1,
+        unscheduledVisitsToday: 0,
+        driveHoursToday: 2.1,
       },
       alerts: [],
       upcomingStops: [
@@ -376,7 +373,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/home"]}>
+      <MemoryRouter initialEntries={["/"]}>
         <App />
       </MemoryRouter>,
     );
@@ -396,8 +393,8 @@ describe("App routing", () => {
           routesToday: 2,
           visitsScheduledToday: 8,
           onTimeRatePercent7d: 91,
-          deletedClientsLast30Days: 0,
-          driveHoursLast7Days: 5.5,
+          unscheduledVisitsToday: 0,
+          driveHoursToday: 5.5,
         },
         alerts: [],
         upcomingStops: [],
@@ -420,7 +417,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/home"]}>
+      <MemoryRouter initialEntries={["/"]}>
         <App />
       </MemoryRouter>,
     );
@@ -459,8 +456,6 @@ describe("App routing", () => {
         email: "nurse@example.com",
         displayName: "Nurse One",
         homeAddress: "3361 Ingram Road, Mississauga, ON",
-        isSetupComplete: true,
-        setupMissing: [],
       },
     });
     seedAuthenticatedSession("Nurse One", "3361 Ingram Road, Mississauga, ON");
@@ -485,34 +480,49 @@ describe("App routing", () => {
     );
   });
 
-  it("capitalizes nurse display name in the workspace subtitle", async () => {
+  it("normalizes mixed-case nurse display name into account initials", async () => {
     fetchMeMock.mockResolvedValue({
       user: {
         id: "nurse-1",
         email: "nurse@example.com",
         displayName: "nUrSe oNe",
-        homeAddress: "3361 Ingram Road, Mississauga, ON",
-        isSetupComplete: true,
-        setupMissing: [],
+        homeAddress: null,
       },
     });
-    seedAuthenticatedSession("nUrSe oNe", "3361 Ingram Road, Mississauga, ON");
+    seedAuthenticatedSession("nUrSe oNe");
 
     render(
-      <MemoryRouter initialEntries={["/clients"]}>
+      <MemoryRouter initialEntries={["/patients"]}>
         <App />
       </MemoryRouter>,
     );
 
     await waitForPatientsPage();
     expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Open account options menu" }).textContent).toBe(
+      "NO",
+    );
+  });
+
+  it("renders patients page at /patients and marks nav active", async () => {
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/patients"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    await waitForPatientsPage();
+    expect(screen.getByRole("heading", { name: /^Clients \(\d+\)$/ })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Clients" }).getAttribute("aria-current")).toBe("page");
   });
 
   it("shows account options menu items", async () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/clients"]}>
+      <MemoryRouter initialEntries={["/patients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -533,7 +543,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/clients"]}>
+      <MemoryRouter initialEntries={["/patients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -569,7 +579,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/clients"]}>
+      <MemoryRouter initialEntries={["/patients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -597,7 +607,7 @@ describe("App routing", () => {
     fetchMeMock.mockReset();
     fetchMeMock.mockRejectedValue(new Error("Unauthorized"));
     render(
-      <MemoryRouter initialEntries={["/clients"]}>
+      <MemoryRouter initialEntries={["/patients"]}>
         <App />
       </MemoryRouter>,
     );
@@ -610,7 +620,7 @@ describe("App routing", () => {
     seedAuthenticatedSession();
 
     render(
-      <MemoryRouter initialEntries={["/clients"]}>
+      <MemoryRouter initialEntries={["/patients"]}>
         <App />
       </MemoryRouter>,
     );

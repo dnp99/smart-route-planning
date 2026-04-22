@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
-import type { WeeklyWorkingHours } from "../../../../../shared/contracts";
+import type { VisitInstance, WeeklyWorkingHours } from "../../../../../shared/contracts";
 import { usePatientSearch } from "./usePatientSearch";
 import { useRouteOptimization } from "./useRouteOptimization";
-import { resolveWorkingHoursForDate } from "../api/routePlannerService";
+import { requestVisitInstances, resolveWorkingHoursForDate } from "../api/routePlannerService";
 import { patientMatchesSearchQuery } from "../domain/routePlannerHelpers";
 import { readRoutePlannerDraft, type MobilePlannerStep } from "../state/routePlannerDraft";
 import { useManualReorder } from "./useManualReorder";
@@ -67,12 +67,15 @@ export function useRoutePlannerController({
     requestDestinations,
     selectedDestinationIdSet,
   } = useRoutePlannerDestinations({ initialDestinations: [] });
+  const [visitInstancesByPatientId, setVisitInstancesByPatientId] = useState<
+    Map<string, VisitInstance[]>
+  >(new Map());
+  const [visitInstancesError, setVisitInstancesError] = useState("");
 
   const {
     startAddress,
     manualEndAddress,
     startGooglePlaceId,
-    manualEndGooglePlaceId,
     setStartTouched,
     setEndTouched,
     handleStartAddressChange,
@@ -103,6 +106,12 @@ export function useRoutePlannerController({
     handleAddCreatePatientVisitWindow,
     handleRemoveCreatePatientVisitWindow,
     handleCreatePatientVisitTypeChange,
+    handleCreateRecurringTemplateChange,
+    handleAddCreateRecurringTemplate,
+    handleRemoveCreateRecurringTemplate,
+    handleAddCreateRecurringTemplateWindow,
+    handleRemoveCreateRecurringTemplateWindow,
+    handleCreateRecurringTemplateWindowChange,
     handleCreatePatientAddressChange,
     handleCreatePatientAddressPick,
     handleCreatePatientSubmit,
@@ -172,11 +181,52 @@ export function useRoutePlannerController({
       destinationSearchPatients,
       isDestinationSearchLoading,
       locallyCreatedPatients,
+      visitInstancesByPatientId,
       selectedDestinationIdSet,
       addDestinationPatient,
       setDestinationVisitIncluded,
       setDestinationPersistPlanningWindow,
     });
+
+  useEffect(() => {
+    let isSubscribed = true;
+
+    const loadVisitInstances = async () => {
+      setVisitInstancesError("");
+      try {
+        const instances = await requestVisitInstances({ planningDate });
+        if (!isSubscribed) {
+          return;
+        }
+
+        const nextInstancesByPatientId = new Map<string, VisitInstance[]>();
+        instances.forEach((instance) => {
+          const current = nextInstancesByPatientId.get(instance.patientId) ?? [];
+          current.push(instance);
+          nextInstancesByPatientId.set(instance.patientId, current);
+        });
+        setVisitInstancesByPatientId(nextInstancesByPatientId);
+      } catch (error) {
+        if (!isSubscribed) {
+          return;
+        }
+        setVisitInstancesByPatientId(new Map());
+        setVisitInstancesError(
+          error instanceof Error ? error.message : "Unable to load visit instances.",
+        );
+      }
+    };
+
+    void loadVisitInstances();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [planningDate]);
+
+  const handleAddDestinationPatient = (patient: Parameters<typeof addDestinationPatient>[0]) => {
+    addDestinationPatient(patient, visitInstancesByPatientId.get(patient.id));
+  };
 
   const {
     plannerOptimizationObjective,
@@ -291,11 +341,11 @@ export function useRoutePlannerController({
     destinationSearchQuery,
     onSearchQueryChange: setDestinationSearchQuery,
     isSearchLoading: isDestinationSearchLoading,
-    searchError: destinationSearchError ?? "",
+    searchError: destinationSearchError || visitInstancesError || "",
     createPatientError: createPatientError ?? "",
     selectedDestinations,
     expandedDestinationVisitKeys,
-    onAddPatient: addDestinationPatient,
+    onAddPatient: handleAddDestinationPatient,
     onOpenCreatePatient: openCreatePatientModal,
     onToggleDestinationDetails: toggleDestinationDetails,
     onRemoveDestinationVisit: removeDestinationVisit,
@@ -369,6 +419,12 @@ export function useRoutePlannerController({
     onVisitWindowChange: handleCreatePatientVisitWindowChange,
     onAddVisitWindow: handleAddCreatePatientVisitWindow,
     onRemoveVisitWindow: handleRemoveCreatePatientVisitWindow,
+    onRecurringTemplateChange: handleCreateRecurringTemplateChange,
+    onAddRecurringTemplate: handleAddCreateRecurringTemplate,
+    onRemoveRecurringTemplate: handleRemoveCreateRecurringTemplate,
+    onAddRecurringTemplateWindow: handleAddCreateRecurringTemplateWindow,
+    onRemoveRecurringTemplateWindow: handleRemoveCreateRecurringTemplateWindow,
+    onRecurringTemplateWindowChange: handleCreateRecurringTemplateWindowChange,
     selectedVisitType: selectedCreateVisitType,
     onVisitTypeChange: handleCreatePatientVisitTypeChange,
     onAddressChange: handleCreatePatientAddressChange,

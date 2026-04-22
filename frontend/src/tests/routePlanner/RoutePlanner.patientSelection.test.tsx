@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { routeOptimizationState } = vi.hoisted(() => ({
@@ -14,6 +14,7 @@ const { routeOptimizationState } = vi.hoisted(() => ({
 
 const optimizeRouteMock = vi.fn();
 const persistPlanningWindowsMock = vi.fn();
+const requestVisitInstancesMock = vi.fn();
 const createPatientMock = vi.fn();
 const usePatientSearchMock = vi.fn<
   (args: { query: string; enabled: boolean }) => {
@@ -45,6 +46,8 @@ vi.mock("../../features/route-planner/hooks/usePatientSearch", () => ({
 
 vi.mock("../../features/route-planner/api/routePlannerService", () => ({
   persistPlanningWindows: (...args: unknown[]) => persistPlanningWindowsMock(...args),
+  requestVisitInstances: (...args: unknown[]) => requestVisitInstancesMock(...args),
+  resolveWorkingHoursForDate: () => null,
 }));
 
 vi.mock("../../features/patients/api/patientService", () => ({
@@ -109,8 +112,6 @@ vi.mock("../../features/route-planner/RouteMap", () => ({
 }));
 
 import RoutePlanner from "../../features/route-planner/ui/RoutePlanner";
-
-const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 const janePatient = {
   id: "patient-1",
@@ -282,8 +283,10 @@ describe("RoutePlanner patient selection integration", () => {
     window.localStorage.clear();
     optimizeRouteMock.mockReset();
     persistPlanningWindowsMock.mockReset();
+    requestVisitInstancesMock.mockReset();
     createPatientMock.mockReset();
     persistPlanningWindowsMock.mockResolvedValue(undefined);
+    requestVisitInstancesMock.mockResolvedValue([]);
     createPatientMock.mockResolvedValue({
       id: "patient-5",
       nurseId: "nurse-1",
@@ -330,11 +333,11 @@ describe("RoutePlanner patient selection integration", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
-    expect(screen.getByLabelText("Starting point")).toHaveProperty(
+    expect(screen.getByLabelText(/Starting point/i)).toHaveProperty(
       "value",
       "1 Home Way, Mississauga, ON",
     );
-    expect(screen.getByLabelText("Ending point")).toHaveProperty(
+    expect(screen.getByLabelText(/Ending point/i)).toHaveProperty(
       "value",
       "1 Home Way, Mississauga, ON",
     );
@@ -360,11 +363,11 @@ describe("RoutePlanner patient selection integration", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Edit" }));
 
-    expect(screen.getByLabelText("Starting point")).toHaveProperty(
+    expect(screen.getByLabelText(/Starting point/i)).toHaveProperty(
       "value",
       "1 Home Way, Mississauga, ON",
     );
-    expect(screen.getByLabelText("Ending point")).toHaveProperty(
+    expect(screen.getByLabelText(/Ending point/i)).toHaveProperty(
       "value",
       "1 Home Way, Mississauga, ON",
     );
@@ -408,23 +411,39 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.queryByRole("button", { name: "+1 more" })).toBeNull();
   });
 
-  it("restores draft selections after remounting route planner without restoring trip addresses", () => {
+  it("requires reselecting clients after remounting route planner and does not restore trip addresses", async () => {
     const { unmount } = render(<RoutePlanner />);
 
-    fireEvent.change(screen.getByLabelText("Ending point"), {
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
 
+    await waitFor(() => {
+      const storedDraft = window.localStorage.getItem("careflow.route-planner.draft.v1");
+      expect(storedDraft).toBeTruthy();
+      const parsedDraft = JSON.parse(storedDraft as string) as {
+        selectedDestinationStates?: Array<{ patientId: string }>;
+      };
+      expect(
+        parsedDraft.selectedDestinationStates?.some((state) => state.patientId === "patient-1"),
+      ).toBe(true);
+    });
+
     unmount();
     render(<RoutePlanner />);
 
-    expect(screen.getByLabelText("Ending point")).toHaveProperty("value", "");
+    expect(screen.getByLabelText(/Ending point/i)).toHaveProperty("value", "");
 
-    fireEvent.change(screen.getByLabelText("Ending point"), {
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
 
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 
     expect(optimizeRouteMock).toHaveBeenCalledWith({
@@ -452,7 +471,7 @@ describe("RoutePlanner patient selection integration", () => {
   it("allows route optimization when selected patient windows overlap", () => {
     render(<RoutePlanner />);
 
-    fireEvent.change(screen.getByLabelText("Ending point"), {
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
@@ -496,6 +515,53 @@ describe("RoutePlanner patient selection integration", () => {
     });
   });
 
+  it("hydrates selected destinations from visit instances for planning date", async () => {
+    requestVisitInstancesMock.mockResolvedValueOnce([
+      {
+        id: "instance-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        templateId: "template-1",
+        occurrenceKey: "patient-1:2026-03-14:0",
+        planningDate: "2026-03-14",
+        address: "123 Main St",
+        googlePlaceId: "place-1",
+        windowStart: "08:00",
+        windowEnd: "08:30",
+        visitTimeType: "fixed",
+        serviceDurationMinutes: 30,
+        status: "scheduled",
+        isManualOverride: false,
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+
+    render(<RoutePlanner />);
+
+    await waitFor(() => {
+      expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        destinations: [
+          expect.objectContaining({
+            visitId: "instance-1",
+            windowStart: "08:00",
+            windowEnd: "08:30",
+          }),
+        ],
+      }),
+    );
+  });
+
   it("shows home-address warning banner and supports account settings action when home address is missing", () => {
     const openAccountSettingsMock = vi.fn();
     render(<RoutePlanner onOpenAccountSettings={openAccountSettingsMock} />);
@@ -514,7 +580,7 @@ describe("RoutePlanner patient selection integration", () => {
   it("submits optimize payload with patient-linked destinations", () => {
     render(<RoutePlanner />);
 
-    fireEvent.change(screen.getByLabelText("Ending point"), {
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
@@ -545,7 +611,7 @@ describe("RoutePlanner patient selection integration", () => {
   it("uses planner-edited windows as plan-only overrides unless save is checked", () => {
     render(<RoutePlanner />);
 
-    fireEvent.change(screen.getByLabelText("Ending point"), {
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
@@ -593,8 +659,8 @@ describe("RoutePlanner patient selection integration", () => {
   it("creates a new patient from destination card and auto-selects it", async () => {
     render(<RoutePlanner />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Add New Client" }));
-    expect(screen.getByRole("heading", { name: "Add New Client" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Add Client" }));
+    expect(screen.getByRole("heading", { name: "Add Client" })).toBeTruthy();
 
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Olivia" },
@@ -602,7 +668,7 @@ describe("RoutePlanner patient selection integration", () => {
     fireEvent.change(screen.getByLabelText("Last name"), {
       target: { value: "Brown" },
     });
-    fireEvent.change(screen.getByLabelText("Address"), {
+    fireEvent.change(screen.getByLabelText(/Address/i), {
       target: { value: "88 Queen Street, Toronto, ON" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save new client" }));
@@ -618,14 +684,15 @@ describe("RoutePlanner patient selection integration", () => {
     });
 
     expect(screen.getByRole("button", { name: /^New Patient(?: · .+)?$/i })).toBeTruthy();
-    expect(screen.queryByRole("heading", { name: "Add New Client" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: "Add Client" })).toBeNull();
   });
 
   it("requires at least one selected client before optimizing", () => {
     render(<RoutePlanner />);
 
-    fireEvent.click(screen.getByRole("button", { name: "Pick Starting point" }));
-    fireEvent.click(screen.getByRole("button", { name: "Pick Ending point" }));
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
+      target: { value: "Airport" },
+    });
 
     const optimizeButton = screen.getByRole("button", { name: "Optimize Route" });
     expect(optimizeButton).toHaveProperty("disabled", true);
@@ -841,7 +908,7 @@ describe("RoutePlanner patient selection integration", () => {
   it("allows optimizing flexible patients without preferred windows", () => {
     render(<RoutePlanner />);
 
-    fireEvent.change(screen.getByLabelText("Ending point"), {
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);
@@ -872,7 +939,7 @@ describe("RoutePlanner patient selection integration", () => {
   it("requires both window boundaries when nurse partially sets a flexible window", () => {
     render(<RoutePlanner />);
 
-    fireEvent.change(screen.getByLabelText("Ending point"), {
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);
@@ -893,11 +960,10 @@ describe("RoutePlanner patient selection integration", () => {
   it("allows excluding individual patient windows from a multi-window patient", () => {
     render(<RoutePlanner />);
 
-    fireEvent.change(screen.getByLabelText("Ending point"), {
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Mina Lee/i })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Toggle windows for Mina Lee" }));
     for (const toggle of screen.getAllByRole("button", { name: "Edit window" })) {
       fireEvent.click(toggle);
     }
@@ -935,7 +1001,7 @@ describe("RoutePlanner patient selection integration", () => {
   it("can persist planner-entered windows for flexible no-window patients", async () => {
     render(<RoutePlanner />);
 
-    fireEvent.change(screen.getByLabelText("Ending point"), {
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
     fireEvent.click(screen.getAllByRole("button", { name: /Flex Patient/i })[0]);

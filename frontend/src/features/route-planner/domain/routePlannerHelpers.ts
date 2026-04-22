@@ -1,5 +1,5 @@
-import type { Patient } from "../../../../../shared/contracts";
-import { formatNameWords, formatPatientNameFromParts } from "../../patients/domain/patientName";
+import type { Patient, VisitInstance } from "../../../../../shared/contracts";
+import { formatNameWords, formatPatientNameFromParts } from "../patients/patientName";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 
 export const toWindowTime = (value: string) => value.slice(0, 5);
@@ -70,6 +70,31 @@ export const toSelectedPatientDestinations = (patient: Patient): SelectedPatient
       persistPlanningWindow: false,
     },
   ];
+};
+
+export const toSelectedVisitInstanceDestinations = (
+  patient: Patient,
+  instances: VisitInstance[],
+): SelectedPatientDestination[] => {
+  const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
+  const scheduledInstances = instances.filter((instance) => instance.status === "scheduled");
+
+  return scheduledInstances.map((instance) => ({
+    visitKey: `${patient.id}:instance:${instance.id}`,
+    visitId: instance.id,
+    sourceWindowId: null,
+    patientId: patient.id,
+    patientName,
+    address: instance.address,
+    googlePlaceId: instance.googlePlaceId,
+    windowStart: toWindowTime(instance.windowStart),
+    windowEnd: toWindowTime(instance.windowEnd),
+    windowType: instance.visitTimeType,
+    serviceDurationMinutes: instance.serviceDurationMinutes,
+    requiresPlanningWindow: false,
+    isIncluded: true,
+    persistPlanningWindow: false,
+  }));
 };
 
 export const formatPatientListLabel = (destinations: SelectedPatientDestination[]) => {

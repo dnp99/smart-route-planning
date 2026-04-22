@@ -19,6 +19,7 @@ const buildValues = (overrides?: Partial<PatientFormValues>): PatientFormValues 
       visitTimeType: "fixed",
     },
   ],
+  recurringTemplates: [],
   ...overrides,
 });
 
@@ -102,5 +103,74 @@ describe("patientForm validateForm", () => {
     );
 
     expect(errors.visitWindowRows).toBeUndefined();
+  });
+
+  it("validates recurring template date and timezone fields", () => {
+    const errors = validateForm(
+      buildValues({
+        recurringTemplates: [
+          {
+            id: "draft-1",
+            templateId: null,
+            name: "Weekdays",
+            timezone: "Mars/Phobos",
+            recurrenceRule: "FREQ=WEEKLY;INTERVAL=1",
+            startDate: "2026-03-20",
+            endDate: "2026-03-19",
+            serviceDurationMinutes: 30,
+            isActive: true,
+            windows: [
+              {
+                id: "win-1",
+                dayOfWeek: 1,
+                startTime: "09:00",
+                endTime: "10:00",
+                visitTimeType: "fixed",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(errors.recurringTemplateRows?.[0]?.timezone).toBe(
+      "Timezone must be a valid IANA timezone.",
+    );
+    expect(errors.recurringTemplateRows?.[0]?.endDate).toBe(
+      "End date must be on or after start date.",
+    );
+  });
+
+  it("validates recurring template fixed windows against template duration", () => {
+    const errors = validateForm(
+      buildValues({
+        recurringTemplates: [
+          {
+            id: "draft-1",
+            templateId: null,
+            name: "Weekdays",
+            timezone: "America/Toronto",
+            recurrenceRule: "FREQ=WEEKLY;INTERVAL=1",
+            startDate: "2026-03-20",
+            endDate: "",
+            serviceDurationMinutes: 90,
+            isActive: true,
+            windows: [
+              {
+                id: "win-1",
+                dayOfWeek: 1,
+                startTime: "09:00",
+                endTime: "09:30",
+                visitTimeType: "fixed",
+              },
+            ],
+          },
+        ],
+      }),
+    );
+
+    expect(errors.recurringTemplateRows?.[0]?.windowRows?.[0]?.endTime).toBe(
+      "Template fixed window must be at least 90 minutes long.",
+    );
   });
 });
