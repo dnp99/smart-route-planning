@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { toDisplayTime } from "../domain/routePlannerHelpers";
 import { DestinationRow } from "./DestinationRow";
-import type { SelectedPatientDestination } from "./routePlannerTypes";
+import type { SelectedPatientDestination } from "../domain/routePlannerTypes";
 
 type SelectedDestinationsSectionProps = {
   isMobileViewport: boolean;
   isLoading: boolean;
+  autoSeedHint: string;
   selectedDestinations: SelectedPatientDestination[];
   expandedDestinationVisitKeys: Record<string, boolean>;
   onToggleDestinationDetails: (visitKey: string) => void;
@@ -23,6 +24,7 @@ type SelectedDestinationsSectionProps = {
 export const SelectedDestinationsSection = ({
   isMobileViewport,
   isLoading,
+  autoSeedHint,
   selectedDestinations,
   expandedDestinationVisitKeys,
   onToggleDestinationDetails,
@@ -89,7 +91,12 @@ export const SelectedDestinationsSection = ({
 
   return (
     <div className="grid gap-2">
-      <p className={responsiveStyles.patientColumnLabel}>Selected ({selectedByPatient.length})</p>
+      <div className="grid gap-0.5">
+        <p className={responsiveStyles.patientColumnLabel}>Selected ({selectedByPatient.length})</p>
+        {autoSeedHint.length > 0 && (
+          <p className="m-0 text-xs text-blue-700 dark:text-blue-300">{autoSeedHint}</p>
+        )}
+      </div>
       <div
         className={responsiveStyles.destinationList}
         style={isMobileViewport ? { maxHeight: mobileSelectedListMaxHeight } : undefined}

@@ -1,7 +1,7 @@
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { SelectedDestinationsSection } from "./SelectedDestinationsSection";
-import type { SelectedPatientDestination } from "./routePlannerTypes";
-import type { Patient } from "../../../../../shared/contracts/patient";
+import type { SelectedPatientDestination } from "../domain/routePlannerTypes";
+import type { Patient } from "../../../../../shared/contracts/patients";
 import { formatPatientNameFromParts } from "../../patients/domain/patientName";
 
 const MOBILE_SEARCH_VISIBLE_ROWS = 15;
@@ -145,11 +145,6 @@ export const PatientSelectorSection = ({
               <span className={responsiveStyles.countPill}>{destinationCount}</span>
             )}
           </div>
-          {autoSeedHint.length > 0 && (
-            <p className="m-0 mt-0.5 truncate text-xs text-blue-700 dark:text-blue-300">
-              {autoSeedHint}
-            </p>
-          )}
         </div>
         <div className="flex shrink-0 items-center">
           <div className="flex items-center gap-3">
@@ -315,6 +310,7 @@ export const PatientSelectorSection = ({
             <SelectedDestinationsSection
               isMobileViewport={isMobileViewport}
               isLoading={isVisitInstancesLoading}
+              autoSeedHint={autoSeedHint}
               selectedDestinations={selectedDestinations}
               expandedDestinationVisitKeys={expandedDestinationVisitKeys}
               onToggleDestinationDetails={onToggleDestinationDetails}

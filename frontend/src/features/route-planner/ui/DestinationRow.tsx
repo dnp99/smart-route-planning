@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { toDisplayTime } from "../domain/routePlannerHelpers";
-import type { SelectedPatientDestination } from "./routePlannerTypes";
+import type { SelectedPatientDestination } from "../domain/routePlannerTypes";
 
 const TrashIcon = ({ className }: { className?: string }) => (
   <svg
