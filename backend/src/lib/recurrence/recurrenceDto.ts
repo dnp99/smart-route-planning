@@ -1,6 +1,5 @@
 import type {
   RecurringVisitTemplate as RecurringVisitTemplateContract,
-  RecurringVisitTemplateWindow as RecurringVisitTemplateWindowContract,
   VisitInstance as VisitInstanceContract,
   VisitTimeType,
 } from "../../../../shared/contracts";
@@ -30,16 +29,6 @@ const toHourMinute = (value: string) => value.slice(0, 5);
 const toVisitTimeType = (value: string): VisitTimeType =>
   value === "flexible" ? "flexible" : "fixed";
 
-const toRecurringVisitTemplateWindowDto = (
-  window: RecurringTemplateWithWindows["windows"][number],
-): RecurringVisitTemplateWindowContract => ({
-  id: window.id,
-  dayOfWeek: window.dayOfWeek,
-  startTime: toHourMinute(window.startTime),
-  endTime: toHourMinute(window.endTime),
-  visitTimeType: toVisitTimeType(window.visitTimeType),
-});
-
 export const toRecurringVisitTemplateDto = (
   template: RecurringTemplateWithWindows,
 ): RecurringVisitTemplateContract => ({
@@ -51,9 +40,8 @@ export const toRecurringVisitTemplateDto = (
   recurrenceRule: template.recurrenceRule,
   startDate: template.startDate,
   endDate: template.endDate,
-  serviceDurationMinutes: template.serviceDurationMinutes,
   isActive: template.isActive,
-  windows: template.windows.map(toRecurringVisitTemplateWindowDto),
+  windows: [],
   daysOfWeek: template.daysOfWeek,
   createdAt: template.createdAt.toISOString(),
   updatedAt: template.updatedAt.toISOString(),

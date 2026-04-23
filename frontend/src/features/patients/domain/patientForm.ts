@@ -25,14 +25,6 @@ export type PatientFormValues = {
   recurringTemplates: PatientFormRecurringTemplate[];
 };
 
-export type PatientFormRecurringTemplateWindow = {
-  id: string;
-  dayOfWeek: number;
-  startTime: string;
-  endTime: string;
-  visitTimeType: VisitTimeType;
-};
-
 export type PatientFormRecurringTemplate = {
   id: string;
   templateId: string | null;
@@ -41,20 +33,12 @@ export type PatientFormRecurringTemplate = {
   recurrenceRule: string;
   startDate: string;
   endDate: string;
-  serviceDurationMinutes: number;
   isActive: boolean;
-  windows: PatientFormRecurringTemplateWindow[];
+  daysOfWeek: number[];
 };
 
 export type FormMode = "create" | "edit";
 export type VisitWindowFieldErrors = {
-  startTime?: string;
-  endTime?: string;
-  visitTimeType?: string;
-};
-
-export type RecurringTemplateWindowFieldErrors = {
-  dayOfWeek?: string;
   startTime?: string;
   endTime?: string;
   visitTimeType?: string;
@@ -66,9 +50,7 @@ export type RecurringTemplateFieldErrors = {
   recurrenceRule?: string;
   startDate?: string;
   endDate?: string;
-  serviceDurationMinutes?: string;
-  windows?: string;
-  windowRows?: RecurringTemplateWindowFieldErrors[];
+  daysOfWeek?: string;
 };
 
 export type FormFieldErrors = {
@@ -86,7 +68,8 @@ export const MIN_VISIT_DURATION_MINUTES = 1;
 export const MAX_VISIT_DURATION_MINUTES = 180;
 export const DEFAULT_VISIT_DURATION_MINUTES = 30;
 export const DEFAULT_RECURRING_TEMPLATE_TIMEZONE = "America/Toronto";
-export const DEFAULT_RECURRING_RULE = "FREQ=WEEKLY;INTERVAL=1";
+export const DEFAULT_RECURRING_RULE = "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO";
+export const DEFAULT_RECURRING_DAYS_OF_WEEK: number[] = [1];
 const DAY_INDEX_TO_RRULE_TOKEN = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"] as const;
 
 const resolveDefaultRecurringTemplateTimezone = () => {
@@ -124,6 +107,8 @@ const createWindowId = () => {
   return `window-${Math.random().toString(36).slice(2, 10)}`;
 };
 
+export const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
 const toHourMinute = (minutes: number) => {
   const normalized = Math.max(0, Math.min(minutes, 23 * 60 + 59));
   const hours = Math.floor(normalized / 60)
@@ -155,24 +140,7 @@ export const createEmptyVisitWindow = (
   };
 };
 
-export const createEmptyRecurringTemplateWindow = (
-  position = 0,
-): PatientFormRecurringTemplateWindow => {
-  const dayOfWeek = Math.max(0, Math.min(position, 6));
-  const { startTime, endTime } = getDefaultVisitWindowTimes(position);
-
-  return {
-    id: createWindowId(),
-    dayOfWeek,
-    startTime,
-    endTime,
-    visitTimeType: "fixed",
-  };
-};
-
-export const createEmptyRecurringTemplate = (
-  serviceDurationMinutes = DEFAULT_VISIT_DURATION_MINUTES,
-): PatientFormRecurringTemplate => ({
+export const createEmptyRecurringTemplate = (): PatientFormRecurringTemplate => ({
   id: createWindowId(),
   templateId: null,
   name: "",
@@ -180,9 +148,8 @@ export const createEmptyRecurringTemplate = (
   recurrenceRule: DEFAULT_RECURRING_RULE,
   startDate: "",
   endDate: "",
-  serviceDurationMinutes,
   isActive: true,
-  windows: [createEmptyRecurringTemplateWindow(1)],
+  daysOfWeek: DEFAULT_RECURRING_DAYS_OF_WEEK,
 });
 
 export const EMPTY_FORM: PatientFormValues = {
@@ -213,24 +180,27 @@ const formatWindowRange = (startTime: string, endTime: string) =>
 
 const toRecurringFormTemplate = (
   template: RecurringVisitTemplate,
-): PatientFormRecurringTemplate => ({
-  id: template.id,
-  templateId: template.id,
-  name: template.name ?? "",
-  timezone: normalizeRecurringTemplateTimezone(template.timezone),
-  recurrenceRule: template.recurrenceRule,
-  startDate: template.startDate,
-  endDate: template.endDate ?? "",
-  serviceDurationMinutes: template.serviceDurationMinutes,
-  isActive: template.isActive,
-  windows: template.windows.map((window) => ({
-    id: window.id,
-    dayOfWeek: window.dayOfWeek,
-    startTime: toTimeInput(window.startTime),
-    endTime: toTimeInput(window.endTime),
-    visitTimeType: window.visitTimeType,
-  })),
-});
+): PatientFormRecurringTemplate => {
+  const daysOfWeek =
+    Array.isArray(template.daysOfWeek) && template.daysOfWeek.length > 0
+      ? template.daysOfWeek
+      : template.windows
+          .map((w) => w.dayOfWeek)
+          .filter((v, i, a) => a.indexOf(v) === i)
+          .sort((a, b) => a - b);
+
+  return {
+    id: template.id,
+    templateId: template.id,
+    name: template.name ?? "",
+    timezone: normalizeRecurringTemplateTimezone(template.timezone),
+    recurrenceRule: template.recurrenceRule,
+    startDate: template.startDate,
+    endDate: template.endDate ?? "",
+    isActive: template.isActive,
+    daysOfWeek,
+  };
+};
 
 export const toFormValues = (
   patient: Patient,
@@ -297,11 +267,11 @@ export const buildRecurringTemplateMutationPlan = (
 
   const create: CreateRecurringVisitTemplateRequest[] = [];
   const update: Array<{ templateId: string; request: UpdateRecurringVisitTemplateRequest }> = [];
-  const toWeeklyRecurrenceRule = (windows: Array<{ dayOfWeek: number }>): string => {
-    const dayTokens = [...new Set(windows.map((window) => window.dayOfWeek))]
-      .filter((dayOfWeek) => Number.isInteger(dayOfWeek) && dayOfWeek >= 0 && dayOfWeek <= 6)
+  const toWeeklyRecurrenceRule = (daysOfWeek: number[]): string => {
+    const dayTokens = [...new Set(daysOfWeek)]
+      .filter((day) => Number.isInteger(day) && day >= 0 && day <= 6)
       .sort((left, right) => left - right)
-      .map((dayOfWeek) => DAY_INDEX_TO_RRULE_TOKEN[dayOfWeek]);
+      .map((day) => DAY_INDEX_TO_RRULE_TOKEN[day]);
 
     if (dayTokens.length === 0) {
       return DEFAULT_RECURRING_RULE;
@@ -311,23 +281,14 @@ export const buildRecurringTemplateMutationPlan = (
   };
 
   values.recurringTemplates.forEach((template) => {
-    const normalizedWindows = template.windows.map((window) => ({
-      dayOfWeek: window.dayOfWeek,
-      startTime: window.startTime,
-      endTime: window.endTime,
-      visitTimeType: window.visitTimeType,
-    }));
-
     const normalizedRequestBase = {
       patientId,
       name: template.name.trim() || null,
       timezone: normalizeRecurringTemplateTimezone(template.timezone),
-      // Keep RRULE generation internal so nurses only manage day/time UI controls.
-      recurrenceRule: toWeeklyRecurrenceRule(normalizedWindows),
+      recurrenceRule: toWeeklyRecurrenceRule(template.daysOfWeek),
       startDate: template.startDate.trim(),
       endDate: template.endDate.trim() || null,
-      serviceDurationMinutes: template.serviceDurationMinutes,
-      windows: normalizedWindows,
+      daysOfWeek: template.daysOfWeek,
     };
 
     if (!template.templateId) {
@@ -477,58 +438,8 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
         row.endDate = "End date must be on or after start date.";
       }
 
-      if (
-        !Number.isInteger(template.serviceDurationMinutes) ||
-        template.serviceDurationMinutes < MIN_VISIT_DURATION_MINUTES ||
-        template.serviceDurationMinutes > MAX_VISIT_DURATION_MINUTES
-      ) {
-        row.serviceDurationMinutes = `Service duration must be an integer between ${MIN_VISIT_DURATION_MINUTES} and ${MAX_VISIT_DURATION_MINUTES} minutes.`;
-      }
-
-      if (template.windows.length === 0) {
-        row.windows = "Add at least one recurring window.";
-      } else {
-        const windowRows: RecurringTemplateWindowFieldErrors[] = template.windows.map(() => ({}));
-        template.windows.forEach((window, windowIndex) => {
-          if (!Number.isInteger(window.dayOfWeek) || window.dayOfWeek < 0 || window.dayOfWeek > 6) {
-            windowRows[windowIndex].dayOfWeek =
-              "Day must be an integer from 0 (Sunday) to 6 (Saturday).";
-          }
-
-          if (!HH_MM_PATTERN.test(window.startTime)) {
-            windowRows[windowIndex].startTime = "Start time must use HH:MM 24-hour format.";
-          }
-
-          if (!HH_MM_PATTERN.test(window.endTime)) {
-            windowRows[windowIndex].endTime = "End time must use HH:MM 24-hour format.";
-          }
-
-          if (windowRows[windowIndex].startTime || windowRows[windowIndex].endTime) {
-            return;
-          }
-
-          const startMinutes = timeToMinutes(window.startTime);
-          const endMinutes = timeToMinutes(window.endTime);
-          if (endMinutes <= startMinutes) {
-            windowRows[windowIndex].endTime =
-              "End time must be later than start time (cross-midnight windows are not supported).";
-            return;
-          }
-
-          if (
-            !row.serviceDurationMinutes &&
-            window.visitTimeType === "fixed" &&
-            endMinutes - startMinutes < template.serviceDurationMinutes
-          ) {
-            const minuteLabel = template.serviceDurationMinutes === 1 ? "minute" : "minutes";
-            windowRows[windowIndex].endTime =
-              `Template fixed window must be at least ${template.serviceDurationMinutes} ${minuteLabel} long.`;
-          }
-        });
-
-        if (windowRows.some((entry) => Object.keys(entry).length > 0)) {
-          row.windowRows = windowRows;
-        }
+      if (template.daysOfWeek.length === 0) {
+        row.daysOfWeek = "Select at least one weekday.";
       }
     });
 

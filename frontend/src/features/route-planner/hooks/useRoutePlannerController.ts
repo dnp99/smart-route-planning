@@ -290,9 +290,7 @@ export function useRoutePlannerController({
           id: template.id,
           label: displayName,
           instanceCount: scheduledCountsByTemplateId.get(template.id) ?? 0,
-          matchesPlanningDay: template.windows.some(
-            (window) => window.dayOfWeek === planningDayOfWeek,
-          ),
+          matchesPlanningDay: template.daysOfWeek.indexOf(planningDayOfWeek) !== -1,
         };
       })
       .sort((left, right) => {
@@ -321,7 +319,7 @@ export function useRoutePlannerController({
     const matchingTemplate = recurringTemplates.find(
       (template) =>
         template.id === matchingOptions[0].id &&
-        template.windows.some((window) => window.dayOfWeek === planningDayOfWeek),
+        template.daysOfWeek.indexOf(planningDayOfWeek) !== -1,
     );
     return matchingTemplate?.id ?? matchingOptions[0].id;
   }, [planningDate, recurringTemplates, templateOptions]);
@@ -377,10 +375,14 @@ export function useRoutePlannerController({
         patient,
       ]),
     );
-    const filteredInstances =
+    const knownTemplateIds = new Set(recurringTemplates.map((t) => t.id));
+    const filteredInstances = (
       effectiveTemplateId === null
         ? visitInstances
-        : visitInstances.filter((instance) => instance.templateId === effectiveTemplateId);
+        : visitInstances.filter((instance) => instance.templateId === effectiveTemplateId)
+    ).filter(
+      (instance) => instance.templateId === null || knownTemplateIds.has(instance.templateId),
+    );
     const instancesByPatientId = new Map<string, VisitInstance[]>();
     filteredInstances.forEach((instance) => {
       const current = instancesByPatientId.get(instance.patientId) ?? [];
@@ -414,6 +416,7 @@ export function useRoutePlannerController({
     effectiveTemplateId,
     locallyCreatedPatients,
     manualTemplateSelectionLock,
+    recurringTemplates,
     replaceSelectedDestinations,
     selectedDestinations,
     visitInstances,

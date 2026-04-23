@@ -14,12 +14,10 @@ import {
   EMPTY_FORM,
   buildRecurringTemplateMutationPlan,
   createEmptyRecurringTemplate,
-  createEmptyRecurringTemplateWindow,
   createEmptyVisitWindow,
   type FormFieldErrors,
   type FormMode,
   type PatientFormRecurringTemplate,
-  type PatientFormRecurringTemplateWindow,
   type PatientFormValues,
   type PatientFormVisitWindow,
   toCreateRequest,
@@ -248,79 +246,6 @@ const PatientsPage = () => {
       recurringTemplates: current.recurringTemplates.filter(
         (template) => template.id !== templateId,
       ),
-    }));
-    setFormErrors((current) => ({
-      ...current,
-      recurringTemplates: undefined,
-      recurringTemplateRows: undefined,
-    }));
-  };
-
-  const handleAddRecurringTemplateWindow = (templateId: string) => {
-    setFormValues((current) => ({
-      ...current,
-      recurringTemplates: current.recurringTemplates.map((template) => {
-        if (template.id !== templateId) {
-          return template;
-        }
-
-        return {
-          ...template,
-          windows: [
-            ...template.windows,
-            createEmptyRecurringTemplateWindow(template.windows.length + 1),
-          ],
-        };
-      }),
-    }));
-    setFormErrors((current) => ({
-      ...current,
-      recurringTemplates: undefined,
-      recurringTemplateRows: undefined,
-    }));
-  };
-
-  const handleRemoveRecurringTemplateWindow = (templateId: string, windowId: string) => {
-    setFormValues((current) => ({
-      ...current,
-      recurringTemplates: current.recurringTemplates.map((template) => {
-        if (template.id !== templateId) {
-          return template;
-        }
-
-        return {
-          ...template,
-          windows: template.windows.filter((window) => window.id !== windowId),
-        };
-      }),
-    }));
-    setFormErrors((current) => ({
-      ...current,
-      recurringTemplates: undefined,
-      recurringTemplateRows: undefined,
-    }));
-  };
-
-  const handleRecurringTemplateWindowChange = <K extends keyof PatientFormRecurringTemplateWindow>(
-    templateId: string,
-    windowId: string,
-    field: K,
-    value: PatientFormRecurringTemplateWindow[K],
-  ) => {
-    setFormValues((current) => ({
-      ...current,
-      recurringTemplates: current.recurringTemplates.map((template) => {
-        if (template.id !== templateId) {
-          return template;
-        }
-
-        return {
-          ...template,
-          windows: template.windows.map((window) =>
-            window.id === windowId ? { ...window, [field]: value } : window,
-          ),
-        };
-      }),
     }));
     setFormErrors((current) => ({
       ...current,
@@ -653,9 +578,6 @@ const PatientsPage = () => {
           onRecurringTemplateChange={handleRecurringTemplateChange}
           onAddRecurringTemplate={handleAddRecurringTemplate}
           onRemoveRecurringTemplate={handleRemoveRecurringTemplate}
-          onAddRecurringTemplateWindow={handleAddRecurringTemplateWindow}
-          onRemoveRecurringTemplateWindow={handleRemoveRecurringTemplateWindow}
-          onRecurringTemplateWindowChange={handleRecurringTemplateWindowChange}
           selectedVisitType={selectedVisitType}
           onVisitTypeChange={handleVisitTypeChange}
           onAddressChange={handleAddressChange}

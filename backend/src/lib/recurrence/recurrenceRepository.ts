@@ -9,7 +9,6 @@ import {
   patientVisitWindows,
   patients,
   recurringVisitTemplateDays,
-  recurringVisitTemplateWindows,
   recurringVisitTemplates,
   visitInstances,
 } from "../../db/schema";
@@ -38,7 +37,6 @@ type RecurrenceRule = {
 };
 
 type TemplateDayRow = typeof recurringVisitTemplateDays.$inferSelect;
-type TemplateWindowRow = typeof recurringVisitTemplateWindows.$inferSelect;
 type TemplateRow = typeof recurringVisitTemplates.$inferSelect;
 type VisitInstanceRow = typeof visitInstances.$inferSelect;
 type PatientVisitWindowRow = typeof patientVisitWindows.$inferSelect;
@@ -46,7 +44,6 @@ type PatientVisitWindowRow = typeof patientVisitWindows.$inferSelect;
 export type RecurringTemplateWithWindows = TemplateRow & {
   days: TemplateDayRow[];
   daysOfWeek: number[];
-  windows: TemplateWindowRow[];
 };
 
 const runInTransaction = async <T>(operation: (db: ReturnType<typeof getDb>) => Promise<T>) => {
@@ -75,9 +72,6 @@ const isUniqueViolationError = (error: unknown) => {
 const uniqueSortedDays = (daysOfWeek: number[]) =>
   Array.from(new Set(daysOfWeek)).sort((left, right) => left - right);
 
-const daysFromWindows = (windows: Array<{ dayOfWeek: number }>) =>
-  uniqueSortedDays(windows.map((window) => window.dayOfWeek));
-
 const resolveTemplateDaysFromPayload = (payload: {
   daysOfWeek?: number[];
   windows?: Array<{ dayOfWeek: number }>;
@@ -86,7 +80,11 @@ const resolveTemplateDaysFromPayload = (payload: {
     return uniqueSortedDays(payload.daysOfWeek);
   }
 
-  return daysFromWindows(payload.windows ?? []);
+  if (payload.windows !== undefined) {
+    return uniqueSortedDays(payload.windows.map((w) => w.dayOfWeek));
+  }
+
+  return [];
 };
 
 const insertTemplateDays = async (
@@ -118,16 +116,6 @@ const attachTemplateSchedule = async (
     .where(inArray(recurringVisitTemplateDays.templateId, templateIds))
     .orderBy(asc(recurringVisitTemplateDays.dayOfWeek));
 
-  const windows = await getDb()
-    .select()
-    .from(recurringVisitTemplateWindows)
-    .where(inArray(recurringVisitTemplateWindows.templateId, templateIds))
-    .orderBy(
-      asc(recurringVisitTemplateWindows.dayOfWeek),
-      asc(recurringVisitTemplateWindows.startTime),
-      asc(recurringVisitTemplateWindows.endTime),
-    );
-
   const daysByTemplateId = new Map<string, TemplateDayRow[]>();
   days.forEach((day) => {
     const existing = daysByTemplateId.get(day.templateId) ?? [];
@@ -135,25 +123,13 @@ const attachTemplateSchedule = async (
     daysByTemplateId.set(day.templateId, existing);
   });
 
-  const windowsByTemplateId = new Map<string, TemplateWindowRow[]>();
-  windows.forEach((window) => {
-    const existing = windowsByTemplateId.get(window.templateId) ?? [];
-    existing.push(window);
-    windowsByTemplateId.set(window.templateId, existing);
-  });
-
   return templates.map((template) => {
     const templateDays = daysByTemplateId.get(template.id) ?? [];
-    const templateWindows = windowsByTemplateId.get(template.id) ?? [];
 
     return {
       ...template,
       days: templateDays,
-      daysOfWeek:
-        templateDays.length > 0
-          ? uniqueSortedDays(templateDays.map((day) => day.dayOfWeek))
-          : daysFromWindows(templateWindows),
-      windows: templateWindows,
+      daysOfWeek: uniqueSortedDays(templateDays.map((day) => day.dayOfWeek)),
     };
   });
 };
@@ -442,33 +418,16 @@ export const createRecurringVisitTemplateForNurse = async (
         recurrenceRule: payload.recurrenceRule,
         startDate: payload.startDate,
         endDate: payload.endDate ?? null,
-        serviceDurationMinutes: payload.serviceDurationMinutes,
       })
       .returning();
 
     const daysOfWeek = resolveTemplateDaysFromPayload(payload);
     const days = await insertTemplateDays(transaction, template.id, daysOfWeek);
-    const windows =
-      payload.windows.length > 0
-        ? await transaction
-            .insert(recurringVisitTemplateWindows)
-            .values(
-              payload.windows.map((window) => ({
-                templateId: template.id,
-                dayOfWeek: window.dayOfWeek,
-                startTime: window.startTime,
-                endTime: window.endTime,
-                visitTimeType: window.visitTimeType,
-              })),
-            )
-            .returning()
-        : [];
 
     return {
       ...template,
       days,
       daysOfWeek,
-      windows,
     };
   });
 };
@@ -507,9 +466,6 @@ export const updateRecurringVisitTemplateForNurse = async (
         ...(payload.recurrenceRule !== undefined ? { recurrenceRule: payload.recurrenceRule } : {}),
         ...(payload.startDate !== undefined ? { startDate: payload.startDate } : {}),
         ...(payload.endDate !== undefined ? { endDate: payload.endDate ?? null } : {}),
-        ...(payload.serviceDurationMinutes !== undefined
-          ? { serviceDurationMinutes: payload.serviceDurationMinutes }
-          : {}),
         ...(payload.isActive !== undefined ? { isActive: payload.isActive } : {}),
         updatedAt: new Date(),
       })
@@ -539,38 +495,10 @@ export const updateRecurringVisitTemplateForNurse = async (
         })()
       : existing.days;
 
-    const windowsPayload = payload.windows;
-    const nextWindows =
-      windowsPayload !== undefined
-        ? await (async () => {
-            await transaction
-              .delete(recurringVisitTemplateWindows)
-              .where(eq(recurringVisitTemplateWindows.templateId, updatedTemplate.id));
-
-            if (windowsPayload.length === 0) {
-              return [] as TemplateWindowRow[];
-            }
-
-            return transaction
-              .insert(recurringVisitTemplateWindows)
-              .values(
-                windowsPayload.map((window) => ({
-                  templateId: updatedTemplate.id,
-                  dayOfWeek: window.dayOfWeek,
-                  startTime: window.startTime,
-                  endTime: window.endTime,
-                  visitTimeType: window.visitTimeType,
-                })),
-              )
-              .returning();
-          })()
-        : existing.windows;
-
     return {
       ...updatedTemplate,
       days: nextDays,
       daysOfWeek: nextDaysOfWeek,
-      windows: nextWindows,
     };
   });
 };
@@ -663,9 +591,7 @@ export const expandVisitInstancesForNurse = async (
     }
 
     const parsedRule = parseRecurrenceRule(template.recurrenceRule);
-    const templateDaySet = new Set(
-      template.daysOfWeek.length > 0 ? template.daysOfWeek : daysFromWindows(template.windows),
-    );
+    const templateDaySet = new Set(template.daysOfWeek);
 
     dateRange.forEach((planningDate) => {
       if (!isDateEligibleForTemplate(template, planningDate, parsedRule)) {

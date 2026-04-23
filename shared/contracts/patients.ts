@@ -45,10 +45,9 @@ export type RecurringVisitTemplate = {
   recurrenceRule: string;
   startDate: string;
   endDate: string | null;
-  serviceDurationMinutes: number;
   isActive: boolean;
   windows: RecurringVisitTemplateWindow[];
-  daysOfWeek?: number[];
+  daysOfWeek: number[];
   createdAt: string;
   updatedAt: string;
 };
@@ -122,8 +121,7 @@ export type CreateRecurringVisitTemplateRequest = {
   recurrenceRule: string;
   startDate: string;
   endDate?: string | null;
-  serviceDurationMinutes: number;
-  windows: RecurringVisitTemplateWindowInput[];
+  windows?: RecurringVisitTemplateWindowInput[];
   daysOfWeek?: number[];
 };
 
@@ -298,11 +296,10 @@ export const isRecurringVisitTemplate = (value: unknown): value is RecurringVisi
     typeof value.recurrenceRule === "string" &&
     typeof value.startDate === "string" &&
     (typeof value.endDate === "string" || value.endDate === null) &&
-    isVisitDurationMinutes(value.serviceDurationMinutes) &&
     typeof value.isActive === "boolean" &&
     Array.isArray(value.windows) &&
     value.windows.every((window) => isRecurringVisitTemplateWindow(window)) &&
-    (value.daysOfWeek === undefined || isDaysOfWeek(value.daysOfWeek)) &&
+    isDaysOfWeek(value.daysOfWeek) &&
     typeof value.createdAt === "string" &&
     typeof value.updatedAt === "string"
   );

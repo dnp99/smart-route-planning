@@ -224,8 +224,8 @@ export const validateCreateRecurringVisitTemplatePayload = (
     throw new HttpError(400, "endDate must be on or after startDate.");
   }
 
-  const windows =
-    payload.windows === undefined ? [] : parseRecurringTemplateWindows(payload.windows, "windows");
+  const hasWindows = Array.isArray(payload.windows) && payload.windows.length > 0;
+  const windows = hasWindows ? parseRecurringTemplateWindows(payload.windows, "windows") : [];
   const daysOfWeek =
     payload.daysOfWeek === undefined
       ? Array.from(new Set(windows.map((window) => window.dayOfWeek))).sort(
@@ -244,10 +244,6 @@ export const validateCreateRecurringVisitTemplatePayload = (
     recurrenceRule: trimRequiredString(payload.recurrenceRule, "recurrenceRule"),
     startDate,
     endDate,
-    serviceDurationMinutes:
-      payload.serviceDurationMinutes === undefined
-        ? 30
-        : parseDurationMinutes(payload.serviceDurationMinutes, "serviceDurationMinutes"),
     windows,
     daysOfWeek,
   };
@@ -284,13 +280,6 @@ export const validateUpdateRecurringVisitTemplatePayload = (
 
   if (payload.endDate !== undefined) {
     parsed.endDate = payload.endDate === null ? null : parseDate(payload.endDate, "endDate");
-  }
-
-  if (payload.serviceDurationMinutes !== undefined) {
-    parsed.serviceDurationMinutes = parseDurationMinutes(
-      payload.serviceDurationMinutes,
-      "serviceDurationMinutes",
-    );
   }
 
   if (payload.windows !== undefined) {

@@ -7,25 +7,15 @@ import type {
   FormFieldErrors,
   FormMode,
   PatientFormRecurringTemplate,
-  PatientFormRecurringTemplateWindow,
   PatientFormValues,
   PatientFormVisitWindow,
 } from "../domain/patientForm";
 import {
   MAX_VISIT_DURATION_MINUTES,
   MIN_VISIT_DURATION_MINUTES,
+  WEEKDAY_LABELS,
   getPatientDisplayName,
 } from "../domain/patientForm";
-
-const DAY_OF_WEEK_OPTIONS = [
-  { label: "Sunday", value: 0 },
-  { label: "Monday", value: 1 },
-  { label: "Tuesday", value: 2 },
-  { label: "Wednesday", value: 3 },
-  { label: "Thursday", value: 4 },
-  { label: "Friday", value: 5 },
-  { label: "Saturday", value: 6 },
-];
 
 type PatientFormModalProps = {
   formMode: FormMode;
@@ -51,14 +41,6 @@ type PatientFormModalProps = {
   ) => void;
   onAddRecurringTemplate: () => void;
   onRemoveRecurringTemplate: (templateId: string) => void;
-  onAddRecurringTemplateWindow: (templateId: string) => void;
-  onRemoveRecurringTemplateWindow: (templateId: string, windowId: string) => void;
-  onRecurringTemplateWindowChange: <K extends keyof PatientFormRecurringTemplateWindow>(
-    templateId: string,
-    windowId: string,
-    field: K,
-    value: PatientFormRecurringTemplateWindow[K],
-  ) => void;
   selectedVisitType: VisitTimeType;
   onVisitTypeChange: (visitTimeType: VisitTimeType) => void;
   onAddressChange: (value: string) => void;
@@ -98,9 +80,6 @@ export const PatientFormModal = ({
   onRecurringTemplateChange,
   onAddRecurringTemplate,
   onRemoveRecurringTemplate,
-  onAddRecurringTemplateWindow,
-  onRemoveRecurringTemplateWindow,
-  onRecurringTemplateWindowChange,
   selectedVisitType,
   onVisitTypeChange,
   onAddressChange,
@@ -469,38 +448,6 @@ export const PatientFormModal = ({
                       </div>
 
                       <div className="grid gap-1">
-                        <label
-                          htmlFor={`recurring-template-duration-${templateKey}`}
-                          className={responsiveStyles.recurrenceLabel}
-                        >
-                          Service duration (minutes)
-                        </label>
-                        <input
-                          id={`recurring-template-duration-${templateKey}`}
-                          type="number"
-                          min={MIN_VISIT_DURATION_MINUTES}
-                          max={MAX_VISIT_DURATION_MINUTES}
-                          step={1}
-                          value={template.serviceDurationMinutes}
-                          onChange={(event) => {
-                            const parsed = Number.parseInt(event.target.value, 10);
-                            const safeValue = parsed !== parsed ? 0 : parsed;
-                            onRecurringTemplateChange(
-                              templateKey,
-                              "serviceDurationMinutes",
-                              safeValue,
-                            );
-                          }}
-                          className={responsiveStyles.recurrenceInput}
-                        />
-                        {templateErrors?.serviceDurationMinutes && (
-                          <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                            {templateErrors.serviceDurationMinutes}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="grid gap-1">
                         <label className={responsiveStyles.recurrenceLabel}>Active</label>
                         <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">
                           <input
@@ -519,109 +466,39 @@ export const PatientFormModal = ({
                       </div>
                     </div>
 
-                    <div className="grid gap-2 rounded-xl border border-slate-200 p-3 dark:border-slate-800">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-                          Recurring windows
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => onAddRecurringTemplateWindow(templateKey)}
-                          className="rounded-lg px-2 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                        >
-                          Add recurring window
-                        </button>
-                      </div>
-
-                      {template.windows.map((window, windowIndex) => (
-                        <div
-                          key={window.id}
-                          className="grid grid-cols-1 gap-2 rounded-xl border border-slate-200 p-2 dark:border-slate-800 sm:grid-cols-[1fr_1fr_1fr_auto]"
-                        >
-                          <div className="grid gap-1">
-                            <label className={responsiveStyles.recurrenceLabel}>Day</label>
-                            <select
-                              value={window.dayOfWeek}
-                              onChange={(event) =>
-                                onRecurringTemplateWindowChange(
-                                  templateKey,
-                                  window.id,
-                                  "dayOfWeek",
-                                  Number.parseInt(event.target.value, 10),
-                                )
-                              }
-                              className={responsiveStyles.recurrenceInput}
-                            >
-                              {DAY_OF_WEEK_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div className="grid gap-1">
-                            <label className={responsiveStyles.recurrenceLabel}>Start</label>
-                            <input
-                              type="time"
-                              value={window.startTime}
-                              onChange={(event) =>
-                                onRecurringTemplateWindowChange(
-                                  templateKey,
-                                  window.id,
-                                  "startTime",
-                                  event.target.value,
-                                )
-                              }
-                              className={responsiveStyles.recurrenceInput}
-                            />
-                            {templateErrors?.windowRows?.[windowIndex]?.startTime && (
-                              <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                                {templateErrors.windowRows[windowIndex].startTime}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="grid gap-1">
-                            <label className={responsiveStyles.recurrenceLabel}>End</label>
-                            <input
-                              type="time"
-                              value={window.endTime}
-                              onChange={(event) =>
-                                onRecurringTemplateWindowChange(
-                                  templateKey,
-                                  window.id,
-                                  "endTime",
-                                  event.target.value,
-                                )
-                              }
-                              className={responsiveStyles.recurrenceInput}
-                            />
-                            {templateErrors?.windowRows?.[windowIndex]?.endTime && (
-                              <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                                {templateErrors.windowRows[windowIndex].endTime}
-                              </p>
-                            )}
-                          </div>
-
-                          <div className="flex items-end">
+                    <div className="grid gap-2">
+                      <p className={responsiveStyles.recurrenceLabel}>Repeat on</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {WEEKDAY_LABELS.map((label, dayIndex) => {
+                          const isSelected = template.daysOfWeek.indexOf(dayIndex) !== -1;
+                          return (
                             <button
+                              key={dayIndex}
                               type="button"
-                              aria-label="Remove recurring window"
-                              onClick={() =>
-                                onRemoveRecurringTemplateWindow(templateKey, window.id)
-                              }
-                              className="inline-flex h-9 w-9 items-center justify-center rounded-xl text-red-400 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-500 dark:hover:bg-red-950/30 dark:hover:text-red-300"
+                              aria-pressed={isSelected}
+                              onClick={() => {
+                                const next = isSelected
+                                  ? template.daysOfWeek.filter((d) => d !== dayIndex)
+                                  : [...template.daysOfWeek, dayIndex].sort((a, b) => a - b);
+                                onRecurringTemplateChange(templateKey, "daysOfWeek", next);
+                              }}
+                              className={`min-w-[44px] rounded-lg px-2.5 py-1.5 text-xs font-semibold transition ${
+                                isSelected
+                                  ? "border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300"
+                                  : "border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400 dark:hover:bg-slate-800"
+                              }`}
                             >
-                              <CloseIcon className="h-4 w-4" />
+                              {label}
                             </button>
-                          </div>
-                        </div>
-                      ))}
-
-                      {templateErrors?.windows && (
+                          );
+                        })}
+                      </div>
+                      <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                        Visits use this client&apos;s saved visit windows and duration.
+                      </p>
+                      {templateErrors?.daysOfWeek && (
                         <p className="m-0 text-xs text-red-600 dark:text-red-400">
-                          {templateErrors.windows}
+                          {templateErrors.daysOfWeek}
                         </p>
                       )}
                     </div>

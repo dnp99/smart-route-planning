@@ -2,7 +2,6 @@ export {
   EMPTY_FORM,
   createEmptyVisitWindow,
   createEmptyRecurringTemplate,
-  createEmptyRecurringTemplateWindow,
   toCreateRequest,
   buildRecurringTemplateMutationPlan,
   validateForm,
@@ -10,9 +9,7 @@ export {
 export type {
   FormFieldErrors,
   RecurringTemplateFieldErrors,
-  RecurringTemplateWindowFieldErrors,
   PatientFormRecurringTemplate,
-  PatientFormRecurringTemplateWindow,
   PatientFormValues,
   PatientFormVisitWindow,
 } from "../../patients/domain/patientForm";
