@@ -183,6 +183,14 @@ export default function HomePage({
           href: "/route-planner",
         },
         {
+          label: "Unscheduled visits",
+          value: "—",
+          delta: "Today",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
+        },
+        {
           label: "Drive hours",
           value: "—",
           delta: "Last 7 days",
@@ -253,6 +261,18 @@ export default function HomePage({
         tone: "text-blue-600",
         trend:
           dashboardSummary.kpis.routesToday > 0 ? "Live routing activity" : "No routes run yet",
+        href: "/route-planner",
+      },
+      {
+        label: "Unscheduled visits",
+        value: String(dashboardSummary.snapshot.unscheduledVisits),
+        delta: "Today",
+        tone:
+          dashboardSummary.snapshot.unscheduledVisits > 0 ? "text-amber-600" : "text-emerald-600",
+        trend:
+          dashboardSummary.snapshot.unscheduledVisits > 0
+            ? "Some visits could not be placed"
+            : "All visits scheduled",
         href: "/route-planner",
       },
       {
@@ -366,6 +386,7 @@ export default function HomePage({
       message: string;
       rationale: string;
       action: "setup" | "settings" | "templates";
+      tone: "warning" | "info";
     }> = [];
 
     if (setupMissing.indexOf("displayName") >= 0) {
@@ -374,6 +395,7 @@ export default function HomePage({
         message: "Add a display name to complete workspace setup.",
         rationale: "Needed for profile identification across your workspace.",
         action: "setup",
+        tone: "warning",
       });
     }
 
@@ -383,6 +405,7 @@ export default function HomePage({
         message: "Set up working hours to complete workspace setup.",
         rationale: "Needed to keep route feasibility and workday timing accurate.",
         action: "setup",
+        tone: "warning",
       });
     }
 
@@ -392,6 +415,7 @@ export default function HomePage({
         message: "Choose route priority (time or distance) to complete setup.",
         rationale: "Needed so route optimization uses your preferred planning strategy.",
         action: "setup",
+        tone: "warning",
       });
     }
 
@@ -401,6 +425,7 @@ export default function HomePage({
         message: "Add a home address for default start and end points.",
         rationale: "Needed so route optimization starts and ends from your base automatically.",
         action: "settings",
+        tone: "warning",
       });
     }
 
@@ -409,13 +434,14 @@ export default function HomePage({
     if (activePatientCount > 0) {
       const coveragePercent = Math.round((templatedActivePatientCount / activePatientCount) * 100);
       const clientsWithoutTemplates = Math.max(0, activePatientCount - templatedActivePatientCount);
-      if (clientsWithoutTemplates > 0 && coveragePercent < 60) {
+      if (clientsWithoutTemplates > 0) {
         nudges.push({
           id: "template-coverage",
-          message: `Template coverage is ${coveragePercent}% (${templatedActivePatientCount}/${activePatientCount} clients).`,
+          message: `${clientsWithoutTemplates} clients are missing recurring templates.`,
           rationale:
-            "Set recurring templates for regular clients to reduce manual route selection every day.",
+            "Set templates for frequent clients to cut daily manual selection and keep route planning faster.",
           action: "templates",
+          tone: coveragePercent < 60 ? "warning" : "info",
         });
       }
     }
@@ -495,23 +521,52 @@ export default function HomePage({
       </section>
 
       {visibleNudges.map((nudge) => (
-        <section key={nudge.id} className={responsiveStyles.dashboardNudgeCard}>
+        <section
+          key={nudge.id}
+          className={
+            nudge.tone === "warning"
+              ? responsiveStyles.dashboardNudgeCard
+              : "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/35 sm:p-5"
+          }
+        >
           <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
             <div className="min-w-0">
-              <p className="m-0 text-xs font-semibold uppercase tracking-[0.14em] text-amber-800 dark:text-amber-300">
-                Setup Priority
+              <p
+                className={`m-0 text-xs font-semibold uppercase tracking-[0.14em] ${
+                  nudge.tone === "warning"
+                    ? "text-amber-800 dark:text-amber-300"
+                    : "text-blue-800 dark:text-blue-300"
+                }`}
+              >
+                {nudge.tone === "warning" ? "Setup Priority" : "Coverage Reminder"}
               </p>
-              <p className="m-0 mt-1 text-sm font-semibold text-amber-900 dark:text-amber-200">
+              <p
+                className={`m-0 mt-1 text-sm font-semibold ${
+                  nudge.tone === "warning"
+                    ? "text-amber-900 dark:text-amber-200"
+                    : "text-blue-900 dark:text-blue-200"
+                }`}
+              >
                 {nudge.message}
               </p>
-              <p className="m-0 mt-1 text-sm text-amber-800/90 dark:text-amber-300/90">
+              <p
+                className={`m-0 mt-1 text-sm ${
+                  nudge.tone === "warning"
+                    ? "text-amber-800/90 dark:text-amber-300/90"
+                    : "text-blue-800/90 dark:text-blue-300/90"
+                }`}
+              >
                 {nudge.rationale}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                className={responsiveStyles.warningBannerButton}
+                className={
+                  nudge.tone === "warning"
+                    ? responsiveStyles.warningBannerButton
+                    : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                }
                 onClick={() => {
                   if (nudge.action === "setup") {
                     navigate("/welcome-setup");
@@ -534,7 +589,11 @@ export default function HomePage({
               </button>
               <button
                 type="button"
-                className="rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                className={
+                  nudge.tone === "warning"
+                    ? "rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                    : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                }
                 onClick={() =>
                   setDismissedNudgeIds((current) =>
                     current.indexOf(nudge.id) >= 0 ? current : [...current, nudge.id],
