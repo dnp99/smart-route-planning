@@ -219,6 +219,7 @@ export function useRoutePlannerOptimizationState({
     setPlannerOptimizationObjective,
     localValidationError,
     hasChangedSinceLastOptimize,
+    currentOptimizeSnapshot,
     unscheduledResubmitCount,
     handleSubmit,
     handleRecalculateManualOrder,

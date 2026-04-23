@@ -1,7 +1,7 @@
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { SelectedDestinationsSection } from "./SelectedDestinationsSection";
-import type { SelectedPatientDestination } from "./routePlannerTypes";
-import type { Patient } from "../../../../shared/contracts";
+import type { SelectedPatientDestination } from "../domain/routePlannerTypes";
+import type { Patient } from "../../../../../shared/contracts/patients";
 import { formatPatientNameFromParts } from "../../patients/domain/patientName";
 
 const MOBILE_SEARCH_VISIBLE_ROWS = 15;
@@ -18,16 +18,9 @@ type PatientSelectorSectionProps = {
   destinationSearchQuery: string;
   onSearchQueryChange: (query: string) => void;
   isSearchLoading: boolean;
+  isVisitInstancesLoading: boolean;
   searchError: string;
   createPatientError: string;
-  templateOptions: Array<{
-    id: string;
-    label: string;
-    instanceCount: number;
-    matchesPlanningDay: boolean;
-  }>;
-  selectedTemplateId: string;
-  onTemplateSelectionChange: (templateId: string) => void;
   selectedDestinations: SelectedPatientDestination[];
   expandedDestinationVisitKeys: Record<string, boolean>;
   onAddPatient: (patient: Patient) => void;
@@ -63,11 +56,9 @@ export const PatientSelectorSection = ({
   destinationSearchQuery,
   onSearchQueryChange,
   isSearchLoading,
+  isVisitInstancesLoading,
   searchError,
   createPatientError,
-  templateOptions,
-  selectedTemplateId,
-  onTemplateSelectionChange,
   selectedDestinations,
   expandedDestinationVisitKeys,
   onAddPatient,
@@ -154,11 +145,6 @@ export const PatientSelectorSection = ({
               <span className={responsiveStyles.countPill}>{destinationCount}</span>
             )}
           </div>
-          {autoSeedHint.length > 0 && (
-            <p className="m-0 mt-0.5 truncate text-xs text-blue-700 dark:text-blue-300">
-              {autoSeedHint}
-            </p>
-          )}
         </div>
         <div className="flex shrink-0 items-center">
           <div className="flex items-center gap-3">
@@ -231,30 +217,6 @@ export const PatientSelectorSection = ({
                 Search clients ({destinationSearchResults.length})
               </p>
               <div className={responsiveStyles.patientSearchContainer}>
-                <div className="grid gap-1">
-                  <label
-                    htmlFor="route-template-filter"
-                    className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
-                  >
-                    Template
-                  </label>
-                  <select
-                    id="route-template-filter"
-                    aria-label="Template filter"
-                    value={selectedTemplateId}
-                    onChange={(event) => onTemplateSelectionChange(event.target.value)}
-                    className={responsiveStyles.formInput}
-                  >
-                    <option value="auto">Auto (planning day)</option>
-                    <option value="all">All templates</option>
-                    {templateOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.matchesPlanningDay ? "Today: " : ""}
-                        {option.label} ({option.instanceCount})
-                      </option>
-                    ))}
-                  </select>
-                </div>
                 {createPatientError && (
                   <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
                 )}
@@ -332,9 +294,9 @@ export const PatientSelectorSection = ({
                           >
                             <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
                               {patientName}
-                            </p>
-                            <p className="m-0 text-slate-600 dark:text-slate-300">
-                              {patient.address}
+                              <span className="pl-2 font-normal m-0 text-slate-600 dark:text-slate-300">
+                                | {patient.address}
+                              </span>
                             </p>
                           </button>
                         </li>
@@ -347,6 +309,8 @@ export const PatientSelectorSection = ({
 
             <SelectedDestinationsSection
               isMobileViewport={isMobileViewport}
+              isLoading={isVisitInstancesLoading}
+              autoSeedHint={autoSeedHint}
               selectedDestinations={selectedDestinations}
               expandedDestinationVisitKeys={expandedDestinationVisitKeys}
               onToggleDestinationDetails={onToggleDestinationDetails}

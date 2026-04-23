@@ -180,16 +180,7 @@ const formatWindowRange = (startTime: string, endTime: string) =>
 
 const toRecurringFormTemplate = (
   template: RecurringVisitTemplate,
-): PatientFormRecurringTemplate => {
-  const daysOfWeek =
-    Array.isArray(template.daysOfWeek) && template.daysOfWeek.length > 0
-      ? template.daysOfWeek
-      : template.windows
-          .map((w) => w.dayOfWeek)
-          .filter((v, i, a) => a.indexOf(v) === i)
-          .sort((a, b) => a - b);
-
-  return {
+): PatientFormRecurringTemplate => ({
     id: template.id,
     templateId: template.id,
     name: template.name ?? "",
@@ -198,9 +189,8 @@ const toRecurringFormTemplate = (
     startDate: template.startDate,
     endDate: template.endDate ?? "",
     isActive: template.isActive,
-    daysOfWeek,
-  };
-};
+    daysOfWeek: template.daysOfWeek,
+  });
 
 export const toFormValues = (
   patient: Patient,

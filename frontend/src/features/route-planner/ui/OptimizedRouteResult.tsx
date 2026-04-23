@@ -222,11 +222,7 @@ export function OptimizedRouteResult({
             <ul className="m-0 mt-2 space-y-2 pl-0">
               {conflictWarnings.map((warning) => (
                 <li
-                  key={
-                    warning.type === "window_conflict"
-                      ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}`
-                      : `${warning.type}:${warning.patientId}`
-                  }
+                  key={`window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}`}
                   className="list-none rounded-xl border border-amber-200/80 bg-white/70 px-3 py-2 text-xs leading-5 text-amber-900 shadow-sm dark:border-amber-900/60 dark:bg-amber-950/20 dark:text-amber-100"
                   title={warning.message}
                 >
@@ -250,15 +246,15 @@ export function OptimizedRouteResult({
               {makeDismissButton(onDismissLatenessWarnings)}
             </div>
             <ul className="m-0 mt-2 space-y-2 pl-0">
-              {latenessWarnings.map((warning) => {
+              {latenessWarnings.map((warning, index) => {
                 const warningMessage = resolveWarningMessage(warning);
+                const warningKey =
+                  warning.type === "fixed_late" || warning.type === "flexible_late"
+                    ? `${warning.type}:${warning.patientId}`
+                    : `${warning.type}:${index}`;
                 return (
                   <li
-                    key={
-                      warning.type === "window_conflict"
-                        ? `window_conflict:${warning.patientIds[0]}:${warning.patientIds[1]}`
-                        : `${warning.type}:${warning.patientId}`
-                    }
+                    key={warningKey}
                     className="list-none rounded-xl border border-red-200/80 bg-white/70 px-3 py-2 text-xs leading-5 text-red-900 shadow-sm dark:border-red-900/60 dark:bg-red-950/20 dark:text-red-100"
                     title={warningMessage}
                   >

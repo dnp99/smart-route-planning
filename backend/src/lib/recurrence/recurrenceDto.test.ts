@@ -14,22 +14,19 @@ describe("recurrenceDto", () => {
       recurrenceRule: "FREQ=WEEKLY;BYDAY=MO",
       startDate: "2026-05-04",
       endDate: null,
-      serviceDurationMinutes: 30,
       isActive: true,
       createdAt: now,
       updatedAt: now,
-      windows: [
+      days: [
         {
-          id: "window-1",
+          id: "day-1",
           templateId: "tpl-1",
           dayOfWeek: 1,
-          startTime: "09:00:00",
-          endTime: "10:00:00",
-          visitTimeType: "flexible",
           createdAt: now,
           updatedAt: now,
         },
       ],
+      daysOfWeek: [1],
     } as RecurringTemplateWithWindows;
 
     expect(toRecurringVisitTemplateDto(template)).toEqual({
@@ -41,19 +38,10 @@ describe("recurrenceDto", () => {
       recurrenceRule: "FREQ=WEEKLY;BYDAY=MO",
       startDate: "2026-05-04",
       endDate: null,
-      serviceDurationMinutes: 30,
       isActive: true,
+      daysOfWeek: [1],
       createdAt: now.toISOString(),
       updatedAt: now.toISOString(),
-      windows: [
-        {
-          id: "window-1",
-          dayOfWeek: 1,
-          startTime: "09:00",
-          endTime: "10:00",
-          visitTimeType: "flexible",
-        },
-      ],
     });
   });
 

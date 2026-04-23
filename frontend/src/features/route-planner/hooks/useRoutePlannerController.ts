@@ -97,6 +97,8 @@ export function useRoutePlannerController({
   const [visitInstances, setVisitInstances] = useState<VisitInstance[]>([]);
   const [recurringTemplates, setRecurringTemplates] = useState<RecurringVisitTemplate[]>([]);
   const [visitInstancesError, setVisitInstancesError] = useState("");
+  const [isVisitInstancesLoading, setIsVisitInstancesLoading] = useState(true);
+  const [hasVisitInstancesLoaded, setHasVisitInstancesLoaded] = useState(false);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("auto");
   const [manualTemplateSelectionLock, setManualTemplateSelectionLock] = useState(false);
 
@@ -154,9 +156,6 @@ export function useRoutePlannerController({
     handleCreateRecurringTemplateChange,
     handleAddCreateRecurringTemplate,
     handleRemoveCreateRecurringTemplate,
-    handleAddCreateRecurringTemplateWindow,
-    handleRemoveCreateRecurringTemplateWindow,
-    handleCreateRecurringTemplateWindowChange,
     handleCreatePatientAddressChange,
     handleCreatePatientAddressPick,
     handleCreatePatientSubmit,
@@ -226,6 +225,7 @@ export function useRoutePlannerController({
 
     const loadVisitInstances = async () => {
       setVisitInstancesError("");
+      setIsVisitInstancesLoading(true);
       try {
         await requestExpandVisitInstances({ planningDate });
         const [instances, templates] = await Promise.all([
@@ -245,6 +245,8 @@ export function useRoutePlannerController({
         setVisitInstances(instances);
         setVisitInstancesByPatientId(nextInstancesByPatientId);
         setRecurringTemplates(templates);
+        setIsVisitInstancesLoading(false);
+        setHasVisitInstancesLoaded(true);
       } catch (error) {
         if (!isSubscribed) {
           return;
@@ -255,6 +257,8 @@ export function useRoutePlannerController({
         setVisitInstancesError(
           error instanceof Error ? error.message : "Unable to load visit instances.",
         );
+        setIsVisitInstancesLoading(false);
+        setHasVisitInstancesLoaded(true);
       }
     };
 
@@ -304,62 +308,64 @@ export function useRoutePlannerController({
       });
   }, [planningDate, recurringTemplates, visitInstances]);
 
-  const autoTemplateId = useMemo(() => {
-    const planningDayOfWeek = getPlanningDayOfWeek(planningDate);
+  const autoTemplateIds = useMemo(() => {
     const matchingOptions = templateOptions.filter((option) => option.matchesPlanningDay);
     if (matchingOptions.length === 0) {
       return null;
     }
+    return new Set(matchingOptions.map((option) => option.id));
+  }, [planningDate, templateOptions]);
 
-    const optionWithInstances = matchingOptions.find((option) => option.instanceCount > 0);
-    if (optionWithInstances) {
-      return optionWithInstances.id;
-    }
-
-    const matchingTemplate = recurringTemplates.find(
-      (template) =>
-        template.id === matchingOptions[0].id &&
-        template.daysOfWeek.indexOf(planningDayOfWeek) !== -1,
-    );
-    return matchingTemplate?.id ?? matchingOptions[0].id;
-  }, [planningDate, recurringTemplates, templateOptions]);
-
-  const effectiveTemplateId = useMemo(() => {
+  const effectiveTemplateIds = useMemo(() => {
     if (selectedTemplateId === "all") {
       return null;
     }
     if (selectedTemplateId === "auto") {
-      return autoTemplateId;
+      return autoTemplateIds;
     }
-    return selectedTemplateId;
-  }, [autoTemplateId, selectedTemplateId]);
+    return new Set([selectedTemplateId]);
+  }, [autoTemplateIds, selectedTemplateId]);
 
   const autoSeedTemplateLabel = useMemo(() => {
-    if (effectiveTemplateId === null) {
+    if (!autoTemplateIds || autoTemplateIds.size === 0) {
       return "";
     }
 
-    const selectedOption = templateOptions.find((option) => option.id === effectiveTemplateId);
-    if (selectedOption) {
-      return selectedOption.label;
+    const names = [...autoTemplateIds].map((id) => {
+      const option = templateOptions.find((o) => o.id === id);
+      if (option) return option.label;
+      const template = recurringTemplates.find((t) => t.id === id);
+      if (template) return template.name?.trim() || `Template ${id.slice(0, 8)}`;
+      return `Template ${id.slice(0, 8)}`;
+    });
+
+    return names.join(", ");
+  }, [autoTemplateIds, recurringTemplates, templateOptions]);
+
+  const autoSeedHint = useMemo(() => {
+    if (
+      manualTemplateSelectionLock ||
+      selectedDestinations.length === 0 ||
+      !autoTemplateIds ||
+      autoTemplateIds.size === 0
+    ) {
+      return "";
     }
-
-    const selectedTemplate = recurringTemplates.find(
-      (template) => template.id === effectiveTemplateId,
-    );
-    if (selectedTemplate) {
-      return selectedTemplate.name?.trim() || `Template ${selectedTemplate.id.slice(0, 8)}`;
+    const dayName = new Date(`${planningDate}T12:00:00`).toLocaleDateString("en-US", {
+      weekday: "long",
+    });
+    const count = autoTemplateIds.size;
+    if (count === 1) {
+      return `Scheduled for ${dayName} · ${autoSeedTemplateLabel}`;
     }
-
-    return `Template ${effectiveTemplateId.slice(0, 8)}`;
-  }, [effectiveTemplateId, recurringTemplates, templateOptions]);
-
-  const autoSeedHint =
-    !manualTemplateSelectionLock &&
-    selectedDestinations.length > 0 &&
-    autoSeedTemplateLabel.length > 0
-      ? `Auto-seeded from ${autoSeedTemplateLabel}`
-      : "";
+    return `Scheduled for ${dayName} · ${count} templates`;
+  }, [
+    manualTemplateSelectionLock,
+    selectedDestinations.length,
+    autoTemplateIds,
+    planningDate,
+    autoSeedTemplateLabel,
+  ]);
 
   useEffect(() => {
     if (manualTemplateSelectionLock) {
@@ -377,9 +383,12 @@ export function useRoutePlannerController({
     );
     const knownTemplateIds = new Set(recurringTemplates.map((t) => t.id));
     const filteredInstances = (
-      effectiveTemplateId === null
+      effectiveTemplateIds === null
         ? visitInstances
-        : visitInstances.filter((instance) => instance.templateId === effectiveTemplateId)
+        : visitInstances.filter(
+            (instance) =>
+              instance.templateId !== null && effectiveTemplateIds.has(instance.templateId),
+          )
     ).filter(
       (instance) => instance.templateId === null || knownTemplateIds.has(instance.templateId),
     );
@@ -413,7 +422,7 @@ export function useRoutePlannerController({
   }, [
     destinationSearchQuery,
     destinationSearchPatients,
-    effectiveTemplateId,
+    effectiveTemplateIds,
     locallyCreatedPatients,
     manualTemplateSelectionLock,
     recurringTemplates,
@@ -421,11 +430,6 @@ export function useRoutePlannerController({
     selectedDestinations,
     visitInstances,
   ]);
-
-  const handleTemplateSelectionChange = (nextTemplateId: string) => {
-    setSelectedTemplateId(nextTemplateId);
-    setManualTemplateSelectionLock(false);
-  };
 
   function handleAddDestinationPatient(patient: Parameters<typeof addDestinationPatient>[0]) {
     setManualTemplateSelectionLock(true);
@@ -556,11 +560,10 @@ export function useRoutePlannerController({
     destinationSearchQuery,
     onSearchQueryChange: setDestinationSearchQuery,
     isSearchLoading: isDestinationSearchLoading,
+    isVisitInstancesLoading:
+      isVisitInstancesLoading && !hasVisitInstancesLoaded && !manualTemplateSelectionLock,
     searchError: destinationSearchError || visitInstancesError || "",
     createPatientError: createPatientError ?? "",
-    templateOptions,
-    selectedTemplateId,
-    onTemplateSelectionChange: handleTemplateSelectionChange,
     selectedDestinations,
     expandedDestinationVisitKeys,
     onAddPatient: handleAddDestinationPatient,
@@ -640,9 +643,6 @@ export function useRoutePlannerController({
     onRecurringTemplateChange: handleCreateRecurringTemplateChange,
     onAddRecurringTemplate: handleAddCreateRecurringTemplate,
     onRemoveRecurringTemplate: handleRemoveCreateRecurringTemplate,
-    onAddRecurringTemplateWindow: handleAddCreateRecurringTemplateWindow,
-    onRemoveRecurringTemplateWindow: handleRemoveCreateRecurringTemplateWindow,
-    onRecurringTemplateWindowChange: handleCreateRecurringTemplateWindowChange,
     selectedVisitType: selectedCreateVisitType,
     onVisitTypeChange: handleCreatePatientVisitTypeChange,
     onAddressChange: handleCreatePatientAddressChange,

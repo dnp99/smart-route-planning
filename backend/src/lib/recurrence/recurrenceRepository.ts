@@ -72,21 +72,6 @@ const isUniqueViolationError = (error: unknown) => {
 const uniqueSortedDays = (daysOfWeek: number[]) =>
   Array.from(new Set(daysOfWeek)).sort((left, right) => left - right);
 
-const resolveTemplateDaysFromPayload = (payload: {
-  daysOfWeek?: number[];
-  windows?: Array<{ dayOfWeek: number }>;
-}) => {
-  if (payload.daysOfWeek !== undefined) {
-    return uniqueSortedDays(payload.daysOfWeek);
-  }
-
-  if (payload.windows !== undefined) {
-    return uniqueSortedDays(payload.windows.map((w) => w.dayOfWeek));
-  }
-
-  return [];
-};
-
 const insertTemplateDays = async (
   transaction: ReturnType<typeof getDb>,
   templateId: string,
@@ -421,7 +406,7 @@ export const createRecurringVisitTemplateForNurse = async (
       })
       .returning();
 
-    const daysOfWeek = resolveTemplateDaysFromPayload(payload);
+    const daysOfWeek = uniqueSortedDays(payload.daysOfWeek);
     const days = await insertTemplateDays(transaction, template.id, daysOfWeek);
 
     return {
@@ -481,9 +466,9 @@ export const updateRecurringVisitTemplateForNurse = async (
       return null;
     }
 
-    const shouldReplaceDays = payload.daysOfWeek !== undefined || payload.windows !== undefined;
+    const shouldReplaceDays = payload.daysOfWeek !== undefined;
     const nextDaysOfWeek = shouldReplaceDays
-      ? resolveTemplateDaysFromPayload(payload)
+      ? uniqueSortedDays(payload.daysOfWeek ?? [])
       : existing.daysOfWeek;
     const nextDays = shouldReplaceDays
       ? await (async () => {
@@ -635,7 +620,20 @@ export const expandVisitInstancesForNurse = async (
     };
   }
 
-  const occurrenceKeys = candidateInsertRows.map((row) => row.occurrenceKey);
+  // A client should only get one instance per visit window per day even if they
+  // appear in multiple templates. Deduplicate by (patientId, windowStart, windowEnd, planningDate),
+  // keeping the first candidate (earliest template in iteration order).
+  const seenWindowKeys = new Set<string>();
+  const deduplicatedCandidates = candidateInsertRows.filter((row) => {
+    const windowKey = `${row.patientId}:${row.planningDate}:${row.windowStart}:${row.windowEnd}`;
+    if (seenWindowKeys.has(windowKey)) {
+      return false;
+    }
+    seenWindowKeys.add(windowKey);
+    return true;
+  });
+
+  const occurrenceKeys = deduplicatedCandidates.map((row) => row.occurrenceKey);
   const existingRows = await getDb()
     .select({ occurrenceKey: visitInstances.occurrenceKey })
     .from(visitInstances)
@@ -647,7 +645,7 @@ export const expandVisitInstancesForNurse = async (
     );
 
   const existingKeys = new Set(existingRows.map((row) => row.occurrenceKey));
-  const insertRows = candidateInsertRows.filter((row) => !existingKeys.has(row.occurrenceKey));
+  const insertRows = deduplicatedCandidates.filter((row) => !existingKeys.has(row.occurrenceKey));
 
   if (insertRows.length > 0) {
     try {

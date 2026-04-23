@@ -4,6 +4,14 @@ import type { SelectedPatientDestination } from "./routePlannerTypes";
 
 export const toWindowTime = (value: string) => value.slice(0, 5);
 
+export const toDisplayTime = (value: string) => {
+  const [hourStr, minuteStr] = value.slice(0, 5).split(":");
+  const hour = parseInt(hourStr, 10);
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  return `${displayHour}:${minuteStr} ${suffix}`;
+};
+
 const HH_MM_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
 
 export const hasCompleteWindow = (destination: SelectedPatientDestination) =>

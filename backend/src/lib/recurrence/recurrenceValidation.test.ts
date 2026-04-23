@@ -8,13 +8,6 @@ import {
   validateVisitInstancesPlanningDate,
 } from "./recurrenceValidation";
 
-const validWindow = {
-  dayOfWeek: 1,
-  startTime: "09:00",
-  endTime: "10:00",
-  visitTimeType: "fixed",
-};
-
 const validCreatePayload = {
   patientId: "client-1",
   name: " Monday morning ",
@@ -22,8 +15,7 @@ const validCreatePayload = {
   recurrenceRule: "FREQ=WEEKLY;BYDAY=MO",
   startDate: "2026-05-04",
   endDate: "2026-06-01",
-  serviceDurationMinutes: 45,
-  windows: [validWindow],
+  daysOfWeek: [1],
 };
 
 const expectBadRequest = (operation: () => unknown, message: string) => {
@@ -41,28 +33,22 @@ describe("recurrenceValidation", () => {
         recurrenceRule: "FREQ=WEEKLY;BYDAY=MO",
         startDate: "2026-05-04",
         endDate: "2026-06-01",
-        serviceDurationMinutes: 45,
-        windows: [validWindow],
         daysOfWeek: [1],
       });
     });
 
-    it("defaults optional create fields and accepts day-only schedules", () => {
+    it("defaults optional create fields", () => {
       expect(
         validateCreateRecurringVisitTemplatePayload({
           ...validCreatePayload,
           name: " ",
           endDate: null,
-          serviceDurationMinutes: undefined,
-          windows: undefined,
           daysOfWeek: [3, 1, 3],
         }),
       ).toEqual(
         expect.objectContaining({
           name: null,
           endDate: null,
-          serviceDurationMinutes: 30,
-          windows: [],
           daysOfWeek: [1, 3],
         }),
       );
@@ -82,32 +68,10 @@ describe("recurrenceValidation", () => {
           { ...validCreatePayload, endDate: "2026-05-01", startDate: "2026-05-02" },
           "endDate must be on or after startDate.",
         ],
+        [{ ...validCreatePayload, daysOfWeek: [] }, "daysOfWeek must include at least one weekday."],
         [
-          { ...validCreatePayload, serviceDurationMinutes: 0 },
-          "serviceDurationMinutes must be between 1 and 180.",
-        ],
-        [
-          { ...validCreatePayload, serviceDurationMinutes: 10.5 },
-          "serviceDurationMinutes must be an integer between 1 and 180.",
-        ],
-        [{ ...validCreatePayload, windows: "bad" }, "windows must be an array."],
-        [{ ...validCreatePayload, windows: [] }, "windows must include at least one visit window."],
-        [{ ...validCreatePayload, windows: [null] }, "windows[0] must be a JSON object."],
-        [
-          { ...validCreatePayload, windows: [{ ...validWindow, dayOfWeek: 7 }] },
-          "windows[0].dayOfWeek must be an integer from 0 (Sunday) to 6 (Saturday).",
-        ],
-        [
-          { ...validCreatePayload, windows: [{ ...validWindow, startTime: "25:00" }] },
-          "windows[0].startTime must use HH:MM 24-hour format.",
-        ],
-        [
-          { ...validCreatePayload, windows: [{ ...validWindow, endTime: "09:00" }] },
-          "windows[0].endTime must be later than windows[0].startTime.",
-        ],
-        [
-          { ...validCreatePayload, windows: [{ ...validWindow, visitTimeType: "open" }] },
-          "windows[0].visitTimeType must be one of: fixed, flexible.",
+          { ...validCreatePayload, daysOfWeek: [8] },
+          "daysOfWeek[0] must be an integer from 0 (Sunday) to 6 (Saturday).",
         ],
       ];
 
@@ -127,8 +91,6 @@ describe("recurrenceValidation", () => {
           recurrenceRule: "FREQ=DAILY;INTERVAL=2",
           startDate: "2026-05-05",
           endDate: null,
-          serviceDurationMinutes: 20,
-          windows: [{ ...validWindow, visitTimeType: "flexible" }],
           daysOfWeek: [2, 1, 2],
           isActive: false,
         }),
@@ -139,8 +101,6 @@ describe("recurrenceValidation", () => {
         recurrenceRule: "FREQ=DAILY;INTERVAL=2",
         startDate: "2026-05-05",
         endDate: null,
-        serviceDurationMinutes: 20,
-        windows: [{ ...validWindow, visitTimeType: "flexible" }],
         daysOfWeek: [1, 2],
         isActive: false,
       });

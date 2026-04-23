@@ -22,7 +22,7 @@ This folder contains the Vite + React frontend for CareFlow.
 - Show policy reminders from info icons on Clients and Route Planner pages.
 - Show break-reminder helper info (`i` icon) in both onboarding setup and account settings working-hours experiences.
 - Author recurring visit templates per client: name, date range, active flag, and weekday selector (7 toggle buttons). Visit timing and duration come from the client's saved visit windows — templates own only recurrence schedule.
-- Hydrate the Route Planner for a given planning date from server-generated visit instances; auto-seed selects the matching template for the day, with manual override support and defensive filtering for orphaned instances.
+- Hydrate the Route Planner for a given planning date from server-generated visit instances; auto-seed populates clients from all recurring templates whose day-of-week schedule matches the planning date, with manual override support and defensive filtering for orphaned instances.
 - Mobile-first route planner with wizard step flow (Trip → Clients → Review), always-expanded sections on mobile, step completion indicators, and safe-area-aware sticky footer CTA.
 - Use Client/Clients wording in UI copy while keeping `/api/patients` endpoints and `patient*` contract fields for backend compatibility.
 - Use cookie-based auth (`credentials: "include"`) with no JWT/token storage in localStorage/sessionStorage.
