@@ -91,10 +91,14 @@ export const SelectedDestinationsSection = ({
 
   return (
     <div className="grid gap-2">
-      <div className="grid gap-0.5">
-        <p className={responsiveStyles.patientColumnLabel}>Selected ({selectedByPatient.length})</p>
+      <div className="flex min-w-0 items-center gap-2">
+        <p className={`${responsiveStyles.patientColumnLabel} shrink-0`}>
+          Selected ({selectedByPatient.length})
+        </p>
         {autoSeedHint.length > 0 && (
-          <p className="m-0 text-xs text-blue-700 dark:text-blue-300">{autoSeedHint}</p>
+          <p className="m-0 min-w-0 truncate text-xs text-blue-700 dark:text-blue-300">
+            {autoSeedHint}
+          </p>
         )}
       </div>
       <div
