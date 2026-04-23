@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import CarFlyAnimation from "../shared/CarFlyAnimation";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type {
   AuthUser,
@@ -264,15 +265,50 @@ export default function HomePage({
         href: "/route-planner",
       },
       {
-        label: "Unscheduled visits",
-        value: String(dashboardSummary.snapshot.unscheduledVisits),
-        delta: "Today",
-        tone:
-          dashboardSummary.snapshot.unscheduledVisits > 0 ? "text-amber-600" : "text-emerald-600",
+        label: "Active clients",
+        value: String(dashboardSummary.kpis.activePatientCount),
+        delta: "All time",
+        tone: "text-blue-600",
         trend:
-          dashboardSummary.snapshot.unscheduledVisits > 0
-            ? "Some visits could not be placed"
-            : "All visits scheduled",
+          dashboardSummary.kpis.activePatientCount > 0 ? "Roster in use" : "No active clients yet",
+        href: "/clients",
+      },
+      {
+        label: "Deleted clients",
+        value: String(dashboardSummary.kpis.deletedClientsLast30Days),
+        delta: "Last 30 days",
+        tone:
+          dashboardSummary.kpis.deletedClientsLast30Days > 0 ? "text-amber-600" : "text-slate-500",
+        trend:
+          dashboardSummary.kpis.deletedClientsLast30Days > 0
+            ? "Roster churn detected"
+            : "No recent client removals",
+        href: "/clients",
+      },
+      {
+        label: "Template coverage",
+        value: `${templatedActivePatientCount} / ${activePatientCount} clients`,
+        delta:
+          activePatientCount > 0 ? `${templateCoveragePercent}% covered` : "No active clients yet",
+        tone: templateCoveragePercent >= 60 ? "text-emerald-600" : "text-amber-600",
+        trend:
+          activePatientsWithoutTemplateCount > 0
+            ? `${activePatientsWithoutTemplateCount} clients without templates`
+            : "All active clients covered",
+        href:
+          activePatientsWithoutTemplateCount > 0 ? "/clients?templateFilter=without" : "/clients",
+        progressPercent: templateCoveragePercent,
+      },
+      {
+        label: "Visits this week",
+        value: String(dashboardSummary.kpis.visitsScheduledLast7Days),
+        delta: "Last 7 days",
+        tone:
+          dashboardSummary.kpis.visitsScheduledLast7Days > 0 ? "text-blue-600" : "text-slate-500",
+        trend:
+          dashboardSummary.kpis.visitsScheduledLast7Days > 0
+            ? "Scheduled across all routes"
+            : "No visits scheduled yet",
         href: "/route-planner",
       },
       {
@@ -299,29 +335,6 @@ export default function HomePage({
         href: "/route-planner",
       },
       {
-        label: "Active clients",
-        value: String(dashboardSummary.kpis.activePatientCount),
-        delta: "All time",
-        tone: "text-blue-600",
-        trend:
-          dashboardSummary.kpis.activePatientCount > 0 ? "Roster in use" : "No active clients yet",
-        href: "/clients",
-      },
-      {
-        label: "Template coverage",
-        value: `${templatedActivePatientCount} / ${activePatientCount} clients`,
-        delta:
-          activePatientCount > 0 ? `${templateCoveragePercent}% covered` : "No active clients yet",
-        tone: templateCoveragePercent >= 60 ? "text-emerald-600" : "text-amber-600",
-        trend:
-          activePatientsWithoutTemplateCount > 0
-            ? `${activePatientsWithoutTemplateCount} clients without templates`
-            : "All active clients covered",
-        href:
-          activePatientsWithoutTemplateCount > 0 ? "/clients?templateFilter=without" : "/clients",
-        progressPercent: templateCoveragePercent,
-      },
-      {
         label: "Drive hours",
         value: `${dashboardSummary.kpis.driveHoursLast7Days.toFixed(1)}h`,
         delta: "Last 7 days",
@@ -334,26 +347,14 @@ export default function HomePage({
       },
       {
         label: "Total distance",
-        value: `${dashboardSummary.snapshot.totalDistanceKm.toFixed(1)} km`,
-        delta: "Today",
-        tone: dashboardSummary.snapshot.totalDistanceKm > 0 ? "text-blue-600" : "text-slate-500",
+        value: `${dashboardSummary.kpis.totalDistanceKm7d.toFixed(1)} km`,
+        delta: "Last 7 days",
+        tone: dashboardSummary.kpis.totalDistanceKm7d > 0 ? "text-blue-600" : "text-slate-500",
         trend:
-          dashboardSummary.snapshot.totalDistanceKm > 0
-            ? "Distance covered across today’s routes"
+          dashboardSummary.kpis.totalDistanceKm7d > 0
+            ? "Distance covered across recent routes"
             : "No distance recorded yet",
         href: "/route-planner",
-      },
-      {
-        label: "Deleted clients",
-        value: String(dashboardSummary.kpis.deletedClientsLast30Days),
-        delta: "Last 30 days",
-        tone:
-          dashboardSummary.kpis.deletedClientsLast30Days > 0 ? "text-amber-600" : "text-slate-500",
-        trend:
-          dashboardSummary.kpis.deletedClientsLast30Days > 0
-            ? "Roster churn detected"
-            : "No recent client removals",
-        href: "/clients",
       },
     ];
   }, [dashboardSummary]);
@@ -639,37 +640,43 @@ export default function HomePage({
         </section>
       )}
 
-      <section className={responsiveStyles.dashboardKpiGrid}>
-        {kpis.map((kpi, index) => {
-          const to = isAuthenticated ? kpi.href : "/login";
-          return (
-            <Link
-              key={kpi.label}
-              to={to}
-              className={`${responsiveStyles.dashboardKpiCard} group`}
-              style={{ animationDelay: `${80 + index * 45}ms` }}
-            >
-              <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
-              <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
-              <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
-              {typeof kpi.progressPercent === "number" && (
-                <div className={responsiveStyles.dashboardKpiProgressTrack}>
-                  <div
-                    className={responsiveStyles.dashboardKpiProgressFill}
-                    style={{
-                      width: `${Math.max(0, Math.min(100, kpi.progressPercent))}%`,
-                      animationDelay: `${140 + index * 45}ms`,
-                    }}
-                  />
-                </div>
-              )}
-              <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
-                {kpi.trend}
-              </p>
-            </Link>
-          );
-        })}
-      </section>
+      <CarFlyAnimation>
+        {(triggerCar) => (
+          <section className={responsiveStyles.dashboardKpiGrid}>
+            {kpis.map((kpi, index) => {
+              const to = isAuthenticated ? kpi.href : "/login";
+              const isCar = kpi.label === "Drive hours" || kpi.label === "Total distance";
+              return (
+                <Link
+                  key={kpi.label}
+                  to={to}
+                  className={`${responsiveStyles.dashboardKpiCard} group`}
+                  style={{ animationDelay: `${80 + index * 45}ms` }}
+                  onClick={isCar ? triggerCar : undefined}
+                >
+                  <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
+                  <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
+                  <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
+                  {typeof kpi.progressPercent === "number" && (
+                    <div className={responsiveStyles.dashboardKpiProgressTrack}>
+                      <div
+                        className={responsiveStyles.dashboardKpiProgressFill}
+                        style={{
+                          width: `${Math.max(0, Math.min(100, kpi.progressPercent))}%`,
+                          animationDelay: `${140 + index * 45}ms`,
+                        }}
+                      />
+                    </div>
+                  )}
+                  <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                    {kpi.trend}
+                  </p>
+                </Link>
+              );
+            })}
+          </section>
+        )}
+      </CarFlyAnimation>
 
       {lastUpdatedLabel && (
         <p className="m-0 -mt-2 text-right text-xs font-medium text-slate-500 dark:text-slate-400">

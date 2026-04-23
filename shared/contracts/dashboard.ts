@@ -44,9 +44,11 @@ export type DashboardSummaryResponse = {
   kpis: {
     routesToday: number;
     visitsScheduledToday: number;
+    visitsScheduledLast7Days: number;
     onTimeRatePercent7d: number | null;
     deletedClientsLast30Days: number;
     driveHoursLast7Days: number;
+    totalDistanceKm7d: number;
     activePatientCount: number;
     templatedActivePatientCount: number;
   };
@@ -115,10 +117,12 @@ export const isDashboardSummaryResponse = (value: unknown): value is DashboardSu
     !isObject(value.kpis) ||
     typeof value.kpis.routesToday !== "number" ||
     typeof value.kpis.visitsScheduledToday !== "number" ||
+    typeof value.kpis.visitsScheduledLast7Days !== "number" ||
     (value.kpis.onTimeRatePercent7d !== null &&
       typeof value.kpis.onTimeRatePercent7d !== "number") ||
     typeof value.kpis.deletedClientsLast30Days !== "number" ||
     typeof value.kpis.driveHoursLast7Days !== "number" ||
+    typeof value.kpis.totalDistanceKm7d !== "number" ||
     typeof value.kpis.activePatientCount !== "number" ||
     typeof value.kpis.templatedActivePatientCount !== "number" ||
     !Array.isArray(value.alerts) ||

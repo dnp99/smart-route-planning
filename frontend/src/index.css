@@ -210,6 +210,21 @@
   }
 }
 
+@keyframes car-fly {
+  0%   { transform: translate(-80px,  0px);   opacity: 0; }
+  6%   { opacity: 1; }
+  20%  { transform: translate(20vw,  -30px); }
+  40%  { transform: translate(40vw,   20px); }
+  60%  { transform: translate(60vw,  -25px); }
+  80%  { transform: translate(80vw,   15px); opacity: 1; }
+  94%  { opacity: 1; }
+  100% { transform: translate(calc(100vw + 80px), 0px); opacity: 0; }
+}
+
+.car-fly-animation {
+  animation: car-fly linear forwards;
+}
+
 @keyframes dashboard-fade-in {
   from {
     opacity: 0;

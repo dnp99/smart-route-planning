@@ -589,6 +589,10 @@ export const getDashboardSummaryForNurse = async ({
   );
 
   const scheduledVisits7d = recentRuns.reduce((total, run) => total + run.scheduledVisitCount, 0);
+  const totalDistanceMeters7d = recentRuns.reduce(
+    (total, run) => total + run.totalDistanceMeters,
+    0,
+  );
   const totalDuration7dSeconds = recentRuns.reduce(
     (total, run) => total + run.totalDurationSeconds,
     0,
@@ -650,9 +654,11 @@ export const getDashboardSummaryForNurse = async ({
     kpis: {
       routesToday: todayRuns.length,
       visitsScheduledToday: scheduledVisitsToday,
+      visitsScheduledLast7Days: scheduledVisits7d,
       onTimeRatePercent7d,
       deletedClientsLast30Days,
       driveHoursLast7Days: roundToOneDecimal(totalDuration7dSeconds / 3600),
+      totalDistanceKm7d: roundToOneDecimal(totalDistanceMeters7d / 1000),
       activePatientCount,
       templatedActivePatientCount,
     },
