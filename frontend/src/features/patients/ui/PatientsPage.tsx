@@ -3,14 +3,23 @@ import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import ConfirmDialog from "../../../components/modals/ConfirmDialog";
-import type { Patient, VisitTimeType } from "../../../../../shared/contracts";
+import type {
+  Patient,
+  RecurringVisitTemplate,
+  VisitTimeType,
+} from "../../../../../shared/contracts";
 import { PatientFormModal } from "./PatientFormModal";
 import { PatientsTable } from "./PatientsTable";
 import {
   EMPTY_FORM,
+  buildRecurringTemplateMutationPlan,
+  createEmptyRecurringTemplate,
+  createEmptyRecurringTemplateWindow,
   createEmptyVisitWindow,
   type FormFieldErrors,
   type FormMode,
+  type PatientFormRecurringTemplate,
+  type PatientFormRecurringTemplateWindow,
   type PatientFormValues,
   type PatientFormVisitWindow,
   toCreateRequest,
@@ -18,6 +27,12 @@ import {
   validateForm,
 } from "../domain/patientForm";
 import { createPatient, deletePatient, listPatients, updatePatient } from "../api/patientService";
+import {
+  createRecurringVisitTemplate,
+  deleteRecurringVisitTemplate,
+  listRecurringVisitTemplates,
+  updateRecurringVisitTemplate,
+} from "../api/recurringVisitTemplateService";
 
 const PlusIcon = ({ className }: { className?: string }) => (
   <svg
@@ -51,6 +66,14 @@ const PatientsPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showPrivacyReminder, setShowPrivacyReminder] = useState(false);
+  const [recurringTemplatesByPatientId, setRecurringTemplatesByPatientId] = useState<
+    Map<string, RecurringVisitTemplate[]>
+  >(new Map());
+  const [templateFilterMode, setTemplateFilterMode] = useState<string | null>(() => {
+    const search = typeof window !== "undefined" ? window.location.search : "";
+    return new URLSearchParams(search).get("templateFilter");
+  });
+  const hasTemplateFilter = templateFilterMode === "without" || templateFilterMode === "with";
 
   const selectedPatient = useMemo(
     () => patients.find((patient) => patient.id === selectedPatientId) ?? null,
@@ -63,8 +86,33 @@ const PatientsPage = () => {
     setPageError("");
 
     try {
-      const nextPatients = await listPatients(query);
-      setPatients(nextPatients);
+      const [nextPatients, recurringTemplates] = await Promise.all([
+        listPatients(query),
+        listRecurringVisitTemplates(),
+      ]);
+      const nextRecurringTemplatesByPatientId = new Map<string, RecurringVisitTemplate[]>();
+      recurringTemplates.forEach((template) => {
+        const current = nextRecurringTemplatesByPatientId.get(template.patientId) ?? [];
+        current.push(template);
+        nextRecurringTemplatesByPatientId.set(template.patientId, current);
+      });
+      const patientsFilteredByTemplate = nextPatients.filter((patient) => {
+        if (!hasTemplateFilter) {
+          return true;
+        }
+
+        const activeTemplateCount =
+          nextRecurringTemplatesByPatientId.get(patient.id)?.filter((template) => template.isActive)
+            .length ?? 0;
+
+        if (templateFilterMode === "without") {
+          return activeTemplateCount === 0;
+        }
+
+        return activeTemplateCount > 0;
+      });
+      setPatients(patientsFilteredByTemplate);
+      setRecurringTemplatesByPatientId(nextRecurringTemplatesByPatientId);
       if (!query) setTotalPatientCount(nextPatients.length);
 
       if (selectedPatientId && !nextPatients.some((patient) => patient.id === selectedPatientId)) {
@@ -79,7 +127,7 @@ const PatientsPage = () => {
 
   useEffect(() => {
     void fetchPatients(searchQuery);
-  }, [searchQuery]);
+  }, [hasTemplateFilter, searchQuery, templateFilterMode]);
 
   const resetFormState = () => {
     setSelectedPatientId(null);
@@ -102,7 +150,7 @@ const PatientsPage = () => {
   const openEditModal = (patient: Patient) => {
     setSelectedPatientId(patient.id);
     setFormMode("edit");
-    setFormValues(toFormValues(patient));
+    setFormValues(toFormValues(patient, recurringTemplatesByPatientId.get(patient.id) ?? []));
     setFormErrors({});
     setPageError("");
     setIsModalOpen(true);
@@ -162,6 +210,147 @@ const PatientsPage = () => {
       visitWindows: undefined,
       visitWindowRows: undefined,
     }));
+  };
+
+  const handleRecurringTemplateChange = <K extends keyof PatientFormRecurringTemplate>(
+    templateId: string,
+    field: K,
+    value: PatientFormRecurringTemplate[K],
+  ) => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) =>
+        template.id === templateId ? { ...template, [field]: value } : template,
+      ),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleAddRecurringTemplate = () => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: [...current.recurringTemplates, createEmptyRecurringTemplate()],
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleRemoveRecurringTemplate = (templateId: string) => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.filter(
+        (template) => template.id !== templateId,
+      ),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleAddRecurringTemplateWindow = (templateId: string) => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) => {
+        if (template.id !== templateId) {
+          return template;
+        }
+
+        return {
+          ...template,
+          windows: [
+            ...template.windows,
+            createEmptyRecurringTemplateWindow(template.windows.length + 1),
+          ],
+        };
+      }),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleRemoveRecurringTemplateWindow = (templateId: string, windowId: string) => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) => {
+        if (template.id !== templateId) {
+          return template;
+        }
+
+        return {
+          ...template,
+          windows: template.windows.filter((window) => window.id !== windowId),
+        };
+      }),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const handleRecurringTemplateWindowChange = <K extends keyof PatientFormRecurringTemplateWindow>(
+    templateId: string,
+    windowId: string,
+    field: K,
+    value: PatientFormRecurringTemplateWindow[K],
+  ) => {
+    setFormValues((current) => ({
+      ...current,
+      recurringTemplates: current.recurringTemplates.map((template) => {
+        if (template.id !== templateId) {
+          return template;
+        }
+
+        return {
+          ...template,
+          windows: template.windows.map((window) =>
+            window.id === windowId ? { ...window, [field]: value } : window,
+          ),
+        };
+      }),
+    }));
+    setFormErrors((current) => ({
+      ...current,
+      recurringTemplates: undefined,
+      recurringTemplateRows: undefined,
+    }));
+  };
+
+  const syncRecurringTemplatesForPatient = async (
+    patientId: string,
+    values: PatientFormValues,
+    existingTemplates: RecurringVisitTemplate[],
+  ) => {
+    const mutationPlan = buildRecurringTemplateMutationPlan(patientId, values, existingTemplates);
+
+    await Promise.all(
+      mutationPlan.remove.map((templateId) => deleteRecurringVisitTemplate(templateId)),
+    );
+
+    const created = await Promise.all(
+      mutationPlan.create.map((request) => createRecurringVisitTemplate(request)),
+    );
+
+    const updated = await Promise.all(
+      mutationPlan.update.map(({ templateId, request }) =>
+        updateRecurringVisitTemplate(templateId, request),
+      ),
+    );
+
+    return [...created, ...updated];
   };
 
   const handleVisitTypeChange = (visitTimeType: VisitTimeType) => {
@@ -227,7 +416,8 @@ const PatientsPage = () => {
 
     try {
       if (formMode === "create") {
-        await createPatient(toCreateRequest(formValues));
+        const createdPatient = await createPatient(toCreateRequest(formValues));
+        await syncRecurringTemplatesForPatient(createdPatient.id, formValues, []);
         closeModal();
         setSearchQuery("");
         await fetchPatients("");
@@ -240,9 +430,14 @@ const PatientsPage = () => {
       }
 
       const updated = await updatePatient(selectedPatientId, toCreateRequest(formValues));
+      await syncRecurringTemplatesForPatient(
+        selectedPatientId,
+        formValues,
+        recurringTemplatesByPatientId.get(selectedPatientId) ?? [],
+      );
       setSelectedPatientId(updated.id);
       setFormMode("edit");
-      setFormValues(toFormValues(updated));
+      setFormValues(toFormValues(updated, recurringTemplatesByPatientId.get(updated.id) ?? []));
       await fetchPatients(searchQuery);
       setIsModalOpen(false);
     } catch (error) {
@@ -281,7 +476,7 @@ const PatientsPage = () => {
         <div className={responsiveStyles.sectionHeader}>
           <div className="flex items-start justify-between gap-3">
             <h1 className="m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-              {searchQuery.trim()
+              {searchQuery.trim() || hasTemplateFilter
                 ? `Clients (${patients.length} of ${totalPatientCount})`
                 : `Clients (${patients.length})`}
             </h1>
@@ -321,6 +516,34 @@ const PatientsPage = () => {
           </div>
         )}
 
+        {hasTemplateFilter && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+            <span className="font-medium">
+              Filter:{" "}
+              {templateFilterMode === "without"
+                ? "Clients without active templates"
+                : "Clients with active templates"}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const nextParams = new URLSearchParams(window.location.search);
+                nextParams.delete("templateFilter");
+                const nextSearch = nextParams.toString();
+                window.history.replaceState(
+                  {},
+                  "",
+                  `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`,
+                );
+                setTemplateFilterMode(null);
+              }}
+              className="rounded-md border border-blue-200 px-2 py-0.5 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
+            >
+              Clear filter
+            </button>
+          </div>
+        )}
+
         {pageError && (
           <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
             {pageError}
@@ -353,7 +576,7 @@ const PatientsPage = () => {
                 type="search"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search clients by name"
+                placeholder="Search clients by name or address"
                 className={`${responsiveStyles.searchInput} pl-9 sm:pl-10 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden ${searchQuery ? "pr-8" : ""}`}
               />
               {searchQuery && (
@@ -398,6 +621,7 @@ const PatientsPage = () => {
             searchQuery={searchQuery}
             onDelete={handleDelete}
             onEdit={openEditModal}
+            recurringTemplatesByPatientId={recurringTemplatesByPatientId}
           />
         </div>
 
@@ -426,6 +650,12 @@ const PatientsPage = () => {
           onVisitWindowChange={handleVisitWindowChange}
           onAddVisitWindow={handleAddVisitWindow}
           onRemoveVisitWindow={handleRemoveVisitWindow}
+          onRecurringTemplateChange={handleRecurringTemplateChange}
+          onAddRecurringTemplate={handleAddRecurringTemplate}
+          onRemoveRecurringTemplate={handleRemoveRecurringTemplate}
+          onAddRecurringTemplateWindow={handleAddRecurringTemplateWindow}
+          onRemoveRecurringTemplateWindow={handleRemoveRecurringTemplateWindow}
+          onRecurringTemplateWindowChange={handleRecurringTemplateWindowChange}
           selectedVisitType={selectedVisitType}
           onVisitTypeChange={handleVisitTypeChange}
           onAddressChange={handleAddressChange}

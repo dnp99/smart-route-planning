@@ -1,9 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { __resetOptimizeRouteRateLimitForTests } from "../requestGuards";
 
-const { requireAuthMock, recordOptimizationRunMock } = vi.hoisted(() => ({
+const {
+  requireAuthMock,
+  recordOptimizationRunMock,
+  listScheduledVisitInstancesForOptimizationMock,
+} = vi.hoisted(() => ({
   requireAuthMock: vi.fn(),
   recordOptimizationRunMock: vi.fn(),
+  listScheduledVisitInstancesForOptimizationMock: vi.fn(),
 }));
 
 vi.mock("./optimizeRouteService", () => ({
@@ -16,6 +21,10 @@ vi.mock("../../../../lib/auth/requireAuth", () => ({
 
 vi.mock("../../../../lib/dashboard/dashboardRepository", () => ({
   recordOptimizationRun: recordOptimizationRunMock,
+}));
+
+vi.mock("../../../../lib/recurrence/recurrenceRepository", () => ({
+  listScheduledVisitInstancesForOptimization: listScheduledVisitInstancesForOptimizationMock,
 }));
 
 import { optimizeRouteV3 } from "./optimizeRouteService";
@@ -56,11 +65,17 @@ describe("optimize-route v3 route handler", () => {
   const originalAllowedOrigins = process.env.ALLOWED_ORIGINS;
   const originalShadowCompare = process.env.OPTIMIZE_ROUTE_V3_SHADOW_COMPARE;
   const originalShadowSampleRate = process.env.OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE;
+  const originalDatabaseUrl = process.env.DATABASE_URL;
 
   beforeEach(() => {
     mockedOptimizeRouteV3.mockReset();
     requireAuthMock.mockReset();
     recordOptimizationRunMock.mockReset();
+    listScheduledVisitInstancesForOptimizationMock.mockReset();
+    listScheduledVisitInstancesForOptimizationMock.mockResolvedValue({
+      visits: [],
+      instanceMetaByVisitId: new Map(),
+    });
     recordOptimizationRunMock.mockResolvedValue(undefined);
     requireAuthMock.mockResolvedValue({ nurseId: "nurse-1", email: "nurse@example.com" });
     __resetOptimizeRouteRateLimitForTests();
@@ -94,6 +109,12 @@ describe("optimize-route v3 route handler", () => {
       delete process.env.OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE;
     } else {
       process.env.OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE = originalShadowSampleRate;
+    }
+
+    if (originalDatabaseUrl === undefined) {
+      delete process.env.DATABASE_URL;
+    } else {
+      process.env.DATABASE_URL = originalDatabaseUrl;
     }
   });
 
@@ -182,5 +203,156 @@ describe("optimize-route v3 route handler", () => {
       nurseId: "nurse-1",
       shadowCompare: true,
     });
+  });
+
+  it("uses scheduled visit instances as fallback when request visits are empty", async () => {
+    process.env.DATABASE_URL = "postgres://test:test@localhost:5432/test";
+    listScheduledVisitInstancesForOptimizationMock.mockResolvedValue({
+      visits: [
+        {
+          visitId: "provided-1",
+          patientId: "client-1",
+          patientName: "Client One",
+          address: "100 Main St",
+          windowStart: "09:00",
+          windowEnd: "10:00",
+          windowType: "fixed",
+          serviceDurationMinutes: 30,
+        },
+      ],
+      instanceMetaByVisitId: new Map([
+        [
+          "provided-1",
+          {
+            instanceId: "provided-1",
+            templateId: "template-1",
+          },
+        ],
+      ]),
+    });
+
+    mockedOptimizeRouteV3.mockResolvedValue({
+      start: {
+        address: "Start Address",
+        coords: { lat: 43.6, lon: -79.6 },
+        departureTime: "2026-03-13T11:30:00.000Z",
+      },
+      end: {
+        address: "End Address",
+        coords: { lat: 43.8, lon: -79.8 },
+      },
+      orderedStops: [],
+      routeLegs: [],
+      unscheduledTasks: [],
+      metrics: {
+        fixedWindowViolations: 0,
+        totalLateSeconds: 0,
+        totalWaitSeconds: 0,
+        totalDistanceMeters: 0,
+        totalDistanceKm: 0,
+        totalDurationSeconds: 0,
+      },
+      algorithmVersion: "v3.0.0-ils-seeded",
+    });
+
+    const response = await POST(buildPostRequest(JSON.stringify(validRequestBody)));
+    expect(response.status).toBe(200);
+    expect(listScheduledVisitInstancesForOptimizationMock).toHaveBeenCalledWith(
+      "nurse-1",
+      "2026-03-13",
+    );
+
+    const [optimizerRequest] = mockedOptimizeRouteV3.mock.calls[0];
+    expect(optimizerRequest.visits).toEqual([
+      expect.objectContaining({ visitId: "provided-1", patientId: "client-1" }),
+    ]);
+    expect(recordOptimizationRunMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instanceMetaByVisitId: expect.any(Map),
+      }),
+    );
+  });
+
+  it("queries scheduled instances for metadata when request already has visits", async () => {
+    process.env.DATABASE_URL = "postgres://test:test@localhost:5432/test";
+    listScheduledVisitInstancesForOptimizationMock.mockResolvedValue({
+      visits: [
+        {
+          visitId: "provided-1",
+          patientId: "client-1",
+          patientName: "Client One",
+          address: "100 Main St",
+          windowStart: "09:00",
+          windowEnd: "10:00",
+          windowType: "fixed",
+          serviceDurationMinutes: 30,
+        },
+      ],
+      instanceMetaByVisitId: new Map([
+        [
+          "provided-1",
+          {
+            instanceId: "provided-1",
+            templateId: "template-1",
+          },
+        ],
+      ]),
+    });
+
+    mockedOptimizeRouteV3.mockResolvedValue({
+      start: {
+        address: "Start Address",
+        coords: { lat: 43.6, lon: -79.6 },
+        departureTime: "2026-03-13T11:30:00.000Z",
+      },
+      end: {
+        address: "End Address",
+        coords: { lat: 43.8, lon: -79.8 },
+      },
+      orderedStops: [],
+      routeLegs: [],
+      unscheduledTasks: [],
+      metrics: {
+        fixedWindowViolations: 0,
+        totalLateSeconds: 0,
+        totalWaitSeconds: 0,
+        totalDistanceMeters: 0,
+        totalDistanceKm: 0,
+        totalDurationSeconds: 0,
+      },
+      algorithmVersion: "v3.0.0-ils-seeded",
+    });
+
+    const requestWithVisits = {
+      ...validRequestBody,
+      visits: [
+        {
+          visitId: "provided-1",
+          patientId: "client-1",
+          patientName: "Client One",
+          address: "100 Main St",
+          windowStart: "09:00",
+          windowEnd: "10:00",
+          windowType: "fixed",
+          serviceDurationMinutes: 30,
+        },
+      ],
+    };
+
+    const response = await POST(buildPostRequest(JSON.stringify(requestWithVisits)));
+    expect(response.status).toBe(200);
+    expect(listScheduledVisitInstancesForOptimizationMock).toHaveBeenCalledWith(
+      "nurse-1",
+      "2026-03-13",
+    );
+
+    const [optimizerRequest] = mockedOptimizeRouteV3.mock.calls[0];
+    expect(optimizerRequest.visits).toEqual(requestWithVisits.visits);
+
+    expect(recordOptimizationRunMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instanceMetaByVisitId: expect.any(Map),
+      }),
+    );
   });
 });

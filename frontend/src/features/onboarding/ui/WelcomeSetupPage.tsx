@@ -175,38 +175,30 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
   return (
     <main className={responsiveStyles.onboardingSetupViewport}>
       <section className={responsiveStyles.onboardingSetupCard}>
-        <p className="m-0 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">
-          Workspace setup
-        </p>
-        <h1 className="m-0 mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-          Finish your Routefy setup
-        </h1>
-        <p className="m-0 mt-2 text-sm text-slate-600 dark:text-slate-300">
+        <p className={responsiveStyles.onboardingSectionLabel}>Workspace setup</p>
+        <h1 className={responsiveStyles.onboardingTitle}>Finish your Routefy setup</h1>
+        <p className={responsiveStyles.onboardingSubtitle}>
           We&apos;ll save your profile and scheduling defaults so route planning works right away.
         </p>
 
-        <div className="mt-4 h-2 w-full rounded-full bg-slate-200 dark:bg-slate-700">
+        <div className={responsiveStyles.onboardingProgressTrack}>
           <div
-            className="h-2 rounded-full bg-blue-600 transition-all"
+            className={responsiveStyles.onboardingProgressFill}
             style={{ width: `${completionPercent}%` }}
             aria-hidden="true"
           />
         </div>
 
         {error && step !== "profile" && (
-          <p className="m-0 mt-4 rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700 dark:border-rose-800/60 dark:bg-rose-900/20 dark:text-rose-200">
-            {error}
-          </p>
+          <p className={responsiveStyles.onboardingErrorBanner}>{error}</p>
         )}
 
         {step === "profile" && (
           <form noValidate onSubmit={handleProfileSave} className="mt-5 grid gap-4">
-            <label className="grid gap-1 text-sm text-slate-700 dark:text-slate-200">
+            <label className={responsiveStyles.onboardingFieldLabel}>
               <span>
                 Display name
-                <span className="ml-2 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
-                  Required
-                </span>
+                <span className={responsiveStyles.onboardingRequiredBadge}>Required</span>
               </span>
               <input
                 value={displayNameInput}
@@ -221,12 +213,11 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
                 }}
                 autoComplete="name"
                 aria-invalid={Boolean(profileFieldErrors.displayName)}
-                className={[
-                  "rounded-xl border px-3 py-2 text-sm outline-none transition focus:ring-2 dark:bg-slate-950",
+                className={
                   profileFieldErrors.displayName
-                    ? "border-red-400 text-slate-900 ring-red-500 focus:border-red-500 dark:border-red-700 dark:text-slate-100 dark:focus:border-red-500"
-                    : "border-slate-300 text-slate-900 ring-blue-500 focus:border-blue-500 dark:border-slate-700 dark:text-slate-100",
-                ].join(" ")}
+                    ? `${responsiveStyles.formInput} border-red-400 focus:border-red-500 focus:ring-red-100 dark:border-red-700 dark:focus:border-red-500`
+                    : responsiveStyles.formInput
+                }
               />
               {profileFieldErrors.displayName && (
                 <span className="text-xs text-red-600 dark:text-red-400">
@@ -247,7 +238,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
             <button
               type="submit"
               disabled={isSaving}
-              className="inline-flex w-fit items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className={responsiveStyles.onboardingPrimaryButton}
             >
               {isSaving ? "Saving..." : "Save and continue"}
             </button>
@@ -259,10 +250,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
             {DAYS.map(({ key, label }) => {
               const day = scheduleInput[key];
               return (
-                <div
-                  key={key}
-                  className="rounded-xl border border-slate-200 p-3 dark:border-slate-700"
-                >
+                <div key={key} className={responsiveStyles.panel}>
                   <div className="flex flex-wrap items-center gap-3">
                     <label className="flex items-center gap-2 text-sm font-medium text-slate-800 dark:text-slate-100">
                       <input
@@ -286,7 +274,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
                           [key]: { ...current[key], start: event.target.value },
                         }))
                       }
-                      className="rounded-lg border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-950"
+                      className={responsiveStyles.onboardingTimeInput}
                       aria-label={`${label} start time`}
                     />
                     <span className="text-sm text-slate-500 dark:text-slate-400">to</span>
@@ -299,7 +287,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
                           [key]: { ...current[key], end: event.target.value },
                         }))
                       }
-                      className="rounded-lg border border-slate-300 px-2 py-1 text-sm dark:border-slate-700 dark:bg-slate-950"
+                      className={responsiveStyles.onboardingTimeInput}
                       aria-label={`${label} end time`}
                     />
                   </div>
@@ -321,7 +309,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
                 aria-label="Show break reminder info"
                 aria-expanded={showBreakReminderInfo}
                 onClick={() => setShowBreakReminderInfo((current) => !current)}
-                className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30"
+                className={responsiveStyles.onboardingBreakToggleButton}
               >
                 i
               </button>
@@ -331,7 +319,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
                 value={breakGapInput}
                 onChange={(event) => setBreakGapInput(event.target.value)}
                 disabled={!breakGapEnabled}
-                className="w-24 rounded-lg border border-slate-300 px-2 py-1 text-sm disabled:cursor-not-allowed disabled:bg-slate-100 dark:border-slate-700 dark:bg-slate-950 dark:disabled:bg-slate-800"
+                className={responsiveStyles.onboardingBreakInput}
                 aria-label="Break reminder minutes"
               />
               <span className="text-sm text-slate-500 dark:text-slate-400">minutes</span>
@@ -346,7 +334,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
             <button
               type="submit"
               disabled={isSaving}
-              className="mt-2 inline-flex w-fit items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className={`${responsiveStyles.onboardingPrimaryButton} mt-2`}
             >
               {isSaving ? "Saving..." : "Save and continue"}
             </button>
@@ -355,11 +343,11 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
 
         {step === "optimizationObjective" && (
           <form onSubmit={handleObjectiveSave} className="mt-5 grid gap-4">
-            <fieldset className="grid gap-3 rounded-xl border border-slate-200 p-4 dark:border-slate-700">
+            <fieldset className={responsiveStyles.onboardingObjectiveFieldset}>
               <legend className="px-1 text-sm font-semibold text-slate-900 dark:text-slate-100">
                 Route priority
               </legend>
-              <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+              <label className={responsiveStyles.onboardingRadioLabel}>
                 <input
                   type="radio"
                   name="optimization-objective"
@@ -369,7 +357,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
                 />
                 Fastest total route time
               </label>
-              <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+              <label className={responsiveStyles.onboardingRadioLabel}>
                 <input
                   type="radio"
                   name="optimization-objective"
@@ -383,7 +371,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
             <button
               type="submit"
               disabled={isSaving}
-              className="inline-flex w-fit items-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className={responsiveStyles.onboardingPrimaryButton}
             >
               {isSaving ? "Saving..." : "Complete setup"}
             </button>

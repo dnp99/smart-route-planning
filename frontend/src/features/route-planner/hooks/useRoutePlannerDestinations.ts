@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import type { Patient } from "../../../../../shared/contracts";
+import type { Patient, VisitInstance } from "../../../../../shared/contracts";
 import type { SelectedPatientDestination } from "../domain/routePlannerTypes";
-import { toSelectedPatientDestinations } from "../domain/routePlannerHelpers";
+import {
+  toSelectedPatientDestinations,
+  toSelectedVisitInstanceDestinations,
+} from "../domain/routePlannerHelpers";
 
 type UseRoutePlannerDestinationsParams = {
   initialDestinations?: SelectedPatientDestination[];
@@ -42,8 +45,11 @@ export function useRoutePlannerDestinations({
     });
   }, [selectedDestinations]);
 
-  const addDestinationPatient = (patient: Patient) => {
-    const destinations = toSelectedPatientDestinations(patient);
+  const addDestinationPatient = (patient: Patient, visitInstances?: VisitInstance[]) => {
+    const hasInstances = Array.isArray(visitInstances) && visitInstances.length > 0;
+    const destinations = hasInstances
+      ? toSelectedVisitInstanceDestinations(patient, visitInstances)
+      : toSelectedPatientDestinations(patient);
     if (destinations.length === 0) return;
 
     setSelectedDestinations((current) => {
@@ -58,6 +64,13 @@ export function useRoutePlannerDestinations({
       return next;
     });
     setDestinationSearchQuery("");
+  };
+
+  const replaceSelectedDestinations = (destinations: SelectedPatientDestination[]) => {
+    setSelectedDestinations(destinations);
+    setExpandedDestinationVisitKeys(
+      Object.fromEntries(destinations.map((destination) => [destination.visitKey, false])),
+    );
   };
 
   const removeDestinationVisit = (visitKey: string) => {
@@ -126,6 +139,7 @@ export function useRoutePlannerDestinations({
     selectedDestinations,
     expandedDestinationVisitKeys,
     addDestinationPatient,
+    replaceSelectedDestinations,
     removeDestinationVisit,
     toggleDestinationDetails,
     updateDestinationPlanningWindow,

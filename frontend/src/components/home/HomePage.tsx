@@ -191,12 +191,13 @@ export default function HomePage({
           href: "/clients",
         },
         {
-          label: "Scheduled visits",
+          label: "Template coverage",
           value: "—",
-          delta: "Today",
+          delta: "No active clients yet",
           tone: "text-blue-600",
           trend: "No baseline yet",
-          href: "/route-planner",
+          href: "/clients?templateFilter=without",
+          progressPercent: 0,
         },
         {
           label: "Drive hours",
@@ -208,6 +209,17 @@ export default function HomePage({
         },
       ];
     }
+
+    const activePatientCount = dashboardSummary.kpis.activePatientCount;
+    const templatedActivePatientCount = dashboardSummary.kpis.templatedActivePatientCount;
+    const activePatientsWithoutTemplateCount = Math.max(
+      0,
+      activePatientCount - templatedActivePatientCount,
+    );
+    const templateCoveragePercent =
+      activePatientCount > 0
+        ? Math.round((templatedActivePatientCount / activePatientCount) * 100)
+        : 0;
 
     return [
       {
@@ -229,18 +241,18 @@ export default function HomePage({
         href: "/clients",
       },
       {
-        label: "Deleted clients",
-        value: String(dashboardSummary.kpis.deletedClientsLast30Days),
-        delta: "Last 30 days",
-        tone:
-          dashboardSummary.kpis.deletedClientsLast30Days > 0
-            ? "text-amber-600"
-            : "text-emerald-600",
+        label: "Template coverage",
+        value: `${templatedActivePatientCount} / ${activePatientCount} clients`,
+        delta:
+          activePatientCount > 0 ? `${templateCoveragePercent}% covered` : "No active clients yet",
+        tone: templateCoveragePercent >= 60 ? "text-emerald-600" : "text-amber-600",
         trend:
-          dashboardSummary.kpis.deletedClientsLast30Days > 0
-            ? "Review retention patterns"
-            : "No recent removals",
-        href: "/clients",
+          activePatientsWithoutTemplateCount > 0
+            ? `${activePatientsWithoutTemplateCount} clients without templates`
+            : "All active clients covered",
+        href:
+          activePatientsWithoutTemplateCount > 0 ? "/clients?templateFilter=without" : "/clients",
+        progressPercent: templateCoveragePercent,
       },
       {
         label: "Drive hours",
@@ -283,7 +295,7 @@ export default function HomePage({
       id: string;
       message: string;
       rationale: string;
-      action: "setup" | "settings";
+      action: "setup" | "settings" | "templates";
     }> = [];
 
     if (setupMissing.indexOf("displayName") >= 0) {
@@ -322,8 +334,24 @@ export default function HomePage({
       });
     }
 
+    const activePatientCount = dashboardSummary?.kpis.activePatientCount ?? 0;
+    const templatedActivePatientCount = dashboardSummary?.kpis.templatedActivePatientCount ?? 0;
+    if (activePatientCount > 0) {
+      const coveragePercent = Math.round((templatedActivePatientCount / activePatientCount) * 100);
+      const clientsWithoutTemplates = Math.max(0, activePatientCount - templatedActivePatientCount);
+      if (clientsWithoutTemplates > 0 && coveragePercent < 60) {
+        nudges.push({
+          id: "template-coverage",
+          message: `Template coverage is ${coveragePercent}% (${templatedActivePatientCount}/${activePatientCount} clients).`,
+          rationale:
+            "Set recurring templates for regular clients to reduce manual route selection every day.",
+          action: "templates",
+        });
+      }
+    }
+
     return nudges;
-  }, [authUser?.homeAddress, authUser?.setupMissing, isAuthenticated]);
+  }, [authUser?.homeAddress, authUser?.setupMissing, dashboardSummary, isAuthenticated]);
   const [dismissedNudgeIds, setDismissedNudgeIds] = useState<string[]>([]);
   const visibleNudges = useMemo(
     () => profileNudges.filter((nudge) => dismissedNudgeIds.indexOf(nudge.id) < 0),
@@ -420,10 +448,19 @@ export default function HomePage({
                     return;
                   }
 
+                  if (nudge.action === "templates") {
+                    navigate("/clients?templateFilter=without");
+                    return;
+                  }
+
                   onOpenAccountSettings?.();
                 }}
               >
-                {nudge.action === "setup" ? "Complete setup" : "Open Settings"}
+                {nudge.action === "setup"
+                  ? "Complete setup"
+                  : nudge.action === "templates"
+                    ? "Set up templates"
+                    : "Open Settings"}
               </button>
               <button
                 type="button"
@@ -481,6 +518,14 @@ export default function HomePage({
               <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
               <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
               <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
+              {typeof kpi.progressPercent === "number" && (
+                <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                  <div
+                    className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600"
+                    style={{ width: `${Math.max(0, Math.min(100, kpi.progressPercent))}%` }}
+                  />
+                </div>
+              )}
               <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
                 {kpi.trend}
               </p>
@@ -612,11 +657,20 @@ export default function HomePage({
                   key={`${stop.route}-${stop.time}-${stop.destination}`}
                   className={responsiveStyles.dashboardScheduleItem}
                 >
-                  <div>
+                  <div className="min-w-0">
                     <p className={responsiveStyles.cardTitle}>
                       {stop.time} · {stop.patientName || "Client"}
                     </p>
-                    <p className={responsiveStyles.cardDescription}>{stop.destination}</p>
+                    <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                      <p className={`${responsiveStyles.cardDescription} m-0`}>
+                        {stop.destination}
+                      </p>
+                      {stop.templateName && (
+                        <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300">
+                          {stop.templateName}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span className={responsiveStyles.dashboardStatusPill}>
                     {toStopStatusLabel(stop.status)}

@@ -54,11 +54,11 @@ export default function AppRoutes({
   };
 
   const renderBootstrappingFallback = () => (
-    <main className="mt-3 grid gap-4 sm:gap-5">
-      <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
+    <main className={responsiveStyles.bootstrapFallbackPage}>
+      <section className={responsiveStyles.bootstrapFallbackCard}>
         <div role="status" aria-live="polite" className="grid gap-4">
           <div className="flex items-start gap-3">
-            <span className="mt-0.5 inline-flex h-5 w-5 animate-spin items-center justify-center text-blue-600 dark:text-blue-300">
+            <span className={responsiveStyles.bootstrapFallbackSpinner}>
               <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5" aria-hidden="true">
                 <circle
                   cx="12"
@@ -77,10 +77,10 @@ export default function AppRoutes({
               </svg>
             </span>
             <div className="min-w-0">
-              <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
+              <p className={responsiveStyles.bootstrapFallbackTitle}>
                 {resolveBootstrappingCopy().title}
               </p>
-              <p className="m-0 mt-1 text-sm text-slate-600 dark:text-slate-300">
+              <p className={responsiveStyles.bootstrapFallbackSubtitle}>
                 {resolveBootstrappingCopy().subtitle}
               </p>
             </div>

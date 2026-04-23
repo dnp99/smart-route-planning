@@ -1,59 +1,38 @@
 import { NextResponse } from "next/server";
 import { parseOptimizeRouteV2Response } from "../../../../../../shared/contracts";
-import { requireAuth } from "../../../../lib/auth/requireAuth";
 import { logAuditEvent } from "../../../../lib/audit/auditLogger";
 import {
   resolveRequestIpAddress,
   resolveRequestUserAgent,
 } from "../../../../lib/audit/requestAuditContext";
 import { recordOptimizationRun } from "../../../../lib/dashboard/dashboardRepository";
-import { HttpError, buildCorsHeaders, toErrorResponse } from "../../../../lib/http";
-import { enforceOptimizeRouteRateLimit, requireOptimizeRouteApiKey } from "../requestGuards";
+import { HttpError, toErrorResponse } from "../../../../lib/http";
 import { optimizeRouteV2 } from "./optimizeRouteService";
 import { parseAndValidateBody } from "./validation";
+import {
+  buildOptimizeRouteCorsHeaders,
+  prepareOptimizeRouteRequest,
+  toOptimizeRouteOptionsResponse,
+} from "../routeShared";
 
 export async function OPTIONS(request: Request) {
-  return new NextResponse(null, {
-    status: 204,
-    headers: buildCorsHeaders(request, {
-      methods: "POST, OPTIONS",
-      allowedHeaders: "Content-Type, Authorization, x-optimize-route-key",
-      originPolicy: "strict",
-    }),
-  });
+  return toOptimizeRouteOptionsResponse(request);
 }
 
 export async function POST(request: Request) {
-  const corsHeaders = buildCorsHeaders(request, {
-    methods: "POST, OPTIONS",
-    allowedHeaders: "Content-Type, Authorization, x-optimize-route-key",
-    originPolicy: "strict",
-  });
+  const corsHeaders = buildOptimizeRouteCorsHeaders(request);
 
   try {
-    const auth = await requireAuth(request);
-    requireOptimizeRouteApiKey(request);
-    enforceOptimizeRouteRateLimit(request);
-
-    const googleMapsApiKey = process.env.GOOGLE_MAPS_API_KEY?.trim();
-    if (!googleMapsApiKey) {
-      return NextResponse.json(
-        { error: "Server is missing GOOGLE_MAPS_API_KEY configuration." },
-        { status: 500, headers: corsHeaders },
-      );
+    const prepared = await prepareOptimizeRouteRequest({
+      request,
+      corsHeaders,
+      parseBody: parseAndValidateBody,
+    });
+    if (prepared instanceof NextResponse) {
+      return prepared;
     }
 
-    let body: unknown;
-    try {
-      body = await request.json();
-    } catch {
-      return NextResponse.json(
-        { error: "Request body must be valid JSON." },
-        { status: 400, headers: corsHeaders },
-      );
-    }
-
-    const parsedRequest = parseAndValidateBody(body);
+    const { auth, googleMapsApiKey, parsedRequest } = prepared;
     const result = await optimizeRouteV2(parsedRequest, googleMapsApiKey);
     const parsedResponse = parseOptimizeRouteV2Response(result);
     if (!parsedResponse) {

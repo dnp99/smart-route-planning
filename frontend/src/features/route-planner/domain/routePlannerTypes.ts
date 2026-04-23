@@ -1,5 +1,6 @@
 export type SelectedPatientDestination = {
   visitKey: string;
+  visitId?: string;
   sourceWindowId: string | null;
   patientId: string;
   patientName: string;

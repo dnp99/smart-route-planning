@@ -383,6 +383,7 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([])); // busiestDays
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([])); // patientRisks stats
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 7 }])); // activePatientCount
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 5 }])); // templatedActivePatientCount
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
 
       const result = await getDashboardSummaryForNurse({
@@ -395,6 +396,7 @@ describe("dashboardRepository", () => {
       expect(result.kpis.visitsScheduledToday).toBe(4);
       expect(result.kpis.onTimeRatePercent7d).toBe(100);
       expect(result.kpis.activePatientCount).toBe(7);
+      expect(result.kpis.templatedActivePatientCount).toBe(5);
       expect(result.kpis.driveHoursLast7Days).toBe(4.0);
       expect(result.snapshot.totalDistanceKm).toBe(25.0);
       expect(result.trend).toHaveLength(7);
@@ -690,6 +692,7 @@ describe("dashboardRepository", () => {
         makeSelectWhereChain([{ id: "patient-1", firstName: "Alice", lastName: "Smith" }]),
       ); // patient names
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 3 }])); // activePatientCount
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 2 }])); // templatedActivePatientCount
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
 
       const result = await getDashboardSummaryForNurse({

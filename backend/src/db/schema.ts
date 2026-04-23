@@ -96,6 +96,163 @@ export const patientVisitWindows = pgTable(
   ],
 );
 
+export const recurringVisitTemplates = pgTable(
+  "recurring_visit_templates",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    nurseId: uuid("nurse_id")
+      .notNull()
+      .references(() => nurses.id, { onDelete: "cascade" }),
+    patientId: uuid("patient_id")
+      .notNull()
+      .references(() => patients.id, { onDelete: "cascade" }),
+    name: text("name"),
+    timezone: text("timezone").notNull(),
+    recurrenceRule: text("recurrence_rule").notNull(),
+    startDate: date("start_date").notNull(),
+    endDate: date("end_date"),
+    serviceDurationMinutes: integer("service_duration_minutes").notNull().default(30),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("recurring_visit_templates_nurse_id_idx").on(table.nurseId),
+    index("recurring_visit_templates_patient_id_idx").on(table.patientId),
+    index("recurring_visit_templates_nurse_active_idx").on(table.nurseId, table.isActive),
+    check(
+      "recurring_visit_templates_duration_chk",
+      sql`${table.serviceDurationMinutes} between 1 and 180`,
+    ),
+    check(
+      "recurring_visit_templates_date_range_chk",
+      sql`${table.endDate} is null or ${table.endDate} >= ${table.startDate}`,
+    ),
+  ],
+);
+
+export const recurringVisitTemplateWindows = pgTable(
+  "recurring_visit_template_windows",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    templateId: uuid("template_id")
+      .notNull()
+      .references(() => recurringVisitTemplates.id, { onDelete: "cascade" }),
+    dayOfWeek: integer("day_of_week").notNull(),
+    startTime: time("start_time").notNull(),
+    endTime: time("end_time").notNull(),
+    visitTimeType: text("visit_time_type").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("recurring_visit_template_windows_template_id_idx").on(table.templateId),
+    index("recurring_visit_template_windows_template_day_idx").on(
+      table.templateId,
+      table.dayOfWeek,
+    ),
+    check(
+      "recurring_visit_template_windows_day_of_week_chk",
+      sql`${table.dayOfWeek} between 0 and 6`,
+    ),
+    check(
+      "recurring_visit_template_windows_visit_time_type_chk",
+      sql`${table.visitTimeType} in ('fixed', 'flexible')`,
+    ),
+    check(
+      "recurring_visit_template_windows_window_order_chk",
+      sql`${table.endTime} > ${table.startTime}`,
+    ),
+  ],
+);
+
+export const visitInstances = pgTable(
+  "visit_instances",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    nurseId: uuid("nurse_id")
+      .notNull()
+      .references(() => nurses.id, { onDelete: "cascade" }),
+    patientId: uuid("patient_id")
+      .notNull()
+      .references(() => patients.id, { onDelete: "cascade" }),
+    templateId: uuid("template_id").references(() => recurringVisitTemplates.id, {
+      onDelete: "set null",
+    }),
+    occurrenceKey: text("occurrence_key").notNull().unique(),
+    planningDate: date("planning_date").notNull(),
+    address: text("address").notNull(),
+    googlePlaceId: text("google_place_id"),
+    windowStart: time("window_start").notNull(),
+    windowEnd: time("window_end").notNull(),
+    visitTimeType: text("visit_time_type").notNull(),
+    serviceDurationMinutes: integer("service_duration_minutes").notNull(),
+    status: text("status").notNull().default("scheduled"),
+    isManualOverride: boolean("is_manual_override").notNull().default(false),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("visit_instances_nurse_planning_date_idx").on(table.nurseId, table.planningDate),
+    index("visit_instances_patient_planning_date_idx").on(table.patientId, table.planningDate),
+    index("visit_instances_template_planning_date_idx").on(table.templateId, table.planningDate),
+    check(
+      "visit_instances_visit_time_type_chk",
+      sql`${table.visitTimeType} in ('fixed', 'flexible')`,
+    ),
+    check("visit_instances_window_order_chk", sql`${table.windowEnd} > ${table.windowStart}`),
+    check("visit_instances_duration_chk", sql`${table.serviceDurationMinutes} between 1 and 180`),
+    check("visit_instances_status_chk", sql`${table.status} in ('scheduled', 'cancelled')`),
+  ],
+);
+
+export const visitInstanceExceptions = pgTable(
+  "visit_instance_exceptions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    nurseId: uuid("nurse_id")
+      .notNull()
+      .references(() => nurses.id, { onDelete: "cascade" }),
+    visitInstanceId: uuid("visit_instance_id")
+      .notNull()
+      .references(() => visitInstances.id, { onDelete: "cascade" }),
+    templateId: uuid("template_id").references(() => recurringVisitTemplates.id, {
+      onDelete: "set null",
+    }),
+    exceptionDate: date("exception_date").notNull(),
+    action: text("action").notNull(),
+    rescheduledDate: date("rescheduled_date"),
+    overrideStartTime: time("override_start_time"),
+    overrideEndTime: time("override_end_time"),
+    overrideVisitTimeType: text("override_visit_time_type"),
+    overrideServiceDurationMinutes: integer("override_service_duration_minutes"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("visit_instance_exceptions_nurse_date_idx").on(table.nurseId, table.exceptionDate),
+    index("visit_instance_exceptions_instance_id_idx").on(table.visitInstanceId),
+    index("visit_instance_exceptions_template_date_idx").on(table.templateId, table.exceptionDate),
+    check(
+      "visit_instance_exceptions_action_chk",
+      sql`${table.action} in ('skip', 'reschedule', 'edit')`,
+    ),
+    check(
+      "visit_instance_exceptions_override_visit_time_type_chk",
+      sql`${table.overrideVisitTimeType} is null or ${table.overrideVisitTimeType} in ('fixed', 'flexible')`,
+    ),
+    check(
+      "visit_instance_exceptions_override_window_order_chk",
+      sql`${table.overrideEndTime} is null or ${table.overrideStartTime} is null or ${table.overrideEndTime} > ${table.overrideStartTime}`,
+    ),
+    check(
+      "visit_instance_exceptions_override_duration_chk",
+      sql`${table.overrideServiceDurationMinutes} is null or ${table.overrideServiceDurationMinutes} between 1 and 180`,
+    ),
+  ],
+);
+
 export const routeOptimizationRuns = pgTable(
   "route_optimization_runs",
   {
@@ -178,6 +335,12 @@ export const routeOptimizationTasks = pgTable(
       .notNull()
       .references(() => nurses.id, { onDelete: "cascade" }),
     visitId: text("visit_id").notNull(),
+    visitInstanceId: uuid("visit_instance_id").references(() => visitInstances.id, {
+      onDelete: "set null",
+    }),
+    templateId: uuid("template_id").references(() => recurringVisitTemplates.id, {
+      onDelete: "set null",
+    }),
     patientId: text("patient_id").notNull(),
     patientName: text("patient_name"),
     address: text("address"),
@@ -197,6 +360,8 @@ export const routeOptimizationTasks = pgTable(
   (table) => [
     index("route_optimization_tasks_run_id_idx").on(table.runId),
     index("route_optimization_tasks_nurse_id_idx").on(table.nurseId),
+    index("route_optimization_tasks_visit_instance_id_idx").on(table.visitInstanceId),
+    index("route_optimization_tasks_template_id_idx").on(table.templateId),
     index("route_optimization_tasks_nurse_service_start_idx").on(
       table.nurseId,
       table.serviceStartTime,
@@ -274,6 +439,14 @@ export type Patient = typeof patients.$inferSelect;
 export type NewPatient = typeof patients.$inferInsert;
 export type PatientVisitWindow = typeof patientVisitWindows.$inferSelect;
 export type NewPatientVisitWindow = typeof patientVisitWindows.$inferInsert;
+export type RecurringVisitTemplate = typeof recurringVisitTemplates.$inferSelect;
+export type NewRecurringVisitTemplate = typeof recurringVisitTemplates.$inferInsert;
+export type RecurringVisitTemplateWindow = typeof recurringVisitTemplateWindows.$inferSelect;
+export type NewRecurringVisitTemplateWindow = typeof recurringVisitTemplateWindows.$inferInsert;
+export type VisitInstance = typeof visitInstances.$inferSelect;
+export type NewVisitInstance = typeof visitInstances.$inferInsert;
+export type VisitInstanceException = typeof visitInstanceExceptions.$inferSelect;
+export type NewVisitInstanceException = typeof visitInstanceExceptions.$inferInsert;
 export type RouteOptimizationRun = typeof routeOptimizationRuns.$inferSelect;
 export type NewRouteOptimizationRun = typeof routeOptimizationRuns.$inferInsert;
 export type RouteOptimizationTask = typeof routeOptimizationTasks.$inferSelect;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import type { Patient } from "../../../../../shared/contracts";
+import type { Patient, VisitInstance } from "../../../../../shared/contracts";
 import {
   persistRoutePlannerDraft,
   type MobilePlannerStep,
@@ -16,8 +16,9 @@ type UseRoutePlannerDraftStateParams = {
   destinationSearchPatients: Patient[];
   isDestinationSearchLoading: boolean;
   locallyCreatedPatients: Patient[];
+  visitInstancesByPatientId: Map<string, VisitInstance[]>;
   selectedDestinationIdSet: Set<string>;
-  addDestinationPatient: (patient: Patient) => void;
+  addDestinationPatient: (patient: Patient, visitInstances?: VisitInstance[]) => void;
   setDestinationVisitIncluded: (visitKey: string, isIncluded: boolean) => void;
   setDestinationPersistPlanningWindow: (visitKey: string, persistPlanningWindow: boolean) => void;
 };
@@ -29,6 +30,7 @@ export function useRoutePlannerDraftState({
   destinationSearchPatients,
   isDestinationSearchLoading,
   locallyCreatedPatients,
+  visitInstancesByPatientId,
   selectedDestinationIdSet,
   addDestinationPatient,
   setDestinationVisitIncluded,
@@ -137,7 +139,7 @@ export function useRoutePlannerDraftState({
       if (!patient) {
         return;
       }
-      addDestinationPatient(patient);
+      addDestinationPatient(patient, visitInstancesByPatientId.get(patientId));
     });
 
     draftStates.forEach((state) => {
@@ -153,6 +155,7 @@ export function useRoutePlannerDraftState({
     initialDraft?.selectedDestinationStates,
     isDestinationSearchLoading,
     locallyCreatedPatients,
+    visitInstancesByPatientId,
     selectedDestinationIdSet,
     setDestinationPersistPlanningWindow,
     setDestinationVisitIncluded,

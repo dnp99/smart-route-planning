@@ -9,17 +9,34 @@ vi.mock("../../features/patients/api/patientService", () => ({
   deletePatient: vi.fn(),
 }));
 
+vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({
+  listRecurringVisitTemplates: vi.fn(),
+  createRecurringVisitTemplate: vi.fn(),
+  updateRecurringVisitTemplate: vi.fn(),
+  deleteRecurringVisitTemplate: vi.fn(),
+}));
+
 import {
   createPatient,
   deletePatient,
   listPatients,
   updatePatient,
 } from "../../features/patients/api/patientService";
+import {
+  createRecurringVisitTemplate,
+  deleteRecurringVisitTemplate,
+  listRecurringVisitTemplates,
+  updateRecurringVisitTemplate,
+} from "../../features/patients/api/recurringVisitTemplateService";
 
 const mockedListPatients = vi.mocked(listPatients);
 const mockedCreatePatient = vi.mocked(createPatient);
 const mockedDeletePatient = vi.mocked(deletePatient);
 const mockedUpdatePatient = vi.mocked(updatePatient);
+const mockedListRecurringVisitTemplates = vi.mocked(listRecurringVisitTemplates);
+const mockedCreateRecurringVisitTemplate = vi.mocked(createRecurringVisitTemplate);
+const mockedUpdateRecurringVisitTemplate = vi.mocked(updateRecurringVisitTemplate);
+const mockedDeleteRecurringVisitTemplate = vi.mocked(deleteRecurringVisitTemplate);
 
 const seedPatient = {
   id: "patient-1",
@@ -67,6 +84,30 @@ const secondPatient = {
   updatedAt: "2026-03-12T12:00:00.000Z",
 };
 
+const seedRecurringTemplate = {
+  id: "template-1",
+  nurseId: "nurse-1",
+  patientId: "patient-1",
+  name: "Weekdays",
+  timezone: "America/Toronto",
+  recurrenceRule: "FREQ=WEEKLY;INTERVAL=1",
+  startDate: "2026-03-20",
+  endDate: null,
+  serviceDurationMinutes: 30,
+  isActive: true,
+  windows: [
+    {
+      id: "template-window-1",
+      dayOfWeek: 1,
+      startTime: "09:00",
+      endTime: "10:00",
+      visitTimeType: "fixed" as const,
+    },
+  ],
+  createdAt: "2026-03-12T12:00:00.000Z",
+  updatedAt: "2026-03-12T12:00:00.000Z",
+};
+
 describe("PatientsPage", () => {
   const fetchMock = vi.fn();
 
@@ -75,6 +116,11 @@ describe("PatientsPage", () => {
     mockedCreatePatient.mockReset();
     mockedDeletePatient.mockReset();
     mockedUpdatePatient.mockReset();
+    mockedListRecurringVisitTemplates.mockReset();
+    mockedCreateRecurringVisitTemplate.mockReset();
+    mockedUpdateRecurringVisitTemplate.mockReset();
+    mockedDeleteRecurringVisitTemplate.mockReset();
+    mockedListRecurringVisitTemplates.mockResolvedValue([]);
     vi.stubGlobal("fetch", fetchMock);
     fetchMock.mockResolvedValue({
       ok: true,
@@ -135,6 +181,46 @@ describe("PatientsPage", () => {
 
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).toBeNull();
+    });
+  });
+
+  it("creates recurring template after creating client when recurrence is authored", async () => {
+    mockedListPatients.mockResolvedValue([]);
+    mockedCreatePatient.mockResolvedValue(seedPatient);
+    mockedCreateRecurringVisitTemplate.mockResolvedValue(seedRecurringTemplate);
+
+    render(<PatientsPage />);
+
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
+    fireEvent.change(screen.getByLabelText("First name"), {
+      target: { value: "Jane" },
+    });
+    fireEvent.change(screen.getByLabelText("Last name"), {
+      target: { value: "Doe" },
+    });
+    fireEvent.change(screen.getByPlaceholderText("Search and select an address"), {
+      target: { value: "123 Main St" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Add recurring template" }));
+    fireEvent.change(screen.getByLabelText("Start date"), {
+      target: { value: "2026-03-20" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Save new client/i }));
+
+    await waitFor(() => {
+      expect(mockedCreateRecurringVisitTemplate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientId: "patient-1",
+          startDate: "2026-03-20",
+          timezone: expect.any(String),
+        }),
+      );
     });
   });
 

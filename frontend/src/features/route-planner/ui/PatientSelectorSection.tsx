@@ -13,12 +13,21 @@ type PatientSelectorSectionProps = {
   isExpanded: boolean;
   onSetExpanded: (v: boolean) => void;
   destinationCount: number;
+  autoSeedHint: string;
   destinationSearchResults: Patient[];
   destinationSearchQuery: string;
   onSearchQueryChange: (query: string) => void;
   isSearchLoading: boolean;
   searchError: string;
   createPatientError: string;
+  templateOptions: Array<{
+    id: string;
+    label: string;
+    instanceCount: number;
+    matchesPlanningDay: boolean;
+  }>;
+  selectedTemplateId: string;
+  onTemplateSelectionChange: (templateId: string) => void;
   selectedDestinations: SelectedPatientDestination[];
   expandedDestinationVisitKeys: Record<string, boolean>;
   onAddPatient: (patient: Patient) => void;
@@ -49,12 +58,16 @@ export const PatientSelectorSection = ({
   isExpanded,
   onSetExpanded,
   destinationCount,
+  autoSeedHint,
   destinationSearchResults,
   destinationSearchQuery,
   onSearchQueryChange,
   isSearchLoading,
   searchError,
   createPatientError,
+  templateOptions,
+  selectedTemplateId,
+  onTemplateSelectionChange,
   selectedDestinations,
   expandedDestinationVisitKeys,
   onAddPatient,
@@ -134,10 +147,17 @@ export const PatientSelectorSection = ({
   return (
     <section className={responsiveStyles.panel}>
       <div className="flex items-center justify-between gap-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <h2 className={responsiveStyles.cardTitle}>Clients</h2>
-          {destinationCount > 0 && (
-            <span className={responsiveStyles.countPill}>{destinationCount}</span>
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-center gap-1.5">
+            <h2 className={responsiveStyles.cardTitle}>Clients</h2>
+            {destinationCount > 0 && (
+              <span className={responsiveStyles.countPill}>{destinationCount}</span>
+            )}
+          </div>
+          {autoSeedHint.length > 0 && (
+            <p className="m-0 mt-0.5 truncate text-xs text-blue-700 dark:text-blue-300">
+              {autoSeedHint}
+            </p>
           )}
         </div>
         <div className="flex shrink-0 items-center">
@@ -211,6 +231,30 @@ export const PatientSelectorSection = ({
                 Search clients ({destinationSearchResults.length})
               </p>
               <div className={responsiveStyles.patientSearchContainer}>
+                <div className="grid gap-1">
+                  <label
+                    htmlFor="route-template-filter"
+                    className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
+                  >
+                    Template
+                  </label>
+                  <select
+                    id="route-template-filter"
+                    aria-label="Template filter"
+                    value={selectedTemplateId}
+                    onChange={(event) => onTemplateSelectionChange(event.target.value)}
+                    className={responsiveStyles.formInput}
+                  >
+                    <option value="auto">Auto (planning day)</option>
+                    <option value="all">All templates</option>
+                    {templateOptions.map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.matchesPlanningDay ? "Today: " : ""}
+                        {option.label} ({option.instanceCount})
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 {createPatientError && (
                   <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
                 )}
@@ -236,14 +280,14 @@ export const PatientSelectorSection = ({
                       aria-label="Destination client search"
                       value={destinationSearchQuery}
                       onChange={(e) => onSearchQueryChange(e.target.value)}
-                      placeholder="Search saved clients by first or last name"
+                      placeholder="Search clients by first or last name"
                       className={`${responsiveStyles.searchInputCompact} pl-9 sm:pl-10`}
                     />
                   </div>
                   <button
                     type="button"
                     onClick={onOpenCreatePatient}
-                    aria-label="Add New Client"
+                    aria-label="Add Client"
                     className={`${responsiveStyles.secondaryIconButton} sm:h-auto sm:w-auto sm:px-3 sm:py-1.5`}
                   >
                     <svg
@@ -260,7 +304,7 @@ export const PatientSelectorSection = ({
                       <path d="M12 5v14" />
                       <path d="M5 12h14" />
                     </svg>
-                    <span className="hidden sm:inline">Add New Client</span>
+                    <span className="hidden sm:inline">Add Client</span>
                   </button>
                 </div>
                 {isSearchLoading && (
