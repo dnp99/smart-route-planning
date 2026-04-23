@@ -446,6 +446,11 @@ export function useRoutePlannerController({
     setDestinationVisitIncluded(visitKey, isIncluded);
   };
 
+  const handleClearSelectedDestinations = () => {
+    setManualTemplateSelectionLock(true);
+    replaceSelectedDestinations([]);
+  };
+
   const {
     plannerOptimizationObjective,
     setPlannerOptimizationObjective,
@@ -569,6 +574,7 @@ export function useRoutePlannerController({
     onAddPatient: handleAddDestinationPatient,
     onOpenCreatePatient: openCreatePatientModal,
     onToggleDestinationDetails: toggleDestinationDetails,
+    onClearSelectedDestinations: handleClearSelectedDestinations,
     onRemoveDestinationVisit: handleRemoveDestinationVisit,
     onSetDestinationVisitIncluded: handleSetDestinationVisitIncluded,
     onUpdateDestinationPlanningWindow: updateDestinationPlanningWindow,

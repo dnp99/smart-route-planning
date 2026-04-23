@@ -9,6 +9,7 @@ type SelectedDestinationsSectionProps = {
   isLoading: boolean;
   autoSeedHint: string;
   selectedDestinations: SelectedPatientDestination[];
+  onClearSelectedDestinations: () => void;
   expandedDestinationVisitKeys: Record<string, boolean>;
   onToggleDestinationDetails: (visitKey: string) => void;
   onRemoveDestinationVisit: (visitKey: string) => void;
@@ -26,6 +27,7 @@ export const SelectedDestinationsSection = ({
   isLoading,
   autoSeedHint,
   selectedDestinations,
+  onClearSelectedDestinations,
   expandedDestinationVisitKeys,
   onToggleDestinationDetails,
   onRemoveDestinationVisit,
@@ -91,15 +93,43 @@ export const SelectedDestinationsSection = ({
 
   return (
     <div className="grid gap-2">
-      <div className="flex min-w-0 items-center gap-2">
-        <p className={`${responsiveStyles.patientColumnLabel} shrink-0`}>
-          Selected ({selectedByPatient.length})
-        </p>
-        {autoSeedHint.length > 0 && (
-          <p className="m-0 min-w-0 truncate text-xs text-blue-700 dark:text-blue-300">
-            {autoSeedHint}
+      <div className="flex items-center gap-2">
+        <div className="flex min-w-0 flex-1 items-center gap-2">
+          <p className={`${responsiveStyles.patientColumnLabel} shrink-0`}>
+            Selected ({selectedByPatient.length})
           </p>
-        )}
+          {autoSeedHint.length > 0 && (
+            <p className="m-0 min-w-0 truncate text-xs text-blue-700 dark:text-blue-300">
+              {autoSeedHint}
+            </p>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onClearSelectedDestinations}
+          disabled={selectedDestinations.length === 0 || isLoading}
+          aria-label="Clear selected clients"
+          title="Clear selected clients"
+          className={responsiveStyles.selectedListClearButton}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="h-4 w-4"
+          >
+            <path d="M3 6h18" />
+            <path d="M8 6V4h8v2" />
+            <path d="M19 6l-1 14H6L5 6" />
+            <path d="M10 11v6" />
+            <path d="M14 11v6" />
+          </svg>
+        </button>
       </div>
       <div
         className={responsiveStyles.destinationList}

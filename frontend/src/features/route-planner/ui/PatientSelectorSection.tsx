@@ -26,6 +26,7 @@ type PatientSelectorSectionProps = {
   onAddPatient: (patient: Patient) => void;
   onOpenCreatePatient: () => void;
   onToggleDestinationDetails: (visitKey: string) => void;
+  onClearSelectedDestinations: () => void;
   onRemoveDestinationVisit: (visitKey: string) => void;
   onSetDestinationVisitIncluded: (visitKey: string, isIncluded: boolean) => void;
   onUpdateDestinationPlanningWindow: (
@@ -64,6 +65,7 @@ export const PatientSelectorSection = ({
   onAddPatient,
   onOpenCreatePatient,
   onToggleDestinationDetails,
+  onClearSelectedDestinations,
   onRemoveDestinationVisit,
   onSetDestinationVisitIncluded,
   onUpdateDestinationPlanningWindow,
@@ -314,6 +316,7 @@ export const PatientSelectorSection = ({
               selectedDestinations={selectedDestinations}
               expandedDestinationVisitKeys={expandedDestinationVisitKeys}
               onToggleDestinationDetails={onToggleDestinationDetails}
+              onClearSelectedDestinations={onClearSelectedDestinations}
               onRemoveDestinationVisit={onRemoveDestinationVisit}
               onSetDestinationVisitIncluded={onSetDestinationVisitIncluded}
               onUpdateDestinationPlanningWindow={onUpdateDestinationPlanningWindow}
