@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { responsiveStyles } from "../../../components/responsiveStyles";
+import { toDisplayTime } from "../domain/routePlannerHelpers";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 
 const TrashIcon = ({ className }: { className?: string }) => (
@@ -78,7 +79,7 @@ const PatientInfoModal = ({
             <div className="mt-1 flex items-center gap-2">
               <p className={responsiveStyles.infoModalSectionValueInline}>
                 {hasWindow
-                  ? `${destination.windowStart || "–"} – ${destination.windowEnd || "–"}`
+                  ? `${destination.windowStart ? toDisplayTime(destination.windowStart) : "–"} – ${destination.windowEnd ? toDisplayTime(destination.windowEnd) : "–"}`
                   : "No window set"}
               </p>
               <span
@@ -104,6 +105,7 @@ type DestinationRowProps = {
   showIndex?: boolean;
   compact?: boolean;
   displayName?: string;
+  displaySubtitle?: string;
   inputLabelPrefix?: string;
   removeAriaLabel?: string;
   isExpanded: boolean;
@@ -120,6 +122,7 @@ export const DestinationRow = ({
   showIndex = true,
   compact = false,
   displayName,
+  displaySubtitle,
   inputLabelPrefix,
   removeAriaLabel,
   isExpanded,
@@ -150,6 +153,11 @@ export const DestinationRow = ({
             title={destination.patientName}
           >
             {visibleName}
+            {displaySubtitle && (
+              <span className="ml-1.5 font-normal text-slate-500 dark:text-slate-400">
+                · {displaySubtitle}
+              </span>
+            )}
           </button>
         </div>
         <div className="flex shrink-0 items-center gap-1">

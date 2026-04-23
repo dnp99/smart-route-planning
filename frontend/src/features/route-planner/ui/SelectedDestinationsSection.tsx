@@ -1,10 +1,12 @@
 import { useMemo, useState } from "react";
 import { responsiveStyles } from "../../../components/responsiveStyles";
+import { toDisplayTime } from "../domain/routePlannerHelpers";
 import { DestinationRow } from "./DestinationRow";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 
 type SelectedDestinationsSectionProps = {
   isMobileViewport: boolean;
+  isLoading: boolean;
   selectedDestinations: SelectedPatientDestination[];
   expandedDestinationVisitKeys: Record<string, boolean>;
   onToggleDestinationDetails: (visitKey: string) => void;
@@ -20,6 +22,7 @@ type SelectedDestinationsSectionProps = {
 
 export const SelectedDestinationsSection = ({
   isMobileViewport,
+  isLoading,
   selectedDestinations,
   expandedDestinationVisitKeys,
   onToggleDestinationDetails,
@@ -67,13 +70,13 @@ export const SelectedDestinationsSection = ({
     if (!hasWindow) {
       return `Window ${index + 1}`;
     }
-    return `Window ${index + 1}: ${destination.windowStart || "—"} - ${destination.windowEnd || "—"}`;
+    return `Window ${index + 1}: ${destination.windowStart ? toDisplayTime(destination.windowStart) : "—"} - ${destination.windowEnd ? toDisplayTime(destination.windowEnd) : "—"}`;
   };
-  const formatSingleRowLabel = (destination: SelectedPatientDestination) => {
+  const formatSingleRowSubtitle = (destination: SelectedPatientDestination) => {
     if (!destination.windowStart && !destination.windowEnd) {
-      return destination.patientName;
+      return undefined;
     }
-    return `${destination.patientName} · ${destination.windowStart || "—"} - ${destination.windowEnd || "—"}`;
+    return `${destination.windowStart ? toDisplayTime(destination.windowStart) : "—"} - ${destination.windowEnd ? toDisplayTime(destination.windowEnd) : "—"}`;
   };
   const isPatientGroupCollapsed = (patientId: string, defaultCollapsed: boolean) =>
     collapsedPatientGroups[patientId] ?? defaultCollapsed;
@@ -91,7 +94,21 @@ export const SelectedDestinationsSection = ({
         className={responsiveStyles.destinationList}
         style={isMobileViewport ? { maxHeight: mobileSelectedListMaxHeight } : undefined}
       >
-        {selectedDestinations.length === 0 ? (
+        {isLoading ? (
+          <ul className="m-0 space-y-2 pr-2" aria-label="Loading clients">
+            {[0, 1, 2].map((i) => (
+              <li
+                key={i}
+                className="flex min-h-11 items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-1.5 dark:border-slate-700 dark:bg-slate-950"
+              >
+                <div className="flex flex-1 flex-col gap-1.5">
+                  <div className={`${responsiveStyles.routeSkeletonPulse} h-3.5 w-32`} />
+                  <div className={`${responsiveStyles.routeSkeletonPulse} h-3 w-48`} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : selectedDestinations.length === 0 ? (
           <p className={responsiveStyles.panelEmptyText}>No clients selected yet.</p>
         ) : (
           <ol className="m-0 space-y-2 pr-2">
@@ -106,7 +123,8 @@ export const SelectedDestinationsSection = ({
                     destination={group.destinations[0]}
                     index={groupIndex}
                     compact
-                    displayName={formatSingleRowLabel(group.destinations[0])}
+                    displayName={group.patientName}
+                    displaySubtitle={formatSingleRowSubtitle(group.destinations[0])}
                     inputLabelPrefix={group.patientName}
                     isExpanded={
                       expandedDestinationVisitKeys[group.destinations[0].visitKey] ?? false

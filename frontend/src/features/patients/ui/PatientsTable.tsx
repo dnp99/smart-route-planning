@@ -759,7 +759,7 @@ export const PatientsTable = ({
                       </p>
                     </td>
                     <td className="px-4 py-5 text-right">
-                      <div className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+                      <div className="flex items-center justify-end gap-0.5">
                         <button
                           type="button"
                           onClick={() => onEdit(patient)}

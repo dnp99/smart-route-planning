@@ -18,6 +18,7 @@ type PatientSelectorSectionProps = {
   destinationSearchQuery: string;
   onSearchQueryChange: (query: string) => void;
   isSearchLoading: boolean;
+  isVisitInstancesLoading: boolean;
   searchError: string;
   createPatientError: string;
   templateOptions: Array<{
@@ -63,6 +64,7 @@ export const PatientSelectorSection = ({
   destinationSearchQuery,
   onSearchQueryChange,
   isSearchLoading,
+  isVisitInstancesLoading,
   searchError,
   createPatientError,
   templateOptions,
@@ -347,6 +349,7 @@ export const PatientSelectorSection = ({
 
             <SelectedDestinationsSection
               isMobileViewport={isMobileViewport}
+              isLoading={isVisitInstancesLoading}
               selectedDestinations={selectedDestinations}
               expandedDestinationVisitKeys={expandedDestinationVisitKeys}
               onToggleDestinationDetails={onToggleDestinationDetails}

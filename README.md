@@ -9,7 +9,7 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 - Generates concrete dated visit instances from recurring templates using the client's saved visit windows and duration.
 - Prevents duplicate client visit windows (same start/end pair) at API and DB layers.
 - Optimizes daily visits with time windows, travel distance/time, and visit duration; planning date defaults to tomorrow and is configurable per session.
-- Auto-seeds the Route Planner with scheduled visit instances for the selected planning date, with template-aware selection and manual override support.
+- Auto-seeds the Route Planner with all scheduled visit instances across every recurring template that matches the planning date's day of week, with manual override support.
 - Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
 - Keeps optimized route results in memory only for the current tab lifecycle.

@@ -48,7 +48,7 @@ describe("DestinationRow", () => {
     render(<DestinationRow destination={buildDestination()} {...defaultProps} />);
     fireEvent.click(screen.getByText("Alex Johnson"));
     expect(screen.getByText("10 First Avenue, Toronto, ON")).toBeTruthy();
-    expect(screen.getByText("09:00 – 11:00")).toBeTruthy();
+    expect(screen.getByText("9:00 AM – 11:00 AM")).toBeTruthy();
   });
 
   it("shows the fixed pill in the modal", () => {
