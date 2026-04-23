@@ -96,7 +96,7 @@ export const SelectedDestinationsSection = ({
           Selected ({selectedByPatient.length})
         </p>
         {autoSeedHint.length > 0 && (
-          <p className="m-0 min-w-0 truncate text-xs text-blue-700 dark:text-blue-300">
+          <p className="m-0 min-w-0 truncate text-xs text-blue-700 dark:text-blue-300 ml-auto">
             {autoSeedHint}
           </p>
         )}
