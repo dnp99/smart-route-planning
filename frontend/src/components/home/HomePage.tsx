@@ -191,6 +191,22 @@ export default function HomePage({
           href: "/route-planner",
         },
         {
+          label: "Total distance",
+          value: "—",
+          delta: "Today",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
+        },
+        {
+          label: "On-time rate",
+          value: "—",
+          delta: "Last 7 days",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
+        },
+        {
           label: "Active clients",
           value: "—",
           delta: "All time",
@@ -206,6 +222,14 @@ export default function HomePage({
           trend: "No baseline yet",
           href: "/clients?templateFilter=without",
           progressPercent: 0,
+        },
+        {
+          label: "Deleted clients",
+          value: "—",
+          delta: "Last 30 days",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/clients",
         },
       ];
     }
@@ -229,6 +253,29 @@ export default function HomePage({
         tone: "text-blue-600",
         trend:
           dashboardSummary.kpis.routesToday > 0 ? "Live routing activity" : "No routes run yet",
+        href: "/route-planner",
+      },
+      {
+        label: "On-time rate",
+        value:
+          dashboardSummary.kpis.onTimeRatePercent7d === null
+            ? "—"
+            : `${dashboardSummary.kpis.onTimeRatePercent7d}%`,
+        delta: "Last 7 days",
+        tone:
+          dashboardSummary.kpis.onTimeRatePercent7d === null
+            ? "text-slate-500"
+            : dashboardSummary.kpis.onTimeRatePercent7d >= 90
+              ? "text-emerald-600"
+              : dashboardSummary.kpis.onTimeRatePercent7d >= 75
+                ? "text-amber-600"
+                : "text-rose-600",
+        trend:
+          dashboardSummary.kpis.onTimeRatePercent7d === null
+            ? "No route history yet"
+            : dashboardSummary.kpis.onTimeRatePercent7d >= 90
+              ? "Consistent on-time performance"
+              : "Timing risk needs attention",
         href: "/route-planner",
       },
       {
@@ -264,6 +311,29 @@ export default function HomePage({
             ? "Field time recorded"
             : "No drive time yet",
         href: "/route-planner",
+      },
+      {
+        label: "Total distance",
+        value: `${dashboardSummary.snapshot.totalDistanceKm.toFixed(1)} km`,
+        delta: "Today",
+        tone: dashboardSummary.snapshot.totalDistanceKm > 0 ? "text-blue-600" : "text-slate-500",
+        trend:
+          dashboardSummary.snapshot.totalDistanceKm > 0
+            ? "Distance covered across today’s routes"
+            : "No distance recorded yet",
+        href: "/route-planner",
+      },
+      {
+        label: "Deleted clients",
+        value: String(dashboardSummary.kpis.deletedClientsLast30Days),
+        delta: "Last 30 days",
+        tone:
+          dashboardSummary.kpis.deletedClientsLast30Days > 0 ? "text-amber-600" : "text-slate-500",
+        trend:
+          dashboardSummary.kpis.deletedClientsLast30Days > 0
+            ? "Roster churn detected"
+            : "No recent client removals",
+        href: "/clients",
       },
     ];
   }, [dashboardSummary]);
@@ -511,18 +581,26 @@ export default function HomePage({
       )}
 
       <section className={responsiveStyles.dashboardKpiGrid}>
-        {kpis.map((kpi) => {
+        {kpis.map((kpi, index) => {
           const to = isAuthenticated ? kpi.href : "/login";
           return (
-            <Link key={kpi.label} to={to} className={`${responsiveStyles.dashboardKpiCard} group`}>
+            <Link
+              key={kpi.label}
+              to={to}
+              className={`${responsiveStyles.dashboardKpiCard} group`}
+              style={{ animationDelay: `${80 + index * 45}ms` }}
+            >
               <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
               <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
               <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
               {typeof kpi.progressPercent === "number" && (
-                <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700">
+                <div className={responsiveStyles.dashboardKpiProgressTrack}>
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600"
-                    style={{ width: `${Math.max(0, Math.min(100, kpi.progressPercent))}%` }}
+                    className={responsiveStyles.dashboardKpiProgressFill}
+                    style={{
+                      width: `${Math.max(0, Math.min(100, kpi.progressPercent))}%`,
+                      animationDelay: `${140 + index * 45}ms`,
+                    }}
                   />
                 </div>
               )}
@@ -687,7 +765,7 @@ export default function HomePage({
             Weighted on-time percentage over the last 7 planning days.
           </p>
           <ul className="m-0 mt-4 list-none space-y-2 p-0">
-            {trendBars.map((day) => (
+            {trendBars.map((day, index) => (
               <li key={`${day.label}-${day.date}`} className={responsiveStyles.dashboardTrendRow}>
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {day.label}
@@ -695,7 +773,10 @@ export default function HomePage({
                 <div className={responsiveStyles.dashboardTrendTrack}>
                   <div
                     className={responsiveStyles.dashboardTrendFill}
-                    style={{ width: `${Math.max(0, Math.min(100, day.onTimeRatePercent))}%` }}
+                    style={{
+                      width: `${Math.max(0, Math.min(100, day.onTimeRatePercent))}%`,
+                      animationDelay: `${70 + index * 30}ms`,
+                    }}
                   />
                 </div>
                 <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
