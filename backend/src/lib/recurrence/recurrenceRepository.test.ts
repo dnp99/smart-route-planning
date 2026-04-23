@@ -267,10 +267,15 @@ describe("recurrenceRepository", () => {
     ).resolves.toBeNull();
 
     getDbMock.mockReturnValueOnce({
-      delete: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          returning: vi.fn().mockResolvedValue([]),
-        }),
+      transaction: vi.fn().mockImplementation(async (cb: (tx: unknown) => Promise<unknown>) => {
+        const tx = {
+          delete: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([]),
+            }),
+          }),
+        };
+        return cb(tx);
       }),
     });
     await expect(deleteRecurringVisitTemplateForNurse("nurse-1", "missing")).resolves.toBeNull();
