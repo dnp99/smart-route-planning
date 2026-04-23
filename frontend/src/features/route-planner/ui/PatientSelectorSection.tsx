@@ -1,5 +1,4 @@
 import { responsiveStyles } from "../../../components/responsiveStyles";
-import { SelectField } from "../../../components/SelectField";
 import { SelectedDestinationsSection } from "./SelectedDestinationsSection";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
 import type { Patient } from "../../../../../shared/contracts/patient";
@@ -22,14 +21,6 @@ type PatientSelectorSectionProps = {
   isVisitInstancesLoading: boolean;
   searchError: string;
   createPatientError: string;
-  templateOptions: Array<{
-    id: string;
-    label: string;
-    instanceCount: number;
-    matchesPlanningDay: boolean;
-  }>;
-  selectedTemplateId: string;
-  onTemplateSelectionChange: (templateId: string) => void;
   selectedDestinations: SelectedPatientDestination[];
   expandedDestinationVisitKeys: Record<string, boolean>;
   onAddPatient: (patient: Patient) => void;
@@ -68,9 +59,6 @@ export const PatientSelectorSection = ({
   isVisitInstancesLoading,
   searchError,
   createPatientError,
-  templateOptions,
-  selectedTemplateId,
-  onTemplateSelectionChange,
   selectedDestinations,
   expandedDestinationVisitKeys,
   onAddPatient,
@@ -234,29 +222,6 @@ export const PatientSelectorSection = ({
                 Search clients ({destinationSearchResults.length})
               </p>
               <div className={responsiveStyles.patientSearchContainer}>
-                {/* <div className="grid grid-flow-col grid-rows-1 gap-1">
-                  <label
-                    htmlFor="route-template-filter"
-                    className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400"
-                  >
-                    Template
-                  </label>
-
-                  <SelectField
-                    id="route-template-filter"
-                    aria-label="Template filter"
-                    value={selectedTemplateId}
-                    options={[
-                      { value: "auto", label: "Auto (planning day)" },
-                      { value: "all", label: "All templates" },
-                      ...templateOptions.map((option) => ({
-                        value: option.id,
-                        label: `${option.matchesPlanningDay ? "Today: " : ""}${option.label} (${option.instanceCount})`,
-                      })),
-                    ]}
-                    onChange={onTemplateSelectionChange}
-                  />
-                </div> */}
                 {createPatientError && (
                   <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
                 )}

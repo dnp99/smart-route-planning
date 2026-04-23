@@ -36,18 +36,6 @@ const makeTemplate = (overrides: Record<string, unknown> = {}) => ({
   ...overrides,
 });
 
-const makeWindow = (overrides: Record<string, unknown> = {}) => ({
-  id: "window-1",
-  templateId: "tpl-1",
-  dayOfWeek: 1,
-  startTime: "09:00:00",
-  endTime: "10:00:00",
-  visitTimeType: "fixed",
-  createdAt: new Date("2026-05-01T12:00:00.000Z"),
-  updatedAt: new Date("2026-05-01T12:00:00.000Z"),
-  ...overrides,
-});
-
 const makeDay = (overrides: Record<string, unknown> = {}) => ({
   id: "day-1",
   templateId: "tpl-1",
@@ -160,14 +148,13 @@ describe("recurrenceRepository", () => {
   it("lists templates with attached windows and optional client filtering", async () => {
     getDbMock
       .mockReturnValueOnce(selectOrderByDb([makeTemplate()]))
-      .mockReturnValueOnce(selectOrderByDb([makeDay()]))
-      .mockReturnValueOnce(selectOrderByDb([makeWindow()]));
+      .mockReturnValueOnce(selectOrderByDb([makeDay()]));
 
     await expect(listRecurringVisitTemplatesByNurse("nurse-1", "client-1")).resolves.toEqual([
       expect.objectContaining({
         id: "tpl-1",
         daysOfWeek: [1],
-        windows: [expect.objectContaining({ id: "window-1" })],
+        days: [expect.objectContaining({ id: "day-1" })],
       }),
     ]);
   });
@@ -191,11 +178,6 @@ describe("recurrenceRepository", () => {
           values: vi.fn().mockReturnValue({
             returning: vi.fn().mockResolvedValue([makeDay()]),
           }),
-        })
-        .mockReturnValueOnce({
-          values: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([makeWindow()]),
-          }),
         }),
     };
     const transaction = vi.fn(async (callback: (value: typeof tx) => unknown) => callback(tx));
@@ -212,18 +194,10 @@ describe("recurrenceRepository", () => {
         recurrenceRule: "FREQ=WEEKLY;BYDAY=MO",
         startDate: "2026-05-04",
         endDate: null,
-        serviceDurationMinutes: 30,
-        windows: [
-          {
-            dayOfWeek: 1,
-            startTime: "09:00",
-            endTime: "10:00",
-            visitTimeType: "fixed",
-          },
-        ],
+        daysOfWeek: [1],
       }),
     ).resolves.toEqual(
-      expect.objectContaining({ id: "tpl-1", daysOfWeek: [1], windows: [expect.any(Object)] }),
+      expect.objectContaining({ id: "tpl-1", daysOfWeek: [1], days: [expect.any(Object)] }),
     );
     expect(transaction).toHaveBeenCalledTimes(1);
   });
@@ -239,13 +213,12 @@ describe("recurrenceRepository", () => {
         recurrenceRule: "FREQ=WEEKLY;BYDAY=MO",
         startDate: "2026-05-04",
         endDate: null,
-        serviceDurationMinutes: 30,
-        windows: [expect.any(Object) as never],
+        daysOfWeek: [1],
       }),
     ).rejects.toThrow("Client not found.");
   });
 
-  it("updates template windows and validates effective date ranges", async () => {
+  it("updates template schedule and validates effective date ranges", async () => {
     const existing = makeTemplate({ endDate: "2026-05-31" });
     const updated = makeTemplate({ name: "Updated", endDate: "2026-06-30" });
     const tx = {
@@ -265,18 +238,12 @@ describe("recurrenceRepository", () => {
           values: vi.fn().mockReturnValue({
             returning: vi.fn().mockResolvedValue([makeDay({ id: "day-2", dayOfWeek: 2 })]),
           }),
-        })
-        .mockReturnValueOnce({
-          values: vi.fn().mockReturnValue({
-            returning: vi.fn().mockResolvedValue([makeWindow({ id: "window-2", dayOfWeek: 2 })]),
-          }),
         }),
     };
 
     getDbMock
       .mockReturnValueOnce(selectLimitDb([existing]))
       .mockReturnValueOnce(selectOrderByDb([makeDay()]))
-      .mockReturnValueOnce(selectOrderByDb([makeWindow()]))
       .mockReturnValueOnce({
         transaction: vi.fn(async (callback: (value: typeof tx) => unknown) => callback(tx)),
       });
@@ -285,23 +252,20 @@ describe("recurrenceRepository", () => {
       updateRecurringVisitTemplateForNurse("nurse-1", "tpl-1", {
         name: "Updated",
         endDate: "2026-06-30",
-        windows: [
-          { dayOfWeek: 2, startTime: "11:00", endTime: "12:00", visitTimeType: "flexible" },
-        ],
+        daysOfWeek: [2],
       }),
     ).resolves.toEqual(
       expect.objectContaining({
         name: "Updated",
         daysOfWeek: [2],
-        windows: [expect.objectContaining({ id: "window-2" })],
+        days: [expect.objectContaining({ id: "day-2" })],
       }),
     );
 
     getDbMock.mockReset();
     getDbMock
       .mockReturnValueOnce(selectLimitDb([existing]))
-      .mockReturnValueOnce(selectOrderByDb([makeDay()]))
-      .mockReturnValueOnce(selectOrderByDb([makeWindow()]));
+      .mockReturnValueOnce(selectOrderByDb([makeDay()]));
 
     await expect(
       updateRecurringVisitTemplateForNurse("nurse-1", "tpl-1", {
@@ -336,7 +300,6 @@ describe("recurrenceRepository", () => {
     getDbMock
       .mockReturnValueOnce(selectOrderByDb([makeTemplate()]))
       .mockReturnValueOnce(selectOrderByDb([makeDay()]))
-      .mockReturnValueOnce(selectOrderByDb([makeWindow()]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow()]))
       .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
       .mockReturnValueOnce(selectWhereDb([]))
@@ -372,7 +335,6 @@ describe("recurrenceRepository", () => {
     getDbMock
       .mockReturnValueOnce(selectOrderByDb([makeTemplate({ isActive: false })]))
       .mockReturnValueOnce(selectOrderByDb([makeDay()]))
-      .mockReturnValueOnce(selectOrderByDb([makeWindow()]))
       .mockReturnValueOnce(selectOrderByDb([makeInstance()]));
 
     await expect(
@@ -389,7 +351,6 @@ describe("recurrenceRepository", () => {
         selectOrderByDb([makeTemplate({ recurrenceRule: "FREQ=DAILY;INTERVAL=2" })]),
       )
       .mockReturnValueOnce(selectOrderByDb([makeDay({ dayOfWeek: 2 })]))
-      .mockReturnValueOnce(selectOrderByDb([makeWindow({ dayOfWeek: 2 })]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow({ googlePlaceId: null })]))
       .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
       .mockReturnValueOnce(selectOrderByDb([]));
@@ -406,7 +367,6 @@ describe("recurrenceRepository", () => {
     getDbMock
       .mockReturnValueOnce(selectOrderByDb([makeTemplate()]))
       .mockReturnValueOnce(selectOrderByDb([makeDay()]))
-      .mockReturnValueOnce(selectOrderByDb([makeWindow()]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow({ googlePlaceId: null })]))
       .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
       .mockReturnValueOnce(selectWhereDb([]))
@@ -424,7 +384,6 @@ describe("recurrenceRepository", () => {
     getDbMock
       .mockReturnValueOnce(selectOrderByDb([makeTemplate()]))
       .mockReturnValueOnce(selectOrderByDb([makeDay()]))
-      .mockReturnValueOnce(selectOrderByDb([makeWindow()]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow({ googlePlaceId: null })]))
       .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
       .mockReturnValueOnce(selectWhereDb([]))

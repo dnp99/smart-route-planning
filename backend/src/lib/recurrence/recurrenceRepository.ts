@@ -72,21 +72,6 @@ const isUniqueViolationError = (error: unknown) => {
 const uniqueSortedDays = (daysOfWeek: number[]) =>
   Array.from(new Set(daysOfWeek)).sort((left, right) => left - right);
 
-const resolveTemplateDaysFromPayload = (payload: {
-  daysOfWeek?: number[];
-  windows?: Array<{ dayOfWeek: number }>;
-}) => {
-  if (payload.daysOfWeek !== undefined) {
-    return uniqueSortedDays(payload.daysOfWeek);
-  }
-
-  if (payload.windows !== undefined) {
-    return uniqueSortedDays(payload.windows.map((w) => w.dayOfWeek));
-  }
-
-  return [];
-};
-
 const insertTemplateDays = async (
   transaction: ReturnType<typeof getDb>,
   templateId: string,
@@ -421,7 +406,7 @@ export const createRecurringVisitTemplateForNurse = async (
       })
       .returning();
 
-    const daysOfWeek = resolveTemplateDaysFromPayload(payload);
+    const daysOfWeek = uniqueSortedDays(payload.daysOfWeek);
     const days = await insertTemplateDays(transaction, template.id, daysOfWeek);
 
     return {
@@ -481,9 +466,9 @@ export const updateRecurringVisitTemplateForNurse = async (
       return null;
     }
 
-    const shouldReplaceDays = payload.daysOfWeek !== undefined || payload.windows !== undefined;
+    const shouldReplaceDays = payload.daysOfWeek !== undefined;
     const nextDaysOfWeek = shouldReplaceDays
-      ? resolveTemplateDaysFromPayload(payload)
+      ? uniqueSortedDays(payload.daysOfWeek ?? [])
       : existing.daysOfWeek;
     const nextDays = shouldReplaceDays
       ? await (async () => {

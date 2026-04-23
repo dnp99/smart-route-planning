@@ -41,7 +41,6 @@ export const toRecurringVisitTemplateDto = (
   startDate: template.startDate,
   endDate: template.endDate,
   isActive: template.isActive,
-  windows: [],
   daysOfWeek: template.daysOfWeek,
   createdAt: template.createdAt.toISOString(),
   updatedAt: template.updatedAt.toISOString(),

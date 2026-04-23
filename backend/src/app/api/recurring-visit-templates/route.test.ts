@@ -119,7 +119,7 @@ describe("/api/recurring-visit-templates route", () => {
 
   it("creates template and returns 201", async () => {
     validateCreateRecurringVisitTemplatePayloadMock.mockReturnValue({ patientId: "client-1" });
-    createRecurringVisitTemplateForNurseMock.mockResolvedValue({ id: "tpl-1", windows: [] });
+    createRecurringVisitTemplateForNurseMock.mockResolvedValue({ id: "tpl-1", daysOfWeek: [1] });
     toRecurringVisitTemplateDtoMock.mockReturnValue({ id: "tpl-1", name: "Mon AM" });
 
     const response = await POST(

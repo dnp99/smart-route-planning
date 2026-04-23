@@ -156,9 +156,6 @@ export function useRoutePlannerController({
     handleCreateRecurringTemplateChange,
     handleAddCreateRecurringTemplate,
     handleRemoveCreateRecurringTemplate,
-    handleAddCreateRecurringTemplateWindow,
-    handleRemoveCreateRecurringTemplateWindow,
-    handleCreateRecurringTemplateWindowChange,
     handleCreatePatientAddressChange,
     handleCreatePatientAddressPick,
     handleCreatePatientSubmit,
@@ -434,11 +431,6 @@ export function useRoutePlannerController({
     visitInstances,
   ]);
 
-  const handleTemplateSelectionChange = (nextTemplateId: string) => {
-    setSelectedTemplateId(nextTemplateId);
-    setManualTemplateSelectionLock(false);
-  };
-
   function handleAddDestinationPatient(patient: Parameters<typeof addDestinationPatient>[0]) {
     setManualTemplateSelectionLock(true);
     addDestinationPatient(patient, visitInstancesByPatientId.get(patient.id));
@@ -572,9 +564,6 @@ export function useRoutePlannerController({
       isVisitInstancesLoading && !hasVisitInstancesLoaded && !manualTemplateSelectionLock,
     searchError: destinationSearchError || visitInstancesError || "",
     createPatientError: createPatientError ?? "",
-    templateOptions,
-    selectedTemplateId,
-    onTemplateSelectionChange: handleTemplateSelectionChange,
     selectedDestinations,
     expandedDestinationVisitKeys,
     onAddPatient: handleAddDestinationPatient,
@@ -654,9 +643,6 @@ export function useRoutePlannerController({
     onRecurringTemplateChange: handleCreateRecurringTemplateChange,
     onAddRecurringTemplate: handleAddCreateRecurringTemplate,
     onRemoveRecurringTemplate: handleRemoveCreateRecurringTemplate,
-    onAddRecurringTemplateWindow: handleAddCreateRecurringTemplateWindow,
-    onRemoveRecurringTemplateWindow: handleRemoveCreateRecurringTemplateWindow,
-    onRecurringTemplateWindowChange: handleCreateRecurringTemplateWindowChange,
     selectedVisitType: selectedCreateVisitType,
     onVisitTypeChange: handleCreatePatientVisitTypeChange,
     onAddressChange: handleCreatePatientAddressChange,
