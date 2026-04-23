@@ -43,22 +43,27 @@ describe("recurrenceValidation", () => {
         endDate: "2026-06-01",
         serviceDurationMinutes: 45,
         windows: [validWindow],
+        daysOfWeek: [1],
       });
     });
 
-    it("defaults optional create fields", () => {
+    it("defaults optional create fields and accepts day-only schedules", () => {
       expect(
         validateCreateRecurringVisitTemplatePayload({
           ...validCreatePayload,
           name: " ",
           endDate: null,
           serviceDurationMinutes: undefined,
+          windows: undefined,
+          daysOfWeek: [3, 1, 3],
         }),
       ).toEqual(
         expect.objectContaining({
           name: null,
           endDate: null,
           serviceDurationMinutes: 30,
+          windows: [],
+          daysOfWeek: [1, 3],
         }),
       );
     });
@@ -124,6 +129,7 @@ describe("recurrenceValidation", () => {
           endDate: null,
           serviceDurationMinutes: 20,
           windows: [{ ...validWindow, visitTimeType: "flexible" }],
+          daysOfWeek: [2, 1, 2],
           isActive: false,
         }),
       ).toEqual({
@@ -135,6 +141,7 @@ describe("recurrenceValidation", () => {
         endDate: null,
         serviceDurationMinutes: 20,
         windows: [{ ...validWindow, visitTimeType: "flexible" }],
+        daysOfWeek: [1, 2],
         isActive: false,
       });
     });
@@ -148,6 +155,8 @@ describe("recurrenceValidation", () => {
           "endDate must be on or after startDate.",
         ],
         [{ endDate: "05/10/2026" }, "endDate must use YYYY-MM-DD format."],
+        [{ daysOfWeek: [] }, "daysOfWeek must include at least one weekday."],
+        [{ daysOfWeek: [8] }, "daysOfWeek[0] must be an integer from 0 (Sunday) to 6 (Saturday)."],
       ];
 
       cases.forEach(([payload, message]) => {

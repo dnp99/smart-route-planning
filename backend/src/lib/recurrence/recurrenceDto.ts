@@ -27,7 +27,8 @@ type VisitInstanceRow = {
 
 const toHourMinute = (value: string) => value.slice(0, 5);
 
-const toVisitTimeType = (value: string): VisitTimeType => (value === "flexible" ? "flexible" : "fixed");
+const toVisitTimeType = (value: string): VisitTimeType =>
+  value === "flexible" ? "flexible" : "fixed";
 
 const toRecurringVisitTemplateWindowDto = (
   window: RecurringTemplateWithWindows["windows"][number],
@@ -53,6 +54,7 @@ export const toRecurringVisitTemplateDto = (
   serviceDurationMinutes: template.serviceDurationMinutes,
   isActive: template.isActive,
   windows: template.windows.map(toRecurringVisitTemplateWindowDto),
+  daysOfWeek: template.daysOfWeek,
   createdAt: template.createdAt.toISOString(),
   updatedAt: template.updatedAt.toISOString(),
 });

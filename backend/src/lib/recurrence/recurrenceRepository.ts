@@ -6,7 +6,9 @@ import type {
 } from "../../../../shared/contracts";
 import { getDb } from "../../db";
 import {
+  patientVisitWindows,
   patients,
+  recurringVisitTemplateDays,
   recurringVisitTemplateWindows,
   recurringVisitTemplates,
   visitInstances,
@@ -35,11 +37,15 @@ type RecurrenceRule = {
   byDays: Set<number> | null;
 };
 
+type TemplateDayRow = typeof recurringVisitTemplateDays.$inferSelect;
 type TemplateWindowRow = typeof recurringVisitTemplateWindows.$inferSelect;
 type TemplateRow = typeof recurringVisitTemplates.$inferSelect;
 type VisitInstanceRow = typeof visitInstances.$inferSelect;
+type PatientVisitWindowRow = typeof patientVisitWindows.$inferSelect;
 
 export type RecurringTemplateWithWindows = TemplateRow & {
+  days: TemplateDayRow[];
+  daysOfWeek: number[];
   windows: TemplateWindowRow[];
 };
 
@@ -66,7 +72,39 @@ const isUniqueViolationError = (error: unknown) => {
   return error.code === "23505";
 };
 
-const attachTemplateWindows = async (
+const uniqueSortedDays = (daysOfWeek: number[]) =>
+  Array.from(new Set(daysOfWeek)).sort((left, right) => left - right);
+
+const daysFromWindows = (windows: Array<{ dayOfWeek: number }>) =>
+  uniqueSortedDays(windows.map((window) => window.dayOfWeek));
+
+const resolveTemplateDaysFromPayload = (payload: {
+  daysOfWeek?: number[];
+  windows?: Array<{ dayOfWeek: number }>;
+}) => {
+  if (payload.daysOfWeek !== undefined) {
+    return uniqueSortedDays(payload.daysOfWeek);
+  }
+
+  return daysFromWindows(payload.windows ?? []);
+};
+
+const insertTemplateDays = async (
+  transaction: ReturnType<typeof getDb>,
+  templateId: string,
+  daysOfWeek: number[],
+) => {
+  if (daysOfWeek.length === 0) {
+    return [] as TemplateDayRow[];
+  }
+
+  return transaction
+    .insert(recurringVisitTemplateDays)
+    .values(daysOfWeek.map((dayOfWeek) => ({ templateId, dayOfWeek })))
+    .returning();
+};
+
+const attachTemplateSchedule = async (
   templates: TemplateRow[],
 ): Promise<RecurringTemplateWithWindows[]> => {
   if (templates.length === 0) {
@@ -74,6 +112,12 @@ const attachTemplateWindows = async (
   }
 
   const templateIds = templates.map((template) => template.id);
+  const days = await getDb()
+    .select()
+    .from(recurringVisitTemplateDays)
+    .where(inArray(recurringVisitTemplateDays.templateId, templateIds))
+    .orderBy(asc(recurringVisitTemplateDays.dayOfWeek));
+
   const windows = await getDb()
     .select()
     .from(recurringVisitTemplateWindows)
@@ -84,6 +128,13 @@ const attachTemplateWindows = async (
       asc(recurringVisitTemplateWindows.endTime),
     );
 
+  const daysByTemplateId = new Map<string, TemplateDayRow[]>();
+  days.forEach((day) => {
+    const existing = daysByTemplateId.get(day.templateId) ?? [];
+    existing.push(day);
+    daysByTemplateId.set(day.templateId, existing);
+  });
+
   const windowsByTemplateId = new Map<string, TemplateWindowRow[]>();
   windows.forEach((window) => {
     const existing = windowsByTemplateId.get(window.templateId) ?? [];
@@ -91,10 +142,20 @@ const attachTemplateWindows = async (
     windowsByTemplateId.set(window.templateId, existing);
   });
 
-  return templates.map((template) => ({
-    ...template,
-    windows: windowsByTemplateId.get(template.id) ?? [],
-  }));
+  return templates.map((template) => {
+    const templateDays = daysByTemplateId.get(template.id) ?? [];
+    const templateWindows = windowsByTemplateId.get(template.id) ?? [];
+
+    return {
+      ...template,
+      days: templateDays,
+      daysOfWeek:
+        templateDays.length > 0
+          ? uniqueSortedDays(templateDays.map((day) => day.dayOfWeek))
+          : daysFromWindows(templateWindows),
+      windows: templateWindows,
+    };
+  });
 };
 
 const findActiveClientForNurse = async (nurseId: string, patientId: string) => {
@@ -207,13 +268,33 @@ const isDateEligibleForTemplate = (
 const toOccurrenceKey = (templateId: string, windowId: string, planningDate: string) =>
   `${templateId}:${windowId}:${planningDate}`;
 
-const listClientAddressesByIds = async (nurseId: string, patientIds: string[]) => {
+type ClientVisitWindow = Pick<
+  PatientVisitWindowRow,
+  "id" | "startTime" | "endTime" | "visitTimeType"
+>;
+
+type ClientSchedule = {
+  address: string;
+  googlePlaceId: string | null;
+  serviceDurationMinutes: number;
+  visitWindows: ClientVisitWindow[];
+};
+
+const listClientSchedulesByIds = async (nurseId: string, patientIds: string[]) => {
   if (patientIds.length === 0) {
-    return new Map<string, { address: string; googlePlaceId: string | null }>();
+    return new Map<string, ClientSchedule>();
   }
 
   const rows = await getDb()
-    .select({ id: patients.id, address: patients.address, googlePlaceId: patients.googlePlaceId })
+    .select({
+      id: patients.id,
+      address: patients.address,
+      googlePlaceId: patients.googlePlaceId,
+      visitDurationMinutes: patients.visitDurationMinutes,
+      preferredVisitStartTime: patients.preferredVisitStartTime,
+      preferredVisitEndTime: patients.preferredVisitEndTime,
+      visitTimeType: patients.visitTimeType,
+    })
     .from(patients)
     .where(
       and(
@@ -223,8 +304,49 @@ const listClientAddressesByIds = async (nurseId: string, patientIds: string[]) =
       ),
     );
 
+  const visitWindows = await getDb()
+    .select()
+    .from(patientVisitWindows)
+    .where(inArray(patientVisitWindows.patientId, patientIds))
+    .orderBy(
+      asc(patientVisitWindows.patientId),
+      asc(patientVisitWindows.startTime),
+      asc(patientVisitWindows.endTime),
+      asc(patientVisitWindows.createdAt),
+    );
+
+  const windowsByPatientId = new Map<string, ClientVisitWindow[]>();
+  visitWindows.forEach((window) => {
+    const existing = windowsByPatientId.get(window.patientId) ?? [];
+    existing.push(window);
+    windowsByPatientId.set(window.patientId, existing);
+  });
+
   return new Map(
-    rows.map((row) => [row.id, { address: row.address, googlePlaceId: row.googlePlaceId }]),
+    rows.map((row) => {
+      const windows = windowsByPatientId.get(row.id);
+      const visitWindowsForPatient =
+        windows && windows.length > 0
+          ? windows
+          : [
+              {
+                id: `${row.id}-legacy`,
+                startTime: row.preferredVisitStartTime,
+                endTime: row.preferredVisitEndTime,
+                visitTimeType: row.visitTimeType,
+              },
+            ];
+
+      return [
+        row.id,
+        {
+          address: row.address,
+          googlePlaceId: row.googlePlaceId,
+          serviceDurationMinutes: row.visitDurationMinutes,
+          visitWindows: visitWindowsForPatient,
+        },
+      ];
+    }),
   );
 };
 
@@ -277,7 +399,7 @@ export const listRecurringVisitTemplatesByNurse = async (nurseId: string, patien
     .where(whereCondition)
     .orderBy(asc(recurringVisitTemplates.createdAt));
 
-  return attachTemplateWindows(templates);
+  return attachTemplateSchedule(templates);
 };
 
 export const findRecurringVisitTemplateByIdForNurse = async (
@@ -296,8 +418,8 @@ export const findRecurringVisitTemplateByIdForNurse = async (
     return null;
   }
 
-  const [withWindows] = await attachTemplateWindows([template]);
-  return withWindows ?? null;
+  const [withSchedule] = await attachTemplateSchedule([template]);
+  return withSchedule ?? null;
 };
 
 export const createRecurringVisitTemplateForNurse = async (
@@ -324,21 +446,28 @@ export const createRecurringVisitTemplateForNurse = async (
       })
       .returning();
 
-    const windows = await transaction
-      .insert(recurringVisitTemplateWindows)
-      .values(
-        payload.windows.map((window) => ({
-          templateId: template.id,
-          dayOfWeek: window.dayOfWeek,
-          startTime: window.startTime,
-          endTime: window.endTime,
-          visitTimeType: window.visitTimeType,
-        })),
-      )
-      .returning();
+    const daysOfWeek = resolveTemplateDaysFromPayload(payload);
+    const days = await insertTemplateDays(transaction, template.id, daysOfWeek);
+    const windows =
+      payload.windows.length > 0
+        ? await transaction
+            .insert(recurringVisitTemplateWindows)
+            .values(
+              payload.windows.map((window) => ({
+                templateId: template.id,
+                dayOfWeek: window.dayOfWeek,
+                startTime: window.startTime,
+                endTime: window.endTime,
+                visitTimeType: window.visitTimeType,
+              })),
+            )
+            .returning()
+        : [];
 
     return {
       ...template,
+      days,
+      daysOfWeek,
       windows,
     };
   });
@@ -396,6 +525,20 @@ export const updateRecurringVisitTemplateForNurse = async (
       return null;
     }
 
+    const shouldReplaceDays = payload.daysOfWeek !== undefined || payload.windows !== undefined;
+    const nextDaysOfWeek = shouldReplaceDays
+      ? resolveTemplateDaysFromPayload(payload)
+      : existing.daysOfWeek;
+    const nextDays = shouldReplaceDays
+      ? await (async () => {
+          await transaction
+            .delete(recurringVisitTemplateDays)
+            .where(eq(recurringVisitTemplateDays.templateId, updatedTemplate.id));
+
+          return insertTemplateDays(transaction, updatedTemplate.id, nextDaysOfWeek);
+        })()
+      : existing.days;
+
     const windowsPayload = payload.windows;
     const nextWindows =
       windowsPayload !== undefined
@@ -425,6 +568,8 @@ export const updateRecurringVisitTemplateForNurse = async (
 
     return {
       ...updatedTemplate,
+      days: nextDays,
+      daysOfWeek: nextDaysOfWeek,
       windows: nextWindows,
     };
   });
@@ -503,7 +648,7 @@ export const expandVisitInstancesForNurse = async (
     };
   }
 
-  const clientAddresses = await listClientAddressesByIds(
+  const clientSchedules = await listClientSchedulesByIds(
     nurseId,
     Array.from(new Set(filteredTemplates.map((template) => template.patientId))),
   );
@@ -512,12 +657,15 @@ export const expandVisitInstancesForNurse = async (
   const dateRange = enumerateDateRange(payload.startDate, payload.endDate);
 
   filteredTemplates.forEach((template) => {
-    const clientAddress = clientAddresses.get(template.patientId);
-    if (!clientAddress) {
+    const clientSchedule = clientSchedules.get(template.patientId);
+    if (!clientSchedule) {
       return;
     }
 
     const parsedRule = parseRecurrenceRule(template.recurrenceRule);
+    const templateDaySet = new Set(
+      template.daysOfWeek.length > 0 ? template.daysOfWeek : daysFromWindows(template.windows),
+    );
 
     dateRange.forEach((planningDate) => {
       if (!isDateEligibleForTemplate(template, planningDate, parsedRule)) {
@@ -525,21 +673,23 @@ export const expandVisitInstancesForNurse = async (
       }
 
       const dayOfWeek = dayOfWeekForDate(planningDate);
-      const matchingWindows = template.windows.filter((window) => window.dayOfWeek === dayOfWeek);
+      if (!templateDaySet.has(dayOfWeek)) {
+        return;
+      }
 
-      matchingWindows.forEach((window) => {
+      clientSchedule.visitWindows.forEach((window) => {
         candidateInsertRows.push({
           nurseId,
           patientId: template.patientId,
           templateId: template.id,
           occurrenceKey: toOccurrenceKey(template.id, window.id, planningDate),
           planningDate,
-          address: clientAddress.address,
-          googlePlaceId: clientAddress.googlePlaceId,
+          address: clientSchedule.address,
+          googlePlaceId: clientSchedule.googlePlaceId,
           windowStart: window.startTime,
           windowEnd: window.endTime,
           visitTimeType: window.visitTimeType,
-          serviceDurationMinutes: template.serviceDurationMinutes,
+          serviceDurationMinutes: clientSchedule.serviceDurationMinutes,
           status: "scheduled",
           isManualOverride: false,
         });
