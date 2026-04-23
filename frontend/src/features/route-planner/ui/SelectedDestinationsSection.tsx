@@ -121,7 +121,7 @@ export const SelectedDestinationsSection = ({
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
-            className="h-4 w-4"
+            className="h-4 w-4 shrink-0"
           >
             <path d="M3 6h18" />
             <path d="M8 6V4h8v2" />
@@ -129,6 +129,7 @@ export const SelectedDestinationsSection = ({
             <path d="M10 11v6" />
             <path d="M14 11v6" />
           </svg>
+          <span>Clear list</span>
         </button>
       </div>
       <div
