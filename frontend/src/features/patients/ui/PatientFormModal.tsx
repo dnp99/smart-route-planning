@@ -1,6 +1,7 @@
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import AddressAutocompleteInput from "../../../components/shared/AddressAutocompleteInput";
+import { SelectField } from "../../../components/SelectField";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { Patient, VisitTimeType } from "../../../../../shared/contracts";
 import type {
@@ -198,15 +199,15 @@ export const PatientFormModal = ({
               <label htmlFor="patient-visit-type" className={responsiveStyles.formLabel}>
                 Visit type
               </label>
-              <select
+              <SelectField
                 id="patient-visit-type"
                 value={selectedVisitType}
-                onChange={(event) => onVisitTypeChange(event.target.value as VisitTimeType)}
-                className={responsiveStyles.formInput}
-              >
-                <option value="fixed">Fixed</option>
-                <option value="flexible">Flexible</option>
-              </select>
+                options={[
+                  { value: "fixed", label: "Fixed" },
+                  { value: "flexible", label: "Flexible" },
+                ]}
+                onChange={(v) => onVisitTypeChange(v as VisitTimeType)}
+              />
             </div>
 
             <div className="grid gap-1">

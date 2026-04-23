@@ -1,7 +1,8 @@
 import { responsiveStyles } from "../../../components/responsiveStyles";
+import { SelectField } from "../../../components/SelectField";
 import { SelectedDestinationsSection } from "./SelectedDestinationsSection";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
-import type { Patient } from "../../../../shared/contracts";
+import type { Patient } from "../../../../../shared/contracts/patient";
 import { formatPatientNameFromParts } from "../../patients/domain/patientName";
 
 const MOBILE_SEARCH_VISIBLE_ROWS = 15;
@@ -233,30 +234,29 @@ export const PatientSelectorSection = ({
                 Search clients ({destinationSearchResults.length})
               </p>
               <div className={responsiveStyles.patientSearchContainer}>
-                <div className="grid gap-1">
+                {/* <div className="grid grid-flow-col grid-rows-1 gap-1">
                   <label
                     htmlFor="route-template-filter"
-                    className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400"
+                    className="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400"
                   >
                     Template
                   </label>
-                  <select
+
+                  <SelectField
                     id="route-template-filter"
                     aria-label="Template filter"
                     value={selectedTemplateId}
-                    onChange={(event) => onTemplateSelectionChange(event.target.value)}
-                    className={responsiveStyles.formInput}
-                  >
-                    <option value="auto">Auto (planning day)</option>
-                    <option value="all">All templates</option>
-                    {templateOptions.map((option) => (
-                      <option key={option.id} value={option.id}>
-                        {option.matchesPlanningDay ? "Today: " : ""}
-                        {option.label} ({option.instanceCount})
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                    options={[
+                      { value: "auto", label: "Auto (planning day)" },
+                      { value: "all", label: "All templates" },
+                      ...templateOptions.map((option) => ({
+                        value: option.id,
+                        label: `${option.matchesPlanningDay ? "Today: " : ""}${option.label} (${option.instanceCount})`,
+                      })),
+                    ]}
+                    onChange={onTemplateSelectionChange}
+                  />
+                </div> */}
                 {createPatientError && (
                   <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
                 )}
@@ -334,9 +334,9 @@ export const PatientSelectorSection = ({
                           >
                             <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
                               {patientName}
-                            </p>
-                            <p className="m-0 text-slate-600 dark:text-slate-300">
-                              {patient.address}
+                              <span className="pl-2 font-normal m-0 text-slate-600 dark:text-slate-300">
+                                | {patient.address}
+                              </span>
                             </p>
                           </button>
                         </li>
