@@ -28,7 +28,8 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 - Uses a consistent overflow action menu pattern for client row actions.
 - Includes legal pages (Terms, Privacy, License, Trademark) accessible from the footer.
 - Shows in-app policy reminders via info icons on Clients and Route Planner pages.
-- Dashboard KPIs include deleted clients (last 30 days) and drive hours (last 7 days).
+- Dashboard KPIs include routes today, active clients, deleted clients (last 30 days), template coverage, visits this week (last 7 days), on-time rate (last 7 days), drive hours (last 7 days), and total distance (last 7 days).
+- Clicking the Drive Hours or Total Distance KPI cards on desktop triggers a fun car animation that flies randomly across the screen.
 - Mobile-optimized route planner with wizard-style step flow and safe-area-aware sticky footer.
 - Uses in-memory geocoding and travel-matrix caching (with in-flight request deduplication) to reduce repeated optimization latency.
 
