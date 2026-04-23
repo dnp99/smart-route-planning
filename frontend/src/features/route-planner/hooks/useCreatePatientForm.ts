@@ -6,11 +6,9 @@ import {
   EMPTY_FORM,
   buildRecurringTemplateMutationPlan,
   createEmptyRecurringTemplate,
-  createEmptyRecurringTemplateWindow,
   createEmptyVisitWindow,
   type FormFieldErrors,
   type PatientFormRecurringTemplate,
-  type PatientFormRecurringTemplateWindow,
   type PatientFormValues,
   type PatientFormVisitWindow,
   toCreateRequest,
@@ -193,81 +191,6 @@ export const useCreatePatientForm = ({ onPatientCreated }: UseCreatePatientFormO
     }));
   };
 
-  const handleAddCreateRecurringTemplateWindow = (templateId: string) => {
-    setCreatePatientFormValues((current) => ({
-      ...current,
-      recurringTemplates: current.recurringTemplates.map((template) => {
-        if (template.id !== templateId) {
-          return template;
-        }
-
-        return {
-          ...template,
-          windows: [
-            ...template.windows,
-            createEmptyRecurringTemplateWindow(template.windows.length + 1),
-          ],
-        };
-      }),
-    }));
-    setCreatePatientFormErrors((current) => ({
-      ...current,
-      recurringTemplates: undefined,
-      recurringTemplateRows: undefined,
-    }));
-  };
-
-  const handleRemoveCreateRecurringTemplateWindow = (templateId: string, windowId: string) => {
-    setCreatePatientFormValues((current) => ({
-      ...current,
-      recurringTemplates: current.recurringTemplates.map((template) => {
-        if (template.id !== templateId) {
-          return template;
-        }
-
-        return {
-          ...template,
-          windows: template.windows.filter((window) => window.id !== windowId),
-        };
-      }),
-    }));
-    setCreatePatientFormErrors((current) => ({
-      ...current,
-      recurringTemplates: undefined,
-      recurringTemplateRows: undefined,
-    }));
-  };
-
-  const handleCreateRecurringTemplateWindowChange = <
-    K extends keyof PatientFormRecurringTemplateWindow,
-  >(
-    templateId: string,
-    windowId: string,
-    field: K,
-    value: PatientFormRecurringTemplateWindow[K],
-  ) => {
-    setCreatePatientFormValues((current) => ({
-      ...current,
-      recurringTemplates: current.recurringTemplates.map((template) => {
-        if (template.id !== templateId) {
-          return template;
-        }
-
-        return {
-          ...template,
-          windows: template.windows.map((window) =>
-            window.id === windowId ? { ...window, [field]: value } : window,
-          ),
-        };
-      }),
-    }));
-    setCreatePatientFormErrors((current) => ({
-      ...current,
-      recurringTemplates: undefined,
-      recurringTemplateRows: undefined,
-    }));
-  };
-
   const handleCreatePatientAddressChange = (value: string) => {
     setCreatePatientFormValues((current) => ({
       ...current,
@@ -351,9 +274,6 @@ export const useCreatePatientForm = ({ onPatientCreated }: UseCreatePatientFormO
     handleCreateRecurringTemplateChange,
     handleAddCreateRecurringTemplate,
     handleRemoveCreateRecurringTemplate,
-    handleAddCreateRecurringTemplateWindow,
-    handleRemoveCreateRecurringTemplateWindow,
-    handleCreateRecurringTemplateWindowChange,
     handleCreatePatientAddressChange,
     handleCreatePatientAddressPick,
     handleCreatePatientSubmit,

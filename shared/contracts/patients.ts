@@ -31,6 +31,11 @@ export type RecurringVisitTemplateWindowInput = {
   visitTimeType: VisitTimeType;
 };
 
+export type RecurringVisitTemplateDay = {
+  id: string;
+  dayOfWeek: number;
+};
+
 export type RecurringVisitTemplate = {
   id: string;
   nurseId: string;
@@ -40,9 +45,9 @@ export type RecurringVisitTemplate = {
   recurrenceRule: string;
   startDate: string;
   endDate: string | null;
-  serviceDurationMinutes: number;
   isActive: boolean;
   windows: RecurringVisitTemplateWindow[];
+  daysOfWeek: number[];
   createdAt: string;
   updatedAt: string;
 };
@@ -116,8 +121,8 @@ export type CreateRecurringVisitTemplateRequest = {
   recurrenceRule: string;
   startDate: string;
   endDate?: string | null;
-  serviceDurationMinutes: number;
-  windows: RecurringVisitTemplateWindowInput[];
+  windows?: RecurringVisitTemplateWindowInput[];
+  daysOfWeek?: number[];
 };
 
 export type UpdateRecurringVisitTemplateRequest = Partial<CreateRecurringVisitTemplateRequest> & {
@@ -155,6 +160,12 @@ export const isVisitTimeType = (value: unknown): value is VisitTimeType =>
 
 const isVisitDurationMinutes = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 180;
+
+const isDayOfWeek = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 6;
+
+const isDaysOfWeek = (value: unknown): value is number[] =>
+  Array.isArray(value) && value.every((dayOfWeek) => isDayOfWeek(dayOfWeek));
 
 const isPatientVisitWindow = (value: unknown): value is PatientVisitWindow => {
   if (!isObject(value)) {
@@ -285,10 +296,10 @@ export const isRecurringVisitTemplate = (value: unknown): value is RecurringVisi
     typeof value.recurrenceRule === "string" &&
     typeof value.startDate === "string" &&
     (typeof value.endDate === "string" || value.endDate === null) &&
-    isVisitDurationMinutes(value.serviceDurationMinutes) &&
     typeof value.isActive === "boolean" &&
     Array.isArray(value.windows) &&
     value.windows.every((window) => isRecurringVisitTemplateWindow(window)) &&
+    isDaysOfWeek(value.daysOfWeek) &&
     typeof value.createdAt === "string" &&
     typeof value.updatedAt === "string"
   );

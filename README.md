@@ -1,13 +1,15 @@
-# ROUTEFY
+# CareFlow
 
-Routefy is a nurse-focused route planning app with a React frontend and Next.js backend.
+CareFlow is a nurse-focused route planning app with a React frontend and Next.js backend.
 
 ## What it does
 
 - Requires authenticated access for client and route-planner workflows.
-- Manages client records and visit windows.
+- Manages client records, visit windows, and recurring visit templates.
+- Generates concrete dated visit instances from recurring templates using the client's saved visit windows and duration.
 - Prevents duplicate client visit windows (same start/end pair) at API and DB layers.
 - Optimizes daily visits with time windows, travel distance/time, and visit duration; planning date defaults to tomorrow and is configurable per session.
+- Auto-seeds the Route Planner with scheduled visit instances for the selected planning date, with template-aware selection and manual override support.
 - Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
 - Keeps optimized route results in memory only for the current tab lifecycle.
@@ -37,8 +39,10 @@ Routefy is a nurse-focused route planning app with a React frontend and Next.js 
 - `shared/`: shared contracts and validators
 - Database: Postgres via Drizzle migrations
 
-Recent schema hardening:
+Recent schema changes:
 - Migration `0015_true_chat.sql` removes legacy duplicate rows in `patient_visit_windows` and adds a unique index on `(patient_id, start_time, end_time)`.
+- Migration `0017_recurring_template_days.sql` adds `recurring_visit_template_days` and backfills from old windows.
+- Migration `0017_previous_tombstone.sql` drops `recurring_visit_template_windows` and `service_duration_minutes` from `recurring_visit_templates`.
 
 ## Core APIs
 
@@ -56,6 +60,15 @@ Recent schema hardening:
   - `POST /api/patients`
   - `PATCH /api/patients/:id`
   - `DELETE /api/patients/:id`
+- Recurring visit templates:
+  - `GET /api/recurring-visit-templates`
+  - `POST /api/recurring-visit-templates`
+  - `PATCH /api/recurring-visit-templates/:id`
+  - `DELETE /api/recurring-visit-templates/:id`
+- Visit instances:
+  - `POST /api/visit-instances/expand`
+  - `GET /api/visit-instances?planningDate=YYYY-MM-DD`
+  - `PATCH /api/visit-instances/:id`
 - Route planning:
   - `POST /api/optimize-route/v3` (current production planner flow)
   - `POST /api/optimize-route/v2` (legacy compatibility / rollback path)

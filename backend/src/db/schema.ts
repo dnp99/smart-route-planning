@@ -111,7 +111,6 @@ export const recurringVisitTemplates = pgTable(
     recurrenceRule: text("recurrence_rule").notNull(),
     startDate: date("start_date").notNull(),
     endDate: date("end_date"),
-    serviceDurationMinutes: integer("service_duration_minutes").notNull().default(30),
     isActive: boolean("is_active").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
@@ -121,48 +120,30 @@ export const recurringVisitTemplates = pgTable(
     index("recurring_visit_templates_patient_id_idx").on(table.patientId),
     index("recurring_visit_templates_nurse_active_idx").on(table.nurseId, table.isActive),
     check(
-      "recurring_visit_templates_duration_chk",
-      sql`${table.serviceDurationMinutes} between 1 and 180`,
-    ),
-    check(
       "recurring_visit_templates_date_range_chk",
       sql`${table.endDate} is null or ${table.endDate} >= ${table.startDate}`,
     ),
   ],
 );
 
-export const recurringVisitTemplateWindows = pgTable(
-  "recurring_visit_template_windows",
+export const recurringVisitTemplateDays = pgTable(
+  "recurring_visit_template_days",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     templateId: uuid("template_id")
       .notNull()
       .references(() => recurringVisitTemplates.id, { onDelete: "cascade" }),
     dayOfWeek: integer("day_of_week").notNull(),
-    startTime: time("start_time").notNull(),
-    endTime: time("end_time").notNull(),
-    visitTimeType: text("visit_time_type").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
   },
   (table) => [
-    index("recurring_visit_template_windows_template_id_idx").on(table.templateId),
-    index("recurring_visit_template_windows_template_day_idx").on(
+    index("recurring_visit_template_days_template_id_idx").on(table.templateId),
+    uniqueIndex("recurring_visit_template_days_template_day_unique").on(
       table.templateId,
       table.dayOfWeek,
     ),
-    check(
-      "recurring_visit_template_windows_day_of_week_chk",
-      sql`${table.dayOfWeek} between 0 and 6`,
-    ),
-    check(
-      "recurring_visit_template_windows_visit_time_type_chk",
-      sql`${table.visitTimeType} in ('fixed', 'flexible')`,
-    ),
-    check(
-      "recurring_visit_template_windows_window_order_chk",
-      sql`${table.endTime} > ${table.startTime}`,
-    ),
+    check("recurring_visit_template_days_day_of_week_chk", sql`${table.dayOfWeek} between 0 and 6`),
   ],
 );
 
@@ -441,8 +422,8 @@ export type PatientVisitWindow = typeof patientVisitWindows.$inferSelect;
 export type NewPatientVisitWindow = typeof patientVisitWindows.$inferInsert;
 export type RecurringVisitTemplate = typeof recurringVisitTemplates.$inferSelect;
 export type NewRecurringVisitTemplate = typeof recurringVisitTemplates.$inferInsert;
-export type RecurringVisitTemplateWindow = typeof recurringVisitTemplateWindows.$inferSelect;
-export type NewRecurringVisitTemplateWindow = typeof recurringVisitTemplateWindows.$inferInsert;
+export type RecurringVisitTemplateDay = typeof recurringVisitTemplateDays.$inferSelect;
+export type NewRecurringVisitTemplateDay = typeof recurringVisitTemplateDays.$inferInsert;
 export type VisitInstance = typeof visitInstances.$inferSelect;
 export type NewVisitInstance = typeof visitInstances.$inferInsert;
 export type VisitInstanceException = typeof visitInstanceExceptions.$inferSelect;

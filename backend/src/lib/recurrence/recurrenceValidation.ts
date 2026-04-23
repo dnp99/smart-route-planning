@@ -175,6 +175,22 @@ const parseRecurringTemplateWindows = (value: unknown, fieldName: string) => {
   return windows;
 };
 
+const parseRecurringTemplateDaysOfWeek = (value: unknown, fieldName: string) => {
+  if (!Array.isArray(value)) {
+    throw new HttpError(400, `${fieldName} must be an array.`);
+  }
+
+  const daysOfWeek = Array.from(
+    new Set(value.map((entry, index) => parseDayOfWeek(entry, `${fieldName}[${index}]`))),
+  ).sort((left, right) => left - right);
+
+  if (daysOfWeek.length === 0) {
+    throw new HttpError(400, `${fieldName} must include at least one weekday.`);
+  }
+
+  return daysOfWeek;
+};
+
 export type ExpandVisitInstancesPayload = {
   startDate: string;
   endDate: string;
@@ -208,6 +224,19 @@ export const validateCreateRecurringVisitTemplatePayload = (
     throw new HttpError(400, "endDate must be on or after startDate.");
   }
 
+  const hasWindows = Array.isArray(payload.windows) && payload.windows.length > 0;
+  const windows = hasWindows ? parseRecurringTemplateWindows(payload.windows, "windows") : [];
+  const daysOfWeek =
+    payload.daysOfWeek === undefined
+      ? Array.from(new Set(windows.map((window) => window.dayOfWeek))).sort(
+          (left, right) => left - right,
+        )
+      : parseRecurringTemplateDaysOfWeek(payload.daysOfWeek, "daysOfWeek");
+
+  if (daysOfWeek.length === 0) {
+    throw new HttpError(400, "daysOfWeek or windows must include at least one weekday.");
+  }
+
   return {
     patientId: trimRequiredString(payload.patientId, "patientId"),
     name: parseOptionalString(payload.name, "name") ?? null,
@@ -215,11 +244,8 @@ export const validateCreateRecurringVisitTemplatePayload = (
     recurrenceRule: trimRequiredString(payload.recurrenceRule, "recurrenceRule"),
     startDate,
     endDate,
-    serviceDurationMinutes:
-      payload.serviceDurationMinutes === undefined
-        ? 30
-        : parseDurationMinutes(payload.serviceDurationMinutes, "serviceDurationMinutes"),
-    windows: parseRecurringTemplateWindows(payload.windows, "windows"),
+    windows,
+    daysOfWeek,
   };
 };
 
@@ -253,19 +279,15 @@ export const validateUpdateRecurringVisitTemplatePayload = (
   }
 
   if (payload.endDate !== undefined) {
-    parsed.endDate =
-      payload.endDate === null ? null : parseDate(payload.endDate, "endDate");
-  }
-
-  if (payload.serviceDurationMinutes !== undefined) {
-    parsed.serviceDurationMinutes = parseDurationMinutes(
-      payload.serviceDurationMinutes,
-      "serviceDurationMinutes",
-    );
+    parsed.endDate = payload.endDate === null ? null : parseDate(payload.endDate, "endDate");
   }
 
   if (payload.windows !== undefined) {
     parsed.windows = parseRecurringTemplateWindows(payload.windows, "windows");
+  }
+
+  if (payload.daysOfWeek !== undefined) {
+    parsed.daysOfWeek = parseRecurringTemplateDaysOfWeek(payload.daysOfWeek, "daysOfWeek");
   }
 
   if (payload.isActive !== undefined) {
@@ -286,7 +308,9 @@ export const validateUpdateRecurringVisitTemplatePayload = (
   return parsed;
 };
 
-export const validateExpandVisitInstancesPayload = (payload: unknown): ExpandVisitInstancesPayload => {
+export const validateExpandVisitInstancesPayload = (
+  payload: unknown,
+): ExpandVisitInstancesPayload => {
   if (!isObject(payload)) {
     throw new HttpError(400, "Request body must be a JSON object.");
   }
@@ -343,7 +367,9 @@ export const validateVisitInstancesPlanningDate = (value: string | null) => {
   return parseDate(value, "planningDate");
 };
 
-export const validateUpdateVisitInstancePayload = (payload: unknown): UpdateVisitInstancePayload => {
+export const validateUpdateVisitInstancePayload = (
+  payload: unknown,
+): UpdateVisitInstancePayload => {
   if (!isObject(payload)) {
     throw new HttpError(400, "Request body must be a JSON object.");
   }

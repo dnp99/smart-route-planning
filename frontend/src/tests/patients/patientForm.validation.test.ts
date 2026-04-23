@@ -114,20 +114,11 @@ describe("patientForm validateForm", () => {
             templateId: null,
             name: "Weekdays",
             timezone: "Mars/Phobos",
-            recurrenceRule: "FREQ=WEEKLY;INTERVAL=1",
+            recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
             startDate: "2026-03-20",
             endDate: "2026-03-19",
-            serviceDurationMinutes: 30,
             isActive: true,
-            windows: [
-              {
-                id: "win-1",
-                dayOfWeek: 1,
-                startTime: "09:00",
-                endTime: "10:00",
-                visitTimeType: "fixed",
-              },
-            ],
+            daysOfWeek: [1],
           },
         ],
       }),
@@ -141,36 +132,25 @@ describe("patientForm validateForm", () => {
     );
   });
 
-  it("validates recurring template fixed windows against template duration", () => {
+  it("requires at least one weekday on recurring template", () => {
     const errors = validateForm(
       buildValues({
         recurringTemplates: [
           {
             id: "draft-1",
             templateId: null,
-            name: "Weekdays",
+            name: "Empty days",
             timezone: "America/Toronto",
-            recurrenceRule: "FREQ=WEEKLY;INTERVAL=1",
+            recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
             startDate: "2026-03-20",
             endDate: "",
-            serviceDurationMinutes: 90,
             isActive: true,
-            windows: [
-              {
-                id: "win-1",
-                dayOfWeek: 1,
-                startTime: "09:00",
-                endTime: "09:30",
-                visitTimeType: "fixed",
-              },
-            ],
+            daysOfWeek: [],
           },
         ],
       }),
     );
 
-    expect(errors.recurringTemplateRows?.[0]?.windowRows?.[0]?.endTime).toBe(
-      "Template fixed window must be at least 90 minutes long.",
-    );
+    expect(errors.recurringTemplateRows?.[0]?.daysOfWeek).toBe("Select at least one weekday.");
   });
 });

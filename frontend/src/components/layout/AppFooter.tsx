@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { SUPPORT_EMAIL_MAILTO } from "../../constants/support";
 import { responsiveStyles } from "../responsiveStyles";
 import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
+import ContactUsModal from "../modals/ContactUsModal";
 
 export default function AppFooter() {
   const location = useLocation();
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
 
   return (
     <footer className={responsiveStyles.appFooter}>
@@ -26,12 +28,13 @@ export default function AppFooter() {
           aria-label="Legal and support links"
           className="grid w-full grid-cols-2 gap-x-4 gap-y-0.5 sm:w-auto sm:auto-cols-max sm:grid-flow-col sm:grid-cols-none sm:gap-x-3 sm:gap-y-0"
         >
-          <a
-            href={SUPPORT_EMAIL_MAILTO}
+          <button
+            type="button"
+            onClick={() => setIsContactModalOpen(true)}
             className="py-1 text-xs text-slate-500 transition hover:text-slate-700 focus:outline-none focus-visible:underline dark:text-slate-400 dark:hover:text-slate-200"
           >
             Contact Us
-          </a>
+          </button>
           <Link
             to="/legal/terms"
             state={{ backgroundLocation: location }}
@@ -62,6 +65,7 @@ export default function AppFooter() {
           </Link>
         </nav>
       </div>
+      <ContactUsModal isOpen={isContactModalOpen} onClose={() => setIsContactModalOpen(false)} />
     </footer>
   );
 }

@@ -91,7 +91,7 @@ export async function POST(request: Request) {
       resourceType: "recurring_visit_template",
       resourceId: created.id,
       outcome: "success",
-      metadata: { windowCount: created.windows.length },
+      metadata: { dayCount: created.daysOfWeek.length },
       ipAddress: resolveRequestIpAddress(request),
       userAgent: resolveRequestUserAgent(request),
     });

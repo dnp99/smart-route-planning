@@ -1,6 +1,6 @@
 # Backend
 
-This folder contains the Next.js backend for Routefy.
+This folder contains the Next.js backend for CareFlow.
 
 ## Responsibilities
 
@@ -8,6 +8,9 @@ This folder contains the Next.js backend for Routefy.
 - Keep `POST /api/optimize-route/v2` available as a legacy compatibility / rollback path.
 - Expose `GET /api/address-autocomplete` for address suggestions.
 - Expose auth endpoints for signup, login, logout, current-user identity, and password updates.
+- Manage client (patient) records and visit windows.
+- Manage recurring visit templates (name, date range, active flag, weekdays via `recurring_visit_template_days`).
+- Expand recurring templates into concrete dated visit instances using the client's saved visit windows and duration.
 - Geocode addresses through Google Places API.
 - Fetch address suggestions through Google Places autocomplete.
 - Enforce authenticated access on business endpoints (cookie sessions), plus validation, timeouts, CORS, and lightweight rate limiting.
@@ -216,6 +219,45 @@ Authentication behavior:
   - Legacy compatibility / rollback endpoint
   - Enforces the same API-key and per-client rate-limit rules as `v3`
 
+### Recurring visit templates
+
+- `GET /api/recurring-visit-templates`
+  - Requires authenticated session
+  - Returns all recurring visit templates for the authenticated nurse, each including `daysOfWeek`
+- `POST /api/recurring-visit-templates`
+  - Requires authenticated session
+  - Accepts `{ patientId, name?, timezone, recurrenceRule, startDate, endDate?, isActive?, daysOfWeek }`
+  - `daysOfWeek` is an array of integers 0 (Sun) – 6 (Sat); at least one required
+  - Returns `201` with created template JSON
+- `PATCH /api/recurring-visit-templates/:id`
+  - Requires authenticated session
+  - Partially updates a template owned by the authenticated nurse
+  - Accepts any subset of `{ name, timezone, recurrenceRule, startDate, endDate, isActive, daysOfWeek }`
+  - Replaces `daysOfWeek` atomically when provided
+  - Returns updated template JSON
+- `DELETE /api/recurring-visit-templates/:id`
+  - Requires authenticated session
+  - Deletes the template and all visit instances derived from it (transaction)
+  - Returns `{ "deleted": true, "id": "..." }`
+
+### Visit instances
+
+- `POST /api/visit-instances/expand`
+  - Requires authenticated session
+  - Accepts `{ planningDate?, startDate?, endDate?, templateIds? }`
+  - Expands active recurring templates into concrete dated visit instances using each client's saved visit windows and duration
+  - Idempotent: repeated expansion never creates duplicates (keyed by `<templateId>:<patientVisitWindowId>:<planningDate>`)
+  - Returns `{ created: number, skipped: number }`
+- `GET /api/visit-instances?planningDate=YYYY-MM-DD`
+  - Requires authenticated session
+  - Returns all visit instances for the authenticated nurse on the given planning date
+- `PATCH /api/visit-instances/:id`
+  - Requires authenticated session
+  - Partially updates a visit instance owned by the authenticated nurse
+  - Accepts any subset of `{ status, planningDate, address, googlePlaceId, windowStart, windowEnd, visitTimeType, serviceDurationMinutes }`
+  - Sets `isManualOverride = true` on address/window/duration changes
+  - Returns updated visit instance JSON
+
 ### Address autocomplete
 
 - `GET /api/address-autocomplete?query=...`
@@ -245,6 +287,7 @@ Authentication behavior:
 - Migration `0012_cold_serpent_society.sql` adds `auth_sessions.device_type`.
 - Migration `0014_curvy_eternals.sql` adds cleanup indexes on `auth_sessions.expires_at` and `auth_sessions.revoked_at`.
 - Migration `0015_true_chat.sql` de-duplicates existing `patient_visit_windows` rows and enforces unique windows per patient via `(patient_id, start_time, end_time)`.
+- Migration `0017_recurring_template_days.sql` adds `recurring_visit_template_days` and backfills from old windows; `recurring_visit_template_windows` and `service_duration_minutes` subsequently dropped.
 
 ## Optimization performance caches
 
@@ -265,6 +308,13 @@ Notes:
 
 - Caches are intentionally ephemeral and local to each backend process.
 - Upstream fetches still use `cache: "no-store"`; application-level caches control reuse behavior.
+
+Notes on recurring templates:
+
+- Visit timing and duration come from the client record, not the template. Templates own only recurrence schedule (`daysOfWeek`, dates, timezone, active flag).
+- `recurring_visit_template_days` stores one row per weekday per template; unique on `(template_id, day_of_week)`.
+- Expansion produces one visit instance per (template × patient visit window × planning date) combination.
+- Clients with no visit windows fall back to `preferredVisitStartTime` / `preferredVisitEndTime` from the patient record.
 
 ## Route optimizer — v3 (production) scheduling logic
 
@@ -344,6 +394,14 @@ The optimizer returns an optional `warnings[]` array:
 - `src/app/api/address-autocomplete/route.ts`
 - `src/app/api/patients/route.ts`
 - `src/app/api/patients/[id]/route.ts`
+- `src/app/api/recurring-visit-templates/route.ts`
+- `src/app/api/recurring-visit-templates/[id]/route.ts`
+- `src/app/api/visit-instances/expand/route.ts`
+- `src/app/api/visit-instances/route.ts`
+- `src/app/api/visit-instances/[id]/route.ts`
 - `src/lib/patients/`
+- `src/lib/recurrence/recurrenceRepository.ts` — template CRUD, expansion logic, occurrence key generation
+- `src/lib/recurrence/recurrenceDto.ts` — template and visit instance DTO mappers
+- `src/lib/recurrence/recurrenceValidation.ts` — request validators for templates and visit instances
 - `src/db/schema.ts`
 - `drizzle/`

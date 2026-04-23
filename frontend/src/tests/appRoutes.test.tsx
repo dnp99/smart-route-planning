@@ -75,6 +75,7 @@ vi.mock("../components/shared/AddressAutocompleteInput", () => ({
 beforeEach(() => {
   window.localStorage.clear();
   clearAuthSession();
+  vi.stubGlobal("open", vi.fn());
   fetchMeMock.mockReset();
   fetchLegalNoticeStatusMock.mockReset();
   acknowledgeLegalNoticeMock.mockReset();
@@ -138,6 +139,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.unstubAllGlobals();
   window.localStorage.clear();
   window.sessionStorage.clear();
   cleanup();
@@ -168,14 +170,14 @@ describe("Footer", () => {
 
     await waitForPatientsPage();
 
-    expect(screen.getByRole("link", { name: "Contact Us" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Contact Us" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Terms" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Privacy" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "License" })).toBeTruthy();
     expect(screen.getByRole("link", { name: "Trademark" })).toBeTruthy();
   });
 
-  it("footer Contact Us links to the support email", async () => {
+  it("footer Contact Us opens a support email form", async () => {
     seedAuthenticatedSession();
 
     render(
@@ -186,9 +188,43 @@ describe("Footer", () => {
 
     await waitForPatientsPage();
 
-    expect(screen.getByRole("link", { name: "Contact Us" }).getAttribute("href")).toBe(
-      "mailto:dpatel1995@yahoo.com",
+    fireEvent.click(screen.getByRole("button", { name: "Contact Us" }));
+
+    expect(screen.getByRole("dialog", { name: "Contact Us" })).toBeTruthy();
+    expect(screen.getByLabelText("Subject")).toBeTruthy();
+    expect(screen.getByLabelText("Message")).toBeTruthy();
+  });
+
+  it("footer Contact Us validates and prepares a support email fallback", async () => {
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/patients"]}>
+        <App />
+      </MemoryRouter>,
     );
+
+    await waitForPatientsPage();
+
+    fireEvent.click(screen.getByRole("button", { name: "Contact Us" }));
+    fireEvent.click(screen.getByRole("button", { name: "Prepare message" }));
+
+    expect(screen.getByText("Subject and message are required.")).toBeTruthy();
+    expect(window.open).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText("Subject"), {
+      target: { value: "Billing question" },
+    });
+    fireEvent.change(screen.getByLabelText("Message"), {
+      target: { value: "Can you help with my account?" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Prepare message" }));
+
+    expect(screen.getByText(/Your message is ready/i)).toBeTruthy();
+    expect(screen.getByRole("link", { name: "Open email app" }).getAttribute("href")).toBe(
+      "mailto:dpatel1995@yahoo.com?subject=Billing+question&body=Can+you+help+with+my+account%3F",
+    );
+    expect(screen.getByRole("button", { name: "Copy message" })).toBeTruthy();
   });
 
   it("footer legal links point to correct routes", async () => {
