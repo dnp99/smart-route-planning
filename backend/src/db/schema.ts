@@ -166,6 +166,27 @@ export const recurringVisitTemplateWindows = pgTable(
   ],
 );
 
+export const recurringVisitTemplateDays = pgTable(
+  "recurring_visit_template_days",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    templateId: uuid("template_id")
+      .notNull()
+      .references(() => recurringVisitTemplates.id, { onDelete: "cascade" }),
+    dayOfWeek: integer("day_of_week").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("recurring_visit_template_days_template_id_idx").on(table.templateId),
+    uniqueIndex("recurring_visit_template_days_template_day_unique").on(
+      table.templateId,
+      table.dayOfWeek,
+    ),
+    check("recurring_visit_template_days_day_of_week_chk", sql`${table.dayOfWeek} between 0 and 6`),
+  ],
+);
+
 export const visitInstances = pgTable(
   "visit_instances",
   {
@@ -443,6 +464,8 @@ export type RecurringVisitTemplate = typeof recurringVisitTemplates.$inferSelect
 export type NewRecurringVisitTemplate = typeof recurringVisitTemplates.$inferInsert;
 export type RecurringVisitTemplateWindow = typeof recurringVisitTemplateWindows.$inferSelect;
 export type NewRecurringVisitTemplateWindow = typeof recurringVisitTemplateWindows.$inferInsert;
+export type RecurringVisitTemplateDay = typeof recurringVisitTemplateDays.$inferSelect;
+export type NewRecurringVisitTemplateDay = typeof recurringVisitTemplateDays.$inferInsert;
 export type VisitInstance = typeof visitInstances.$inferSelect;
 export type NewVisitInstance = typeof visitInstances.$inferInsert;
 export type VisitInstanceException = typeof visitInstanceExceptions.$inferSelect;

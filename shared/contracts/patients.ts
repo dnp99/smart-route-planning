@@ -31,6 +31,11 @@ export type RecurringVisitTemplateWindowInput = {
   visitTimeType: VisitTimeType;
 };
 
+export type RecurringVisitTemplateDay = {
+  id: string;
+  dayOfWeek: number;
+};
+
 export type RecurringVisitTemplate = {
   id: string;
   nurseId: string;
@@ -43,6 +48,7 @@ export type RecurringVisitTemplate = {
   serviceDurationMinutes: number;
   isActive: boolean;
   windows: RecurringVisitTemplateWindow[];
+  daysOfWeek?: number[];
   createdAt: string;
   updatedAt: string;
 };
@@ -118,6 +124,7 @@ export type CreateRecurringVisitTemplateRequest = {
   endDate?: string | null;
   serviceDurationMinutes: number;
   windows: RecurringVisitTemplateWindowInput[];
+  daysOfWeek?: number[];
 };
 
 export type UpdateRecurringVisitTemplateRequest = Partial<CreateRecurringVisitTemplateRequest> & {
@@ -155,6 +162,12 @@ export const isVisitTimeType = (value: unknown): value is VisitTimeType =>
 
 const isVisitDurationMinutes = (value: unknown): value is number =>
   typeof value === "number" && Number.isInteger(value) && value >= 1 && value <= 180;
+
+const isDayOfWeek = (value: unknown): value is number =>
+  typeof value === "number" && Number.isInteger(value) && value >= 0 && value <= 6;
+
+const isDaysOfWeek = (value: unknown): value is number[] =>
+  Array.isArray(value) && value.every((dayOfWeek) => isDayOfWeek(dayOfWeek));
 
 const isPatientVisitWindow = (value: unknown): value is PatientVisitWindow => {
   if (!isObject(value)) {
@@ -289,6 +302,7 @@ export const isRecurringVisitTemplate = (value: unknown): value is RecurringVisi
     typeof value.isActive === "boolean" &&
     Array.isArray(value.windows) &&
     value.windows.every((window) => isRecurringVisitTemplateWindow(window)) &&
+    (value.daysOfWeek === undefined || isDaysOfWeek(value.daysOfWeek)) &&
     typeof value.createdAt === "string" &&
     typeof value.updatedAt === "string"
   );

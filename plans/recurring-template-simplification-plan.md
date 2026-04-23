@@ -259,6 +259,63 @@ No template editing should happen in Route Planner.
 
 Add a defensive filter so instances with a deleted/missing template do not auto-seed selected clients. This protects users if old orphan rows exist in the database.
 
+### Phase 5: Exceptions + Series Editing
+
+Once templates are day-based and visit details come from client records, add occurrence-level and series-level editing without reintroducing duplicate template windows.
+
+Supported actions:
+
+1. Skip one occurrence
+2. Restore a skipped occurrence
+3. Reschedule one occurrence
+4. Edit this template from a chosen date forward
+5. End a template before a chosen date
+
+Recommended model:
+
+- Keep `visit_instance_exceptions` or a successor table for occurrence-specific changes.
+- Store exceptions by `templateId`, `patientId`, `planningDate`, and optional `patientVisitWindowId`.
+- Preserve the distinction between:
+  - generated schedule from template + client data
+  - manual one-off override
+  - future-series template change
+
+Occurrence edit behavior:
+
+- Skip one occurrence:
+  - mark the concrete visit instance `cancelled`, or store a skip exception if the instance has not been generated yet.
+- Restore one occurrence:
+  - remove skip exception or set generated instance back to scheduled when safe.
+- Reschedule one occurrence:
+  - update that visit instance with `isManualOverride = true`.
+  - do not mutate client visit windows or recurring template weekdays.
+
+Series edit behavior:
+
+- Edit this and future:
+  - close the current template by setting `endDate` to the day before the effective date.
+  - create a new template beginning on the effective date with the new name/date/days/active values.
+  - keep client visit windows and duration as the source of visit details.
+- End this and future:
+  - set `endDate` to the day before the effective date.
+  - cancel or delete non-manual generated future instances for that template.
+
+Regeneration rules:
+
+- Do not recreate skipped occurrences.
+- Do not overwrite manually rescheduled instances.
+- Refresh non-manual future instances from current client visit windows when expansion runs.
+- If a client visit window is removed, future non-manual instances derived from that window should be cancelled or removed according to the final product decision.
+
+Frontend surfaces:
+
+- Route Planner can support one-off instance actions such as skip/restore/reschedule.
+- Client template editor should support series actions:
+  - save entire template
+  - apply changes from date forward
+  - end template from date forward
+- Keep copy explicit so users understand whether they are editing one planned visit or the recurring template.
+
 ## Test Plan
 
 ### Backend Tests
@@ -276,6 +333,10 @@ Update/add tests for:
 6. Expansion creates multiple instances when a patient has multiple visit windows.
 7. Expansion creates no instances when template weekday does not match planning date.
 8. Deleting a template removes its generated instances.
+9. Skip exceptions prevent regeneration for that occurrence.
+10. Rescheduled/manual instances are not overwritten by expansion.
+11. Edit-this-and-future closes the old template and creates a replacement template.
+12. Ending a series cancels or removes future non-manual generated instances.
 
 ### Frontend Tests
 
@@ -286,6 +347,9 @@ Update/add tests for:
 3. Template update sends changed `daysOfWeek`.
 4. Removing a template calls delete and removes it from local form state.
 5. Route Planner auto-seeds from generated visit instances only when their template still exists.
+6. One-off skip/restore/reschedule controls affect only the selected occurrence.
+7. Series edit controls clearly separate entire-template edits from this-and-future edits.
+8. Route Planner does not show skipped occurrences after reload.
 
 ## Migration / Rollout Strategy
 

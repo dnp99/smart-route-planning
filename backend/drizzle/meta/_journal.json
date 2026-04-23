@@ -113,6 +113,13 @@
       "when": 1776829200000,
       "tag": "0016_solid_task_links",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1776902400000,
+      "tag": "0017_recurring_template_days",
+      "breakpoints": true
     }
   ]
 }
