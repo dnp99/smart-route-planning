@@ -12,7 +12,7 @@ export default function TermsPage({ isModal = false }: LegalPageProps) {
       <section>
         <h2 className={responsiveStyles.legalSectionTitle}>1. Overview</h2>
         <p className="m-0">
-          Routefy is a nurse-focused route planning and client management tool designed to support
+          Routefy is a client-focused route planning and client management tool designed to support
           scheduling and operational workflows.
         </p>
         <p className="m-0 mt-2">

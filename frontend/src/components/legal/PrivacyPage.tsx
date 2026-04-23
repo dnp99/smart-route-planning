@@ -12,7 +12,7 @@ export default function PrivacyPage({ isModal = false }: LegalPageProps) {
       <section>
         <h2 className={responsiveStyles.legalSectionTitle}>1. Overview</h2>
         <p className="m-0">
-          Routefy is a nurse-focused route planning and client management tool designed to support
+          Routefy is a client-focused route planning and client management tool designed to support
           daily visit scheduling and operational workflows.
         </p>
         <p className="m-0 mt-2">
@@ -67,7 +67,7 @@ export default function PrivacyPage({ isModal = false }: LegalPageProps) {
         <p className="m-0">We use collected information to:</p>
         <ul className="m-0 mt-2 list-disc pl-5">
           <li>Provide route planning and scheduling functionality</li>
-          <li>Support nursing and operational workflows</li>
+          <li>Support client scheduling and operational workflows</li>
           <li>Authenticate users and secure access</li>
           <li>Monitor system performance and prevent misuse</li>
           <li>Maintain audit logs for security and accountability</li>
