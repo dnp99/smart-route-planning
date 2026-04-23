@@ -13,6 +13,8 @@ export type DashboardUpcomingStop = {
   patientName?: string | null;
   destination: string;
   status: "on_track" | "at_risk" | "pending";
+  templateId?: string | null;
+  templateName?: string | null;
 };
 
 export type DashboardTrendPoint = {
@@ -46,6 +48,7 @@ export type DashboardSummaryResponse = {
     deletedClientsLast30Days: number;
     driveHoursLast7Days: number;
     activePatientCount: number;
+    templatedActivePatientCount: number;
   };
   alerts: DashboardAlert[];
   upcomingStops: DashboardUpcomingStop[];
@@ -117,6 +120,7 @@ export const isDashboardSummaryResponse = (value: unknown): value is DashboardSu
     typeof value.kpis.deletedClientsLast30Days !== "number" ||
     typeof value.kpis.driveHoursLast7Days !== "number" ||
     typeof value.kpis.activePatientCount !== "number" ||
+    typeof value.kpis.templatedActivePatientCount !== "number" ||
     !Array.isArray(value.alerts) ||
     !value.alerts.every(isAlert) ||
     !Array.isArray(value.upcomingStops) ||

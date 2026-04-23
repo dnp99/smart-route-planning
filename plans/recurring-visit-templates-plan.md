@@ -14,7 +14,7 @@ Add recurring visit templates as a first-class feature in client management, gen
 | Phase 3 — Frontend Integration | ✅ Completed | Recurrence authoring + template orchestration in Clients flows and visit-instance hydration in Route Planner are implemented. |
 | Phase 3.1 — Planner Auto-Expand + Auto-Preselect | ✅ Completed | Planner now expands first, hydrates date instances, auto-selects by template/day, supports manual override lock, and shows an auto-seed hint in the Clients card header. |
 | Phase 4 — Exceptions + Series Editing | ⏳ Not started | Skip/reschedule/edit-future behavior still pending. |
-| Phase 5 — Dashboard/History Linkage | ⏳ Not started | History linking to template/instance IDs still pending. |
+| Phase 5 — Dashboard/History Linkage | ✅ Completed | `visitInstanceId` + `templateId` FKs on `route_optimization_tasks`; template name surfaced on upcoming stops. Requires `db:generate` + `db:migrate`. |
 
 ---
 
@@ -243,12 +243,26 @@ Ensure regeneration respects exceptions and does not recreate skipped/moved occu
 
 ## Phase 5 — Dashboard/History Linkage (recommended)
 
-**Status:** ⏳ Not started
+**Status:** ✅ Completed
 
-Add links from optimization history to instance/template identifiers where useful:
+### What was done
 
-- `backend/src/lib/dashboard/dashboardRepository.ts`
-- related schema/contract updates
+- Schema: added `visitInstanceId` (uuid, nullable FK → `visit_instances.id` SET NULL) and `templateId` (uuid, nullable FK → `recurring_visit_templates.id` SET NULL) to `route_optimization_tasks`.
+- `listScheduledVisitInstancesForOptimization` now returns `{ visits, instanceMetaByVisitId }` alongside the optimizer visit array.
+- `recordOptimizationRun` accepts optional `instanceMetaByVisitId` and persists `visitInstanceId`/`templateId` per task row.
+- v3 optimize-route handler threads instance metadata from expansion into `recordOptimizationRun`.
+- `getDashboardSummaryForNurse` resolves template names for the latest run's tasks and surfaces them on `DashboardUpcomingStop` via `templateId`/`templateName` fields.
+- Shared contract extended: `DashboardUpcomingStop` has optional `templateId` and `templateName`.
+- Frontend dashboard shows a blue pill badge with the template name under each upcoming stop that originated from a recurring template.
+
+### Migration required
+
+Run from `backend/`:
+
+```sh
+npm run db:generate
+npm run db:migrate
+```
 
 ---
 

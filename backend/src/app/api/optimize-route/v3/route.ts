@@ -7,7 +7,10 @@ import {
 } from "../../../../lib/audit/requestAuditContext";
 import { recordOptimizationRun } from "../../../../lib/dashboard/dashboardRepository";
 import { HttpError, toErrorResponse } from "../../../../lib/http";
-import { listScheduledVisitInstancesForOptimization } from "../../../../lib/recurrence/recurrenceRepository";
+import {
+  listScheduledVisitInstancesForOptimization,
+  type VisitInstanceMeta,
+} from "../../../../lib/recurrence/recurrenceRepository";
 import { optimizeRouteV3 } from "./optimizeRouteService";
 import { parseAndValidateBody } from "../v2/validation";
 import {
@@ -84,17 +87,32 @@ export async function POST(request: Request) {
 
     const { auth, googleMapsApiKey, parsedRequest } = prepared;
     let optimizerRequest = parsedRequest;
-    if (parsedRequest.visits.length === 0 && process.env.DATABASE_URL?.trim()) {
+    let instanceMetaByVisitId: Map<string, VisitInstanceMeta> | undefined;
+    if (process.env.DATABASE_URL?.trim()) {
       try {
-        const scheduledInstanceVisits = await listScheduledVisitInstancesForOptimization(
-          auth.nurseId,
-          parsedRequest.planningDate,
-        );
+        const { visits: scheduledInstanceVisits, instanceMetaByVisitId: meta } =
+          await listScheduledVisitInstancesForOptimization(
+            auth.nurseId,
+            parsedRequest.planningDate,
+          );
         if (scheduledInstanceVisits.length > 0) {
-          optimizerRequest = {
-            ...parsedRequest,
-            visits: scheduledInstanceVisits,
-          };
+          if (parsedRequest.visits.length === 0) {
+            optimizerRequest = {
+              ...parsedRequest,
+              visits: scheduledInstanceVisits,
+            };
+          }
+
+          const requestedVisitIds = new Set(optimizerRequest.visits.map((visit) => visit.visitId));
+          const matchedMeta = new Map<string, VisitInstanceMeta>();
+          meta.forEach((value, key) => {
+            if (requestedVisitIds.has(key)) {
+              matchedMeta.set(key, value);
+            }
+          });
+          if (matchedMeta.size > 0) {
+            instanceMetaByVisitId = matchedMeta;
+          }
         }
       } catch (error) {
         console.error("Failed to resolve visit instances for optimize-route v3 fallback.", error);
@@ -119,6 +137,7 @@ export async function POST(request: Request) {
         requestId,
         request: optimizerRequest,
         result,
+        instanceMetaByVisitId,
       });
     } catch (error) {
       console.error("Failed to persist optimize-route v3 history.", error);

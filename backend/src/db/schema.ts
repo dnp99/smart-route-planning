@@ -147,7 +147,10 @@ export const recurringVisitTemplateWindows = pgTable(
   },
   (table) => [
     index("recurring_visit_template_windows_template_id_idx").on(table.templateId),
-    index("recurring_visit_template_windows_template_day_idx").on(table.templateId, table.dayOfWeek),
+    index("recurring_visit_template_windows_template_day_idx").on(
+      table.templateId,
+      table.dayOfWeek,
+    ),
     check(
       "recurring_visit_template_windows_day_of_week_chk",
       sql`${table.dayOfWeek} between 0 and 6`,
@@ -198,10 +201,7 @@ export const visitInstances = pgTable(
       sql`${table.visitTimeType} in ('fixed', 'flexible')`,
     ),
     check("visit_instances_window_order_chk", sql`${table.windowEnd} > ${table.windowStart}`),
-    check(
-      "visit_instances_duration_chk",
-      sql`${table.serviceDurationMinutes} between 1 and 180`,
-    ),
+    check("visit_instances_duration_chk", sql`${table.serviceDurationMinutes} between 1 and 180`),
     check("visit_instances_status_chk", sql`${table.status} in ('scheduled', 'cancelled')`),
   ],
 );
@@ -335,6 +335,12 @@ export const routeOptimizationTasks = pgTable(
       .notNull()
       .references(() => nurses.id, { onDelete: "cascade" }),
     visitId: text("visit_id").notNull(),
+    visitInstanceId: uuid("visit_instance_id").references(() => visitInstances.id, {
+      onDelete: "set null",
+    }),
+    templateId: uuid("template_id").references(() => recurringVisitTemplates.id, {
+      onDelete: "set null",
+    }),
     patientId: text("patient_id").notNull(),
     patientName: text("patient_name"),
     address: text("address"),
@@ -354,6 +360,8 @@ export const routeOptimizationTasks = pgTable(
   (table) => [
     index("route_optimization_tasks_run_id_idx").on(table.runId),
     index("route_optimization_tasks_nurse_id_idx").on(table.nurseId),
+    index("route_optimization_tasks_visit_instance_id_idx").on(table.visitInstanceId),
+    index("route_optimization_tasks_template_id_idx").on(table.templateId),
     index("route_optimization_tasks_nurse_service_start_idx").on(
       table.nurseId,
       table.serviceStartTime,

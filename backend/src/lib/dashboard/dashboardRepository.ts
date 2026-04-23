@@ -8,7 +8,13 @@ import type {
   OptimizeRouteV2UnscheduledTask,
 } from "../../../../shared/contracts";
 import { getDb } from "../../db";
-import { patients, routeOptimizationRuns, routeOptimizationTasks } from "../../db/schema";
+import {
+  patients,
+  recurringVisitTemplates,
+  routeOptimizationRuns,
+  routeOptimizationTasks,
+} from "../../db/schema";
+import type { VisitInstanceMeta } from "../recurrence/recurrenceRepository";
 import type { OptimizeRouteResultV2 } from "../../app/api/optimize-route/v2/types";
 import type { ValidatedOptimizeRouteV2Request } from "../../app/api/optimize-route/v2/validation";
 
@@ -20,6 +26,7 @@ type PersistOptimizationRunInput = {
   requestId?: string;
   request: ValidatedOptimizeRouteV2Request;
   result: OptimizeRouteResultV2;
+  instanceMetaByVisitId?: Map<string, VisitInstanceMeta>;
 };
 
 const runInTransaction = async <T>(operation: (db: ReturnType<typeof getDb>) => Promise<T>) => {
@@ -187,15 +194,33 @@ const buildDateRange = (now: Date, timezone: string) => {
   return dates;
 };
 
+const isMissingTaskLinkColumnsError = (error: unknown) => {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const cause = (error as Error & { cause?: unknown }).cause as
+    | { code?: unknown; message?: unknown }
+    | undefined;
+  const code = typeof cause?.code === "string" ? cause.code : null;
+  const message = `${error.message} ${typeof cause?.message === "string" ? cause.message : ""}`;
+
+  return (
+    code === "42703" && (message.includes("visit_instance_id") || message.includes("template_id"))
+  );
+};
+
 const resolveUpcomingStops = ({
   latestRunId,
   latestRunTimezone,
   tasks,
+  templateNameById,
   now,
 }: {
   latestRunId: string;
   latestRunTimezone: string;
   tasks: Array<typeof routeOptimizationTasks.$inferSelect>;
+  templateNameById: Map<string, string>;
   now: Date;
 }) => {
   const scheduled = tasks
@@ -234,6 +259,8 @@ const resolveUpcomingStops = ({
     patientName: null,
     destination: `Stop ${index + 1}`,
     status: (task.onTime === false ? "at_risk" : "on_track") as DashboardUpcomingStop["status"],
+    templateId: task.templateId ?? null,
+    templateName: task.templateId ? (templateNameById.get(task.templateId) ?? null) : null,
   }));
 };
 
@@ -313,6 +340,7 @@ export const recordOptimizationRun = async ({
   requestId,
   request,
   result,
+  instanceMetaByVisitId,
 }: PersistOptimizationRunInput): Promise<void> => {
   await runInTransaction(async (tx) => {
     const scheduledTasks = result.orderedStops.flatMap((stop) => stop.tasks);
@@ -370,11 +398,20 @@ export const recordOptimizationRun = async ({
 
     const visitsById = new Map(request.visits.map((visit) => [visit.visitId, visit]));
 
+    const resolveInstanceLink = (visitId: string) => {
+      const meta = instanceMetaByVisitId?.get(visitId);
+      return {
+        visitInstanceId: meta?.instanceId ?? null,
+        templateId: meta?.templateId ?? null,
+      };
+    };
+
     const scheduledRows = result.orderedStops.flatMap((stop) =>
       stop.tasks.map((task) => ({
         runId: createdRun.id,
         nurseId,
         visitId: task.visitId,
+        ...resolveInstanceLink(task.visitId),
         patientId: task.patientId,
         patientName: null,
         address: null,
@@ -399,6 +436,7 @@ export const recordOptimizationRun = async ({
         runId: createdRun.id,
         nurseId,
         visitId: task.visitId,
+        ...resolveInstanceLink(task.visitId),
         patientId: task.patientId,
         patientName: null,
         address: null,
@@ -462,16 +500,79 @@ export const getDashboardSummaryForNurse = async ({
   }
 
   const latestRunWarnings = parseWarnings(latestRun?.warnings ?? []);
-  const latestRunTasks = latestRun
-    ? await getDb()
+  let latestRunTasks: Array<typeof routeOptimizationTasks.$inferSelect> = [];
+  if (latestRun) {
+    try {
+      latestRunTasks = await getDb()
         .select()
         .from(routeOptimizationTasks)
         .where(eq(routeOptimizationTasks.runId, latestRun.id))
         .orderBy(
           asc(routeOptimizationTasks.serviceStartTime),
           asc(routeOptimizationTasks.createdAt),
-        )
-    : [];
+        );
+    } catch (error) {
+      if (!isMissingTaskLinkColumnsError(error)) {
+        throw error;
+      }
+
+      const legacyTasks = await getDb()
+        .select({
+          id: routeOptimizationTasks.id,
+          runId: routeOptimizationTasks.runId,
+          nurseId: routeOptimizationTasks.nurseId,
+          visitId: routeOptimizationTasks.visitId,
+          patientId: routeOptimizationTasks.patientId,
+          patientName: routeOptimizationTasks.patientName,
+          address: routeOptimizationTasks.address,
+          windowStart: routeOptimizationTasks.windowStart,
+          windowEnd: routeOptimizationTasks.windowEnd,
+          windowType: routeOptimizationTasks.windowType,
+          arrivalTime: routeOptimizationTasks.arrivalTime,
+          serviceStartTime: routeOptimizationTasks.serviceStartTime,
+          serviceEndTime: routeOptimizationTasks.serviceEndTime,
+          waitSeconds: routeOptimizationTasks.waitSeconds,
+          lateBySeconds: routeOptimizationTasks.lateBySeconds,
+          onTime: routeOptimizationTasks.onTime,
+          isUnscheduled: routeOptimizationTasks.isUnscheduled,
+          unscheduledReason: routeOptimizationTasks.unscheduledReason,
+          createdAt: routeOptimizationTasks.createdAt,
+        })
+        .from(routeOptimizationTasks)
+        .where(eq(routeOptimizationTasks.runId, latestRun.id))
+        .orderBy(
+          asc(routeOptimizationTasks.serviceStartTime),
+          asc(routeOptimizationTasks.createdAt),
+        );
+
+      latestRunTasks = legacyTasks.map((task) => ({
+        ...task,
+        visitInstanceId: null,
+        templateId: null,
+      }));
+    }
+  }
+
+  const templateIds = [
+    ...new Set(
+      latestRunTasks
+        .map((task) => task.templateId)
+        .filter((id): id is string => typeof id === "string" && id.length > 0),
+    ),
+  ];
+  const templateNameById = new Map<string, string>();
+  if (templateIds.length > 0) {
+    const templateRows = await getDb()
+      .select({ id: recurringVisitTemplates.id, name: recurringVisitTemplates.name })
+      .from(recurringVisitTemplates)
+      .where(inArray(recurringVisitTemplates.id, templateIds));
+
+    for (const row of Array.isArray(templateRows) ? templateRows : []) {
+      if (row.name) {
+        templateNameById.set(row.id, row.name);
+      }
+    }
+  }
 
   const today = dateRange[dateRange.length - 1];
   const todayRuns = recentRuns.filter((run) => run.planningDate === today);
@@ -509,6 +610,27 @@ export const getDashboardSummaryForNurse = async ({
     .where(and(eq(patients.nurseId, nurseId), eq(patients.isActive, true)));
   const activePatientCount = activePatientRow?.count ?? 0;
 
+  let templatedActivePatientCount = 0;
+  if (activePatientCount > 0) {
+    const [templatedActivePatientRow] = await getDb()
+      .select({ count: sql<number>`count(*)::int` })
+      .from(patients)
+      .where(
+        and(
+          eq(patients.nurseId, nurseId),
+          eq(patients.isActive, true),
+          sql`exists (
+            select 1
+            from ${recurringVisitTemplates}
+            where ${recurringVisitTemplates.nurseId} = ${nurseId}
+              and ${recurringVisitTemplates.patientId} = ${patients.id}
+              and ${recurringVisitTemplates.isActive} = true
+          )`,
+        ),
+      );
+    templatedActivePatientCount = templatedActivePatientRow?.count ?? 0;
+  }
+
   const [deletedPatientsRow] = await getDb()
     .select({ count: sql<number>`count(*)::int` })
     .from(patients)
@@ -531,6 +653,7 @@ export const getDashboardSummaryForNurse = async ({
       deletedClientsLast30Days,
       driveHoursLast7Days: roundToOneDecimal(totalDuration7dSeconds / 3600),
       activePatientCount,
+      templatedActivePatientCount,
     },
     alerts: buildAlerts({
       latestRun,
@@ -543,6 +666,7 @@ export const getDashboardSummaryForNurse = async ({
             latestRunId: latestRun.id,
             latestRunTimezone: latestRun.timezone,
             tasks: latestRunTasks,
+            templateNameById,
             now,
           })
         : [],

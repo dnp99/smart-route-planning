@@ -66,7 +66,9 @@ const isUniqueViolationError = (error: unknown) => {
   return error.code === "23505";
 };
 
-const attachTemplateWindows = async (templates: TemplateRow[]): Promise<RecurringTemplateWithWindows[]> => {
+const attachTemplateWindows = async (
+  templates: TemplateRow[],
+): Promise<RecurringTemplateWithWindows[]> => {
   if (templates.length === 0) {
     return [];
   }
@@ -99,7 +101,9 @@ const findActiveClientForNurse = async (nurseId: string, patientId: string) => {
   const [patient] = await getDb()
     .select({ id: patients.id })
     .from(patients)
-    .where(and(eq(patients.id, patientId), eq(patients.nurseId, nurseId), eq(patients.isActive, true)))
+    .where(
+      and(eq(patients.id, patientId), eq(patients.nurseId, nurseId), eq(patients.isActive, true)),
+    )
     .limit(1);
 
   return patient ?? null;
@@ -107,7 +111,8 @@ const findActiveClientForNurse = async (nurseId: string, patientId: string) => {
 
 const toDate = (value: string) => new Date(`${value}T00:00:00.000Z`);
 const toDateString = (value: Date) => value.toISOString().slice(0, 10);
-const dayOfWeekForDate = (dateString: string) => new Date(`${dateString}T12:00:00.000Z`).getUTCDay();
+const dayOfWeekForDate = (dateString: string) =>
+  new Date(`${dateString}T12:00:00.000Z`).getUTCDay();
 
 const parseRecurrenceRule = (rule: string): RecurrenceRule => {
   const tokens = rule
@@ -126,7 +131,10 @@ const parseRecurrenceRule = (rule: string): RecurrenceRule => {
     }
 
     const key = token.slice(0, separatorIndex).trim().toUpperCase();
-    const value = token.slice(separatorIndex + 1).trim().toUpperCase();
+    const value = token
+      .slice(separatorIndex + 1)
+      .trim()
+      .toUpperCase();
 
     if (key === "FREQ") {
       if (value === "DAILY") {
@@ -171,7 +179,9 @@ const isDateEligibleForTemplate = (
     return false;
   }
 
-  const dayDifference = Math.floor((toDate(planningDate).getTime() - toDate(template.startDate).getTime()) / DAY_MS);
+  const dayDifference = Math.floor(
+    (toDate(planningDate).getTime() - toDate(template.startDate).getTime()) / DAY_MS,
+  );
   if (dayDifference < 0) {
     return false;
   }
@@ -213,7 +223,9 @@ const listClientAddressesByIds = async (nurseId: string, patientIds: string[]) =
       ),
     );
 
-  return new Map(rows.map((row) => [row.id, { address: row.address, googlePlaceId: row.googlePlaceId }]));
+  return new Map(
+    rows.map((row) => [row.id, { address: row.address, googlePlaceId: row.googlePlaceId }]),
+  );
 };
 
 const listVisitInstanceRowsForRange = async (
@@ -253,7 +265,10 @@ const toMinutes = (value: string) => {
 
 export const listRecurringVisitTemplatesByNurse = async (nurseId: string, patientId?: string) => {
   const whereCondition = patientId
-    ? and(eq(recurringVisitTemplates.nurseId, nurseId), eq(recurringVisitTemplates.patientId, patientId))
+    ? and(
+        eq(recurringVisitTemplates.nurseId, nurseId),
+        eq(recurringVisitTemplates.patientId, patientId),
+      )
     : eq(recurringVisitTemplates.nurseId, nurseId);
 
   const templates = await getDb()
@@ -265,11 +280,16 @@ export const listRecurringVisitTemplatesByNurse = async (nurseId: string, patien
   return attachTemplateWindows(templates);
 };
 
-export const findRecurringVisitTemplateByIdForNurse = async (nurseId: string, templateId: string) => {
+export const findRecurringVisitTemplateByIdForNurse = async (
+  nurseId: string,
+  templateId: string,
+) => {
   const [template] = await getDb()
     .select()
     .from(recurringVisitTemplates)
-    .where(and(eq(recurringVisitTemplates.id, templateId), eq(recurringVisitTemplates.nurseId, nurseId)))
+    .where(
+      and(eq(recurringVisitTemplates.id, templateId), eq(recurringVisitTemplates.nurseId, nurseId)),
+    )
     .limit(1);
 
   if (!template) {
@@ -534,7 +554,12 @@ export const expandVisitInstancesForNurse = async (
   const existingRows = await getDb()
     .select({ occurrenceKey: visitInstances.occurrenceKey })
     .from(visitInstances)
-    .where(and(eq(visitInstances.nurseId, nurseId), inArray(visitInstances.occurrenceKey, occurrenceKeys)));
+    .where(
+      and(
+        eq(visitInstances.nurseId, nurseId),
+        inArray(visitInstances.occurrenceKey, occurrenceKeys),
+      ),
+    );
 
   const existingKeys = new Set(existingRows.map((row) => row.occurrenceKey));
   const insertRows = candidateInsertRows.filter((row) => !existingKeys.has(row.occurrenceKey));
@@ -613,13 +638,22 @@ export const updateVisitInstanceForNurse = async (
   return updated ?? null;
 };
 
+export type VisitInstanceMeta = {
+  instanceId: string;
+  templateId: string | null;
+};
+
 export const listScheduledVisitInstancesForOptimization = async (
   nurseId: string,
   planningDate: string,
-): Promise<OptimizeRouteV2Visit[]> => {
+): Promise<{
+  visits: OptimizeRouteV2Visit[];
+  instanceMetaByVisitId: Map<string, VisitInstanceMeta>;
+}> => {
   const rows = await getDb()
     .select({
       id: visitInstances.id,
+      templateId: visitInstances.templateId,
       patientId: visitInstances.patientId,
       address: visitInstances.address,
       googlePlaceId: visitInstances.googlePlaceId,
@@ -642,7 +676,7 @@ export const listScheduledVisitInstancesForOptimization = async (
     )
     .orderBy(asc(visitInstances.windowStart), asc(visitInstances.createdAt));
 
-  return rows.map((row) => ({
+  const visits: OptimizeRouteV2Visit[] = rows.map((row) => ({
     visitId: row.id,
     patientId: row.patientId,
     patientName: `${row.firstName} ${row.lastName}`.trim(),
@@ -653,4 +687,10 @@ export const listScheduledVisitInstancesForOptimization = async (
     windowType: row.visitTimeType === "flexible" ? "flexible" : "fixed",
     serviceDurationMinutes: row.serviceDurationMinutes,
   }));
+
+  const instanceMetaByVisitId = new Map<string, VisitInstanceMeta>(
+    rows.map((row) => [row.id, { instanceId: row.id, templateId: row.templateId }]),
+  );
+
+  return { visits, instanceMetaByVisitId };
 };

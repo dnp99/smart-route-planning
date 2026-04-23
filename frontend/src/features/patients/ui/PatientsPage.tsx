@@ -69,6 +69,11 @@ const PatientsPage = () => {
   const [recurringTemplatesByPatientId, setRecurringTemplatesByPatientId] = useState<
     Map<string, RecurringVisitTemplate[]>
   >(new Map());
+  const [templateFilterMode, setTemplateFilterMode] = useState<string | null>(() => {
+    const search = typeof window !== "undefined" ? window.location.search : "";
+    return new URLSearchParams(search).get("templateFilter");
+  });
+  const hasTemplateFilter = templateFilterMode === "without" || templateFilterMode === "with";
 
   const selectedPatient = useMemo(
     () => patients.find((patient) => patient.id === selectedPatientId) ?? null,
@@ -85,13 +90,28 @@ const PatientsPage = () => {
         listPatients(query),
         listRecurringVisitTemplates(),
       ]);
-      setPatients(nextPatients);
       const nextRecurringTemplatesByPatientId = new Map<string, RecurringVisitTemplate[]>();
       recurringTemplates.forEach((template) => {
         const current = nextRecurringTemplatesByPatientId.get(template.patientId) ?? [];
         current.push(template);
         nextRecurringTemplatesByPatientId.set(template.patientId, current);
       });
+      const patientsFilteredByTemplate = nextPatients.filter((patient) => {
+        if (!hasTemplateFilter) {
+          return true;
+        }
+
+        const activeTemplateCount =
+          nextRecurringTemplatesByPatientId.get(patient.id)?.filter((template) => template.isActive)
+            .length ?? 0;
+
+        if (templateFilterMode === "without") {
+          return activeTemplateCount === 0;
+        }
+
+        return activeTemplateCount > 0;
+      });
+      setPatients(patientsFilteredByTemplate);
       setRecurringTemplatesByPatientId(nextRecurringTemplatesByPatientId);
       if (!query) setTotalPatientCount(nextPatients.length);
 
@@ -107,7 +127,7 @@ const PatientsPage = () => {
 
   useEffect(() => {
     void fetchPatients(searchQuery);
-  }, [searchQuery]);
+  }, [hasTemplateFilter, searchQuery, templateFilterMode]);
 
   const resetFormState = () => {
     setSelectedPatientId(null);
@@ -456,7 +476,7 @@ const PatientsPage = () => {
         <div className={responsiveStyles.sectionHeader}>
           <div className="flex items-start justify-between gap-3">
             <h1 className="m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-              {searchQuery.trim()
+              {searchQuery.trim() || hasTemplateFilter
                 ? `Clients (${patients.length} of ${totalPatientCount})`
                 : `Clients (${patients.length})`}
             </h1>
@@ -493,6 +513,34 @@ const PatientsPage = () => {
               Client information entered here should be limited to what is necessary for scheduling
               and care delivery. Ensure you have appropriate authority to manage this data.
             </p>
+          </div>
+        )}
+
+        {hasTemplateFilter && (
+          <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
+            <span className="font-medium">
+              Filter:{" "}
+              {templateFilterMode === "without"
+                ? "Clients without active templates"
+                : "Clients with active templates"}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const nextParams = new URLSearchParams(window.location.search);
+                nextParams.delete("templateFilter");
+                const nextSearch = nextParams.toString();
+                window.history.replaceState(
+                  {},
+                  "",
+                  `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ""}`,
+                );
+                setTemplateFilterMode(null);
+              }}
+              className="rounded-md border border-blue-200 px-2 py-0.5 text-xs font-semibold text-blue-800 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
+            >
+              Clear filter
+            </button>
           </div>
         )}
 

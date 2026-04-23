@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { __resetOptimizeRouteRateLimitForTests } from "../requestGuards";
 
-const { requireAuthMock, recordOptimizationRunMock, listScheduledVisitInstancesForOptimizationMock } = vi.hoisted(() => ({
+const {
+  requireAuthMock,
+  recordOptimizationRunMock,
+  listScheduledVisitInstancesForOptimizationMock,
+} = vi.hoisted(() => ({
   requireAuthMock: vi.fn(),
   recordOptimizationRunMock: vi.fn(),
   listScheduledVisitInstancesForOptimizationMock: vi.fn(),
@@ -68,7 +72,10 @@ describe("optimize-route v3 route handler", () => {
     requireAuthMock.mockReset();
     recordOptimizationRunMock.mockReset();
     listScheduledVisitInstancesForOptimizationMock.mockReset();
-    listScheduledVisitInstancesForOptimizationMock.mockResolvedValue([]);
+    listScheduledVisitInstancesForOptimizationMock.mockResolvedValue({
+      visits: [],
+      instanceMetaByVisitId: new Map(),
+    });
     recordOptimizationRunMock.mockResolvedValue(undefined);
     requireAuthMock.mockResolvedValue({ nurseId: "nurse-1", email: "nurse@example.com" });
     __resetOptimizeRouteRateLimitForTests();
@@ -200,18 +207,29 @@ describe("optimize-route v3 route handler", () => {
 
   it("uses scheduled visit instances as fallback when request visits are empty", async () => {
     process.env.DATABASE_URL = "postgres://test:test@localhost:5432/test";
-    listScheduledVisitInstancesForOptimizationMock.mockResolvedValue([
-      {
-        visitId: "inst-1",
-        patientId: "client-1",
-        patientName: "Client One",
-        address: "100 Main St",
-        windowStart: "09:00",
-        windowEnd: "10:00",
-        windowType: "fixed",
-        serviceDurationMinutes: 30,
-      },
-    ]);
+    listScheduledVisitInstancesForOptimizationMock.mockResolvedValue({
+      visits: [
+        {
+          visitId: "provided-1",
+          patientId: "client-1",
+          patientName: "Client One",
+          address: "100 Main St",
+          windowStart: "09:00",
+          windowEnd: "10:00",
+          windowType: "fixed",
+          serviceDurationMinutes: 30,
+        },
+      ],
+      instanceMetaByVisitId: new Map([
+        [
+          "provided-1",
+          {
+            instanceId: "provided-1",
+            templateId: "template-1",
+          },
+        ],
+      ]),
+    });
 
     mockedOptimizeRouteV3.mockResolvedValue({
       start: {
@@ -246,12 +264,40 @@ describe("optimize-route v3 route handler", () => {
 
     const [optimizerRequest] = mockedOptimizeRouteV3.mock.calls[0];
     expect(optimizerRequest.visits).toEqual([
-      expect.objectContaining({ visitId: "inst-1", patientId: "client-1" }),
+      expect.objectContaining({ visitId: "provided-1", patientId: "client-1" }),
     ]);
+    expect(recordOptimizationRunMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instanceMetaByVisitId: expect.any(Map),
+      }),
+    );
   });
 
-  it("does not query scheduled instances when request already has visits", async () => {
+  it("queries scheduled instances for metadata when request already has visits", async () => {
     process.env.DATABASE_URL = "postgres://test:test@localhost:5432/test";
+    listScheduledVisitInstancesForOptimizationMock.mockResolvedValue({
+      visits: [
+        {
+          visitId: "provided-1",
+          patientId: "client-1",
+          patientName: "Client One",
+          address: "100 Main St",
+          windowStart: "09:00",
+          windowEnd: "10:00",
+          windowType: "fixed",
+          serviceDurationMinutes: 30,
+        },
+      ],
+      instanceMetaByVisitId: new Map([
+        [
+          "provided-1",
+          {
+            instanceId: "provided-1",
+            templateId: "template-1",
+          },
+        ],
+      ]),
+    });
 
     mockedOptimizeRouteV3.mockResolvedValue({
       start: {
@@ -295,6 +341,18 @@ describe("optimize-route v3 route handler", () => {
 
     const response = await POST(buildPostRequest(JSON.stringify(requestWithVisits)));
     expect(response.status).toBe(200);
-    expect(listScheduledVisitInstancesForOptimizationMock).not.toHaveBeenCalled();
+    expect(listScheduledVisitInstancesForOptimizationMock).toHaveBeenCalledWith(
+      "nurse-1",
+      "2026-03-13",
+    );
+
+    const [optimizerRequest] = mockedOptimizeRouteV3.mock.calls[0];
+    expect(optimizerRequest.visits).toEqual(requestWithVisits.visits);
+
+    expect(recordOptimizationRunMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        instanceMetaByVisitId: expect.any(Map),
+      }),
+    );
   });
 });

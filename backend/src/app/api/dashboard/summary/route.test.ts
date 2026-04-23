@@ -41,6 +41,7 @@ describe("/api/dashboard/summary route", () => {
         deletedClientsLast30Days: 1,
         driveHoursLast7Days: 7.5,
         activePatientCount: 24,
+        templatedActivePatientCount: 8,
       },
       alerts: [
         {
