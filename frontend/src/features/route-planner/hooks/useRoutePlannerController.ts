@@ -358,7 +358,7 @@ export function useRoutePlannerController({
     if (count === 1) {
       return `Scheduled for ${dayName} · ${autoSeedTemplateLabel}`;
     }
-    return `Scheduled for ${dayName} · ${count} templates`;
+    return `Scheduled for ${dayName} · ${count} templates · (auto seeded)`;
   }, [
     manualTemplateSelectionLock,
     selectedDestinations.length,
