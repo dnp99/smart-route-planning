@@ -34,234 +34,121 @@ After this change:
 
 ## Current State
 
-The current implementation models template windows as full visit windows:
+~~The current implementation models template windows as full visit windows:~~
 
-- `recurring_visit_templates.service_duration_minutes`
-- `recurring_visit_template_windows.day_of_week`
-- `recurring_visit_template_windows.start_time`
-- `recurring_visit_template_windows.end_time`
-- `recurring_visit_template_windows.visit_time_type`
+~~- `recurring_visit_templates.service_duration_minutes`~~
+~~- `recurring_visit_template_windows.day_of_week`~~
+~~- `recurring_visit_template_windows.start_time`~~
+~~- `recurring_visit_template_windows.end_time`~~
+~~- `recurring_visit_template_windows.visit_time_type`~~
 
-The frontend form mirrors this by asking for service duration and recurring windows with day/start/end.
+~~The frontend form mirrors this by asking for service duration and recurring windows with day/start/end.~~
+
+**DONE.** Templates now own only recurrence schedule (`daysOfWeek`, dates, timezone, active). The `recurring_visit_template_windows` table and `service_duration_minutes` column have been dropped.
 
 ## Target UX
 
-In the client edit form, the recurring template section should show:
+**DONE.** The client edit form shows:
 
 1. Template name
 2. Start date
 3. End date (optional)
 4. Active checkbox/toggle
-5. Weekday selector
+5. Weekday selector — seven toggle buttons `Sun Mon Tue Wed Thu Fri Sat`, at least one required
+6. Helper text: "Visits use this client's saved visit windows and duration."
 
-Recommended weekday UI:
-
-- Seven toggle buttons: `Sun Mon Tue Wed Thu Fri Sat`
-- At least one weekday required
-- Compact summary text on collapsed rows, for example:
-  - `Mon, Wed, Fri · starts 2026-05-01`
-  - `Mon · active · no end date`
-
-Add helper copy near the weekday selector:
-
-`Visits use this client's saved visit windows and duration.`
-
-Remove from the recurring template UI:
-
-- Service duration input
-- Recurring window start input
-- Recurring window end input
-- Add recurring window button
+Service duration input, recurring window start/end inputs, and the add-window button have been removed.
 
 ## Data Model Options
 
-### Preferred Option: New Template Days Table
+**DONE — Preferred Option implemented.** `recurring_visit_template_days` table created with:
 
-Create a clearer table:
-
-`recurring_visit_template_days`
-
-Columns:
-
-- `id`
-- `template_id`
-- `day_of_week`
-- `created_at`
-- `updated_at`
-
-Constraints/indexes:
-
-- FK `template_id -> recurring_visit_templates.id` with cascade delete
-- `day_of_week` check from 0 to 6
-- unique `(template_id, day_of_week)`
-- index on `template_id`
-
-Then stop using `recurring_visit_template_windows` for template recurrence.
-
-### Compatibility Option: Reuse Existing Windows Table
-
-Keep `recurring_visit_template_windows`, but ignore `start_time`, `end_time`, and `visit_time_type`.
-
-This is less migration work but keeps misleading schema names and dead columns. Prefer the new table unless time is tight.
+- `id`, `template_id` (FK → recurring_visit_templates, cascade delete), `day_of_week` (0–6), `created_at`, `updated_at`
+- Unique index on `(template_id, day_of_week)`
+- Backfilled from `recurring_visit_template_windows` at migration time
+- `recurring_visit_template_windows` table subsequently dropped
 
 ## Contract Changes
 
-Update shared contracts from window-based templates to day-based templates.
+**DONE.** Shared contract updated:
 
-Current shape:
-
-```ts
-{
-  serviceDurationMinutes: number;
-  windows: Array<{
-    dayOfWeek: number;
-    startTime: string;
-    endTime: string;
-    visitTimeType: "fixed" | "flexible";
-  }>;
-}
-```
-
-Target shape:
-
-```ts
-{
-  name: string | null;
-  timezone: string;
-  startDate: string;
-  endDate: string | null;
-  isActive: boolean;
-  daysOfWeek: number[];
-}
-```
-
-Keep runtime parsers tolerant during migration if needed:
-
-- Accept old `windows` payload temporarily and convert unique `dayOfWeek` values.
-- Emit only `daysOfWeek` from new APIs once frontend is migrated.
+- `RecurringVisitTemplate`: removed `serviceDurationMinutes`, `daysOfWeek` is now required (not optional)
+- `CreateRecurringVisitTemplateRequest`: removed `serviceDurationMinutes`
+- Runtime parser `isRecurringVisitTemplate`: validates `daysOfWeek` as required
 
 ## Backend Plan
 
-### Phase 1: Schema Migration
+### Phase 1: Schema Migration — DONE
 
-1. Add `recurring_visit_template_days`.
-2. Backfill days from existing `recurring_visit_template_windows`:
-   - Insert unique `(template_id, day_of_week)` pairs.
-3. Keep old columns/tables for one deploy if safer.
-4. Later cleanup migration:
-   - drop `recurring_visit_template_windows`
-   - drop `service_duration_minutes` from `recurring_visit_templates`
+- [x] Added `recurring_visit_template_days` (migration `0017_recurring_template_days.sql`)
+- [x] Backfilled days from existing windows
+- [x] Dropped `recurring_visit_template_windows` table (migration `0017_previous_tombstone.sql`)
+- [x] Dropped `service_duration_minutes` from `recurring_visit_templates`
 
-### Phase 2: Repository Updates
+### Phase 2: Repository Updates — DONE
 
-Update `backend/src/lib/recurrence/recurrenceRepository.ts`:
+- [x] `attachTemplateSchedule` reads from `recurring_visit_template_days` only
+- [x] Create writes `daysOfWeek` to days table; does not write windows
+- [x] Update replaces days; does not touch windows table
+- [x] Expansion loads active templates, filters by `daysOfWeek`, loads client visit windows and duration, generates instances from client data
+- [x] Validation accepts `daysOfWeek`; `serviceDurationMinutes` removed from template payload
+- [x] DTO emits `daysOfWeek`; `serviceDurationMinutes` removed from template response
 
-1. Replace `attachTemplateWindows` with day attachment.
-2. Create/update template days instead of windows.
-3. Delete old template days and insert replacement days on template update.
-4. Expansion logic:
-   - load active templates for nurse
-   - filter by start/end date
-   - filter by selected weekday
-   - load active client data and client visit windows
-   - generate visit instances from client visit windows
+### Phase 3: Occurrence Key Strategy — DONE
 
-Generated instance fields should come from the patient/client:
+Occurrence key uses `<templateId>:<patientVisitWindowId>:<planningDate>` (or `<templateId>:default:<planningDate>` via the legacy fallback window id). Implemented in `recurrenceRepository.ts`.
 
-- `address`
-- `googlePlaceId`
-- `windowStart`
-- `windowEnd`
-- `visitTimeType`
-- `serviceDurationMinutes`
+### Phase 4: Delete Behavior — DONE
 
-Template still supplies:
+Deleting a template cascades to delete its generated visit instances (FK on `visit_instances.template_id` with `ON DELETE cascade` is not present — deletion is handled explicitly in `deleteRecurringVisitTemplateForNurse` which deletes instances then the template in a transaction).
 
-- `templateId`
-- recurrence date
-- occurrence grouping identity
+### Backend Tests — TODO
 
-### Phase 3: Occurrence Key Strategy
+No tests yet for the new template model. Needed:
 
-The occurrence key should stay stable and distinguish multiple patient windows on the same day.
-
-Recommended:
-
-```text
-<templateId>:<patientVisitWindowId>:<planningDate>
-```
-
-Fallback for clients without explicit visit window ids:
-
-```text
-<templateId>:default:<planningDate>
-```
-
-Important: if patient visit windows change after instances are generated, decide whether existing future generated instances should be regenerated, updated in place, or left as already-materialized schedule rows.
-
-Recommended first version:
-
-- New expansion uses current patient data.
-- Existing manually overridden instances are preserved.
-- Existing non-manual future instances can be refreshed when a template expands for a date.
-
-### Phase 4: Delete Behavior
-
-When deleting a template:
-
-1. Delete generated visit instances for that template.
-2. Delete the template.
-3. Route Planner should not show orphaned generated visits.
-
-If any old orphaned instances exist from previous behavior, add a one-time cleanup migration or repository guard.
+1. Validation accepts `daysOfWeek`, rejects empty array and out-of-range values
+2. Create template persists days to `recurring_visit_template_days`
+3. Update template replaces days
+4. Expansion generates instances using client visit windows and duration
+5. Expansion creates multiple instances when client has multiple visit windows
+6. Expansion skips dates where template weekday does not match
+7. Deleting a template removes generated visit instances
+8. No-window-client fallback (uses legacy `preferredVisitStartTime`/`preferredVisitEndTime`)
 
 ## Frontend Plan
 
-### Phase 1: Domain Model
+### Phase 1: Domain Model — DONE
 
-Update patient form recurring template state:
+- [x] `PatientFormRecurringTemplate`: replaced `windows`/`serviceDurationMinutes` with `daysOfWeek: number[]`
+- [x] `FormFieldErrors`: removed window-related errors, added `daysOfWeek?: string`
+- [x] `createEmptyRecurringTemplate`: emits `daysOfWeek: [1]` (Monday default)
+- [x] `buildRecurringTemplateMutationPlan`: sends `daysOfWeek`, no `windows` or `serviceDurationMinutes`
+- [x] `validateForm`: validates `daysOfWeek.length > 0`, removed window/duration validation
+- [x] `toRecurringFormTemplate`: reads `template.daysOfWeek` with fallback to extracting from old `windows`
 
-- Replace `windows` with `daysOfWeek`.
-- Remove `serviceDurationMinutes`.
-- Keep stable local row ids for form rendering.
+### Phase 2: UI Simplification — DONE
 
-Files likely involved:
+- [x] Removed service duration input from template cards
+- [x] Removed recurring windows nested editor
+- [x] Added weekday toggle group (7 buttons, `aria-pressed`, blue selected state per design system §11)
+- [x] Added helper text "Visits use this client's saved visit windows and duration."
+- [x] Updated validation messages
 
-- `frontend/src/features/patients/domain/patientForm.ts`
-- `frontend/src/features/patients/ui/PatientFormModal.tsx`
-- `frontend/src/features/patients/ui/PatientsPage.tsx`
-- `frontend/src/features/route-planner/hooks/useCreatePatientForm.ts`
+### Phase 3: API Service Updates — DONE
 
-### Phase 2: UI Simplification
+- [x] `patientForm.ts` re-export barrel cleaned up (removed `createEmptyRecurringTemplateWindow`, `PatientFormRecurringTemplateWindow`, `RecurringTemplateWindowFieldErrors`)
+- [x] `useCreatePatientForm.ts`: removed window handler functions
+- [x] `PatientsPage.tsx`: removed window handler functions and props
 
-In recurring template cards:
+### Phase 4: Route Planner — DONE
 
-1. Remove service duration input.
-2. Remove recurring windows nested editor.
-3. Add weekday toggle group.
-4. Add helper text explaining that visit windows/duration come from client data.
-5. Update validation messages.
+- [x] `templateOptions` `matchesPlanningDay` reads `daysOfWeek` instead of removed `windows`
+- [x] `autoTemplateId` reads `daysOfWeek`
+- [x] Defensive filter: instances whose `templateId` is not in the loaded `recurringTemplates` set are excluded from auto-seeding
 
-### Phase 3: API Service Updates
+### Phase 5: Exceptions + Series Editing — TODO
 
-Update:
-
-- `frontend/src/features/patients/api/recurringVisitTemplateService.ts`
-- route planner re-export shim if still present
-
-Payload should send `daysOfWeek` instead of `windows`.
-
-### Phase 4: Route Planner
-
-Route Planner should continue consuming concrete visit instances.
-
-No template editing should happen in Route Planner.
-
-Add a defensive filter so instances with a deleted/missing template do not auto-seed selected clients. This protects users if old orphan rows exist in the database.
-
-### Phase 5: Exceptions + Series Editing
-
-Once templates are day-based and visit details come from client records, add occurrence-level and series-level editing without reintroducing duplicate template windows.
+Add occurrence-level and series-level editing.
 
 Supported actions:
 
@@ -273,112 +160,59 @@ Supported actions:
 
 Recommended model:
 
-- Keep `visit_instance_exceptions` or a successor table for occurrence-specific changes.
-- Store exceptions by `templateId`, `patientId`, `planningDate`, and optional `patientVisitWindowId`.
-- Preserve the distinction between:
-  - generated schedule from template + client data
-  - manual one-off override
-  - future-series template change
+- Use `visit_instance_exceptions` or successor table for occurrence-specific changes
+- Store exceptions by `templateId`, `patientId`, `planningDate`, optional `patientVisitWindowId`
+- Distinguish: generated schedule / manual one-off override / future-series template change
 
 Occurrence edit behavior:
 
-- Skip one occurrence:
-  - mark the concrete visit instance `cancelled`, or store a skip exception if the instance has not been generated yet.
-- Restore one occurrence:
-  - remove skip exception or set generated instance back to scheduled when safe.
-- Reschedule one occurrence:
-  - update that visit instance with `isManualOverride = true`.
-  - do not mutate client visit windows or recurring template weekdays.
+- Skip: mark instance `cancelled`, or store skip exception if not yet generated
+- Restore: remove skip exception or set instance back to `scheduled`
+- Reschedule: update instance with `isManualOverride = true`; do not mutate template or client windows
 
 Series edit behavior:
 
-- Edit this and future:
-  - close the current template by setting `endDate` to the day before the effective date.
-  - create a new template beginning on the effective date with the new name/date/days/active values.
-  - keep client visit windows and duration as the source of visit details.
-- End this and future:
-  - set `endDate` to the day before the effective date.
-  - cancel or delete non-manual generated future instances for that template.
+- Edit this and future: set `endDate` on current template to day before effective date; create new template from effective date with updated values
+- End this and future: set `endDate`; cancel/delete non-manual future instances
 
 Regeneration rules:
 
-- Do not recreate skipped occurrences.
-- Do not overwrite manually rescheduled instances.
-- Refresh non-manual future instances from current client visit windows when expansion runs.
-- If a client visit window is removed, future non-manual instances derived from that window should be cancelled or removed according to the final product decision.
+- Do not recreate skipped occurrences
+- Do not overwrite manually rescheduled instances
+- Refresh non-manual future instances on expansion
+- If a client visit window is removed, cancel derived non-manual future instances
 
 Frontend surfaces:
 
-- Route Planner can support one-off instance actions such as skip/restore/reschedule.
-- Client template editor should support series actions:
-  - save entire template
-  - apply changes from date forward
-  - end template from date forward
-- Keep copy explicit so users understand whether they are editing one planned visit or the recurring template.
+- Route Planner: one-off instance actions (skip / restore / reschedule)
+- Client template editor: series actions (save entire template / apply from date forward / end from date forward)
 
 ## Test Plan
 
-### Backend Tests
+### Backend Tests — TODO
 
-Update/add tests for:
+See Backend Plan → Backend Tests above.
 
-1. Validation accepts `daysOfWeek`.
-2. Validation rejects:
-   - no weekdays
-   - duplicate weekdays if contract chooses to reject instead of normalize
-   - weekdays outside 0-6
-3. Create template persists days.
-4. Update template replaces days.
-5. Expansion generates instances using patient visit windows and duration.
-6. Expansion creates multiple instances when a patient has multiple visit windows.
-7. Expansion creates no instances when template weekday does not match planning date.
-8. Deleting a template removes its generated instances.
-9. Skip exceptions prevent regeneration for that occurrence.
-10. Rescheduled/manual instances are not overwritten by expansion.
-11. Edit-this-and-future closes the old template and creates a replacement template.
-12. Ending a series cancels or removes future non-manual generated instances.
+### Frontend Tests — DONE (partial)
 
-### Frontend Tests
-
-Update/add tests for:
-
-1. Patient form renders weekday toggles and no service/window fields in template section.
-2. Template creation sends `daysOfWeek`.
-3. Template update sends changed `daysOfWeek`.
-4. Removing a template calls delete and removes it from local form state.
-5. Route Planner auto-seeds from generated visit instances only when their template still exists.
-6. One-off skip/restore/reschedule controls affect only the selected occurrence.
-7. Series edit controls clearly separate entire-template edits from this-and-future edits.
-8. Route Planner does not show skipped occurrences after reload.
+- [x] `patientForm.validation.test.ts` updated: fixtures use `daysOfWeek`, removed window-duration test, added "requires at least one weekday" test
+- [ ] Template creation sends `daysOfWeek` (integration test)
+- [ ] Template update sends changed `daysOfWeek`
+- [ ] Route Planner defensive filter excludes orphaned instances (unit test)
+- [ ] Phase 5 UI tests (skip/restore/reschedule, series edit)
 
 ## Migration / Rollout Strategy
 
-Recommended rollout:
+**COMPLETE.** Rolled out in two migrations:
 
-1. Backend supports both old and new payloads.
-2. Add new days table and backfill from old windows.
-3. Frontend switches to day-based UI and payload.
-4. Verify production data.
-5. Remove old window-based template support and schema in a later cleanup.
+1. `0017_recurring_template_days.sql` — added days table, backfilled, kept old windows table
+2. `0017_previous_tombstone.sql` — dropped windows table and `service_duration_minutes`
 
-This avoids a brittle all-at-once migration and gives room to recover if existing template data needs correction.
+Backend accepted both old `windows` payload and new `daysOfWeek` payload during transition. Frontend now sends only `daysOfWeek`.
 
 ## Open Questions
 
-1. If a client has multiple visit windows, should each selected weekday generate all windows?
-   - Recommended: yes.
-2. If a client has no visit windows, should a template still generate a visit?
-   - Recommended: yes, using the client-level preferred/default window fields if present; otherwise skip and show a validation warning.
-3. Should changing patient visit windows update already-generated future instances?
-   - Recommended: refresh non-manual future instances on expansion; preserve manual overrides.
-4. Should timezone stay editable per template?
-   - Recommended: keep backend timezone for correctness, but consider hiding it in UI and defaulting from nurse/account timezone.
-
-## Acceptance Criteria
-
-1. Recurring template UI no longer asks for service duration, start time, or end time.
-2. Template only asks for name, date range, active state, and weekdays.
-3. Generated visit instances use patient/client visit windows and duration.
-4. Route Planner selected clients match the chosen planning date and active templates.
-5. Deleting a template removes or prevents stale generated visits from appearing in Route Planner.
-6. Backend and frontend tests pass.
+1. ~~If a client has multiple visit windows, should each selected weekday generate all windows?~~ **Yes — implemented.**
+2. ~~If a client has no visit windows, should a template still generate a visit?~~ **Yes — uses legacy `preferredVisitStartTime`/`preferredVisitEndTime` fallback.**
+3. Should changing patient visit windows update already-generated future instances? **Recommended: refresh non-manual future instances on expansion; preserve manual overrides. Not yet implemented (Phase 5).**
+4. Should timezone stay editable per template? **Yes — kept in backend and form. Hidden complexity deferred.**
