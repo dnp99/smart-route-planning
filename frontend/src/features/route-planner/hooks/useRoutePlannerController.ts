@@ -358,7 +358,7 @@ export function useRoutePlannerController({
     if (count === 1) {
       return `Scheduled for ${dayName} · ${autoSeedTemplateLabel}`;
     }
-    return `Scheduled for ${dayName} · ${count} templates`;
+    return `Scheduled for ${dayName} · ${count} templates · (auto seeded)`;
   }, [
     manualTemplateSelectionLock,
     selectedDestinations.length,
@@ -444,6 +444,11 @@ export function useRoutePlannerController({
   const handleSetDestinationVisitIncluded = (visitKey: string, isIncluded: boolean) => {
     setManualTemplateSelectionLock(true);
     setDestinationVisitIncluded(visitKey, isIncluded);
+  };
+
+  const handleClearSelectedDestinations = () => {
+    setManualTemplateSelectionLock(true);
+    replaceSelectedDestinations([]);
   };
 
   const {
@@ -569,6 +574,7 @@ export function useRoutePlannerController({
     onAddPatient: handleAddDestinationPatient,
     onOpenCreatePatient: openCreatePatientModal,
     onToggleDestinationDetails: toggleDestinationDetails,
+    onClearSelectedDestinations: handleClearSelectedDestinations,
     onRemoveDestinationVisit: handleRemoveDestinationVisit,
     onSetDestinationVisitIncluded: handleSetDestinationVisitIncluded,
     onUpdateDestinationPlanningWindow: updateDestinationPlanningWindow,

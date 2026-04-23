@@ -35,6 +35,25 @@
     animation: dashboard-fade-in 360ms ease-out both;
   }
 
+  .dashboard-kpi-card {
+    will-change: transform;
+    transition:
+      transform 180ms ease,
+      box-shadow 180ms ease,
+      border-color 180ms ease;
+  }
+
+  .dashboard-kpi-card:hover,
+  .dashboard-kpi-card:focus-visible {
+    transform: translateY(-2px);
+  }
+
+  .dashboard-kpi-progress-fill,
+  .dashboard-trend-fill {
+    transform-origin: left center;
+    animation: dashboard-bar-in 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   .dashboard-reveal:nth-child(2) {
     animation-delay: 60ms;
   }
@@ -191,6 +210,21 @@
   }
 }
 
+@keyframes car-fly {
+  0%   { transform: translate(-80px,  0px);   opacity: 0; }
+  6%   { opacity: 1; }
+  20%  { transform: translate(20vw,  -30px); }
+  40%  { transform: translate(40vw,   20px); }
+  60%  { transform: translate(60vw,  -25px); }
+  80%  { transform: translate(80vw,   15px); opacity: 1; }
+  94%  { opacity: 1; }
+  100% { transform: translate(calc(100vw + 80px), 0px); opacity: 0; }
+}
+
+.car-fly-animation {
+  animation: car-fly linear forwards;
+}
+
 @keyframes dashboard-fade-in {
   from {
     opacity: 0;
@@ -203,8 +237,23 @@
   }
 }
 
+@keyframes dashboard-bar-in {
+  from {
+    transform: scaleX(0);
+    opacity: 0.75;
+  }
+
+  to {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dashboard-reveal,
+  .dashboard-kpi-card,
+  .dashboard-kpi-progress-fill,
+  .dashboard-trend-fill,
   .optimize-route-button,
   .optimize-route-button::after,
   .route-loading-skeleton::after,

@@ -220,6 +220,8 @@ export const responsiveStyles = {
   // ── Destination list ───────────────────────────────────────────────────────
   destinationList:
     "overflow-y-auto rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3 md:h-[26rem]",
+  selectedListClearButton:
+    "inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-2.5 text-xs font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-400 sm:h-8",
   destinationItem:
     "flex flex-col gap-2.5 text-sm text-slate-900 dark:text-slate-200 md:flex-row md:items-start md:justify-between md:gap-3",
   destinationItemBody: "flex min-w-0 flex-1 items-start gap-2.5 sm:gap-3",
@@ -419,11 +421,14 @@ export const responsiveStyles = {
   dashboardHeroActions: "mt-6 flex flex-wrap gap-2.5",
   dashboardKpiGrid: "dashboard-reveal grid gap-3 sm:grid-cols-2 xl:grid-cols-4",
   dashboardKpiCard:
-    "block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-5",
+    "dashboard-reveal dashboard-kpi-card block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-5",
   dashboardKpiLabel:
     "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
   dashboardKpiValue: "m-0 mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100",
   dashboardKpiDelta: "m-0 mt-2 text-xs font-semibold",
+  dashboardKpiProgressTrack: "mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700",
+  dashboardKpiProgressFill:
+    "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
   dashboardNudgeCard:
     "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
   dashboardAlertItem:
@@ -435,7 +440,8 @@ export const responsiveStyles = {
   dashboardDraftActions: "mt-4 flex flex-wrap gap-2",
   dashboardTrendRow: "grid grid-cols-[40px_1fr_36px] items-center gap-2",
   dashboardTrendTrack: "h-2 rounded-full bg-slate-200 dark:bg-slate-700",
-  dashboardTrendFill: "h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
+  dashboardTrendFill:
+    "dashboard-trend-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
   dashboardSnapshotGrid:
     "mt-3 grid gap-2 text-sm text-slate-600 dark:text-slate-300 sm:grid-cols-3",
   dashboardSnapshotItem: "m-0 rounded-xl bg-slate-100 p-3 dark:bg-slate-800/80",

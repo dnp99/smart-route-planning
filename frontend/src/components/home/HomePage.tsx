@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import CarFlyAnimation from "../shared/CarFlyAnimation";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type {
   AuthUser,
@@ -183,7 +184,31 @@ export default function HomePage({
           href: "/route-planner",
         },
         {
+          label: "Unscheduled visits",
+          value: "—",
+          delta: "Today",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
+        },
+        {
           label: "Drive hours",
+          value: "—",
+          delta: "Last 7 days",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
+        },
+        {
+          label: "Total distance",
+          value: "—",
+          delta: "Today",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
+        },
+        {
+          label: "On-time rate",
           value: "—",
           delta: "Last 7 days",
           tone: "text-slate-500",
@@ -206,6 +231,14 @@ export default function HomePage({
           trend: "No baseline yet",
           href: "/clients?templateFilter=without",
           progressPercent: 0,
+        },
+        {
+          label: "Deleted clients",
+          value: "—",
+          delta: "Last 30 days",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/clients",
         },
       ];
     }
@@ -241,6 +274,18 @@ export default function HomePage({
         href: "/clients",
       },
       {
+        label: "Deleted clients",
+        value: String(dashboardSummary.kpis.deletedClientsLast30Days),
+        delta: "Last 30 days",
+        tone:
+          dashboardSummary.kpis.deletedClientsLast30Days > 0 ? "text-amber-600" : "text-slate-500",
+        trend:
+          dashboardSummary.kpis.deletedClientsLast30Days > 0
+            ? "Roster churn detected"
+            : "No recent client removals",
+        href: "/clients",
+      },
+      {
         label: "Template coverage",
         value: `${templatedActivePatientCount} / ${activePatientCount} clients`,
         delta:
@@ -255,6 +300,41 @@ export default function HomePage({
         progressPercent: templateCoveragePercent,
       },
       {
+        label: "Visits this week",
+        value: String(dashboardSummary.kpis.visitsScheduledLast7Days),
+        delta: "Last 7 days",
+        tone:
+          dashboardSummary.kpis.visitsScheduledLast7Days > 0 ? "text-blue-600" : "text-slate-500",
+        trend:
+          dashboardSummary.kpis.visitsScheduledLast7Days > 0
+            ? "Scheduled across all routes"
+            : "No visits scheduled yet",
+        href: "/route-planner",
+      },
+      {
+        label: "On-time rate",
+        value:
+          dashboardSummary.kpis.onTimeRatePercent7d === null
+            ? "—"
+            : `${dashboardSummary.kpis.onTimeRatePercent7d}%`,
+        delta: "Last 7 days",
+        tone:
+          dashboardSummary.kpis.onTimeRatePercent7d === null
+            ? "text-slate-500"
+            : dashboardSummary.kpis.onTimeRatePercent7d >= 90
+              ? "text-emerald-600"
+              : dashboardSummary.kpis.onTimeRatePercent7d >= 75
+                ? "text-amber-600"
+                : "text-rose-600",
+        trend:
+          dashboardSummary.kpis.onTimeRatePercent7d === null
+            ? "No route history yet"
+            : dashboardSummary.kpis.onTimeRatePercent7d >= 90
+              ? "Consistent on-time performance"
+              : "Timing risk needs attention",
+        href: "/route-planner",
+      },
+      {
         label: "Drive hours",
         value: `${dashboardSummary.kpis.driveHoursLast7Days.toFixed(1)}h`,
         delta: "Last 7 days",
@@ -263,6 +343,17 @@ export default function HomePage({
           dashboardSummary.kpis.driveHoursLast7Days > 0
             ? "Field time recorded"
             : "No drive time yet",
+        href: "/route-planner",
+      },
+      {
+        label: "Total distance",
+        value: `${dashboardSummary.kpis.totalDistanceKm7d.toFixed(1)} km`,
+        delta: "Last 7 days",
+        tone: dashboardSummary.kpis.totalDistanceKm7d > 0 ? "text-blue-600" : "text-slate-500",
+        trend:
+          dashboardSummary.kpis.totalDistanceKm7d > 0
+            ? "Distance covered across recent routes"
+            : "No distance recorded yet",
         href: "/route-planner",
       },
     ];
@@ -296,6 +387,7 @@ export default function HomePage({
       message: string;
       rationale: string;
       action: "setup" | "settings" | "templates";
+      tone: "warning" | "info";
     }> = [];
 
     if (setupMissing.indexOf("displayName") >= 0) {
@@ -304,6 +396,7 @@ export default function HomePage({
         message: "Add a display name to complete workspace setup.",
         rationale: "Needed for profile identification across your workspace.",
         action: "setup",
+        tone: "warning",
       });
     }
 
@@ -313,6 +406,7 @@ export default function HomePage({
         message: "Set up working hours to complete workspace setup.",
         rationale: "Needed to keep route feasibility and workday timing accurate.",
         action: "setup",
+        tone: "warning",
       });
     }
 
@@ -322,6 +416,7 @@ export default function HomePage({
         message: "Choose route priority (time or distance) to complete setup.",
         rationale: "Needed so route optimization uses your preferred planning strategy.",
         action: "setup",
+        tone: "warning",
       });
     }
 
@@ -331,6 +426,7 @@ export default function HomePage({
         message: "Add a home address for default start and end points.",
         rationale: "Needed so route optimization starts and ends from your base automatically.",
         action: "settings",
+        tone: "warning",
       });
     }
 
@@ -339,13 +435,14 @@ export default function HomePage({
     if (activePatientCount > 0) {
       const coveragePercent = Math.round((templatedActivePatientCount / activePatientCount) * 100);
       const clientsWithoutTemplates = Math.max(0, activePatientCount - templatedActivePatientCount);
-      if (clientsWithoutTemplates > 0 && coveragePercent < 60) {
+      if (clientsWithoutTemplates > 0) {
         nudges.push({
           id: "template-coverage",
-          message: `Template coverage is ${coveragePercent}% (${templatedActivePatientCount}/${activePatientCount} clients).`,
+          message: `${clientsWithoutTemplates} clients are missing recurring templates.`,
           rationale:
-            "Set recurring templates for regular clients to reduce manual route selection every day.",
+            "Set templates for frequent clients to cut daily manual selection and keep route planning faster.",
           action: "templates",
+          tone: coveragePercent < 60 ? "warning" : "info",
         });
       }
     }
@@ -425,23 +522,52 @@ export default function HomePage({
       </section>
 
       {visibleNudges.map((nudge) => (
-        <section key={nudge.id} className={responsiveStyles.dashboardNudgeCard}>
+        <section
+          key={nudge.id}
+          className={
+            nudge.tone === "warning"
+              ? responsiveStyles.dashboardNudgeCard
+              : "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/35 sm:p-5"
+          }
+        >
           <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
             <div className="min-w-0">
-              <p className="m-0 text-xs font-semibold uppercase tracking-[0.14em] text-amber-800 dark:text-amber-300">
-                Setup Priority
+              <p
+                className={`m-0 text-xs font-semibold uppercase tracking-[0.14em] ${
+                  nudge.tone === "warning"
+                    ? "text-amber-800 dark:text-amber-300"
+                    : "text-blue-800 dark:text-blue-300"
+                }`}
+              >
+                {nudge.tone === "warning" ? "Setup Priority" : "Coverage Reminder"}
               </p>
-              <p className="m-0 mt-1 text-sm font-semibold text-amber-900 dark:text-amber-200">
+              <p
+                className={`m-0 mt-1 text-sm font-semibold ${
+                  nudge.tone === "warning"
+                    ? "text-amber-900 dark:text-amber-200"
+                    : "text-blue-900 dark:text-blue-200"
+                }`}
+              >
                 {nudge.message}
               </p>
-              <p className="m-0 mt-1 text-sm text-amber-800/90 dark:text-amber-300/90">
+              <p
+                className={`m-0 mt-1 text-sm ${
+                  nudge.tone === "warning"
+                    ? "text-amber-800/90 dark:text-amber-300/90"
+                    : "text-blue-800/90 dark:text-blue-300/90"
+                }`}
+              >
                 {nudge.rationale}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                className={responsiveStyles.warningBannerButton}
+                className={
+                  nudge.tone === "warning"
+                    ? responsiveStyles.warningBannerButton
+                    : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                }
                 onClick={() => {
                   if (nudge.action === "setup") {
                     navigate("/welcome-setup");
@@ -464,7 +590,11 @@ export default function HomePage({
               </button>
               <button
                 type="button"
-                className="rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                className={
+                  nudge.tone === "warning"
+                    ? "rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                    : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                }
                 onClick={() =>
                   setDismissedNudgeIds((current) =>
                     current.indexOf(nudge.id) >= 0 ? current : [...current, nudge.id],
@@ -510,29 +640,43 @@ export default function HomePage({
         </section>
       )}
 
-      <section className={responsiveStyles.dashboardKpiGrid}>
-        {kpis.map((kpi) => {
-          const to = isAuthenticated ? kpi.href : "/login";
-          return (
-            <Link key={kpi.label} to={to} className={`${responsiveStyles.dashboardKpiCard} group`}>
-              <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
-              <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
-              <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
-              {typeof kpi.progressPercent === "number" && (
-                <div className="mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600"
-                    style={{ width: `${Math.max(0, Math.min(100, kpi.progressPercent))}%` }}
-                  />
-                </div>
-              )}
-              <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
-                {kpi.trend}
-              </p>
-            </Link>
-          );
-        })}
-      </section>
+      <CarFlyAnimation>
+        {(triggerCar) => (
+          <section className={responsiveStyles.dashboardKpiGrid}>
+            {kpis.map((kpi, index) => {
+              const to = isAuthenticated ? kpi.href : "/login";
+              const isCar = kpi.label === "Drive hours" || kpi.label === "Total distance";
+              return (
+                <Link
+                  key={kpi.label}
+                  to={to}
+                  className={`${responsiveStyles.dashboardKpiCard} group`}
+                  style={{ animationDelay: `${80 + index * 45}ms` }}
+                  onClick={isCar ? triggerCar : undefined}
+                >
+                  <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
+                  <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
+                  <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
+                  {typeof kpi.progressPercent === "number" && (
+                    <div className={responsiveStyles.dashboardKpiProgressTrack}>
+                      <div
+                        className={responsiveStyles.dashboardKpiProgressFill}
+                        style={{
+                          width: `${Math.max(0, Math.min(100, kpi.progressPercent))}%`,
+                          animationDelay: `${140 + index * 45}ms`,
+                        }}
+                      />
+                    </div>
+                  )}
+                  <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                    {kpi.trend}
+                  </p>
+                </Link>
+              );
+            })}
+          </section>
+        )}
+      </CarFlyAnimation>
 
       {lastUpdatedLabel && (
         <p className="m-0 -mt-2 text-right text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -687,7 +831,7 @@ export default function HomePage({
             Weighted on-time percentage over the last 7 planning days.
           </p>
           <ul className="m-0 mt-4 list-none space-y-2 p-0">
-            {trendBars.map((day) => (
+            {trendBars.map((day, index) => (
               <li key={`${day.label}-${day.date}`} className={responsiveStyles.dashboardTrendRow}>
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {day.label}
@@ -695,7 +839,10 @@ export default function HomePage({
                 <div className={responsiveStyles.dashboardTrendTrack}>
                   <div
                     className={responsiveStyles.dashboardTrendFill}
-                    style={{ width: `${Math.max(0, Math.min(100, day.onTimeRatePercent))}%` }}
+                    style={{
+                      width: `${Math.max(0, Math.min(100, day.onTimeRatePercent))}%`,
+                      animationDelay: `${70 + index * 30}ms`,
+                    }}
                   />
                 </div>
                 <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
