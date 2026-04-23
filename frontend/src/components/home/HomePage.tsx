@@ -183,6 +183,14 @@ export default function HomePage({
           href: "/route-planner",
         },
         {
+          label: "Drive hours",
+          value: "—",
+          delta: "Last 7 days",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
+        },
+        {
           label: "Active clients",
           value: "—",
           delta: "All time",
@@ -198,14 +206,6 @@ export default function HomePage({
           trend: "No baseline yet",
           href: "/clients?templateFilter=without",
           progressPercent: 0,
-        },
-        {
-          label: "Drive hours",
-          value: "—",
-          delta: "Last 7 days",
-          tone: "text-slate-500",
-          trend: "No baseline yet",
-          href: "/route-planner",
         },
       ];
     }

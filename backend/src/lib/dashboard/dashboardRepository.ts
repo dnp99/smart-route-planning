@@ -206,7 +206,8 @@ const isMissingTaskLinkColumnsError = (error: unknown) => {
   const message = `${error.message} ${typeof cause?.message === "string" ? cause.message : ""}`;
 
   return (
-    code === "42703" && (message.includes("visit_instance_id") || message.includes("template_id"))
+    code === "42703" &&
+    (message.indexOf("visit_instance_id") >= 0 || message.indexOf("template_id") >= 0)
   );
 };
 

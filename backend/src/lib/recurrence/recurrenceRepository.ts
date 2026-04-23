@@ -431,14 +431,23 @@ export const updateRecurringVisitTemplateForNurse = async (
 };
 
 export const deleteRecurringVisitTemplateForNurse = async (nurseId: string, templateId: string) => {
-  const [deleted] = await getDb()
-    .delete(recurringVisitTemplates)
-    .where(
-      and(eq(recurringVisitTemplates.id, templateId), eq(recurringVisitTemplates.nurseId, nurseId)),
-    )
-    .returning({ id: recurringVisitTemplates.id });
+  return getDb().transaction(async (tx) => {
+    await tx
+      .delete(visitInstances)
+      .where(and(eq(visitInstances.nurseId, nurseId), eq(visitInstances.templateId, templateId)));
 
-  return deleted ?? null;
+    const [deleted] = await tx
+      .delete(recurringVisitTemplates)
+      .where(
+        and(
+          eq(recurringVisitTemplates.id, templateId),
+          eq(recurringVisitTemplates.nurseId, nurseId),
+        ),
+      )
+      .returning({ id: recurringVisitTemplates.id });
+
+    return deleted ?? null;
+  });
 };
 
 export const listVisitInstancesByNurseInRange = async (
