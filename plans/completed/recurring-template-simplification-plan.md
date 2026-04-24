@@ -146,7 +146,7 @@ Covered in `backend/src/lib/recurrence/recurrenceRepository.test.ts` and `backen
 - [x] `autoTemplateId` reads `daysOfWeek`
 - [x] Defensive filter: instances whose `templateId` is null or not in the loaded `recurringTemplates` set are excluded from auto-seeding
 
-### Phase 5: Exceptions + Series Editing — TODO
+### Phase 5: Exceptions + Series Editing — DONE
 
 Add occurrence-level and series-level editing.
 
@@ -193,7 +193,7 @@ Frontend surfaces:
 
 See Backend Plan → Backend Tests above.
 
-### Frontend Tests — DONE (partial)
+### Frontend Tests — DONE
 
 - [x] `patientForm.validation.test.ts` updated: fixtures use `daysOfWeek`, removed window-duration test, added "requires at least one weekday" test
 - [x] Template creation sends `daysOfWeek` (integration test)
@@ -203,9 +203,9 @@ See Backend Plan → Backend Tests above.
 
 ### Remaining Phase 5 scope
 
-- [ ] Explicit client-template editor action for "end from date forward" (currently supported via editing `endDate`, but no dedicated action mode)
-- [ ] Exception persistence model (`visit_instance_exceptions` or successor) for non-generated/ungenerated occurrence edits
-- [ ] Expansion regeneration rules for client window changes (refresh non-manual future instances; preserve manual overrides)
+- [x] Explicit client-template editor action for "end from date forward"
+- [x] Exception persistence model (`visit_instance_exceptions`) for non-generated/ungenerated occurrence edits, with repository persistence in `updateVisitInstanceForNurse` and expansion application in `expandVisitInstancesForNurse`
+- [x] Expansion regeneration rules for client window changes (refresh non-manual future instances; preserve manual overrides)
 
 ## Migration / Rollout Strategy
 
@@ -220,5 +220,5 @@ Backend accepted both old `windows` payload and new `daysOfWeek` payload during 
 
 1. ~~If a client has multiple visit windows, should each selected weekday generate all windows?~~ **Yes — implemented.**
 2. ~~If a client has no visit windows, should a template still generate a visit?~~ **Yes — uses legacy `preferredVisitStartTime`/`preferredVisitEndTime` fallback.**
-3. Should changing patient visit windows update already-generated future instances? **Recommended: refresh non-manual future instances on expansion; preserve manual overrides. Not yet implemented (Phase 5).**
+3. ~~Should changing patient visit windows update already-generated future instances?~~ **Yes — implemented. Expansion now refreshes non-manual scheduled instances and cancels stale derived non-manual scheduled instances when they no longer match template/client windows.**
 4. Should timezone stay editable per template? **Yes — kept in backend and form. Hidden complexity deferred.**

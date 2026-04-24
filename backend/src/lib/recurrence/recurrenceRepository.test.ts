@@ -93,7 +93,23 @@ const selectOrderByDb = (rows: unknown[]) => ({
       where: vi.fn().mockReturnValue({
         orderBy: vi.fn().mockResolvedValue(rows),
       }),
+      innerJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockResolvedValue(rows),
+        }),
+      }),
     }),
+  }),
+  insert: vi.fn().mockReturnValue({
+    values: vi.fn().mockResolvedValue(undefined),
+  }),
+  update: vi.fn().mockReturnValue({
+    set: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    }),
+  }),
+  delete: vi.fn().mockReturnValue({
+    where: vi.fn().mockResolvedValue(undefined),
   }),
 });
 
@@ -105,17 +121,97 @@ const selectLimitDb = (rows: unknown[]) => ({
       }),
     }),
   }),
+  insert: vi.fn().mockReturnValue({
+    values: vi.fn().mockResolvedValue(undefined),
+  }),
+  update: vi.fn().mockReturnValue({
+    set: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    }),
+  }),
+  delete: vi.fn().mockReturnValue({
+    where: vi.fn().mockResolvedValue(undefined),
+  }),
 });
 
 const selectWhereDb = (rows: unknown[]) => ({
   select: vi.fn().mockReturnValue({
     from: vi.fn().mockReturnValue({
       where: vi.fn().mockResolvedValue(rows),
+      innerJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockResolvedValue(rows),
+        }),
+      }),
+    }),
+  }),
+  insert: vi.fn().mockReturnValue({
+    values: vi.fn().mockResolvedValue(undefined),
+  }),
+  update: vi.fn().mockReturnValue({
+    set: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue(undefined),
+    }),
+  }),
+  delete: vi.fn().mockReturnValue({
+    where: vi.fn().mockResolvedValue(undefined),
+  }),
+});
+
+const selectInnerJoinOrderDb = (rows: unknown[]) => ({
+  select: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      innerJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockResolvedValue(rows),
+        }),
+      }),
     }),
   }),
 });
 
+const defaultDbMock = {
+  select: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        orderBy: vi.fn().mockResolvedValue([]),
+        limit: vi.fn().mockResolvedValue([]),
+      }),
+      innerJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    }),
+  }),
+  insert: vi.fn().mockReturnValue({
+    values: vi.fn().mockResolvedValue(undefined),
+  }),
+  update: vi.fn().mockReturnValue({
+    set: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        returning: vi.fn().mockResolvedValue([]),
+      }),
+    }),
+  }),
+  delete: vi.fn().mockReturnValue({
+    where: vi.fn().mockResolvedValue(undefined),
+  }),
+};
+
 const insertValuesDb = (onValues?: (rows: unknown) => void, error?: unknown) => ({
+  select: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        orderBy: vi.fn().mockResolvedValue([]),
+      }),
+      innerJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    }),
+  }),
   insert: vi.fn().mockReturnValue({
     values: vi.fn().mockImplementation((rows: unknown) => {
       onValues?.(rows);
@@ -128,6 +224,18 @@ const insertValuesDb = (onValues?: (rows: unknown) => void, error?: unknown) => 
 });
 
 const updateReturningDb = (rows: unknown[], onSet?: (value: unknown) => void) => ({
+  select: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        orderBy: vi.fn().mockResolvedValue([]),
+      }),
+      innerJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    }),
+  }),
   update: vi.fn().mockReturnValue({
     set: vi.fn().mockImplementation((value: unknown) => {
       onSet?.(value);
@@ -140,9 +248,34 @@ const updateReturningDb = (rows: unknown[], onSet?: (value: unknown) => void) =>
   }),
 });
 
+const updateWhereDb = (onSet?: (value: unknown) => void) => ({
+  select: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockReturnValue({
+        orderBy: vi.fn().mockResolvedValue([]),
+      }),
+      innerJoin: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockResolvedValue([]),
+        }),
+      }),
+    }),
+  }),
+  update: vi.fn().mockReturnValue({
+    set: vi.fn().mockImplementation((value: unknown) => {
+      onSet?.(value);
+      return {
+        where: vi.fn().mockResolvedValue(undefined),
+      };
+    }),
+  }),
+});
+
 describe("recurrenceRepository", () => {
   beforeEach(() => {
     getDbMock.mockReset();
+    getDbMock.mockImplementation(() => defaultDbMock as unknown as ReturnType<typeof getDbMock>);
+    getDbMock.mockImplementation(() => defaultDbMock as unknown as ReturnType<typeof getDbMock>);
   });
 
   it("lists templates with attached windows and optional client filtering", async () => {
@@ -263,6 +396,7 @@ describe("recurrenceRepository", () => {
     );
 
     getDbMock.mockReset();
+    getDbMock.mockImplementation(() => defaultDbMock as unknown as ReturnType<typeof getDbMock>);
     getDbMock
       .mockReturnValueOnce(selectLimitDb([existing]))
       .mockReturnValueOnce(selectOrderByDb([makeDay()]));
@@ -384,8 +518,18 @@ describe("recurrenceRepository", () => {
       .mockReturnValueOnce(selectOrderByDb([makeDay()]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow()]))
       .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
+      .mockReturnValueOnce(selectInnerJoinOrderDb([]))
       .mockReturnValueOnce(
-        selectWhereDb([{ occurrenceKey: "tpl-1:patient-window-1:2026-05-04" }]),
+        selectOrderByDb([
+          makeInstance({
+            occurrenceKey: "tpl-1:patient-window-1:2026-05-04",
+            planningDate: "2026-05-04",
+            windowStart: "11:00:00",
+            windowEnd: "12:00:00",
+            visitTimeType: "flexible",
+            serviceDurationMinutes: 45,
+          }),
+        ]),
       )
       .mockReturnValueOnce(
         insertValuesDb((rows) => {
@@ -424,7 +568,8 @@ describe("recurrenceRepository", () => {
           }),
         ]),
       )
-      .mockReturnValueOnce(selectWhereDb([]))
+      .mockReturnValueOnce(selectOrderByDb([]))
+      .mockReturnValueOnce(selectOrderByDb([]))
       .mockReturnValueOnce(
         insertValuesDb((rows) => {
           insertedRows = rows;
@@ -483,6 +628,8 @@ describe("recurrenceRepository", () => {
       .mockReturnValueOnce(selectOrderByDb([makeDay({ dayOfWeek: 1 })]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow()]))
       .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
+      .mockReturnValueOnce(selectInnerJoinOrderDb([]))
+      .mockReturnValueOnce(selectOrderByDb([]))
       .mockReturnValueOnce(selectOrderByDb([]));
 
     await expect(
@@ -500,7 +647,8 @@ describe("recurrenceRepository", () => {
       .mockReturnValueOnce(selectOrderByDb([makeDay()]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow({ googlePlaceId: null })]))
       .mockReturnValueOnce(selectOrderByDb([]))
-      .mockReturnValueOnce(selectWhereDb([]))
+      .mockReturnValueOnce(selectOrderByDb([]))
+      .mockReturnValueOnce(selectOrderByDb([]))
       .mockReturnValueOnce(
         insertValuesDb((rows) => {
           insertedRows = rows;
@@ -542,6 +690,7 @@ describe("recurrenceRepository", () => {
     ).resolves.toEqual({ createdCount: 0, instances: [expect.objectContaining({ id: "inst-1" })] });
 
     getDbMock.mockReset();
+    getDbMock.mockImplementation(() => defaultDbMock as unknown as ReturnType<typeof getDbMock>);
     getDbMock
       .mockReturnValueOnce(
         selectOrderByDb([makeTemplate({ recurrenceRule: "FREQ=DAILY;INTERVAL=2" })]),
@@ -549,6 +698,8 @@ describe("recurrenceRepository", () => {
       .mockReturnValueOnce(selectOrderByDb([makeDay({ dayOfWeek: 2 })]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow({ googlePlaceId: null })]))
       .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
+      .mockReturnValueOnce(selectInnerJoinOrderDb([]))
+      .mockReturnValueOnce(selectOrderByDb([]))
       .mockReturnValueOnce(selectOrderByDb([]));
 
     await expect(
@@ -559,13 +710,206 @@ describe("recurrenceRepository", () => {
     ).resolves.toEqual({ createdCount: 0, instances: [] });
   });
 
+  it("refreshes non-manual scheduled instances from current client schedule on expansion", async () => {
+    let refreshedSet: unknown;
+    getDbMock
+      .mockReturnValueOnce(selectOrderByDb([makeTemplate()]))
+      .mockReturnValueOnce(selectOrderByDb([makeDay()]))
+      .mockReturnValueOnce(
+        selectWhereDb([
+          makePatientRow({
+            address: "500 Updated Ave",
+            googlePlaceId: "place-updated",
+            visitDurationMinutes: 60,
+          }),
+        ]),
+      )
+      .mockReturnValueOnce(
+        selectOrderByDb([
+          makePatientWindow({
+            startTime: "12:00:00",
+            endTime: "13:00:00",
+            visitTimeType: "fixed",
+          }),
+        ]),
+      )
+      .mockReturnValueOnce(selectInnerJoinOrderDb([]))
+      .mockReturnValueOnce(
+        selectOrderByDb([
+          makeInstance({
+            id: "inst-refresh-1",
+            occurrenceKey: "tpl-1:patient-window-1:2026-05-04",
+            planningDate: "2026-05-04",
+            address: "123 Main St",
+            googlePlaceId: "place-1",
+            windowStart: "11:00:00",
+            windowEnd: "12:00:00",
+            visitTimeType: "flexible",
+            serviceDurationMinutes: 45,
+            status: "scheduled",
+            isManualOverride: false,
+          }),
+        ]),
+      )
+      .mockReturnValueOnce(
+        updateWhereDb((value) => {
+          refreshedSet = value;
+        }),
+      )
+      .mockReturnValueOnce(
+        selectOrderByDb([
+          makeInstance({
+            id: "inst-refresh-1",
+            occurrenceKey: "tpl-1:patient-window-1:2026-05-04",
+            planningDate: "2026-05-04",
+            address: "500 Updated Ave",
+            googlePlaceId: "place-updated",
+            windowStart: "12:00:00",
+            windowEnd: "13:00:00",
+            visitTimeType: "fixed",
+            serviceDurationMinutes: 60,
+          }),
+        ]),
+      );
+
+    await expect(
+      expandVisitInstancesForNurse("nurse-1", {
+        startDate: "2026-05-04",
+        endDate: "2026-05-04",
+      }),
+    ).resolves.toEqual({
+      createdCount: 0,
+      instances: [expect.objectContaining({ id: "inst-refresh-1" })],
+    });
+
+    expect(refreshedSet).toEqual(
+      expect.objectContaining({
+        address: "500 Updated Ave",
+        googlePlaceId: "place-updated",
+        windowStart: "12:00:00",
+        windowEnd: "13:00:00",
+        visitTimeType: "fixed",
+        serviceDurationMinutes: 60,
+        updatedAt: expect.any(Date),
+      }),
+    );
+  });
+
+  it("cancels stale non-manual scheduled instances that no longer match expansion candidates", async () => {
+    let cancelledSet: unknown;
+    getDbMock
+      .mockReturnValueOnce(
+        selectOrderByDb([makeTemplate({ recurrenceRule: "FREQ=DAILY;INTERVAL=1" })]),
+      )
+      .mockReturnValueOnce(selectOrderByDb([makeDay({ dayOfWeek: 1 })]))
+      .mockReturnValueOnce(selectWhereDb([makePatientRow()]))
+      .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
+      .mockReturnValueOnce(selectInnerJoinOrderDb([]))
+      .mockReturnValueOnce(
+        selectOrderByDb([
+          makeInstance({
+            id: "inst-stale-1",
+            occurrenceKey: "tpl-1:patient-window-1:2026-05-05",
+            planningDate: "2026-05-05",
+            status: "scheduled",
+            isManualOverride: false,
+          }),
+        ]),
+      )
+      .mockReturnValueOnce(
+        updateWhereDb((value) => {
+          cancelledSet = value;
+        }),
+      )
+      .mockReturnValueOnce(selectOrderByDb([]));
+
+    await expect(
+      expandVisitInstancesForNurse("nurse-1", {
+        startDate: "2026-05-05",
+        endDate: "2026-05-05",
+      }),
+    ).resolves.toEqual({ createdCount: 0, instances: [] });
+
+    expect(cancelledSet).toEqual(
+      expect.objectContaining({
+        status: "cancelled",
+        updatedAt: expect.any(Date),
+      }),
+    );
+  });
+
+  it("applies reschedule exceptions during expansion and keeps occurrence off original date", async () => {
+    let insertedRows: unknown;
+    getDbMock
+      .mockReturnValueOnce(
+        selectOrderByDb([makeTemplate({ recurrenceRule: "FREQ=DAILY;INTERVAL=1" })]),
+      )
+      .mockReturnValueOnce(selectOrderByDb([makeDay({ dayOfWeek: 2 })]))
+      .mockReturnValueOnce(selectWhereDb([makePatientRow()]))
+      .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
+      .mockReturnValueOnce(
+        selectInnerJoinOrderDb([
+          {
+            id: "exc-1",
+            nurseId: "nurse-1",
+            visitInstanceId: "inst-1",
+            templateId: "tpl-1",
+            exceptionDate: "2026-05-05",
+            action: "reschedule",
+            rescheduledDate: "2026-05-06",
+            overrideStartTime: "15:00:00",
+            overrideEndTime: "16:00:00",
+            overrideVisitTimeType: "fixed",
+            overrideServiceDurationMinutes: 30,
+            notes: null,
+            createdAt: new Date("2026-05-01T12:00:00.000Z"),
+            updatedAt: new Date("2026-05-01T12:00:00.000Z"),
+            occurrenceKey: "tpl-1:patient-window-1:2026-05-05",
+            patientId: "client-1",
+            templateIdFromInstance: "tpl-1",
+            address: "123 Main St",
+            googlePlaceId: "place-1",
+            windowStart: "11:00:00",
+            windowEnd: "12:00:00",
+            visitTimeType: "flexible",
+            serviceDurationMinutes: 45,
+          },
+        ]),
+      )
+      .mockReturnValueOnce(selectOrderByDb([]))
+      .mockReturnValueOnce(
+        insertValuesDb((rows) => {
+          insertedRows = rows;
+        }),
+      )
+      .mockReturnValueOnce(selectOrderByDb([]));
+
+    await expect(
+      expandVisitInstancesForNurse("nurse-1", {
+        startDate: "2026-05-06",
+        endDate: "2026-05-06",
+      }),
+    ).resolves.toEqual({ createdCount: 1, instances: [] });
+
+    expect(insertedRows).toEqual([
+      expect.objectContaining({
+        occurrenceKey: "tpl-1:patient-window-1:2026-05-05",
+        planningDate: "2026-05-06",
+        windowStart: "15:00:00",
+        windowEnd: "16:00:00",
+        isManualOverride: true,
+      }),
+    ]);
+  });
+
   it("swallows unique insert races but rethrows other insert errors", async () => {
     getDbMock
       .mockReturnValueOnce(selectOrderByDb([makeTemplate()]))
       .mockReturnValueOnce(selectOrderByDb([makeDay()]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow({ googlePlaceId: null })]))
       .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
-      .mockReturnValueOnce(selectWhereDb([]))
+      .mockReturnValueOnce(selectOrderByDb([]))
+      .mockReturnValueOnce(selectOrderByDb([]))
       .mockReturnValueOnce(insertValuesDb(undefined, { code: "23505" }))
       .mockReturnValueOnce(selectOrderByDb([]));
 
@@ -577,12 +921,14 @@ describe("recurrenceRepository", () => {
     ).resolves.toEqual({ createdCount: 1, instances: [] });
 
     getDbMock.mockReset();
+    getDbMock.mockImplementation(() => defaultDbMock as unknown as ReturnType<typeof getDbMock>);
     getDbMock
       .mockReturnValueOnce(selectOrderByDb([makeTemplate()]))
       .mockReturnValueOnce(selectOrderByDb([makeDay()]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow({ googlePlaceId: null })]))
       .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
-      .mockReturnValueOnce(selectWhereDb([]))
+      .mockReturnValueOnce(selectOrderByDb([]))
+      .mockReturnValueOnce(selectOrderByDb([]))
       .mockReturnValueOnce(insertValuesDb(undefined, new Error("db down")));
 
     await expect(
@@ -609,14 +955,45 @@ describe("recurrenceRepository", () => {
     );
 
     getDbMock.mockReset();
+    getDbMock.mockImplementation(() => defaultDbMock as unknown as ReturnType<typeof getDbMock>);
     getDbMock.mockReturnValueOnce(selectLimitDb([makeInstance({ windowStart: "10:00:00" })]));
     await expect(
       updateVisitInstanceForNurse("nurse-1", "inst-1", { windowEnd: "09:00" }),
     ).rejects.toBeInstanceOf(HttpError);
 
     getDbMock.mockReset();
+    getDbMock.mockImplementation(() => defaultDbMock as unknown as ReturnType<typeof getDbMock>);
     getDbMock.mockReturnValueOnce(selectLimitDb([]));
     await expect(updateVisitInstanceForNurse("nurse-1", "missing", {})).resolves.toBeNull();
+  });
+
+  it("persists skip exceptions when occurrence status is set to cancelled", async () => {
+    const insertValuesSpy = vi.fn().mockResolvedValue(undefined);
+    getDbMock
+      .mockReturnValueOnce(selectLimitDb([makeInstance()]))
+      .mockReturnValueOnce(updateReturningDb([makeInstance({ status: "cancelled" })]))
+      .mockReturnValueOnce({
+        delete: vi.fn().mockReturnValue({
+          where: vi.fn().mockResolvedValue(undefined),
+        }),
+      })
+      .mockReturnValueOnce({
+        insert: vi.fn().mockReturnValue({
+          values: insertValuesSpy,
+        }),
+      });
+
+    await expect(
+      updateVisitInstanceForNurse("nurse-1", "inst-1", { status: "cancelled" }),
+    ).resolves.toEqual(expect.objectContaining({ status: "cancelled" }));
+
+    expect(insertValuesSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nurseId: "nurse-1",
+        visitInstanceId: "inst-1",
+        action: "skip",
+      }),
+    );
   });
 
   it("lists scheduled visit instances for optimization with metadata", async () => {
