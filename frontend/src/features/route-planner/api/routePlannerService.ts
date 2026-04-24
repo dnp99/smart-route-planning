@@ -115,6 +115,13 @@ export type ListVisitInstancesInput = {
   endDate?: string;
 };
 
+export type UpdateVisitInstanceInput = {
+  status?: "scheduled" | "cancelled";
+  planningDate?: string;
+  windowStart?: string;
+  windowEnd?: string;
+};
+
 export type ExpandVisitInstancesInput = {
   planningDate: string;
   templateIds?: string[];
@@ -303,6 +310,32 @@ export const requestVisitInstances = async ({
   );
 
   return parseListVisitInstancesResponse(payload).instances;
+};
+
+export const requestUpdateVisitInstance = async (
+  visitInstanceId: string,
+  updates: UpdateVisitInstanceInput,
+): Promise<VisitInstance> => {
+  const payload = await requestAuthedJson(
+    `/api/visit-instances/${encodeURIComponent(visitInstanceId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    },
+    "Unable to update visit occurrence.",
+  );
+
+  const instances = parseListVisitInstancesResponse({ instances: [payload] }).instances;
+  const updatedInstance = instances[0];
+
+  if (!updatedInstance) {
+    throw new Error("Unexpected API response format.");
+  }
+
+  return updatedInstance;
 };
 
 export const requestExpandVisitInstances = async ({

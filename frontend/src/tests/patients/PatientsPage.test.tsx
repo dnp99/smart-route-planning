@@ -90,20 +90,11 @@ const seedRecurringTemplate = {
   patientId: "patient-1",
   name: "Weekdays",
   timezone: "America/Toronto",
-  recurrenceRule: "FREQ=WEEKLY;INTERVAL=1",
+  recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
   startDate: "2026-03-20",
   endDate: null,
-  serviceDurationMinutes: 30,
   isActive: true,
-  windows: [
-    {
-      id: "template-window-1",
-      dayOfWeek: 1,
-      startTime: "09:00",
-      endTime: "10:00",
-      visitTimeType: "fixed" as const,
-    },
-  ],
+  daysOfWeek: [1],
   createdAt: "2026-03-12T12:00:00.000Z",
   updatedAt: "2026-03-12T12:00:00.000Z",
 };
@@ -218,10 +209,133 @@ describe("PatientsPage", () => {
         expect.objectContaining({
           patientId: "patient-1",
           startDate: "2026-03-20",
+          daysOfWeek: [1],
           timezone: expect.any(String),
         }),
       );
     });
+  });
+
+  it("sends updated daysOfWeek when editing an existing recurring template", async () => {
+    mockedListPatients.mockResolvedValue([seedPatient]);
+    mockedListRecurringVisitTemplates.mockResolvedValue([seedRecurringTemplate]);
+    mockedUpdatePatient.mockResolvedValue(seedPatient);
+    mockedUpdateRecurringVisitTemplate.mockResolvedValue({
+      ...seedRecurringTemplate,
+      recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU",
+      daysOfWeek: [1, 2],
+    });
+
+    render(<PatientsPage />);
+
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListRecurringVisitTemplates).toHaveBeenCalled();
+    });
+
+    fireEvent.click(
+      (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Tue" }));
+    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+
+    await waitFor(() => {
+      expect(mockedUpdateRecurringVisitTemplate).toHaveBeenCalledWith(
+        "template-1",
+        expect.objectContaining({
+          patientId: "patient-1",
+          recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO,TU",
+          daysOfWeek: [1, 2],
+        }),
+      );
+    });
+  });
+
+  it("splits an existing template when the start date moves forward", async () => {
+    mockedListPatients.mockResolvedValue([seedPatient]);
+    mockedListRecurringVisitTemplates.mockResolvedValue([seedRecurringTemplate]);
+    mockedUpdatePatient.mockResolvedValue(seedPatient);
+    mockedCreateRecurringVisitTemplate.mockResolvedValue({
+      ...seedRecurringTemplate,
+      id: "template-2",
+      startDate: "2026-04-10",
+    });
+    mockedUpdateRecurringVisitTemplate.mockResolvedValue({
+      ...seedRecurringTemplate,
+      endDate: "2026-04-09",
+    });
+
+    render(<PatientsPage />);
+
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListRecurringVisitTemplates).toHaveBeenCalled();
+    });
+
+    fireEvent.click(
+      (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
+
+    fireEvent.change(screen.getByLabelText("Start date"), {
+      target: { value: "2026-04-10" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+
+    await waitFor(() => {
+      expect(mockedUpdateRecurringVisitTemplate).toHaveBeenCalledWith(
+        "template-1",
+        expect.objectContaining({
+          endDate: "2026-04-09",
+        }),
+      );
+      expect(mockedCreateRecurringVisitTemplate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientId: "patient-1",
+          startDate: "2026-04-10",
+          daysOfWeek: [1],
+        }),
+      );
+    });
+  });
+
+  it("ends an existing template from a chosen date forward", async () => {
+    mockedListPatients.mockResolvedValue([seedPatient]);
+    mockedListRecurringVisitTemplates.mockResolvedValue([seedRecurringTemplate]);
+    mockedUpdatePatient.mockResolvedValue(seedPatient);
+    mockedUpdateRecurringVisitTemplate.mockResolvedValue({
+      ...seedRecurringTemplate,
+      endDate: "2026-04-09",
+    });
+
+    render(<PatientsPage />);
+
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListRecurringVisitTemplates).toHaveBeenCalled();
+    });
+
+    fireEvent.click(
+      (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
+    );
+    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
+
+    fireEvent.change(screen.getByLabelText("End from date forward"), {
+      target: { value: "2026-04-10" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
+
+    await waitFor(() => {
+      expect(mockedUpdateRecurringVisitTemplate).toHaveBeenCalledWith(
+        "template-1",
+        expect.objectContaining({
+          endDate: "2026-04-09",
+        }),
+      );
+    });
+    expect(mockedCreateRecurringVisitTemplate).not.toHaveBeenCalled();
   });
 
   it("deletes selected patient after confirmation", async () => {

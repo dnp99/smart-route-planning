@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   persistPlanningWindows,
+  requestUpdateVisitInstance,
   requestVisitInstances,
   requestOptimizedRoute,
   resolveWorkingHoursForDate,
@@ -510,6 +511,56 @@ describe("requestOptimizedRoute", () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("http://api.example.com/api/visit-instances?planningDate=2026-03-13");
     expect(init.method).toBe("GET");
+  });
+
+  it("updates a visit instance via PATCH", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        id: "instance-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        templateId: "template-1",
+        occurrenceKey: "patient-1:2026-03-13:0",
+        planningDate: "2026-03-14",
+        address: "123 Main St",
+        googlePlaceId: null,
+        windowStart: "10:00",
+        windowEnd: "11:00",
+        visitTimeType: "fixed",
+        serviceDurationMinutes: 30,
+        status: "scheduled",
+        isManualOverride: true,
+        createdAt: "2026-03-10T12:00:00.000Z",
+        updatedAt: "2026-03-11T12:00:00.000Z",
+      }),
+    } as Response);
+
+    const updated = await requestUpdateVisitInstance("instance-1", {
+      planningDate: "2026-03-14",
+      windowStart: "10:00",
+      windowEnd: "11:00",
+    });
+
+    expect(updated).toEqual(
+      expect.objectContaining({
+        id: "instance-1",
+        planningDate: "2026-03-14",
+        windowStart: "10:00",
+        windowEnd: "11:00",
+      }),
+    );
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://api.example.com/api/visit-instances/instance-1");
+    expect(init.method).toBe("PATCH");
+    expect(JSON.parse(String(init.body))).toEqual({
+      planningDate: "2026-03-14",
+      windowStart: "10:00",
+      windowEnd: "11:00",
+    });
+    expect(new Headers(init.headers).get("Content-Type")).toBe("application/json");
+    expect(init.credentials).toBe("include");
   });
 
   it("keeps unscheduled task untouched when visitId is not found in request map", async () => {

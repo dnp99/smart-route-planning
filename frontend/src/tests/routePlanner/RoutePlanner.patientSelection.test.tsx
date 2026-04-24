@@ -17,9 +17,10 @@ const persistPlanningWindowsMock = vi.fn();
 const requestExpandVisitInstancesMock = vi.fn();
 const requestRecurringVisitTemplatesMock = vi.fn();
 const requestVisitInstancesMock = vi.fn();
+const requestUpdateVisitInstanceMock = vi.fn();
 const createPatientMock = vi.fn();
 const usePatientSearchMock = vi.fn<
-  (args: { query: string; enabled: boolean }) => {
+  (args: { query?: string; enabled: boolean }) => {
     patients: unknown[];
     isLoading: boolean;
     error: string;
@@ -43,7 +44,7 @@ vi.mock("../../features/route-planner/hooks/useRouteOptimization", () => ({
 }));
 
 vi.mock("../../features/route-planner/hooks/usePatientSearch", () => ({
-  usePatientSearch: (args: { enabled: boolean }) => usePatientSearchMock(args),
+  usePatientSearch: (args: { query?: string; enabled: boolean }) => usePatientSearchMock(args),
 }));
 
 vi.mock("../../features/route-planner/api/routePlannerService", () => ({
@@ -52,6 +53,7 @@ vi.mock("../../features/route-planner/api/routePlannerService", () => ({
   requestRecurringVisitTemplates: (...args: unknown[]) =>
     requestRecurringVisitTemplatesMock(...args),
   requestVisitInstances: (...args: unknown[]) => requestVisitInstancesMock(...args),
+  requestUpdateVisitInstance: (...args: unknown[]) => requestUpdateVisitInstanceMock(...args),
   resolveWorkingHoursForDate: () => null,
 }));
 
@@ -283,6 +285,15 @@ const buildResultWithSingleScheduledStop = () => ({
   algorithmVersion: "v2.2.2-window-distance-duration-gap-fill",
 });
 
+const getDefaultPlanningDate = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const year = tomorrow.getFullYear();
+  const month = String(tomorrow.getMonth() + 1).padStart(2, "0");
+  const day = String(tomorrow.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 describe("RoutePlanner patient selection integration", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -291,11 +302,13 @@ describe("RoutePlanner patient selection integration", () => {
     requestExpandVisitInstancesMock.mockReset();
     requestRecurringVisitTemplatesMock.mockReset();
     requestVisitInstancesMock.mockReset();
+    requestUpdateVisitInstanceMock.mockReset();
     createPatientMock.mockReset();
     persistPlanningWindowsMock.mockResolvedValue(undefined);
     requestExpandVisitInstancesMock.mockResolvedValue(undefined);
     requestRecurringVisitTemplatesMock.mockResolvedValue([]);
     requestVisitInstancesMock.mockResolvedValue([]);
+    requestUpdateVisitInstanceMock.mockResolvedValue(undefined);
     createPatientMock.mockResolvedValue({
       id: "patient-5",
       nurseId: "nurse-1",
@@ -325,7 +338,7 @@ describe("RoutePlanner patient selection integration", () => {
     routeOptimizationState.showOptimizeFlash = false;
     routeOptimizationState.hasAttemptedOptimize = false;
     usePatientSearchMock.mockReset();
-    usePatientSearchMock.mockImplementation(({ enabled }: { query: string; enabled: boolean }) => ({
+    usePatientSearchMock.mockImplementation(({ enabled }: { query?: string; enabled: boolean }) => ({
       patients: enabled ? [janePatient, johnPatient, flexNoWindowPatient, multiWindowPatient] : [],
       isLoading: false,
       error: "",
@@ -570,6 +583,341 @@ describe("RoutePlanner patient selection integration", () => {
         ],
       }),
     );
+  });
+
+  it("excludes orphaned visit instances from auto-seeded destinations", async () => {
+    requestRecurringVisitTemplatesMock.mockResolvedValue([
+      {
+        id: "template-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        name: "Monday",
+        timezone: "America/Toronto",
+        recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
+        startDate: "2026-03-01",
+        endDate: null,
+        isActive: true,
+        daysOfWeek: [1],
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+    requestVisitInstancesMock.mockResolvedValueOnce([
+      {
+        id: "instance-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        templateId: "template-1",
+        occurrenceKey: "patient-1:2026-03-14:0",
+        planningDate: "2026-03-14",
+        address: "123 Main St",
+        googlePlaceId: "place-1",
+        windowStart: "08:00",
+        windowEnd: "08:30",
+        visitTimeType: "fixed",
+        serviceDurationMinutes: 30,
+        status: "scheduled",
+        isManualOverride: false,
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+      {
+        id: "instance-null-orphan",
+        nurseId: "nurse-1",
+        patientId: "patient-2",
+        templateId: null,
+        occurrenceKey: "patient-2:2026-03-14:null",
+        planningDate: "2026-03-14",
+        address: "456 Queen St",
+        googlePlaceId: null,
+        windowStart: "09:30",
+        windowEnd: "10:30",
+        visitTimeType: "flexible",
+        serviceDurationMinutes: 45,
+        status: "scheduled",
+        isManualOverride: false,
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+      {
+        id: "instance-orphan",
+        nurseId: "nurse-1",
+        patientId: "patient-2",
+        templateId: "template-missing",
+        occurrenceKey: "patient-2:2026-03-14:0",
+        planningDate: "2026-03-14",
+        address: "456 Queen St",
+        googlePlaceId: null,
+        windowStart: "10:00",
+        windowEnd: "12:00",
+        visitTimeType: "flexible",
+        serviceDurationMinutes: 45,
+        status: "scheduled",
+        isManualOverride: false,
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+
+    render(<RoutePlanner />);
+
+    await waitFor(() => {
+      expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
+      expect(requestRecurringVisitTemplatesMock).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.change(screen.getByLabelText(/Ending point/i), {
+      target: { value: "Airport" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        destinations: [
+          expect.objectContaining({
+            patientId: "patient-1",
+            visitId: "instance-1",
+          }),
+        ],
+      }),
+    );
+    const latestOptimizeCall = optimizeRouteMock.mock.calls[optimizeRouteMock.mock.calls.length - 1];
+    expect(latestOptimizeCall?.[0]?.destinations).toHaveLength(1);
+  });
+
+  it("skips an auto-seeded occurrence from the selected clients list", async () => {
+    const planningDate = getDefaultPlanningDate();
+    requestRecurringVisitTemplatesMock.mockResolvedValueOnce([
+      {
+        id: "template-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        name: "Monday",
+        timezone: "America/Toronto",
+        recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
+        startDate: "2026-03-01",
+        endDate: null,
+        isActive: true,
+        daysOfWeek: [1],
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+    requestVisitInstancesMock.mockResolvedValueOnce([
+      {
+        id: "instance-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        templateId: "template-1",
+        occurrenceKey: `patient-1:${planningDate}:0`,
+        planningDate,
+        address: "123 Main St",
+        googlePlaceId: "place-1",
+        windowStart: "08:00",
+        windowEnd: "08:30",
+        visitTimeType: "fixed",
+        serviceDurationMinutes: 30,
+        status: "scheduled",
+        isManualOverride: false,
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+    requestUpdateVisitInstanceMock.mockResolvedValue({
+      id: "instance-1",
+      nurseId: "nurse-1",
+      patientId: "patient-1",
+      templateId: "template-1",
+      occurrenceKey: `patient-1:${planningDate}:0`,
+      planningDate,
+      address: "123 Main St",
+      googlePlaceId: "place-1",
+      windowStart: "08:00",
+      windowEnd: "08:30",
+      visitTimeType: "fixed",
+      serviceDurationMinutes: 30,
+      status: "cancelled",
+      isManualOverride: true,
+      createdAt: "2026-03-12T12:00:00.000Z",
+      updatedAt: "2026-03-12T12:05:00.000Z",
+    });
+
+    render(<RoutePlanner />);
+
+    await waitFor(() => {
+      expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
+    fireEvent.click(screen.getByRole("button", { name: "Skip occurrence" }));
+
+    await waitFor(() => {
+      expect(requestUpdateVisitInstanceMock).toHaveBeenCalledWith("instance-1", {
+        status: "cancelled",
+      });
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
+    expect(await screen.findByRole("button", { name: "Restore occurrence" })).toBeTruthy();
+  });
+
+  it("restores a skipped auto-seeded occurrence", async () => {
+    const planningDate = getDefaultPlanningDate();
+    requestRecurringVisitTemplatesMock.mockResolvedValueOnce([
+      {
+        id: "template-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        name: "Monday",
+        timezone: "America/Toronto",
+        recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
+        startDate: "2026-03-01",
+        endDate: null,
+        isActive: true,
+        daysOfWeek: [1],
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+    requestVisitInstancesMock.mockResolvedValueOnce([
+      {
+        id: "instance-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        templateId: "template-1",
+        occurrenceKey: `patient-1:${planningDate}:0`,
+        planningDate,
+        address: "123 Main St",
+        googlePlaceId: "place-1",
+        windowStart: "08:00",
+        windowEnd: "08:30",
+        visitTimeType: "fixed",
+        serviceDurationMinutes: 30,
+        status: "cancelled",
+        isManualOverride: true,
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:05:00.000Z",
+      },
+    ]);
+    requestUpdateVisitInstanceMock.mockResolvedValue({
+      id: "instance-1",
+      nurseId: "nurse-1",
+      patientId: "patient-1",
+      templateId: "template-1",
+      occurrenceKey: `patient-1:${planningDate}:0`,
+      planningDate,
+      address: "123 Main St",
+      googlePlaceId: "place-1",
+      windowStart: "08:00",
+      windowEnd: "08:30",
+      visitTimeType: "fixed",
+      serviceDurationMinutes: 30,
+      status: "scheduled",
+      isManualOverride: true,
+      createdAt: "2026-03-12T12:00:00.000Z",
+      updatedAt: "2026-03-12T12:06:00.000Z",
+    });
+
+    render(<RoutePlanner />);
+
+    await waitFor(() => {
+      expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
+    fireEvent.click(screen.getByRole("button", { name: "Restore occurrence" }));
+
+    await waitFor(() => {
+      expect(requestUpdateVisitInstanceMock).toHaveBeenCalledWith("instance-1", {
+        status: "scheduled",
+      });
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
+    expect(await screen.findByRole("button", { name: "Skip occurrence" })).toBeTruthy();
+  });
+
+  it("reschedules an occurrence off the current planning date", async () => {
+    const planningDate = getDefaultPlanningDate();
+    const rescheduledDate = (() => {
+      const nextDate = new Date(`${planningDate}T12:00:00`);
+      nextDate.setDate(nextDate.getDate() + 1);
+      return nextDate.toISOString().slice(0, 10);
+    })();
+    requestRecurringVisitTemplatesMock.mockResolvedValueOnce([
+      {
+        id: "template-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        name: "Monday",
+        timezone: "America/Toronto",
+        recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
+        startDate: "2026-03-01",
+        endDate: null,
+        isActive: true,
+        daysOfWeek: [1],
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+    requestVisitInstancesMock.mockResolvedValueOnce([
+      {
+        id: "instance-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        templateId: "template-1",
+        occurrenceKey: `patient-1:${planningDate}:0`,
+        planningDate,
+        address: "123 Main St",
+        googlePlaceId: "place-1",
+        windowStart: "08:00",
+        windowEnd: "08:30",
+        visitTimeType: "fixed",
+        serviceDurationMinutes: 30,
+        status: "scheduled",
+        isManualOverride: false,
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+    requestUpdateVisitInstanceMock.mockResolvedValue({
+      id: "instance-1",
+      nurseId: "nurse-1",
+      patientId: "patient-1",
+      templateId: "template-1",
+      occurrenceKey: `patient-1:${planningDate}:0`,
+      planningDate: rescheduledDate,
+      address: "123 Main St",
+      googlePlaceId: "place-1",
+      windowStart: "08:00",
+      windowEnd: "08:30",
+      visitTimeType: "fixed",
+      serviceDurationMinutes: 30,
+      status: "scheduled",
+      isManualOverride: true,
+      createdAt: "2026-03-12T12:00:00.000Z",
+      updatedAt: "2026-03-12T12:06:00.000Z",
+    });
+
+    render(<RoutePlanner />);
+
+    await waitFor(() => {
+      expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
+    fireEvent.change(screen.getByLabelText("Jane Doe date"), {
+      target: { value: rescheduledDate },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save occurrence changes" }));
+
+    await waitFor(() => {
+      expect(requestUpdateVisitInstanceMock).toHaveBeenCalledWith("instance-1", {
+        planningDate: rescheduledDate,
+      });
+    });
+
+    expect(await screen.findByText("No clients selected yet.")).toBeTruthy();
   });
 
   it("shows home-address warning banner and supports account settings action when home address is missing", () => {

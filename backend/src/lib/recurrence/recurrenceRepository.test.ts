@@ -274,6 +274,54 @@ describe("recurrenceRepository", () => {
     ).rejects.toThrow("endDate must be on or after startDate.");
   });
 
+  it("cancels non-manual future generated instances when template end date is shortened", async () => {
+    const existing = makeTemplate({ endDate: null });
+    const updated = makeTemplate({ endDate: "2026-05-20" });
+    let cancelledUpdateSet: unknown;
+    const cancelWhere = vi.fn().mockResolvedValue(undefined);
+    const tx = {
+      update: vi
+        .fn()
+        .mockReturnValueOnce({
+          set: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              returning: vi.fn().mockResolvedValue([updated]),
+            }),
+          }),
+        })
+        .mockReturnValueOnce({
+          set: vi.fn().mockImplementation((value: unknown) => {
+            cancelledUpdateSet = value;
+            return {
+              where: cancelWhere,
+            };
+          }),
+        }),
+    };
+
+    getDbMock
+      .mockReturnValueOnce(selectLimitDb([existing]))
+      .mockReturnValueOnce(selectOrderByDb([makeDay()]))
+      .mockReturnValueOnce({
+        transaction: vi.fn(async (callback: (value: typeof tx) => unknown) => callback(tx)),
+      });
+
+    await expect(
+      updateRecurringVisitTemplateForNurse("nurse-1", "tpl-1", {
+        endDate: "2026-05-20",
+      }),
+    ).resolves.toEqual(expect.objectContaining({ endDate: "2026-05-20" }));
+
+    expect(tx.update).toHaveBeenCalledTimes(2);
+    expect(cancelledUpdateSet).toEqual(
+      expect.objectContaining({
+        status: "cancelled",
+        updatedAt: expect.any(Date),
+      }),
+    );
+    expect(cancelWhere).toHaveBeenCalledTimes(1);
+  });
+
   it("returns null for missing updates and deletes", async () => {
     getDbMock.mockReturnValueOnce(selectLimitDb([]));
     await expect(
@@ -295,14 +343,50 @@ describe("recurrenceRepository", () => {
     await expect(deleteRecurringVisitTemplateForNurse("nurse-1", "missing")).resolves.toBeNull();
   });
 
-  it("expands eligible weekly template windows and skips duplicate occurrence keys", async () => {
+  it("deletes generated visit instances before deleting the template", async () => {
+    const deleteVisitInstancesWhere = vi.fn().mockResolvedValue(undefined);
+    const deleteTemplateReturning = vi.fn().mockResolvedValue([{ id: "tpl-1" }]);
+    const deleteTemplateWhere = vi.fn().mockReturnValue({
+      returning: deleteTemplateReturning,
+    });
+    const tx = {
+      delete: vi
+        .fn()
+        .mockReturnValueOnce({
+          where: deleteVisitInstancesWhere,
+        })
+        .mockReturnValueOnce({
+          where: deleteTemplateWhere,
+        }),
+    };
+
+    getDbMock.mockReturnValueOnce({
+      transaction: vi.fn(async (callback: (value: typeof tx) => unknown) => callback(tx)),
+    });
+
+    await expect(deleteRecurringVisitTemplateForNurse("nurse-1", "tpl-1")).resolves.toEqual({
+      id: "tpl-1",
+    });
+
+    expect(tx.delete).toHaveBeenCalledTimes(2);
+    expect(deleteVisitInstancesWhere).toHaveBeenCalledTimes(1);
+    expect(deleteTemplateWhere).toHaveBeenCalledTimes(1);
+    expect(deleteTemplateReturning).toHaveBeenCalledTimes(1);
+    expect(deleteVisitInstancesWhere.mock.invocationCallOrder[0]).toBeLessThan(
+      deleteTemplateWhere.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("expands eligible weekly template windows and skips existing occurrence keys", async () => {
     let insertedRows: unknown;
     getDbMock
       .mockReturnValueOnce(selectOrderByDb([makeTemplate()]))
       .mockReturnValueOnce(selectOrderByDb([makeDay()]))
       .mockReturnValueOnce(selectWhereDb([makePatientRow()]))
       .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
-      .mockReturnValueOnce(selectWhereDb([]))
+      .mockReturnValueOnce(
+        selectWhereDb([{ occurrenceKey: "tpl-1:patient-window-1:2026-05-04" }]),
+      )
       .mockReturnValueOnce(
         insertValuesDb((rows) => {
           insertedRows = rows;
@@ -316,18 +400,130 @@ describe("recurrenceRepository", () => {
         endDate: "2026-05-11",
       }),
     ).resolves.toEqual({
-      createdCount: 2,
+      createdCount: 1,
       instances: [expect.objectContaining({ id: "inst-1" })],
     });
+    expect(insertedRows).toEqual([
+      expect.objectContaining({ occurrenceKey: "tpl-1:patient-window-1:2026-05-11" }),
+    ]);
+  });
+
+  it("expands one instance per client visit window on the same planning date", async () => {
+    let insertedRows: unknown;
+    getDbMock
+      .mockReturnValueOnce(selectOrderByDb([makeTemplate()]))
+      .mockReturnValueOnce(selectOrderByDb([makeDay()]))
+      .mockReturnValueOnce(selectWhereDb([makePatientRow()]))
+      .mockReturnValueOnce(
+        selectOrderByDb([
+          makePatientWindow(),
+          makePatientWindow({
+            id: "patient-window-2",
+            startTime: "13:00:00",
+            endTime: "14:00:00",
+          }),
+        ]),
+      )
+      .mockReturnValueOnce(selectWhereDb([]))
+      .mockReturnValueOnce(
+        insertValuesDb((rows) => {
+          insertedRows = rows;
+        }),
+      )
+      .mockReturnValueOnce(
+        selectOrderByDb([
+          makeInstance({
+            occurrenceKey: "tpl-1:patient-window-1:2026-05-04",
+            windowStart: "11:00:00",
+            windowEnd: "12:00:00",
+            visitTimeType: "flexible",
+            serviceDurationMinutes: 45,
+          }),
+          makeInstance({
+            id: "inst-2",
+            occurrenceKey: "tpl-1:patient-window-2:2026-05-04",
+            windowStart: "13:00:00",
+            windowEnd: "14:00:00",
+            visitTimeType: "flexible",
+            serviceDurationMinutes: 45,
+          }),
+        ]),
+      );
+
+    await expect(
+      expandVisitInstancesForNurse("nurse-1", {
+        startDate: "2026-05-04",
+        endDate: "2026-05-04",
+      }),
+    ).resolves.toEqual({
+      createdCount: 2,
+      instances: [
+        expect.objectContaining({ id: "inst-1" }),
+        expect.objectContaining({ id: "inst-2" }),
+      ],
+    });
+
     expect(insertedRows).toEqual([
       expect.objectContaining({
         occurrenceKey: "tpl-1:patient-window-1:2026-05-04",
         windowStart: "11:00:00",
         windowEnd: "12:00:00",
+      }),
+      expect.objectContaining({
+        occurrenceKey: "tpl-1:patient-window-2:2026-05-04",
+        windowStart: "13:00:00",
+        windowEnd: "14:00:00",
+      }),
+    ]);
+  });
+
+  it("skips planning dates whose weekday is not selected on the template", async () => {
+    getDbMock
+      .mockReturnValueOnce(selectOrderByDb([makeTemplate({ recurrenceRule: "FREQ=DAILY;INTERVAL=1" })]))
+      .mockReturnValueOnce(selectOrderByDb([makeDay({ dayOfWeek: 1 })]))
+      .mockReturnValueOnce(selectWhereDb([makePatientRow()]))
+      .mockReturnValueOnce(selectOrderByDb([makePatientWindow()]))
+      .mockReturnValueOnce(selectOrderByDb([]));
+
+    await expect(
+      expandVisitInstancesForNurse("nurse-1", {
+        startDate: "2026-05-05",
+        endDate: "2026-05-05",
+      }),
+    ).resolves.toEqual({ createdCount: 0, instances: [] });
+  });
+
+  it("falls back to the client legacy preferred window when no visit windows exist", async () => {
+    let insertedRows: unknown;
+    getDbMock
+      .mockReturnValueOnce(selectOrderByDb([makeTemplate()]))
+      .mockReturnValueOnce(selectOrderByDb([makeDay()]))
+      .mockReturnValueOnce(selectWhereDb([makePatientRow({ googlePlaceId: null })]))
+      .mockReturnValueOnce(selectOrderByDb([]))
+      .mockReturnValueOnce(selectWhereDb([]))
+      .mockReturnValueOnce(
+        insertValuesDb((rows) => {
+          insertedRows = rows;
+        }),
+      )
+      .mockReturnValueOnce(selectOrderByDb([]));
+
+    await expect(
+      expandVisitInstancesForNurse("nurse-1", {
+        startDate: "2026-05-04",
+        endDate: "2026-05-04",
+      }),
+    ).resolves.toEqual({ createdCount: 1, instances: [] });
+
+    expect(insertedRows).toEqual([
+      expect.objectContaining({
+        occurrenceKey: "tpl-1:client-1-legacy:2026-05-04",
+        windowStart: "11:00:00",
+        windowEnd: "12:00:00",
         visitTimeType: "flexible",
         serviceDurationMinutes: 45,
+        googlePlaceId: null,
       }),
-      expect.objectContaining({ occurrenceKey: "tpl-1:patient-window-1:2026-05-11" }),
     ]);
   });
 

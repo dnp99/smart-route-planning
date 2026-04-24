@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, lte } from "drizzle-orm";
 import type {
   CreateRecurringVisitTemplateRequest,
   OptimizeRouteV2Visit,
@@ -441,6 +441,11 @@ export const updateRecurringVisitTemplateForNurse = async (
     throw new HttpError(400, "endDate must be on or after startDate.");
   }
 
+  const shouldCancelFutureGeneratedInstances =
+    payload.endDate !== undefined &&
+    nextEndDate !== null &&
+    (existing.endDate === null || nextEndDate < existing.endDate);
+
   return runInTransaction(async (transaction) => {
     const [updatedTemplate] = await transaction
       .update(recurringVisitTemplates)
@@ -479,6 +484,24 @@ export const updateRecurringVisitTemplateForNurse = async (
           return insertTemplateDays(transaction, updatedTemplate.id, nextDaysOfWeek);
         })()
       : existing.days;
+
+    if (shouldCancelFutureGeneratedInstances && nextEndDate) {
+      await transaction
+        .update(visitInstances)
+        .set({
+          status: "cancelled",
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(visitInstances.nurseId, nurseId),
+            eq(visitInstances.templateId, templateId),
+            eq(visitInstances.isManualOverride, false),
+            eq(visitInstances.status, "scheduled"),
+            gt(visitInstances.planningDate, nextEndDate),
+          ),
+        );
+    }
 
     return {
       ...updatedTemplate,

@@ -448,6 +448,33 @@ export const PatientFormModal = ({
                         )}
                       </div>
 
+                      {template.templateId && (
+                        <div className="grid gap-1">
+                          <label
+                            htmlFor={`recurring-template-end-from-date-${templateKey}`}
+                            className={responsiveStyles.recurrenceLabel}
+                          >
+                            End from date forward
+                          </label>
+                          <input
+                            id={`recurring-template-end-from-date-${templateKey}`}
+                            type="date"
+                            value={template.endFromDate}
+                            onChange={(event) =>
+                              onRecurringTemplateChange(
+                                templateKey,
+                                "endFromDate",
+                                event.target.value,
+                              )
+                            }
+                            className={responsiveStyles.recurrenceInput}
+                          />
+                          <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                            Sets template end date to the day before this date.
+                          </p>
+                        </div>
+                      )}
+
                       <div className="grid gap-1">
                         <label className={responsiveStyles.recurrenceLabel}>Active</label>
                         <label className="inline-flex items-center gap-2 text-sm text-slate-700 dark:text-slate-300">

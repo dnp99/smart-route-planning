@@ -9,6 +9,7 @@ import { useRouteOptimization } from "./useRouteOptimization";
 import {
   requestExpandVisitInstances,
   requestRecurringVisitTemplates,
+  requestUpdateVisitInstance,
   requestVisitInstances,
   resolveWorkingHoursForDate,
 } from "../api/routePlannerService";
@@ -99,8 +100,19 @@ export function useRoutePlannerController({
   const [visitInstancesError, setVisitInstancesError] = useState("");
   const [isVisitInstancesLoading, setIsVisitInstancesLoading] = useState(true);
   const [hasVisitInstancesLoaded, setHasVisitInstancesLoaded] = useState(false);
+  const [activeVisitInstanceActionId, setActiveVisitInstanceActionId] = useState<string | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("auto");
   const [manualTemplateSelectionLock, setManualTemplateSelectionLock] = useState(false);
+
+  const toInstancesByPatientId = (instances: VisitInstance[]) => {
+    const nextInstancesByPatientId = new Map<string, VisitInstance[]>();
+    instances.forEach((instance) => {
+      const current = nextInstancesByPatientId.get(instance.patientId) ?? [];
+      current.push(instance);
+      nextInstancesByPatientId.set(instance.patientId, current);
+    });
+    return nextInstancesByPatientId;
+  };
 
   const {
     startAddress,
@@ -236,12 +248,7 @@ export function useRoutePlannerController({
           return;
         }
 
-        const nextInstancesByPatientId = new Map<string, VisitInstance[]>();
-        instances.forEach((instance) => {
-          const current = nextInstancesByPatientId.get(instance.patientId) ?? [];
-          current.push(instance);
-          nextInstancesByPatientId.set(instance.patientId, current);
-        });
+        const nextInstancesByPatientId = toInstancesByPatientId(instances);
         setVisitInstances(instances);
         setVisitInstancesByPatientId(nextInstancesByPatientId);
         setRecurringTemplates(templates);
@@ -389,9 +396,7 @@ export function useRoutePlannerController({
             (instance) =>
               instance.templateId !== null && effectiveTemplateIds.has(instance.templateId),
           )
-    ).filter(
-      (instance) => instance.templateId === null || knownTemplateIds.has(instance.templateId),
-    );
+    ).filter((instance) => instance.templateId !== null && knownTemplateIds.has(instance.templateId));
     const instancesByPatientId = new Map<string, VisitInstance[]>();
     filteredInstances.forEach((instance) => {
       const current = instancesByPatientId.get(instance.patientId) ?? [];
@@ -444,6 +449,99 @@ export function useRoutePlannerController({
   const handleSetDestinationVisitIncluded = (visitKey: string, isIncluded: boolean) => {
     setManualTemplateSelectionLock(true);
     setDestinationVisitIncluded(visitKey, isIncluded);
+  };
+
+  const handleVisitInstancePatched = (updatedInstance: VisitInstance) => {
+    const nextVisitInstances = visitInstances.flatMap((instance) => {
+      if (instance.id !== updatedInstance.id) {
+        return [instance];
+      }
+
+      if (updatedInstance.planningDate !== planningDate) {
+        return [];
+      }
+
+      return [updatedInstance];
+    });
+
+    setVisitInstances(nextVisitInstances);
+    setVisitInstancesByPatientId(toInstancesByPatientId(nextVisitInstances));
+
+    const nextSelectedDestinations = selectedDestinations.flatMap((destination) => {
+      if (destination.visitId !== updatedInstance.id) {
+        return [destination];
+      }
+
+      if (updatedInstance.planningDate !== planningDate) {
+        return [];
+      }
+
+      return [
+        {
+          ...destination,
+          planningDate: updatedInstance.planningDate,
+          originalPlanningDate: updatedInstance.planningDate,
+          windowStart: updatedInstance.windowStart.slice(0, 5),
+          originalWindowStart: updatedInstance.windowStart.slice(0, 5),
+          windowEnd: updatedInstance.windowEnd.slice(0, 5),
+          originalWindowEnd: updatedInstance.windowEnd.slice(0, 5),
+          windowType: updatedInstance.visitTimeType,
+          serviceDurationMinutes: updatedInstance.serviceDurationMinutes,
+          visitStatus: updatedInstance.status,
+          isIncluded: updatedInstance.status === "scheduled",
+        },
+      ];
+    });
+
+    replaceSelectedDestinations(nextSelectedDestinations);
+  };
+
+  const handleVisitInstanceStatusChange = async (
+    visitId: string,
+    status: "scheduled" | "cancelled",
+  ) => {
+    setActiveVisitInstanceActionId(visitId);
+    setVisitInstancesError("");
+
+    try {
+      const updated = await requestUpdateVisitInstance(visitId, { status });
+      setManualTemplateSelectionLock(true);
+      handleVisitInstancePatched(updated);
+    } catch (error) {
+      setVisitInstancesError(
+        error instanceof Error ? error.message : "Unable to update visit occurrence.",
+      );
+    } finally {
+      setActiveVisitInstanceActionId(null);
+    }
+  };
+
+  const handleVisitInstanceReschedule = async (
+    visitId: string,
+    updates: { planningDate?: string; windowStart?: string; windowEnd?: string },
+  ) => {
+    const normalizedUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([, value]) => typeof value === "string" && value.length > 0),
+    ) as { planningDate?: string; windowStart?: string; windowEnd?: string };
+
+    if (Object.keys(normalizedUpdates).length === 0) {
+      return;
+    }
+
+    setActiveVisitInstanceActionId(visitId);
+    setVisitInstancesError("");
+
+    try {
+      const updated = await requestUpdateVisitInstance(visitId, normalizedUpdates);
+      setManualTemplateSelectionLock(true);
+      handleVisitInstancePatched(updated);
+    } catch (error) {
+      setVisitInstancesError(
+        error instanceof Error ? error.message : "Unable to update visit occurrence.",
+      );
+    } finally {
+      setActiveVisitInstanceActionId(null);
+    }
   };
 
   const handleClearSelectedDestinations = () => {
@@ -577,10 +675,13 @@ export function useRoutePlannerController({
     onClearSelectedDestinations: handleClearSelectedDestinations,
     onRemoveDestinationVisit: handleRemoveDestinationVisit,
     onSetDestinationVisitIncluded: handleSetDestinationVisitIncluded,
-    onUpdateDestinationPlanningWindow: updateDestinationPlanningWindow,
-    onSetDestinationPersistPlanningWindow: setDestinationPersistPlanningWindow,
-    hasResult: !!result,
-    isLoading,
+     onUpdateDestinationPlanningWindow: updateDestinationPlanningWindow,
+     onSetDestinationPersistPlanningWindow: setDestinationPersistPlanningWindow,
+     activeVisitInstanceActionId,
+     onVisitInstanceStatusChange: handleVisitInstanceStatusChange,
+     onVisitInstanceReschedule: handleVisitInstanceReschedule,
+     hasResult: !!result,
+     isLoading,
     canOptimize,
     hasChangedSinceLastOptimize,
     showOptimizeSuccess,

@@ -1,15 +1,20 @@
 export type SelectedPatientDestination = {
   visitKey: string;
   visitId?: string;
+  planningDate?: string;
+  originalPlanningDate?: string;
   sourceWindowId: string | null;
   patientId: string;
   patientName: string;
   address: string;
   googlePlaceId: string | null;
   windowStart: string;
+  originalWindowStart?: string;
   windowEnd: string;
+  originalWindowEnd?: string;
   windowType: "fixed" | "flexible";
   serviceDurationMinutes: number;
+  visitStatus?: "scheduled" | "cancelled";
   requiresPlanningWindow: boolean;
   isIncluded: boolean;
   persistPlanningWindow: boolean;
