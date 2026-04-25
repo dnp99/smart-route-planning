@@ -16,10 +16,16 @@ type SelectedDestinationsSectionProps = {
   onSetDestinationVisitIncluded: (visitKey: string, isIncluded: boolean) => void;
   onUpdateDestinationPlanningWindow: (
     visitKey: string,
-    field: "windowStart" | "windowEnd",
+    field: "windowStart" | "windowEnd" | "planningDate",
     value: string,
   ) => void;
   onSetDestinationPersistPlanningWindow: (visitKey: string, persistPlanningWindow: boolean) => void;
+  activeVisitInstanceActionId: string | null;
+  onVisitInstanceStatusChange: (visitId: string, status: "scheduled" | "cancelled") => Promise<void>;
+  onVisitInstanceReschedule: (
+    visitId: string,
+    updates: { planningDate?: string; windowStart?: string; windowEnd?: string },
+  ) => Promise<void>;
 };
 
 export const SelectedDestinationsSection = ({
@@ -34,6 +40,9 @@ export const SelectedDestinationsSection = ({
   onSetDestinationVisitIncluded,
   onUpdateDestinationPlanningWindow,
   onSetDestinationPersistPlanningWindow,
+  activeVisitInstanceActionId,
+  onVisitInstanceStatusChange,
+  onVisitInstanceReschedule,
 }: SelectedDestinationsSectionProps) => {
   const MOBILE_SELECTED_VISIBLE_ROWS = 15;
   const MOBILE_SELECTED_ROW_HEIGHT_PX = 88;
@@ -178,17 +187,20 @@ export const SelectedDestinationsSection = ({
                     onSetIncluded={(v) =>
                       onSetDestinationVisitIncluded(group.destinations[0].visitKey, v)
                     }
-                    onUpdateWindow={(field, value) =>
-                      onUpdateDestinationPlanningWindow(
-                        group.destinations[0].visitKey,
+                     onUpdateWindow={(field, value) =>
+                       onUpdateDestinationPlanningWindow(
+                         group.destinations[0].visitKey,
                         field,
                         value,
                       )
                     }
-                    onSetPersistWindow={(v) =>
-                      onSetDestinationPersistPlanningWindow(group.destinations[0].visitKey, v)
-                    }
-                  />
+                     onSetPersistWindow={(v) =>
+                       onSetDestinationPersistPlanningWindow(group.destinations[0].visitKey, v)
+                     }
+                     activeVisitInstanceActionId={activeVisitInstanceActionId}
+                     onVisitInstanceStatusChange={onVisitInstanceStatusChange}
+                     onVisitInstanceReschedule={onVisitInstanceReschedule}
+                   />
                 );
               }
 
@@ -246,13 +258,16 @@ export const SelectedDestinationsSection = ({
                           onSetIncluded={(v) =>
                             onSetDestinationVisitIncluded(destination.visitKey, v)
                           }
-                          onUpdateWindow={(field, value) =>
-                            onUpdateDestinationPlanningWindow(destination.visitKey, field, value)
-                          }
-                          onSetPersistWindow={(v) =>
-                            onSetDestinationPersistPlanningWindow(destination.visitKey, v)
-                          }
-                        />
+                           onUpdateWindow={(field, value) =>
+                             onUpdateDestinationPlanningWindow(destination.visitKey, field, value)
+                           }
+                           onSetPersistWindow={(v) =>
+                             onSetDestinationPersistPlanningWindow(destination.visitKey, v)
+                           }
+                           activeVisitInstanceActionId={activeVisitInstanceActionId}
+                           onVisitInstanceStatusChange={onVisitInstanceStatusChange}
+                           onVisitInstanceReschedule={onVisitInstanceReschedule}
+                         />
                       ))}
                     </ol>
                   )}

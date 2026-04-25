@@ -92,7 +92,7 @@ export function useRoutePlannerDestinations({
 
   const updateDestinationPlanningWindow = (
     visitKey: string,
-    field: "windowStart" | "windowEnd",
+    field: "windowStart" | "windowEnd" | "planningDate",
     value: string,
   ) => {
     setSelectedDestinations((current) =>

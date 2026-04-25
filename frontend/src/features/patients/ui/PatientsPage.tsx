@@ -60,6 +60,7 @@ const PatientsPage = () => {
   const [formMode, setFormMode] = useState<FormMode>("create");
   const [selectedPatientId, setSelectedPatientId] = useState<string | null>(null);
   const [formValues, setFormValues] = useState<PatientFormValues>(EMPTY_FORM);
+  const [initialFormValues, setInitialFormValues] = useState<PatientFormValues>(EMPTY_FORM);
   const [formErrors, setFormErrors] = useState<FormFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -127,10 +128,16 @@ const PatientsPage = () => {
     void fetchPatients(searchQuery);
   }, [hasTemplateFilter, searchQuery, templateFilterMode]);
 
+  const isDirty = useMemo(
+    () => JSON.stringify(formValues) !== JSON.stringify(initialFormValues),
+    [formValues, initialFormValues],
+  );
+
   const resetFormState = () => {
     setSelectedPatientId(null);
     setFormMode("create");
     setFormValues(EMPTY_FORM);
+    setInitialFormValues(EMPTY_FORM);
     setFormErrors({});
   };
 
@@ -148,7 +155,9 @@ const PatientsPage = () => {
   const openEditModal = (patient: Patient) => {
     setSelectedPatientId(patient.id);
     setFormMode("edit");
-    setFormValues(toFormValues(patient, recurringTemplatesByPatientId.get(patient.id) ?? []));
+    const values = toFormValues(patient, recurringTemplatesByPatientId.get(patient.id) ?? []);
+    setFormValues(values);
+    setInitialFormValues(values);
     setFormErrors({});
     setPageError("");
     setIsModalOpen(true);
@@ -568,6 +577,7 @@ const PatientsPage = () => {
           formErrors={formErrors}
           isOpen={isModalOpen}
           isSubmitting={isSubmitting}
+          isDirty={isDirty}
           selectedPatient={selectedPatient}
           onClose={closeModal}
           onSubmit={handleSubmit}

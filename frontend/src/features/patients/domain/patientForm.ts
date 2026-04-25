@@ -33,6 +33,7 @@ export type PatientFormRecurringTemplate = {
   recurrenceRule: string;
   startDate: string;
   endDate: string;
+  endFromDate: string;
   isActive: boolean;
   daysOfWeek: number[];
 };
@@ -148,6 +149,7 @@ export const createEmptyRecurringTemplate = (): PatientFormRecurringTemplate => 
   recurrenceRule: DEFAULT_RECURRING_RULE,
   startDate: "",
   endDate: "",
+  endFromDate: "",
   isActive: true,
   daysOfWeek: DEFAULT_RECURRING_DAYS_OF_WEEK,
 });
@@ -170,6 +172,16 @@ const timeToMinutes = (value: string) => {
   return Number(hoursString) * 60 + Number(minutesString);
 };
 
+const shiftDateStringByDays = (value: string, offsetDays: number) => {
+  if (!DATE_PATTERN.test(value)) {
+    return null;
+  }
+
+  const date = new Date(`${value}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + offsetDays);
+  return date.toISOString().slice(0, 10);
+};
+
 export const toTimeInput = (value: string) => value.slice(0, 5);
 
 const getPatientVisitWindows = (patient: Patient) =>
@@ -181,16 +193,17 @@ const formatWindowRange = (startTime: string, endTime: string) =>
 const toRecurringFormTemplate = (
   template: RecurringVisitTemplate,
 ): PatientFormRecurringTemplate => ({
-    id: template.id,
-    templateId: template.id,
-    name: template.name ?? "",
-    timezone: normalizeRecurringTemplateTimezone(template.timezone),
-    recurrenceRule: template.recurrenceRule,
-    startDate: template.startDate,
-    endDate: template.endDate ?? "",
-    isActive: template.isActive,
-    daysOfWeek: template.daysOfWeek,
-  });
+  id: template.id,
+  templateId: template.id,
+  name: template.name ?? "",
+  timezone: normalizeRecurringTemplateTimezone(template.timezone),
+  recurrenceRule: template.recurrenceRule,
+  startDate: template.startDate,
+  endDate: template.endDate ?? "",
+  endFromDate: "",
+  isActive: template.isActive,
+  daysOfWeek: template.daysOfWeek,
+});
 
 export const toFormValues = (
   patient: Patient,
@@ -271,13 +284,16 @@ export const buildRecurringTemplateMutationPlan = (
   };
 
   values.recurringTemplates.forEach((template) => {
+    const normalizedStartDate = template.startDate.trim();
+    const normalizedEndDate = template.endDate.trim() || null;
+    const normalizedEndFromDate = template.endFromDate.trim();
     const normalizedRequestBase = {
       patientId,
       name: template.name.trim() || null,
       timezone: normalizeRecurringTemplateTimezone(template.timezone),
       recurrenceRule: toWeeklyRecurrenceRule(template.daysOfWeek),
-      startDate: template.startDate.trim(),
-      endDate: template.endDate.trim() || null,
+      startDate: normalizedStartDate,
+      endDate: normalizedEndDate,
       daysOfWeek: template.daysOfWeek,
     };
 
@@ -290,6 +306,41 @@ export const buildRecurringTemplateMutationPlan = (
     if (!existing) {
       create.push(normalizedRequestBase);
       return;
+    }
+
+    if (normalizedEndFromDate.length > 0) {
+      const endDateBeforeEffectiveDate = shiftDateStringByDays(normalizedEndFromDate, -1);
+
+      if (endDateBeforeEffectiveDate) {
+        update.push({
+          templateId: template.templateId,
+          request: {
+            endDate: endDateBeforeEffectiveDate,
+          },
+        });
+        return;
+      }
+    }
+
+    const shouldSplitSeries =
+      normalizedStartDate.length > 0 && normalizedStartDate > existing.startDate;
+
+    if (shouldSplitSeries) {
+      const splitEndDate = shiftDateStringByDays(normalizedStartDate, -1);
+
+      if (splitEndDate) {
+        if (!existing.endDate || existing.endDate > splitEndDate) {
+          update.push({
+            templateId: template.templateId,
+            request: {
+              endDate: splitEndDate,
+            },
+          });
+        }
+
+        create.push(normalizedRequestBase);
+        return;
+      }
     }
 
     update.push({
@@ -392,6 +443,18 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
     errors.visitWindowRows = visitWindowRows;
   }
 
+  if (!errors.visitWindowRows) {
+    const seenKeys = new Set<string>();
+    for (const window of values.visitWindows) {
+      const key = `${window.startTime}-${window.endTime}`;
+      if (seenKeys.has(key)) {
+        errors.visitWindows = `Two visit windows have the same time range (${window.startTime}–${window.endTime}). Each window must use a unique start and end time.`;
+        break;
+      }
+      seenKeys.add(key);
+    }
+  }
+
   if (values.recurringTemplates.length > 0) {
     const recurringTemplateRows: RecurringTemplateFieldErrors[] = values.recurringTemplates.map(
       () => ({}),
@@ -430,6 +493,17 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
 
       if (template.daysOfWeek.length === 0) {
         row.daysOfWeek = "Select at least one weekday.";
+      }
+
+      if (template.endFromDate.trim().length > 0) {
+        if (!DATE_PATTERN.test(template.endFromDate.trim())) {
+          row.endDate = "End-from date must use YYYY-MM-DD format.";
+        } else if (
+          DATE_PATTERN.test(template.startDate.trim()) &&
+          template.endFromDate.trim() <= template.startDate.trim()
+        ) {
+          row.endDate = "End-from date must be after start date.";
+        }
       }
     });
 

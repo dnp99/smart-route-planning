@@ -102,18 +102,18 @@ Occurrence key uses `<templateId>:<patientVisitWindowId>:<planningDate>` (or `<t
 
 Deleting a template cascades to delete its generated visit instances (FK on `visit_instances.template_id` with `ON DELETE cascade` is not present — deletion is handled explicitly in `deleteRecurringVisitTemplateForNurse` which deletes instances then the template in a transaction).
 
-### Backend Tests — TODO
+### Backend Tests — DONE
 
-No tests yet for the new template model. Needed:
+Covered in `backend/src/lib/recurrence/recurrenceRepository.test.ts` and `backend/src/lib/recurrence/recurrenceValidation.test.ts`:
 
-1. Validation accepts `daysOfWeek`, rejects empty array and out-of-range values
-2. Create template persists days to `recurring_visit_template_days`
-3. Update template replaces days
-4. Expansion generates instances using client visit windows and duration
-5. Expansion creates multiple instances when client has multiple visit windows
-6. Expansion skips dates where template weekday does not match
-7. Deleting a template removes generated visit instances
-8. No-window-client fallback (uses legacy `preferredVisitStartTime`/`preferredVisitEndTime`)
+1. [x] Validation accepts `daysOfWeek`, rejects empty array and out-of-range values
+2. [x] Create template persists days to `recurring_visit_template_days`
+3. [x] Update template replaces days
+4. [x] Expansion generates instances using client visit windows and duration
+5. [x] Expansion creates multiple instances when client has multiple visit windows
+6. [x] Expansion skips dates where template weekday does not match
+7. [x] Deleting a template removes generated visit instances
+8. [x] No-window-client fallback (uses legacy `preferredVisitStartTime`/`preferredVisitEndTime`)
 
 ## Frontend Plan
 
@@ -144,9 +144,9 @@ No tests yet for the new template model. Needed:
 
 - [x] `templateOptions` `matchesPlanningDay` reads `daysOfWeek` instead of removed `windows`
 - [x] `autoTemplateId` reads `daysOfWeek`
-- [x] Defensive filter: instances whose `templateId` is not in the loaded `recurringTemplates` set are excluded from auto-seeding
+- [x] Defensive filter: instances whose `templateId` is null or not in the loaded `recurringTemplates` set are excluded from auto-seeding
 
-### Phase 5: Exceptions + Series Editing — TODO
+### Phase 5: Exceptions + Series Editing — DONE
 
 Add occurrence-level and series-level editing.
 
@@ -173,7 +173,7 @@ Occurrence edit behavior:
 Series edit behavior:
 
 - Edit this and future: set `endDate` on current template to day before effective date; create new template from effective date with updated values
-- End this and future: set `endDate`; cancel/delete non-manual future instances
+- End this and future: set `endDate`; cancel/delete non-manual future instances (**implemented as cancellation for generated non-manual scheduled instances when template `endDate` is shortened via `updateRecurringVisitTemplateForNurse`**)
 
 Regeneration rules:
 
@@ -189,17 +189,23 @@ Frontend surfaces:
 
 ## Test Plan
 
-### Backend Tests — TODO
+### Backend Tests — DONE
 
 See Backend Plan → Backend Tests above.
 
-### Frontend Tests — DONE (partial)
+### Frontend Tests — DONE
 
 - [x] `patientForm.validation.test.ts` updated: fixtures use `daysOfWeek`, removed window-duration test, added "requires at least one weekday" test
-- [ ] Template creation sends `daysOfWeek` (integration test)
-- [ ] Template update sends changed `daysOfWeek`
-- [ ] Route Planner defensive filter excludes orphaned instances (unit test)
-- [ ] Phase 5 UI tests (skip/restore/reschedule, series edit)
+- [x] Template creation sends `daysOfWeek` (integration test)
+- [x] Template update sends changed `daysOfWeek`
+- [x] Route Planner defensive filter excludes orphaned instances (unit/integration test, including null-template and unknown-template orphans)
+- [x] Phase 5 UI tests (skip/restore/reschedule in Route Planner; series split when template start date moves forward)
+
+### Remaining Phase 5 scope
+
+- [x] Explicit client-template editor action for "end from date forward"
+- [x] Exception persistence model (`visit_instance_exceptions`) for non-generated/ungenerated occurrence edits, with repository persistence in `updateVisitInstanceForNurse` and expansion application in `expandVisitInstancesForNurse`
+- [x] Expansion regeneration rules for client window changes (refresh non-manual future instances; preserve manual overrides)
 
 ## Migration / Rollout Strategy
 
@@ -214,5 +220,5 @@ Backend accepted both old `windows` payload and new `daysOfWeek` payload during 
 
 1. ~~If a client has multiple visit windows, should each selected weekday generate all windows?~~ **Yes — implemented.**
 2. ~~If a client has no visit windows, should a template still generate a visit?~~ **Yes — uses legacy `preferredVisitStartTime`/`preferredVisitEndTime` fallback.**
-3. Should changing patient visit windows update already-generated future instances? **Recommended: refresh non-manual future instances on expansion; preserve manual overrides. Not yet implemented (Phase 5).**
+3. ~~Should changing patient visit windows update already-generated future instances?~~ **Yes — implemented. Expansion now refreshes non-manual scheduled instances and cancels stale derived non-manual scheduled instances when they no longer match template/client windows.**
 4. Should timezone stay editable per template? **Yes — kept in backend and form. Hidden complexity deferred.**

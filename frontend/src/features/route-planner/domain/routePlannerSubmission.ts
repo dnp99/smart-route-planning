@@ -50,6 +50,18 @@ export const validateRequestDestinations = (
     return `Set start and end time before saving to client record for: ${formatPatientListLabel(destinationsMissingPersistWindow)}.`;
   }
 
+  const persistDestinations = requestDestinations.filter(
+    (destination) => destination.persistPlanningWindow && hasCompleteWindow(destination),
+  );
+  const seenPersistKeys = new Set<string>();
+  for (const destination of persistDestinations) {
+    const key = `${destination.patientId}|${destination.windowStart}-${destination.windowEnd}`;
+    if (seenPersistKeys.has(key)) {
+      return `${destination.patientName} has two rows with the same window (${destination.windowStart}–${destination.windowEnd}) both marked to save. Remove one before continuing.`;
+    }
+    seenPersistKeys.add(key);
+  }
+
   return null;
 };
 

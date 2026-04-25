@@ -85,22 +85,26 @@ export const toSelectedVisitInstanceDestinations = (
   instances: VisitInstance[],
 ): SelectedPatientDestination[] => {
   const patientName = formatPatientNameFromParts(patient.firstName, patient.lastName);
-  const scheduledInstances = instances.filter((instance) => instance.status === "scheduled");
 
-  return scheduledInstances.map((instance) => ({
+  return instances.map((instance) => ({
     visitKey: `${patient.id}:instance:${instance.id}`,
     visitId: instance.id,
+    planningDate: instance.planningDate,
+    originalPlanningDate: instance.planningDate,
     sourceWindowId: null,
     patientId: patient.id,
     patientName,
     address: instance.address,
     googlePlaceId: instance.googlePlaceId,
     windowStart: toWindowTime(instance.windowStart),
+    originalWindowStart: toWindowTime(instance.windowStart),
     windowEnd: toWindowTime(instance.windowEnd),
+    originalWindowEnd: toWindowTime(instance.windowEnd),
     windowType: instance.visitTimeType,
     serviceDurationMinutes: instance.serviceDurationMinutes,
+    visitStatus: instance.status,
     requiresPlanningWindow: false,
-    isIncluded: true,
+    isIncluded: instance.status === "scheduled",
     persistPlanningWindow: false,
   }));
 };

@@ -117,6 +117,7 @@ describe("patientForm validateForm", () => {
             recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
             startDate: "2026-03-20",
             endDate: "2026-03-19",
+            endFromDate: "",
             isActive: true,
             daysOfWeek: [1],
           },
@@ -144,6 +145,7 @@ describe("patientForm validateForm", () => {
             recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
             startDate: "2026-03-20",
             endDate: "",
+            endFromDate: "",
             isActive: true,
             daysOfWeek: [],
           },
@@ -152,5 +154,30 @@ describe("patientForm validateForm", () => {
     );
 
     expect(errors.recurringTemplateRows?.[0]?.daysOfWeek).toBe("Select at least one weekday.");
+  });
+
+  it("requires end-from date to be after template start date", () => {
+    const errors = validateForm(
+      buildValues({
+        recurringTemplates: [
+          {
+            id: "draft-1",
+            templateId: "template-1",
+            name: "Weekdays",
+            timezone: "America/Toronto",
+            recurrenceRule: "FREQ=WEEKLY;INTERVAL=1;BYDAY=MO",
+            startDate: "2026-03-20",
+            endDate: "",
+            endFromDate: "2026-03-20",
+            isActive: true,
+            daysOfWeek: [1],
+          },
+        ],
+      }),
+    );
+
+    expect(errors.recurringTemplateRows?.[0]?.endDate).toBe(
+      "End-from date must be after start date.",
+    );
   });
 });

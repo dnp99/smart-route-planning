@@ -115,6 +115,13 @@ export type ListVisitInstancesInput = {
   endDate?: string;
 };
 
+export type UpdateVisitInstanceInput = {
+  status?: "scheduled" | "cancelled";
+  planningDate?: string;
+  windowStart?: string;
+  windowEnd?: string;
+};
+
 export type ExpandVisitInstancesInput = {
   planningDate: string;
   templateIds?: string[];
@@ -269,6 +276,20 @@ export const persistPlanningWindows = async (
 
       nextVisitWindows.sort(compareVisitWindows);
 
+      const seenWindowKeys = new Set<string>();
+      for (const w of nextVisitWindows) {
+        const key = `${w.startTime}-${w.endTime}`;
+        if (seenWindowKeys.has(key)) {
+          const name = patient.firstName
+            ? `${patient.firstName} ${patient.lastName}`.trim()
+            : "this client";
+          throw new Error(
+            `The window ${w.startTime}–${w.endTime} already exists on ${name}'s record. Remove the duplicate before saving.`,
+          );
+        }
+        seenWindowKeys.add(key);
+      }
+
       await requestAuthedJson(
         `/api/patients/${encodeURIComponent(patientId)}`,
         {
@@ -303,6 +324,32 @@ export const requestVisitInstances = async ({
   );
 
   return parseListVisitInstancesResponse(payload).instances;
+};
+
+export const requestUpdateVisitInstance = async (
+  visitInstanceId: string,
+  updates: UpdateVisitInstanceInput,
+): Promise<VisitInstance> => {
+  const payload = await requestAuthedJson(
+    `/api/visit-instances/${encodeURIComponent(visitInstanceId)}`,
+    {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(updates),
+    },
+    "Unable to update visit occurrence.",
+  );
+
+  const instances = parseListVisitInstancesResponse({ instances: [payload] }).instances;
+  const updatedInstance = instances[0];
+
+  if (!updatedInstance) {
+    throw new Error("Unexpected API response format.");
+  }
+
+  return updatedInstance;
 };
 
 export const requestExpandVisitInstances = async ({

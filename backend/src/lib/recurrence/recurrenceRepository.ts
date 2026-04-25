@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, inArray, lte } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, lte, or } from "drizzle-orm";
 import type {
   CreateRecurringVisitTemplateRequest,
   OptimizeRouteV2Visit,
@@ -10,6 +10,7 @@ import {
   patients,
   recurringVisitTemplateDays,
   recurringVisitTemplates,
+  visitInstanceExceptions,
   visitInstances,
 } from "../../db/schema";
 import { HttpError } from "../http";
@@ -39,6 +40,7 @@ type RecurrenceRule = {
 type TemplateDayRow = typeof recurringVisitTemplateDays.$inferSelect;
 type TemplateRow = typeof recurringVisitTemplates.$inferSelect;
 type VisitInstanceRow = typeof visitInstances.$inferSelect;
+type VisitInstanceExceptionRow = typeof visitInstanceExceptions.$inferSelect;
 type PatientVisitWindowRow = typeof patientVisitWindows.$inferSelect;
 
 export type RecurringTemplateWithWindows = TemplateRow & {
@@ -229,6 +231,24 @@ const isDateEligibleForTemplate = (
 const toOccurrenceKey = (templateId: string, windowId: string, planningDate: string) =>
   `${templateId}:${windowId}:${planningDate}`;
 
+const parseOccurrenceKey = (occurrenceKey: string) => {
+  const parts = occurrenceKey.split(":");
+  if (parts.length !== 3) {
+    return null;
+  }
+
+  const [templateId, windowId, planningDate] = parts;
+  if (!templateId || !windowId || !planningDate) {
+    return null;
+  }
+
+  return {
+    templateId,
+    windowId,
+    planningDate,
+  };
+};
+
 type ClientVisitWindow = Pick<
   PatientVisitWindowRow,
   "id" | "startTime" | "endTime" | "visitTimeType"
@@ -340,6 +360,77 @@ const listVisitInstanceRowsForRange = async (
     );
 };
 
+const listVisitInstanceExceptionsForRange = async (
+  nurseId: string,
+  startDate: string,
+  endDate: string,
+  templateIds?: string[],
+): Promise<
+  Array<
+    VisitInstanceExceptionRow & {
+      occurrenceKey: string;
+      patientId: string;
+      templateIdFromInstance: string | null;
+      address: string;
+      googlePlaceId: string | null;
+      windowStart: string;
+      windowEnd: string;
+      visitTimeType: string;
+      serviceDurationMinutes: number;
+    }
+  >
+> => {
+  const baseCondition = and(
+    eq(visitInstanceExceptions.nurseId, nurseId),
+    or(
+      and(
+        gte(visitInstanceExceptions.exceptionDate, startDate),
+        lte(visitInstanceExceptions.exceptionDate, endDate),
+      ),
+      and(
+        gte(visitInstanceExceptions.rescheduledDate, startDate),
+        lte(visitInstanceExceptions.rescheduledDate, endDate),
+      ),
+    ),
+  );
+
+  const whereCondition =
+    templateIds && templateIds.length > 0
+      ? and(baseCondition, inArray(visitInstances.templateId, templateIds))
+      : baseCondition;
+
+  return getDb()
+    .select({
+      id: visitInstanceExceptions.id,
+      nurseId: visitInstanceExceptions.nurseId,
+      visitInstanceId: visitInstanceExceptions.visitInstanceId,
+      templateId: visitInstanceExceptions.templateId,
+      exceptionDate: visitInstanceExceptions.exceptionDate,
+      action: visitInstanceExceptions.action,
+      rescheduledDate: visitInstanceExceptions.rescheduledDate,
+      overrideStartTime: visitInstanceExceptions.overrideStartTime,
+      overrideEndTime: visitInstanceExceptions.overrideEndTime,
+      overrideVisitTimeType: visitInstanceExceptions.overrideVisitTimeType,
+      overrideServiceDurationMinutes: visitInstanceExceptions.overrideServiceDurationMinutes,
+      notes: visitInstanceExceptions.notes,
+      createdAt: visitInstanceExceptions.createdAt,
+      updatedAt: visitInstanceExceptions.updatedAt,
+      occurrenceKey: visitInstances.occurrenceKey,
+      patientId: visitInstances.patientId,
+      templateIdFromInstance: visitInstances.templateId,
+      address: visitInstances.address,
+      googlePlaceId: visitInstances.googlePlaceId,
+      windowStart: visitInstances.windowStart,
+      windowEnd: visitInstances.windowEnd,
+      visitTimeType: visitInstances.visitTimeType,
+      serviceDurationMinutes: visitInstances.serviceDurationMinutes,
+    })
+    .from(visitInstanceExceptions)
+    .innerJoin(visitInstances, eq(visitInstanceExceptions.visitInstanceId, visitInstances.id))
+    .where(whereCondition)
+    .orderBy(asc(visitInstanceExceptions.exceptionDate), asc(visitInstanceExceptions.createdAt));
+};
+
 const toHourMinute = (value: string) => value.slice(0, 5);
 const toMinutes = (value: string) => {
   const [hourString, minuteString] = value.split(":");
@@ -441,6 +532,11 @@ export const updateRecurringVisitTemplateForNurse = async (
     throw new HttpError(400, "endDate must be on or after startDate.");
   }
 
+  const shouldCancelFutureGeneratedInstances =
+    payload.endDate !== undefined &&
+    nextEndDate !== null &&
+    (existing.endDate === null || nextEndDate < existing.endDate);
+
   return runInTransaction(async (transaction) => {
     const [updatedTemplate] = await transaction
       .update(recurringVisitTemplates)
@@ -479,6 +575,24 @@ export const updateRecurringVisitTemplateForNurse = async (
           return insertTemplateDays(transaction, updatedTemplate.id, nextDaysOfWeek);
         })()
       : existing.days;
+
+    if (shouldCancelFutureGeneratedInstances && nextEndDate) {
+      await transaction
+        .update(visitInstances)
+        .set({
+          status: "cancelled",
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(visitInstances.nurseId, nurseId),
+            eq(visitInstances.templateId, templateId),
+            eq(visitInstances.isManualOverride, false),
+            eq(visitInstances.status, "scheduled"),
+            gt(visitInstances.planningDate, nextEndDate),
+          ),
+        );
+    }
 
     return {
       ...updatedTemplate,
@@ -608,18 +722,6 @@ export const expandVisitInstancesForNurse = async (
     });
   });
 
-  if (candidateInsertRows.length === 0) {
-    return {
-      createdCount: 0,
-      instances: await listVisitInstanceRowsForRange(
-        nurseId,
-        payload.startDate,
-        payload.endDate,
-        payload.templateIds,
-      ),
-    };
-  }
-
   // A client should only get one instance per visit window per day even if they
   // appear in multiple templates. Deduplicate by (patientId, windowStart, windowEnd, planningDate),
   // keeping the first candidate (earliest template in iteration order).
@@ -633,19 +735,70 @@ export const expandVisitInstancesForNurse = async (
     return true;
   });
 
-  const occurrenceKeys = deduplicatedCandidates.map((row) => row.occurrenceKey);
-  const existingRows = await getDb()
-    .select({ occurrenceKey: visitInstances.occurrenceKey })
-    .from(visitInstances)
-    .where(
-      and(
-        eq(visitInstances.nurseId, nurseId),
-        inArray(visitInstances.occurrenceKey, occurrenceKeys),
-      ),
-    );
+  const filteredTemplateIds = Array.from(new Set(filteredTemplates.map((template) => template.id)));
 
-  const existingKeys = new Set(existingRows.map((row) => row.occurrenceKey));
-  const insertRows = deduplicatedCandidates.filter((row) => !existingKeys.has(row.occurrenceKey));
+  const candidateByOccurrenceKey = new Map(
+    deduplicatedCandidates.map((candidate) => [candidate.occurrenceKey, candidate]),
+  );
+
+  const exceptionRows = await listVisitInstanceExceptionsForRange(
+    nurseId,
+    payload.startDate,
+    payload.endDate,
+    filteredTemplateIds,
+  );
+  exceptionRows.forEach((exception) => {
+    if (exception.action === "skip") {
+      candidateByOccurrenceKey.delete(exception.occurrenceKey);
+      return;
+    }
+
+    if (exception.action !== "reschedule" && exception.action !== "edit") {
+      return;
+    }
+
+    const nextPlanningDate = exception.rescheduledDate ?? exception.exceptionDate;
+    if (nextPlanningDate < payload.startDate || nextPlanningDate > payload.endDate) {
+      candidateByOccurrenceKey.delete(exception.occurrenceKey);
+      return;
+    }
+
+    const baseCandidate = candidateByOccurrenceKey.get(exception.occurrenceKey);
+    const parsedOccurrence = parseOccurrenceKey(exception.occurrenceKey);
+    candidateByOccurrenceKey.set(exception.occurrenceKey, {
+      nurseId,
+      patientId: exception.patientId,
+      templateId: parsedOccurrence?.templateId ?? exception.templateIdFromInstance,
+      occurrenceKey: exception.occurrenceKey,
+      planningDate: nextPlanningDate,
+      address: baseCandidate?.address ?? exception.address,
+      googlePlaceId: baseCandidate?.googlePlaceId ?? exception.googlePlaceId,
+      windowStart:
+        exception.overrideStartTime ?? baseCandidate?.windowStart ?? exception.windowStart,
+      windowEnd: exception.overrideEndTime ?? baseCandidate?.windowEnd ?? exception.windowEnd,
+      visitTimeType:
+        exception.overrideVisitTimeType ?? baseCandidate?.visitTimeType ?? exception.visitTimeType,
+      serviceDurationMinutes:
+        exception.overrideServiceDurationMinutes ??
+        baseCandidate?.serviceDurationMinutes ??
+        exception.serviceDurationMinutes,
+      status: "scheduled",
+      isManualOverride: true,
+    });
+  });
+
+  const finalCandidates = [...candidateByOccurrenceKey.values()];
+  const existingRowsInRange = await listVisitInstanceRowsForRange(
+    nurseId,
+    payload.startDate,
+    payload.endDate,
+    filteredTemplateIds,
+  );
+  const existingAnyByOccurrenceKey = new Map(
+    existingRowsInRange.map((instance) => [instance.occurrenceKey, instance]),
+  );
+
+  const insertRows = finalCandidates.filter((row) => !existingAnyByOccurrenceKey.has(row.occurrenceKey));
 
   if (insertRows.length > 0) {
     try {
@@ -655,6 +808,74 @@ export const expandVisitInstancesForNurse = async (
         throw error;
       }
     }
+  }
+
+  for (const [occurrenceKey, candidate] of candidateByOccurrenceKey.entries()) {
+    const existing = existingAnyByOccurrenceKey.get(occurrenceKey);
+    if (!existing) {
+      continue;
+    }
+
+    if (!candidate.isManualOverride && (existing.isManualOverride || existing.status !== "scheduled")) {
+      continue;
+    }
+
+    const shouldRefresh =
+      existing.planningDate !== candidate.planningDate ||
+      existing.address !== candidate.address ||
+      existing.googlePlaceId !== candidate.googlePlaceId ||
+      existing.windowStart !== candidate.windowStart ||
+      existing.windowEnd !== candidate.windowEnd ||
+      existing.visitTimeType !== candidate.visitTimeType ||
+      existing.serviceDurationMinutes !== candidate.serviceDurationMinutes ||
+      existing.status !== candidate.status ||
+      existing.isManualOverride !== candidate.isManualOverride;
+
+    if (!shouldRefresh) {
+      continue;
+    }
+
+    await getDb()
+      .update(visitInstances)
+      .set({
+        planningDate: candidate.planningDate,
+        address: candidate.address,
+        googlePlaceId: candidate.googlePlaceId,
+        windowStart: candidate.windowStart,
+        windowEnd: candidate.windowEnd,
+        visitTimeType: candidate.visitTimeType,
+        serviceDurationMinutes: candidate.serviceDurationMinutes,
+        status: candidate.status,
+        isManualOverride: candidate.isManualOverride,
+        updatedAt: new Date(),
+      })
+      .where(and(eq(visitInstances.id, existing.id), eq(visitInstances.nurseId, nurseId)));
+  }
+
+  const candidateOccurrenceKeys = new Set(finalCandidates.map((row) => row.occurrenceKey));
+  const staleGeneratedInstanceIds = existingRowsInRange
+    .filter(
+      (instance) =>
+        instance.isManualOverride === false &&
+        instance.status === "scheduled" &&
+        instance.templateId !== null &&
+        !candidateOccurrenceKeys.has(instance.occurrenceKey),
+    )
+    .map((instance) => instance.id);
+
+  if (staleGeneratedInstanceIds.length > 0) {
+    await getDb()
+      .update(visitInstances)
+      .set({
+        status: "cancelled",
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(visitInstances.nurseId, nurseId),
+          inArray(visitInstances.id, staleGeneratedInstanceIds),
+        ),
+      );
   }
 
   return {
@@ -718,7 +939,53 @@ export const updateVisitInstanceForNurse = async (
     .where(and(eq(visitInstances.id, instanceId), eq(visitInstances.nurseId, nurseId)))
     .returning();
 
-  return updated ?? null;
+  if (!updated) {
+    return null;
+  }
+
+  const parsedOccurrence = parseOccurrenceKey(existing.occurrenceKey);
+  const exceptionDate = parsedOccurrence?.planningDate ?? existing.planningDate;
+  const templateIdForException = existing.templateId ?? parsedOccurrence?.templateId ?? null;
+  const hasRescheduleMutation =
+    payload.planningDate !== undefined ||
+    payload.windowStart !== undefined ||
+    payload.windowEnd !== undefined ||
+    payload.visitTimeType !== undefined ||
+    payload.serviceDurationMinutes !== undefined;
+
+  const shouldWriteSkipException = updated.status === "cancelled";
+  const shouldWriteRescheduleException = updated.status === "scheduled" && hasRescheduleMutation;
+
+  if (shouldWriteSkipException || shouldWriteRescheduleException || payload.status === "scheduled") {
+    await getDb()
+      .delete(visitInstanceExceptions)
+      .where(eq(visitInstanceExceptions.visitInstanceId, updated.id));
+  }
+
+  if (shouldWriteSkipException) {
+    await getDb().insert(visitInstanceExceptions).values({
+      nurseId,
+      visitInstanceId: updated.id,
+      templateId: templateIdForException,
+      exceptionDate,
+      action: "skip",
+    });
+  } else if (shouldWriteRescheduleException) {
+    await getDb().insert(visitInstanceExceptions).values({
+      nurseId,
+      visitInstanceId: updated.id,
+      templateId: templateIdForException,
+      exceptionDate,
+      action: "reschedule",
+      rescheduledDate: updated.planningDate,
+      overrideStartTime: updated.windowStart,
+      overrideEndTime: updated.windowEnd,
+      overrideVisitTimeType: updated.visitTimeType,
+      overrideServiceDurationMinutes: updated.serviceDurationMinutes,
+    });
+  }
+
+  return updated;
 };
 
 export type VisitInstanceMeta = {

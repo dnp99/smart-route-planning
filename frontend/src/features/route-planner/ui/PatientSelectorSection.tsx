@@ -31,10 +31,16 @@ type PatientSelectorSectionProps = {
   onSetDestinationVisitIncluded: (visitKey: string, isIncluded: boolean) => void;
   onUpdateDestinationPlanningWindow: (
     visitKey: string,
-    field: "windowStart" | "windowEnd",
+    field: "windowStart" | "windowEnd" | "planningDate",
     value: string,
   ) => void;
   onSetDestinationPersistPlanningWindow: (visitKey: string, persistPlanningWindow: boolean) => void;
+  activeVisitInstanceActionId: string | null;
+  onVisitInstanceStatusChange: (visitId: string, status: "scheduled" | "cancelled") => Promise<void>;
+  onVisitInstanceReschedule: (
+    visitId: string,
+    updates: { planningDate?: string; windowStart?: string; windowEnd?: string },
+  ) => Promise<void>;
   // Optimize CTA (desktop only — mobile lives in RouteResultSection footer)
   hasResult: boolean;
   isLoading: boolean;
@@ -70,6 +76,9 @@ export const PatientSelectorSection = ({
   onSetDestinationVisitIncluded,
   onUpdateDestinationPlanningWindow,
   onSetDestinationPersistPlanningWindow,
+  activeVisitInstanceActionId,
+  onVisitInstanceStatusChange,
+  onVisitInstanceReschedule,
   hasResult,
   isLoading,
   canOptimize,
@@ -321,6 +330,9 @@ export const PatientSelectorSection = ({
               onSetDestinationVisitIncluded={onSetDestinationVisitIncluded}
               onUpdateDestinationPlanningWindow={onUpdateDestinationPlanningWindow}
               onSetDestinationPersistPlanningWindow={onSetDestinationPersistPlanningWindow}
+              activeVisitInstanceActionId={activeVisitInstanceActionId}
+              onVisitInstanceStatusChange={onVisitInstanceStatusChange}
+              onVisitInstanceReschedule={onVisitInstanceReschedule}
             />
           </div>
         </>
