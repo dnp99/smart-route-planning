@@ -1,4 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
+
+const DAY_ABBRS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+
+const templateDisplayName = (template: RecurringVisitTemplate): string => {
+  if (template.name?.trim()) return template.name.trim();
+  if (template.daysOfWeek.length > 0) {
+    return `Weekly · ${template.daysOfWeek.map((d) => DAY_ABBRS[d]).join(", ")}`;
+  }
+  return "Unnamed template";
+};
 import type {
   RecurringVisitTemplate,
   VisitInstance,
@@ -100,7 +110,9 @@ export function useRoutePlannerController({
   const [visitInstancesError, setVisitInstancesError] = useState("");
   const [isVisitInstancesLoading, setIsVisitInstancesLoading] = useState(true);
   const [hasVisitInstancesLoaded, setHasVisitInstancesLoaded] = useState(false);
-  const [activeVisitInstanceActionId, setActiveVisitInstanceActionId] = useState<string | null>(null);
+  const [activeVisitInstanceActionId, setActiveVisitInstanceActionId] = useState<string | null>(
+    null,
+  );
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>("auto");
   const [manualTemplateSelectionLock, setManualTemplateSelectionLock] = useState(false);
 
@@ -296,7 +308,7 @@ export function useRoutePlannerController({
 
     return recurringTemplates
       .map((template) => {
-        const displayName = template.name?.trim() || `Template ${template.id.slice(0, 8)}`;
+        const displayName = templateDisplayName(template);
         return {
           id: template.id,
           label: displayName,
@@ -342,8 +354,8 @@ export function useRoutePlannerController({
       const option = templateOptions.find((o) => o.id === id);
       if (option) return option.label;
       const template = recurringTemplates.find((t) => t.id === id);
-      if (template) return template.name?.trim() || `Template ${id.slice(0, 8)}`;
-      return `Template ${id.slice(0, 8)}`;
+      if (template) return templateDisplayName(template);
+      return "Unnamed template";
     });
 
     return names.join(", ");
@@ -396,7 +408,9 @@ export function useRoutePlannerController({
             (instance) =>
               instance.templateId !== null && effectiveTemplateIds.has(instance.templateId),
           )
-    ).filter((instance) => instance.templateId !== null && knownTemplateIds.has(instance.templateId));
+    ).filter(
+      (instance) => instance.templateId !== null && knownTemplateIds.has(instance.templateId),
+    );
     const instancesByPatientId = new Map<string, VisitInstance[]>();
     filteredInstances.forEach((instance) => {
       const current = instancesByPatientId.get(instance.patientId) ?? [];
@@ -675,13 +689,13 @@ export function useRoutePlannerController({
     onClearSelectedDestinations: handleClearSelectedDestinations,
     onRemoveDestinationVisit: handleRemoveDestinationVisit,
     onSetDestinationVisitIncluded: handleSetDestinationVisitIncluded,
-     onUpdateDestinationPlanningWindow: updateDestinationPlanningWindow,
-     onSetDestinationPersistPlanningWindow: setDestinationPersistPlanningWindow,
-     activeVisitInstanceActionId,
-     onVisitInstanceStatusChange: handleVisitInstanceStatusChange,
-     onVisitInstanceReschedule: handleVisitInstanceReschedule,
-     hasResult: !!result,
-     isLoading,
+    onUpdateDestinationPlanningWindow: updateDestinationPlanningWindow,
+    onSetDestinationPersistPlanningWindow: setDestinationPersistPlanningWindow,
+    activeVisitInstanceActionId,
+    onVisitInstanceStatusChange: handleVisitInstanceStatusChange,
+    onVisitInstanceReschedule: handleVisitInstanceReschedule,
+    hasResult: !!result,
+    isLoading,
     canOptimize,
     hasChangedSinceLastOptimize,
     showOptimizeSuccess,

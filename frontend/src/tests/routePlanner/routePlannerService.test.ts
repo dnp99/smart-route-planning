@@ -806,8 +806,8 @@ describe("requestOptimizedRoute", () => {
       {
         patientId: "patient-1",
         sourceWindowId: null,
-        startTime: "09:00",
-        endTime: "10:00",
+        startTime: "13:00",
+        endTime: "14:00",
         visitTimeType: "flexible",
       },
       {
@@ -831,13 +831,13 @@ describe("requestOptimizedRoute", () => {
         },
         {
           startTime: "09:00",
-          endTime: "10:00",
-          visitTimeType: "flexible",
-        },
-        {
-          startTime: "09:00",
           endTime: "11:00",
           visitTimeType: "fixed",
+        },
+        {
+          startTime: "13:00",
+          endTime: "14:00",
+          visitTimeType: "flexible",
         },
       ],
     });

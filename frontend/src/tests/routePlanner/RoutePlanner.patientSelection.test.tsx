@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { routeOptimizationState } = vi.hoisted(() => ({
@@ -338,14 +338,19 @@ describe("RoutePlanner patient selection integration", () => {
     routeOptimizationState.showOptimizeFlash = false;
     routeOptimizationState.hasAttemptedOptimize = false;
     usePatientSearchMock.mockReset();
-    usePatientSearchMock.mockImplementation(({ enabled }: { query?: string; enabled: boolean }) => ({
-      patients: enabled ? [janePatient, johnPatient, flexNoWindowPatient, multiWindowPatient] : [],
-      isLoading: false,
-      error: "",
-    }));
+    usePatientSearchMock.mockImplementation(
+      ({ enabled }: { query?: string; enabled: boolean }) => ({
+        patients: enabled
+          ? [janePatient, johnPatient, flexNoWindowPatient, multiWindowPatient]
+          : [],
+        isLoading: false,
+        error: "",
+      }),
+    );
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     window.localStorage.clear();
     cleanup();
   });
@@ -681,11 +686,14 @@ describe("RoutePlanner patient selection integration", () => {
         ],
       }),
     );
-    const latestOptimizeCall = optimizeRouteMock.mock.calls[optimizeRouteMock.mock.calls.length - 1];
+    const latestOptimizeCall =
+      optimizeRouteMock.mock.calls[optimizeRouteMock.mock.calls.length - 1];
     expect(latestOptimizeCall?.[0]?.destinations).toHaveLength(1);
   });
 
   it("skips an auto-seeded occurrence from the selected clients list", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-26T12:00:00.000Z")); // Sunday → tomorrow is Monday
     const planningDate = getDefaultPlanningDate();
     requestRecurringVisitTemplatesMock.mockResolvedValueOnce([
       {
@@ -744,24 +752,25 @@ describe("RoutePlanner patient selection integration", () => {
 
     render(<RoutePlanner />);
 
-    await waitFor(() => {
-      expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
-    });
+    await act(async () => {});
+    expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
     fireEvent.click(screen.getByRole("button", { name: "Skip occurrence" }));
 
-    await waitFor(() => {
-      expect(requestUpdateVisitInstanceMock).toHaveBeenCalledWith("instance-1", {
-        status: "cancelled",
-      });
+    await act(async () => {});
+    expect(requestUpdateVisitInstanceMock).toHaveBeenCalledWith("instance-1", {
+      status: "cancelled",
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
-    expect(await screen.findByRole("button", { name: "Restore occurrence" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Restore occurrence" })).toBeTruthy();
+    vi.useRealTimers();
   });
 
   it("restores a skipped auto-seeded occurrence", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-26T12:00:00.000Z")); // Sunday → tomorrow is Monday
     const planningDate = getDefaultPlanningDate();
     requestRecurringVisitTemplatesMock.mockResolvedValueOnce([
       {
@@ -820,24 +829,25 @@ describe("RoutePlanner patient selection integration", () => {
 
     render(<RoutePlanner />);
 
-    await waitFor(() => {
-      expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
-    });
+    await act(async () => {});
+    expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
     fireEvent.click(screen.getByRole("button", { name: "Restore occurrence" }));
 
-    await waitFor(() => {
-      expect(requestUpdateVisitInstanceMock).toHaveBeenCalledWith("instance-1", {
-        status: "scheduled",
-      });
+    await act(async () => {});
+    expect(requestUpdateVisitInstanceMock).toHaveBeenCalledWith("instance-1", {
+      status: "scheduled",
     });
 
     fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
-    expect(await screen.findByRole("button", { name: "Skip occurrence" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Skip occurrence" })).toBeTruthy();
+    vi.useRealTimers();
   });
 
   it("reschedules an occurrence off the current planning date", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-26T12:00:00.000Z")); // Sunday → tomorrow is Monday
     const planningDate = getDefaultPlanningDate();
     const rescheduledDate = (() => {
       const nextDate = new Date(`${planningDate}T12:00:00`);
@@ -901,9 +911,8 @@ describe("RoutePlanner patient selection integration", () => {
 
     render(<RoutePlanner />);
 
-    await waitFor(() => {
-      expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
-    });
+    await act(async () => {});
+    expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
 
     fireEvent.click(screen.getByRole("button", { name: "Edit window" }));
     fireEvent.change(screen.getByLabelText("Jane Doe date"), {
@@ -911,13 +920,13 @@ describe("RoutePlanner patient selection integration", () => {
     });
     fireEvent.click(screen.getByRole("button", { name: "Save occurrence changes" }));
 
-    await waitFor(() => {
-      expect(requestUpdateVisitInstanceMock).toHaveBeenCalledWith("instance-1", {
-        planningDate: rescheduledDate,
-      });
+    await act(async () => {});
+    expect(requestUpdateVisitInstanceMock).toHaveBeenCalledWith("instance-1", {
+      planningDate: rescheduledDate,
     });
 
-    expect(await screen.findByText("No clients selected yet.")).toBeTruthy();
+    expect(screen.getByText("No clients selected yet.")).toBeTruthy();
+    vi.useRealTimers();
   });
 
   it("shows home-address warning banner and supports account settings action when home address is missing", () => {

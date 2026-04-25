@@ -276,6 +276,20 @@ export const persistPlanningWindows = async (
 
       nextVisitWindows.sort(compareVisitWindows);
 
+      const seenWindowKeys = new Set<string>();
+      for (const w of nextVisitWindows) {
+        const key = `${w.startTime}-${w.endTime}`;
+        if (seenWindowKeys.has(key)) {
+          const name = patient.firstName
+            ? `${patient.firstName} ${patient.lastName}`.trim()
+            : "this client";
+          throw new Error(
+            `The window ${w.startTime}–${w.endTime} already exists on ${name}'s record. Remove the duplicate before saving.`,
+          );
+        }
+        seenWindowKeys.add(key);
+      }
+
       await requestAuthedJson(
         `/api/patients/${encodeURIComponent(patientId)}`,
         {

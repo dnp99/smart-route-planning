@@ -193,17 +193,17 @@ const formatWindowRange = (startTime: string, endTime: string) =>
 const toRecurringFormTemplate = (
   template: RecurringVisitTemplate,
 ): PatientFormRecurringTemplate => ({
-    id: template.id,
-    templateId: template.id,
-    name: template.name ?? "",
-    timezone: normalizeRecurringTemplateTimezone(template.timezone),
+  id: template.id,
+  templateId: template.id,
+  name: template.name ?? "",
+  timezone: normalizeRecurringTemplateTimezone(template.timezone),
   recurrenceRule: template.recurrenceRule,
   startDate: template.startDate,
   endDate: template.endDate ?? "",
   endFromDate: "",
   isActive: template.isActive,
   daysOfWeek: template.daysOfWeek,
-  });
+});
 
 export const toFormValues = (
   patient: Patient,
@@ -441,6 +441,18 @@ export const validateForm = (values: PatientFormValues): FormFieldErrors => {
 
   if (visitWindowRows.some((entry) => Object.keys(entry).length > 0)) {
     errors.visitWindowRows = visitWindowRows;
+  }
+
+  if (!errors.visitWindowRows) {
+    const seenKeys = new Set<string>();
+    for (const window of values.visitWindows) {
+      const key = `${window.startTime}-${window.endTime}`;
+      if (seenKeys.has(key)) {
+        errors.visitWindows = `Two visit windows have the same time range (${window.startTime}–${window.endTime}). Each window must use a unique start and end time.`;
+        break;
+      }
+      seenKeys.add(key);
+    }
   }
 
   if (values.recurringTemplates.length > 0) {
