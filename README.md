@@ -1,6 +1,6 @@
-# CareFlow
+# Routefy
 
-CareFlow is a nurse-focused route planning app with a React frontend and Next.js backend.
+Routefy is a route planning app for care workers, with a React frontend and Next.js backend.
 
 ## What it does
 
@@ -14,7 +14,7 @@ CareFlow is a nurse-focused route planning app with a React frontend and Next.js
 - Renders the planned route on a Leaflet map with stop markers and driving path.
 - Keeps optimized route results in memory only for the current tab lifecycle.
 - Restores the last optimized route result from in-memory runtime cache when navigating away and back within the same tab/session state.
-- Provides an authenticated global workspace header with sticky positioning, app logo, and rotating nurse quotes.
+- Provides an authenticated global workspace header with sticky positioning and app logo.
 - Keeps header quote selection stable across browser refresh during a signed-in session.
 - Uses HttpOnly cookie-based sessions (no frontend token storage).
 - Enforces PHI-safe client behavior: no PHI in browser persistence, URL params, logs, or telemetry.

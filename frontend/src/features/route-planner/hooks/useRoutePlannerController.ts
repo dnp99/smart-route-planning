@@ -4,6 +4,7 @@ const DAY_ABBRS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
 const templateDisplayName = (template: RecurringVisitTemplate): string => {
   if (template.name?.trim()) return template.name.trim();
+  if (template.daysOfWeek.length === 7) return "Daily";
   if (template.daysOfWeek.length > 0) {
     return `Weekly · ${template.daysOfWeek.map((d) => DAY_ABBRS[d]).join(", ")}`;
   }

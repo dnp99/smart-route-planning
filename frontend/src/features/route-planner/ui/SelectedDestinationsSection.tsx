@@ -21,7 +21,10 @@ type SelectedDestinationsSectionProps = {
   ) => void;
   onSetDestinationPersistPlanningWindow: (visitKey: string, persistPlanningWindow: boolean) => void;
   activeVisitInstanceActionId: string | null;
-  onVisitInstanceStatusChange: (visitId: string, status: "scheduled" | "cancelled") => Promise<void>;
+  onVisitInstanceStatusChange: (
+    visitId: string,
+    status: "scheduled" | "cancelled",
+  ) => Promise<void>;
   onVisitInstanceReschedule: (
     visitId: string,
     updates: { planningDate?: string; windowStart?: string; windowEnd?: string },
@@ -102,44 +105,42 @@ export const SelectedDestinationsSection = ({
 
   return (
     <div className="grid gap-2">
-      <div className="flex items-center gap-2">
-        <div className="flex min-w-0 flex-1 items-center gap-2">
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center gap-2">
           <p className={`${responsiveStyles.patientColumnLabel} shrink-0`}>
             Selected ({selectedByPatient.length})
           </p>
-          {autoSeedHint.length > 0 && (
-            <p className="m-0 min-w-0 truncate text-xs text-blue-700 dark:text-blue-300 ml-auto">
-              {autoSeedHint}
-            </p>
-          )}
-        </div>
-        <button
-          type="button"
-          onClick={onClearSelectedDestinations}
-          disabled={selectedDestinations.length === 0 || isLoading}
-          aria-label="Clear selected clients"
-          title="Clear selected clients"
-          className={responsiveStyles.selectedListClearButton}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden="true"
-            className="h-4 w-4 shrink-0"
+          <button
+            type="button"
+            onClick={onClearSelectedDestinations}
+            disabled={selectedDestinations.length === 0 || isLoading}
+            aria-label="Clear selected clients"
+            title="Clear selected clients"
+            className={`${responsiveStyles.selectedListClearButton} ml-auto`}
           >
-            <path d="M3 6h18" />
-            <path d="M8 6V4h8v2" />
-            <path d="M19 6l-1 14H6L5 6" />
-            <path d="M10 11v6" />
-            <path d="M14 11v6" />
-          </svg>
-          <span>Clear list</span>
-        </button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="h-4 w-4 shrink-0"
+            >
+              <path d="M3 6h18" />
+              <path d="M8 6V4h8v2" />
+              <path d="M19 6l-1 14H6L5 6" />
+              <path d="M10 11v6" />
+              <path d="M14 11v6" />
+            </svg>
+            <span>Clear list</span>
+          </button>
+        </div>
+        {autoSeedHint.length > 0 && (
+          <p className="m-0 truncate text-xs text-blue-700 dark:text-blue-300">{autoSeedHint}</p>
+        )}
       </div>
       <div
         className={responsiveStyles.destinationList}
@@ -187,20 +188,20 @@ export const SelectedDestinationsSection = ({
                     onSetIncluded={(v) =>
                       onSetDestinationVisitIncluded(group.destinations[0].visitKey, v)
                     }
-                     onUpdateWindow={(field, value) =>
-                       onUpdateDestinationPlanningWindow(
-                         group.destinations[0].visitKey,
+                    onUpdateWindow={(field, value) =>
+                      onUpdateDestinationPlanningWindow(
+                        group.destinations[0].visitKey,
                         field,
                         value,
                       )
                     }
-                     onSetPersistWindow={(v) =>
-                       onSetDestinationPersistPlanningWindow(group.destinations[0].visitKey, v)
-                     }
-                     activeVisitInstanceActionId={activeVisitInstanceActionId}
-                     onVisitInstanceStatusChange={onVisitInstanceStatusChange}
-                     onVisitInstanceReschedule={onVisitInstanceReschedule}
-                   />
+                    onSetPersistWindow={(v) =>
+                      onSetDestinationPersistPlanningWindow(group.destinations[0].visitKey, v)
+                    }
+                    activeVisitInstanceActionId={activeVisitInstanceActionId}
+                    onVisitInstanceStatusChange={onVisitInstanceStatusChange}
+                    onVisitInstanceReschedule={onVisitInstanceReschedule}
+                  />
                 );
               }
 
@@ -258,16 +259,16 @@ export const SelectedDestinationsSection = ({
                           onSetIncluded={(v) =>
                             onSetDestinationVisitIncluded(destination.visitKey, v)
                           }
-                           onUpdateWindow={(field, value) =>
-                             onUpdateDestinationPlanningWindow(destination.visitKey, field, value)
-                           }
-                           onSetPersistWindow={(v) =>
-                             onSetDestinationPersistPlanningWindow(destination.visitKey, v)
-                           }
-                           activeVisitInstanceActionId={activeVisitInstanceActionId}
-                           onVisitInstanceStatusChange={onVisitInstanceStatusChange}
-                           onVisitInstanceReschedule={onVisitInstanceReschedule}
-                         />
+                          onUpdateWindow={(field, value) =>
+                            onUpdateDestinationPlanningWindow(destination.visitKey, field, value)
+                          }
+                          onSetPersistWindow={(v) =>
+                            onSetDestinationPersistPlanningWindow(destination.visitKey, v)
+                          }
+                          activeVisitInstanceActionId={activeVisitInstanceActionId}
+                          onVisitInstanceStatusChange={onVisitInstanceStatusChange}
+                          onVisitInstanceReschedule={onVisitInstanceReschedule}
+                        />
                       ))}
                     </ol>
                   )}

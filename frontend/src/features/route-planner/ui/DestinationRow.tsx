@@ -115,7 +115,10 @@ type DestinationRowProps = {
   onUpdateWindow: (field: "windowStart" | "windowEnd" | "planningDate", value: string) => void;
   onSetPersistWindow: (v: boolean) => void;
   activeVisitInstanceActionId: string | null;
-  onVisitInstanceStatusChange: (visitId: string, status: "scheduled" | "cancelled") => Promise<void>;
+  onVisitInstanceStatusChange: (
+    visitId: string,
+    status: "scheduled" | "cancelled",
+  ) => Promise<void>;
   onVisitInstanceReschedule: (
     visitId: string,
     updates: { planningDate?: string; windowStart?: string; windowEnd?: string },
@@ -172,17 +175,15 @@ export const DestinationRow = ({
             title={destination.patientName}
           >
             {visibleName}
-            {displaySubtitle && (
-              <span className="ml-1.5 font-normal text-slate-500 dark:text-slate-400">
-                · {displaySubtitle}
-              </span>
-            )}
           </button>
+          {displaySubtitle && (
+            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">{displaySubtitle}</p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {isVisitInstance && (
             <span
-              className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+              className={`hidden sm:inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
                 isCancelledOccurrence
                   ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-300"
                   : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-300"
@@ -194,9 +195,11 @@ export const DestinationRow = ({
           <button
             type="button"
             onClick={onToggleDetails}
+            aria-label={isExpanded ? "Hide details" : "Edit window"}
             className={responsiveStyles.destinationDetailsToggle}
           >
-            {isExpanded ? "Hide details" : "Edit window"}
+            <span className="hidden sm:inline">{isExpanded ? "Hide details" : "Edit window"}</span>
+            <span className="sm:hidden">{isExpanded ? "Hide" : "Edit"}</span>
           </button>
           <button
             type="button"
@@ -208,6 +211,19 @@ export const DestinationRow = ({
           </button>
         </div>
       </div>
+      {isVisitInstance && (
+        <div className="mt-1 flex items-center gap-1.5 sm:hidden">
+          <span
+            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+              isCancelledOccurrence
+                ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-300"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-300"
+            }`}
+          >
+            {isCancelledOccurrence ? "Skipped" : "Scheduled"}
+          </span>
+        </div>
+      )}
 
       {isExpanded && (
         <div className="mt-2 ml-8">
@@ -217,7 +233,9 @@ export const DestinationRow = ({
                 <button
                   type="button"
                   disabled={isVisitActionPending}
-                  onClick={() => onVisitInstanceStatusChange(destination.visitId as string, "scheduled")}
+                  onClick={() =>
+                    onVisitInstanceStatusChange(destination.visitId as string, "scheduled")
+                  }
                   className="rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isVisitActionPending ? "Restoring..." : "Restore occurrence"}
@@ -227,7 +245,9 @@ export const DestinationRow = ({
                   <button
                     type="button"
                     disabled={isVisitActionPending}
-                    onClick={() => onVisitInstanceStatusChange(destination.visitId as string, "cancelled")}
+                    onClick={() =>
+                      onVisitInstanceStatusChange(destination.visitId as string, "cancelled")
+                    }
                     className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700"
                   >
                     {isVisitActionPending ? "Skipping..." : "Skip occurrence"}
@@ -271,8 +291,8 @@ export const DestinationRow = ({
               {isCancelledOccurrence
                 ? "This occurrence is skipped. Restore it to include it in route planning again."
                 : destination.requiresPlanningWindow
-                ? "No preferred window. Optimizer will auto-schedule unless you set one:"
-                : "Adjust planning window (plan-only unless saved):"}
+                  ? "No preferred window. Optimizer will auto-schedule unless you set one:"
+                  : "Adjust planning window (plan-only unless saved):"}
             </p>
             {!isCancelledOccurrence && isVisitInstance && (
               <div className="mt-2 grid gap-1">
@@ -295,20 +315,20 @@ export const DestinationRow = ({
             {!isCancelledOccurrence && (
               <div className="mt-1 flex items-center gap-2">
                 <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
-                <input
-                  type="time"
-                  aria-label={`${fieldLabelPrefix} start`}
-                  value={destination.windowStart}
-                  onChange={(e) => onUpdateWindow("windowStart", e.target.value)}
-                  className={responsiveStyles.timeInput}
-                />
-                <input
-                  type="time"
-                  aria-label={`${fieldLabelPrefix} end`}
-                  value={destination.windowEnd}
-                  onChange={(e) => onUpdateWindow("windowEnd", e.target.value)}
-                  className={responsiveStyles.timeInput}
-                />
+                  <input
+                    type="time"
+                    aria-label={`${fieldLabelPrefix} start`}
+                    value={destination.windowStart}
+                    onChange={(e) => onUpdateWindow("windowStart", e.target.value)}
+                    className={responsiveStyles.timeInput}
+                  />
+                  <input
+                    type="time"
+                    aria-label={`${fieldLabelPrefix} end`}
+                    value={destination.windowEnd}
+                    onChange={(e) => onUpdateWindow("windowEnd", e.target.value)}
+                    className={responsiveStyles.timeInput}
+                  />
                 </div>
                 {(destination.windowStart || destination.windowEnd) && (
                   <button
