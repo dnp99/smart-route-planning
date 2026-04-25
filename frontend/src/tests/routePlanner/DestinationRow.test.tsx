@@ -133,7 +133,7 @@ describe("DestinationRow", () => {
     render(<DestinationRow destination={buildDestination()} {...defaultProps} isExpanded={true} />);
     expect(screen.getByLabelText("Alex Johnson start")).toBeTruthy();
     expect(screen.getByLabelText("Alex Johnson end")).toBeTruthy();
-    expect(screen.getByText("Hide details")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Hide details" })).toBeTruthy();
   });
 
   it("applies opacity when isIncluded is false", () => {

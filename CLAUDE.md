@@ -1,4 +1,4 @@
-# CareFlow — Claude Instructions
+# Routefy — Claude Instructions
 
 ## Design System (mandatory)
 

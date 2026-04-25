@@ -26,7 +26,7 @@ export default function AppFooter() {
         </div>
         <nav
           aria-label="Legal and support links"
-          className="grid w-full grid-cols-2 gap-x-4 gap-y-0.5 sm:w-auto sm:auto-cols-max sm:grid-flow-col sm:grid-cols-none sm:gap-x-3 sm:gap-y-0"
+          className="flex flex-wrap justify-center gap-x-4 gap-y-0.5 sm:flex-nowrap sm:gap-x-3"
         >
           <button
             type="button"

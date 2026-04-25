@@ -34,7 +34,7 @@ export const responsiveStyles = {
   appFooter:
     "w-full bg-[linear-gradient(90deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] dark:bg-[linear-gradient(90deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
   appFooterInner:
-    "mx-auto flex w-full max-w-7xl flex-col items-start gap-3 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:pb-4",
+    "mx-auto flex w-full max-w-7xl flex-col items-center gap-3 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:pb-4",
   contentWrapper: "mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6",
   tabNav: "flex gap-6 border-b border-slate-200/50 dark:border-slate-800/50",
   // ── Account menu ──────────────────────────────────────────────────────────
@@ -204,7 +204,7 @@ export const responsiveStyles = {
   patientColumnLabel:
     "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400",
   patientSearchContainer:
-    "flex flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3 md:h-[26rem]",
+    "flex min-h-0 flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3 max-h-72 md:max-h-none md:h-[26rem]",
   secondaryIconButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
 
@@ -221,7 +221,7 @@ export const responsiveStyles = {
   destinationList:
     "overflow-y-auto rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3 md:h-[26rem]",
   selectedListClearButton:
-    "inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-2.5 text-xs font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-400 sm:h-8",
+    "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-2.5 text-xs font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-400",
   destinationItem:
     "flex flex-col gap-2.5 text-sm text-slate-900 dark:text-slate-200 md:flex-row md:items-start md:justify-between md:gap-3",
   destinationItemBody: "flex min-w-0 flex-1 items-start gap-2.5 sm:gap-3",
