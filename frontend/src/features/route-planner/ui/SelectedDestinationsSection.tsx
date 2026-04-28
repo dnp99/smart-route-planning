@@ -53,6 +53,7 @@ export const SelectedDestinationsSection = ({
     MOBILE_SELECTED_VISIBLE_ROWS * MOBILE_SELECTED_ROW_HEIGHT_PX
   }px`;
   const [collapsedPatientGroups, setCollapsedPatientGroups] = useState<Record<string, boolean>>({});
+  const selectedVisitCount = selectedDestinations.length;
 
   const selectedByPatient = useMemo(() => {
     const groups: Array<{
@@ -81,12 +82,12 @@ export const SelectedDestinationsSection = ({
     return groups;
   }, [selectedDestinations]);
 
-  const formatWindowLabel = (destination: SelectedPatientDestination, index: number) => {
+  const formatWindowLabel = (destination: SelectedPatientDestination, _index: number) => {
     const hasWindow = destination.windowStart || destination.windowEnd;
     if (!hasWindow) {
-      return `Window ${index + 1}`;
+      return "No preferred window";
     }
-    return `Window ${index + 1}: ${destination.windowStart ? toDisplayTime(destination.windowStart) : "—"} - ${destination.windowEnd ? toDisplayTime(destination.windowEnd) : "—"}`;
+    return `${destination.windowStart ? toDisplayTime(destination.windowStart) : "—"} - ${destination.windowEnd ? toDisplayTime(destination.windowEnd) : "—"}`;
   };
   const formatSingleRowSubtitle = (destination: SelectedPatientDestination) => {
     if (!destination.windowStart && !destination.windowEnd) {
@@ -94,6 +95,7 @@ export const SelectedDestinationsSection = ({
     }
     return `${destination.windowStart ? toDisplayTime(destination.windowStart) : "—"} - ${destination.windowEnd ? toDisplayTime(destination.windowEnd) : "—"}`;
   };
+  const formatWindowSubtitle = (index: number) => `Window ${index + 1}`;
   const isPatientGroupCollapsed = (patientId: string, defaultCollapsed: boolean) =>
     collapsedPatientGroups[patientId] ?? defaultCollapsed;
   const togglePatientGroupCollapsed = (patientId: string, defaultCollapsed: boolean) => {
@@ -105,11 +107,26 @@ export const SelectedDestinationsSection = ({
 
   return (
     <div className="grid gap-2">
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <p className={`${responsiveStyles.patientColumnLabel} shrink-0`}>
-            Selected ({selectedByPatient.length})
-          </p>
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <p className={`${responsiveStyles.patientColumnLabel} shrink-0`}>Selected</p>
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              {selectedByPatient.length} client{selectedByPatient.length === 1 ? "" : "s"} ·{" "}
+              {selectedVisitCount} visit{selectedVisitCount === 1 ? "" : "s"}
+            </span>
+          </div>
+          {autoSeedHint.length > 0 ? (
+            <p className="m-0 mt-1 truncate text-xs text-slate-600 dark:text-slate-300">
+              {autoSeedHint}
+            </p>
+          ) : (
+            <p className="m-0 mt-1 text-xs text-slate-500 dark:text-slate-400">
+              These visits will be used when you optimize the route.
+            </p>
+          )}
+        </div>
+        <div className="shrink-0">
           <button
             type="button"
             onClick={onClearSelectedDestinations}
@@ -138,9 +155,6 @@ export const SelectedDestinationsSection = ({
             <span>Clear list</span>
           </button>
         </div>
-        {autoSeedHint.length > 0 && (
-          <p className="m-0 truncate text-xs text-blue-700 dark:text-blue-300">{autoSeedHint}</p>
-        )}
       </div>
       <div
         className={responsiveStyles.destinationList}
@@ -212,14 +226,18 @@ export const SelectedDestinationsSection = ({
                     aria-expanded={!isCollapsed}
                     aria-label={`Toggle windows for ${group.patientName}`}
                     onClick={() => togglePatientGroupCollapsed(group.patientId, collapsedByDefault)}
-                    className="mb-0.5 flex w-full items-center gap-2 rounded-lg px-1 py-1 text-left hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                    className="mb-1 flex w-full items-center gap-2 rounded-lg px-1 py-1.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
                   >
                     <span className={responsiveStyles.destinationIndex}>{groupIndex + 1}.</span>
-                    <p className="m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                      {group.patientName}
-                    </p>
-                    <span className={responsiveStyles.countPill}>{group.destinations.length}</span>
-                    <span className="ml-auto text-sm text-slate-500 dark:text-slate-400">
+                    <div className="min-w-0 flex-1">
+                      <p className="m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                        {group.patientName}
+                      </p>
+                      <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                        {group.destinations.length} visit windows
+                      </p>
+                    </div>
+                    <span className="text-sm text-slate-500 dark:text-slate-400">
                       {group.destinations.length} windows
                     </span>
                     <svg
@@ -251,6 +269,7 @@ export const SelectedDestinationsSection = ({
                           showIndex={false}
                           compact
                           displayName={formatWindowLabel(destination, windowIndex)}
+                          displaySubtitle={formatWindowSubtitle(windowIndex)}
                           inputLabelPrefix={`${group.patientName} window ${windowIndex + 1}`}
                           removeAriaLabel={`Remove ${group.patientName} window ${windowIndex + 1}`}
                           isExpanded={expandedDestinationVisitKeys[destination.visitKey] ?? false}

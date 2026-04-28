@@ -485,6 +485,60 @@ describe("/api/auth/me route", () => {
     );
   });
 
+  it("allows out-of-window lunchBreak.startTime when lunchBreak is disabled", async () => {
+    findNurseByIdMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+    });
+    updateNurseWorkingHoursMock.mockResolvedValue({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      isActive: true,
+    });
+
+    const response = await PATCH(
+      new Request("http://localhost:3000/api/auth/me", {
+        method: "PATCH",
+        headers: { origin: "http://localhost:5173", "content-type": "application/json" },
+        body: JSON.stringify({
+          workingHours: {
+            monday: {
+              enabled: true,
+              start: "09:00",
+              end: "10:00",
+              lunchBreak: {
+                enabled: false,
+                startTime: "12:00",
+                durationMinutes: 30,
+              },
+            },
+          },
+        }),
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(updateNurseWorkingHoursMock).toHaveBeenCalledWith(
+      "nurse-1",
+      {
+        monday: {
+          enabled: true,
+          start: "09:00",
+          end: "10:00",
+          lunchBreak: {
+            enabled: false,
+            startTime: "12:00",
+            durationMinutes: 30,
+          },
+        },
+      },
+      undefined,
+    );
+  });
+
   it("clears breakGapThresholdMinutes when set to null", async () => {
     findNurseByIdMock.mockResolvedValue({
       id: "nurse-1",
