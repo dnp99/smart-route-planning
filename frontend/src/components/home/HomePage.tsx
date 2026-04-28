@@ -10,12 +10,13 @@ import type {
   DashboardUpcomingStop,
   WeeklyWorkingHours,
 } from "../../../../shared/contracts";
-import { fetchDashboardSummary } from "./homeDashboardService";
+import { fetchDashboardSummary, fetchRouteRunsForPlanningDate } from "./homeDashboardService";
 import {
   clearRoutePlannerDraft,
   readRoutePlannerDraft,
 } from "../../features/route-planner/state/routePlannerDraft";
 import { responsiveStyles } from "../responsiveStyles";
+import RouteRunPickerModal, { type RouteRunPickerItem } from "../modals/RouteRunPickerModal";
 
 type HomePageProps = {
   isAuthenticated: boolean;
@@ -93,6 +94,27 @@ const resolveDraftDateLabel = (planningDate?: string) => {
   });
 };
 
+const resolveTodayPlanningDate = () => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = `${today.getMonth() + 1}`.padStart(2, "0");
+  const day = `${today.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const resolvePlanningDateDisplay = (planningDate: string) => {
+  const parsedDate = new Date(`${planningDate}T00:00:00`);
+  if (isNaN(parsedDate.getTime())) {
+    return planningDate;
+  }
+
+  return parsedDate.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+};
+
 const resolveLastUpdatedLabel = (summary: DashboardSummaryResponse | null) => {
   if (!summary?.asOf) {
     return null;
@@ -124,6 +146,12 @@ export default function HomePage({
   const [dashboardError, setDashboardError] = useState("");
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
+  const [isRunPickerOpen, setIsRunPickerOpen] = useState(false);
+  const [routeRuns, setRouteRuns] = useState<RouteRunPickerItem[]>([]);
+  const [selectedRouteRunId, setSelectedRouteRunId] = useState<string | null>(null);
+  const [routeRunsError, setRouteRunsError] = useState("");
+  const [isRouteRunsLoading, setIsRouteRunsLoading] = useState(false);
+  const [isOpeningRouteRun, setIsOpeningRouteRun] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -458,6 +486,69 @@ export default function HomePage({
   const greetingPrefix = resolveGreetingPrefix();
   const todayHoursDisplay = resolveTodayHoursDisplay(authUser?.workingHours);
   const lastUpdatedLabel = resolveLastUpdatedLabel(dashboardSummary);
+  const todayPlanningDate = resolveTodayPlanningDate();
+  const todayPlanningDateLabel = resolvePlanningDateDisplay(todayPlanningDate);
+
+  const openRouteRun = (runId: string, planningDate: string) => {
+    setIsOpeningRouteRun(true);
+    navigate("/route-planner", {
+      state: {
+        savedRouteRunId: runId,
+        planningDate,
+      },
+    });
+  };
+
+  const handleRoutesTodayClick = async () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    setIsRouteRunsLoading(true);
+    setRouteRunsError("");
+
+    try {
+      const runs = await fetchRouteRunsForPlanningDate(todayPlanningDate);
+      const v3Runs = runs.filter((run) => run.endpointVersion === "v3");
+
+      if (v3Runs.length === 0) {
+        navigate("/route-planner");
+        return;
+      }
+
+      if (v3Runs.length === 1) {
+        openRouteRun(v3Runs[0].id, todayPlanningDate);
+        return;
+      }
+
+      const mappedRuns: RouteRunPickerItem[] = v3Runs.map((run) => ({
+        id: run.id,
+        createdAt: run.createdAt,
+        optimizationObjective: run.optimizationObjective,
+        scheduledVisitCount: run.scheduledVisitCount,
+        unscheduledVisitCount: run.unscheduledVisitCount,
+        algorithmVersion: run.algorithmVersion,
+      }));
+
+      const sortedRuns = [...mappedRuns].sort((a, b) => {
+        const aTime = new Date(a.createdAt).getTime();
+        const bTime = new Date(b.createdAt).getTime();
+        return bTime - aTime;
+      });
+
+      setRouteRuns(sortedRuns);
+      setSelectedRouteRunId(sortedRuns[0]?.id ?? null);
+      setIsRunPickerOpen(true);
+    } catch (error) {
+      setRouteRuns([]);
+      setSelectedRouteRunId(null);
+      setRouteRunsError(error instanceof Error ? error.message : "Unable to load saved routes.");
+      setIsRunPickerOpen(true);
+    } finally {
+      setIsRouteRunsLoading(false);
+    }
+  };
 
   const renderAuthenticatedActions = () => (
     <>
@@ -646,6 +737,43 @@ export default function HomePage({
             {kpis.map((kpi, index) => {
               const to = isAuthenticated ? kpi.href : "/login";
               const isCar = kpi.label === "Drive hours" || kpi.label === "Total distance";
+              const isRoutesTodayCard = kpi.label === "Routes today";
+
+              if (isRoutesTodayCard && isAuthenticated) {
+                return (
+                  <button
+                    key={kpi.label}
+                    type="button"
+                    className={`${responsiveStyles.dashboardKpiCard} group w-full text-left`}
+                    style={{ animationDelay: `${80 + index * 45}ms` }}
+                    onClick={() => {
+                      void handleRoutesTodayClick();
+                    }}
+                    disabled={isRouteRunsLoading}
+                  >
+                    <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
+                    <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
+                    <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>
+                      {isRouteRunsLoading ? "Loading saved runs..." : kpi.delta}
+                    </p>
+                    {typeof kpi.progressPercent === "number" && (
+                      <div className={responsiveStyles.dashboardKpiProgressTrack}>
+                        <div
+                          className={responsiveStyles.dashboardKpiProgressFill}
+                          style={{
+                            width: `${Math.max(0, Math.min(100, kpi.progressPercent))}%`,
+                            animationDelay: `${140 + index * 45}ms`,
+                          }}
+                        />
+                      </div>
+                    )}
+                    <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                      {kpi.trend}
+                    </p>
+                  </button>
+                );
+              }
+
               return (
                 <Link
                   key={kpi.label}
@@ -853,6 +981,31 @@ export default function HomePage({
           </ul>
         </article>
       </section>
+
+      <RouteRunPickerModal
+        isOpen={isRunPickerOpen}
+        planningDateLabel={todayPlanningDateLabel}
+        runs={routeRuns}
+        selectedRunId={selectedRouteRunId}
+        onClose={() => {
+          if (isOpeningRouteRun) return;
+          setIsRunPickerOpen(false);
+          setRouteRunsError("");
+        }}
+        onSelectRun={setSelectedRouteRunId}
+        onConfirmSelection={() => {
+          if (!selectedRouteRunId) return;
+          setIsRunPickerOpen(false);
+          setRouteRunsError("");
+          openRouteRun(selectedRouteRunId, todayPlanningDate);
+        }}
+        isLoading={isRouteRunsLoading}
+        isConfirming={isOpeningRouteRun}
+        errorMessage={routeRunsError}
+        onRetry={() => {
+          void handleRoutesTodayClick();
+        }}
+      />
     </main>
   );
 }

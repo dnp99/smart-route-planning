@@ -161,8 +161,8 @@ export const DestinationRow = ({
 
   return (
     <li
-      className={`flex flex-col justify-center rounded-xl border border-slate-200 bg-white px-2 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 ${
-        compact ? "min-h-11 py-1.5" : "min-h-14 py-2"
+      className={`flex flex-col justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 ${
+        compact ? "min-h-11 py-2" : "min-h-14 py-2.5"
       } ${destination.isIncluded ? "" : "opacity-60"}`}
     >
       <div className="flex items-center gap-2">
@@ -177,13 +177,15 @@ export const DestinationRow = ({
             {visibleName}
           </button>
           {displaySubtitle && (
-            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">{displaySubtitle}</p>
+            <p className="m-0 mt-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+              {displaySubtitle}
+            </p>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           {isVisitInstance && (
             <span
-              className={`hidden sm:inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+              className={`hidden sm:inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
                 isCancelledOccurrence
                   ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-300"
                   : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-300"
@@ -214,7 +216,7 @@ export const DestinationRow = ({
       {isVisitInstance && (
         <div className="mt-1 flex items-center gap-1.5 sm:hidden">
           <span
-            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] ${
+            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
               isCancelledOccurrence
                 ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-300"
                 : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-300"

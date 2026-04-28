@@ -125,26 +125,29 @@ const validateWorkingHours = (value: unknown): WeeklyWorkingHours | null => {
           `workingHours.${day}.lunchBreak.durationMinutes must be a positive integer.`,
         );
       }
-      const workingMinutes = timeToMinutes(end) - timeToMinutes(start);
-      if (lb.durationMinutes >= workingMinutes) {
-        throw new HttpError(
-          400,
-          `workingHours.${day}.lunchBreak.durationMinutes must be less than working day length.`,
-        );
-      }
       const lunchStartTime =
         lb.startTime === undefined
           ? "12:00"
           : parseHhMm(lb.startTime, `workingHours.${day}.lunchBreak.startTime`);
-      const lunchStartMinutes = timeToMinutes(lunchStartTime);
-      if (
-        lunchStartMinutes < timeToMinutes(start) ||
-        lunchStartMinutes + lb.durationMinutes > timeToMinutes(end)
-      ) {
-        throw new HttpError(
-          400,
-          `workingHours.${day}.lunchBreak.startTime must place lunch within working hours.`,
-        );
+
+      if (lb.enabled) {
+        const workingMinutes = timeToMinutes(end) - timeToMinutes(start);
+        if (lb.durationMinutes >= workingMinutes) {
+          throw new HttpError(
+            400,
+            `workingHours.${day}.lunchBreak.durationMinutes must be less than working day length.`,
+          );
+        }
+        const lunchStartMinutes = timeToMinutes(lunchStartTime);
+        if (
+          lunchStartMinutes < timeToMinutes(start) ||
+          lunchStartMinutes + lb.durationMinutes > timeToMinutes(end)
+        ) {
+          throw new HttpError(
+            400,
+            `workingHours.${day}.lunchBreak.startTime must place lunch within working hours.`,
+          );
+        }
       }
       daySchedule.lunchBreak = {
         enabled: lb.enabled,

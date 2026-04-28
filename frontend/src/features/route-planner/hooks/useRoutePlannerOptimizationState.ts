@@ -62,14 +62,12 @@ export function useRoutePlannerOptimizationState({
   onOptimizationStarted,
 }: UseRoutePlannerOptimizationStateParams) {
   const resolveDestinationIdentity = (destination: {
-    visitId?: string;
     patientId: string;
     windowStart: string;
     windowEnd: string;
+    address: string;
   }) =>
-    typeof destination.visitId === "string" && destination.visitId.trim().length > 0
-      ? destination.visitId
-      : `${destination.patientId}:${destination.windowStart}:${destination.windowEnd}`;
+    `${destination.patientId}:${destination.windowStart}:${destination.windowEnd}:${destination.address}`;
 
   const [plannerOptimizationObjective, setPlannerOptimizationObjective] = useState<
     "time" | "distance"
