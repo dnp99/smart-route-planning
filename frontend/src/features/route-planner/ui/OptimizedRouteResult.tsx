@@ -130,6 +130,19 @@ export function OptimizedRouteResult({
     [displayedOrderedStops],
   );
 
+  const estimatedFinishTime = useMemo(() => {
+    for (let i = displayedOrderedStops.length - 1; i >= 0; i--) {
+      const stop = displayedOrderedStops[i];
+      if (stop.isEndingPoint) continue;
+      const lastTask = stop.tasks[stop.tasks.length - 1];
+      if (lastTask?.serviceEndTime) {
+        const parsed = new Date(lastTask.serviceEndTime);
+        if (!isNaN(parsed.getTime())) return parsed;
+      }
+    }
+    return null;
+  }, [displayedOrderedStops]);
+
   const hasIntermediateStops = useMemo(
     () => displayedOrderedStops.some((stop) => !stop.isEndingPoint),
     [displayedOrderedStops],
@@ -286,6 +299,38 @@ export function OptimizedRouteResult({
               </p>
             </div>
           </div>
+
+          {issueCount === 0 && scheduledStopCount > 0 && (
+            <div className="mb-4 flex items-center gap-3 rounded-xl border border-emerald-200 bg-emerald-50/80 px-4 py-3 dark:border-emerald-900/60 dark:bg-emerald-950/25">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="shrink-0 text-emerald-600 dark:text-emerald-400"
+              >
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+              </svg>
+              <div className="min-w-0">
+                <p className="m-0 text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                  Schedule looks good
+                </p>
+                <p className="m-0 mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">
+                  All {scheduledStopCount} {scheduledStopCount === 1 ? "visit" : "visits"} on time
+                  {estimatedFinishTime
+                    ? ` · Finishes around ${expectedStartTimeFormatter.format(estimatedFinishTime)}`
+                    : ""}
+                </p>
+              </div>
+            </div>
+          )}
 
           {issueCount > 0 && (
             <div className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 dark:border-amber-900/70 dark:bg-amber-950/20">

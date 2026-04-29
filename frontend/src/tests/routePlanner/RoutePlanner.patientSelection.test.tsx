@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { routeOptimizationState } = vi.hoisted(() => ({
+const { routeOptimizationState, locationState } = vi.hoisted(() => ({
   routeOptimizationState: {
     result: null as unknown,
     error: "",
@@ -10,6 +10,16 @@ const { routeOptimizationState } = vi.hoisted(() => ({
     showOptimizeFlash: false,
     hasAttemptedOptimize: false,
   },
+  locationState: {
+    state: null as unknown,
+    pathname: "/route-planner",
+    search: "",
+    hash: "",
+  },
+}));
+
+vi.mock("react-router-dom", () => ({
+  useLocation: () => locationState,
 }));
 
 const optimizeRouteMock = vi.fn();
@@ -337,6 +347,7 @@ describe("RoutePlanner patient selection integration", () => {
     routeOptimizationState.showOptimizeSuccess = false;
     routeOptimizationState.showOptimizeFlash = false;
     routeOptimizationState.hasAttemptedOptimize = false;
+    locationState.state = null;
     usePatientSearchMock.mockReset();
     usePatientSearchMock.mockImplementation(
       ({ enabled }: { query?: string; enabled: boolean }) => ({
@@ -1276,6 +1287,154 @@ describe("RoutePlanner patient selection integration", () => {
     fireEvent.click(screen.getByRole("button", { name: /Remove John Smith/i }));
 
     expect(screen.getByText("No clients selected yet.")).toBeTruthy();
+  });
+
+  it("auto-optimizes when autoOptimizeToday is set, instances are loaded, and home address is present", async () => {
+    // Compute today's date the same way todayPlanningDate() does in the component
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+    locationState.state = { autoOptimizeToday: true };
+
+    // Use a daily template so it matches regardless of which day the test runs
+    requestRecurringVisitTemplatesMock.mockResolvedValueOnce([
+      {
+        id: "template-daily",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        name: "Daily",
+        timezone: "America/Toronto",
+        recurrenceRule: "FREQ=DAILY",
+        startDate: "2026-01-01",
+        endDate: null,
+        isActive: true,
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+    requestVisitInstancesMock.mockResolvedValueOnce([
+      {
+        id: "instance-today-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        templateId: "template-daily",
+        occurrenceKey: `patient-1:${todayStr}:0`,
+        planningDate: todayStr,
+        address: "123 Main St",
+        googlePlaceId: "place-1",
+        windowStart: "09:00",
+        windowEnd: "11:00",
+        visitTimeType: "fixed",
+        serviceDurationMinutes: 30,
+        status: "scheduled",
+        isManualOverride: false,
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+
+    render(<RoutePlanner nurseHomeAddress="1 Home Way, Mississauga, ON" />);
+
+    // waitFor polls without fake timers, so it correctly waits for cascading
+    // async state updates (load instances → seed destinations → auto-optimize effect)
+    await waitFor(() => {
+      expect(optimizeRouteMock).toHaveBeenCalledTimes(1);
+    });
+
+    expect(optimizeRouteMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        planningDate: todayStr,
+        destinations: [
+          expect.objectContaining({
+            patientId: "patient-1",
+            visitId: "instance-today-1",
+            windowStart: "09:00",
+            windowEnd: "11:00",
+          }),
+        ],
+      }),
+    );
+  });
+
+  it("uses today as planning date when autoOptimizeToday is set", () => {
+    // Compute today and tomorrow the same way the component helpers do
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`;
+
+    locationState.state = { autoOptimizeToday: true };
+
+    render(<RoutePlanner />);
+
+    // DatePicker is a button whose text content shows the formatted selected date.
+    // With autoOptimizeToday it should show today, not tomorrow (the normal default).
+    const dateButton = screen.getByRole("button", { name: "Planning date" });
+    const todayFormatted = new Date(todayStr + "T12:00:00").toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+    const tomorrowFormatted = new Date(tomorrowStr + "T12:00:00").toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    });
+    expect(dateButton.textContent).toContain(todayFormatted);
+    expect(dateButton.textContent).not.toContain(tomorrowFormatted);
+  });
+
+  it("does not auto-optimize when autoOptimizeToday flag is absent", async () => {
+    // locationState.state is null (default) — no autoOptimizeToday
+
+    // Use a daily template so it would match if (incorrectly) auto-optimize ran
+    requestRecurringVisitTemplatesMock.mockResolvedValueOnce([
+      {
+        id: "template-daily",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        name: "Daily",
+        timezone: "America/Toronto",
+        recurrenceRule: "FREQ=DAILY",
+        startDate: "2026-01-01",
+        endDate: null,
+        isActive: true,
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = `${tomorrow.getFullYear()}-${String(tomorrow.getMonth() + 1).padStart(2, "0")}-${String(tomorrow.getDate()).padStart(2, "0")}`;
+    requestVisitInstancesMock.mockResolvedValueOnce([
+      {
+        id: "instance-tomorrow-1",
+        nurseId: "nurse-1",
+        patientId: "patient-1",
+        templateId: "template-daily",
+        occurrenceKey: `patient-1:${tomorrowStr}:0`,
+        planningDate: tomorrowStr,
+        address: "123 Main St",
+        googlePlaceId: "place-1",
+        windowStart: "09:00",
+        windowEnd: "11:00",
+        visitTimeType: "fixed",
+        serviceDurationMinutes: 30,
+        status: "scheduled",
+        isManualOverride: false,
+        createdAt: "2026-03-12T12:00:00.000Z",
+        updatedAt: "2026-03-12T12:00:00.000Z",
+      },
+    ]);
+
+    render(<RoutePlanner nurseHomeAddress="1 Home Way, Mississauga, ON" />);
+
+    await act(async () => {});
+
+    expect(optimizeRouteMock).not.toHaveBeenCalled();
   });
 
   it("allows optimizing flexible patients without preferred windows", () => {
