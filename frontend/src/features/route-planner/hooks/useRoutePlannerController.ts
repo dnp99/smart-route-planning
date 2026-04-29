@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const DAY_ABBRS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
 
@@ -46,12 +46,21 @@ const defaultPlanningDate = (): string => {
   return `${year}-${month}-${day}`;
 };
 
+const todayPlanningDate = (): string => {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 type UseRoutePlannerControllerParams = {
   nurseHomeAddress?: string | null;
   nurseWorkingHours?: WeeklyWorkingHours | null;
   nurseBreakGapThresholdMinutes?: number | null;
   onOpenAccountSettings?: () => void;
   optimizationObjective: "time" | "distance";
+  autoOptimizeToday?: boolean;
 };
 
 type TemplatePickerOption = {
@@ -71,7 +80,9 @@ export function useRoutePlannerController({
   nurseBreakGapThresholdMinutes,
   onOpenAccountSettings,
   optimizationObjective,
+  autoOptimizeToday = false,
 }: UseRoutePlannerControllerParams) {
+  const pendingAutoOptimizeRef = useRef(autoOptimizeToday);
   const initialDraft = useMemo(() => readRoutePlannerDraft(), []);
   const normalizedHomeAddress = nurseHomeAddress?.trim() ?? "";
 
@@ -228,7 +239,7 @@ export function useRoutePlannerController({
   const { planningDate, setPlanningDate, isMobileViewport, activeMobileStep, setActiveMobileStep } =
     useRoutePlannerDraftState({
       initialDraft,
-      resolveDefaultPlanningDate: defaultPlanningDate,
+      resolveDefaultPlanningDate: autoOptimizeToday ? todayPlanningDate : defaultPlanningDate,
       selectedDestinations,
       destinationSearchPatients,
       isDestinationSearchLoading,
@@ -572,6 +583,7 @@ export function useRoutePlannerController({
     currentOptimizeSnapshot,
     unscheduledResubmitCount,
     handleSubmit,
+    triggerOptimize,
     handleRecalculateManualOrder,
   } = useRoutePlannerOptimizationState({
     optimizationObjective,
@@ -590,6 +602,27 @@ export function useRoutePlannerController({
     optimizeRoute,
     onOptimizationStarted: () => setIsPatientSearchExpanded(false),
   });
+
+  // Auto-optimize effect: fires once when "Plan my day" navigates here.
+  // Waits until instances are loaded, destinations are seeded from templates,
+  // and the home address is valid — then triggers optimization automatically.
+  useEffect(() => {
+    if (!pendingAutoOptimizeRef.current) return;
+    if (!hasVisitInstancesLoaded) return;
+    if (selectedDestinations.length === 0) return;
+    if (!canOptimize) return;
+    if (result || isLoading) return;
+
+    pendingAutoOptimizeRef.current = false;
+    void triggerOptimize();
+  }, [
+    hasVisitInstancesLoaded,
+    selectedDestinations.length,
+    canOptimize,
+    result,
+    isLoading,
+    triggerOptimize,
+  ]);
 
   useEffect(() => {
     if (result || isLoading) {

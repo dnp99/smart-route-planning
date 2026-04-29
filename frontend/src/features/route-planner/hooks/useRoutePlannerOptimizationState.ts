@@ -112,8 +112,7 @@ export function useRoutePlannerOptimizationState({
     ).length;
   }, [isManualOrderStale, manuallyOrderedStops, result, selectedDestinations]);
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const runOptimize = async () => {
     setLocalValidationError("");
 
     const validationError = validateRequestDestinations(requestDestinations);
@@ -150,6 +149,11 @@ export function useRoutePlannerOptimizationState({
       workingHours: nurseWorkingHours ?? null,
       optimizationObjective: plannerOptimizationObjective,
     });
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    await runOptimize();
   };
 
   const handleRecalculateManualOrder = async () => {
@@ -220,6 +224,7 @@ export function useRoutePlannerOptimizationState({
     currentOptimizeSnapshot,
     unscheduledResubmitCount,
     handleSubmit,
+    triggerOptimize: runOptimize,
     handleRecalculateManualOrder,
   };
 }

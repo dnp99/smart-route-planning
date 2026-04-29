@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { WeeklyWorkingHours } from "../../../../../shared/contracts";
 import { PatientFormModal } from "../../patients/ui/PatientFormModal";
@@ -22,6 +23,9 @@ function RoutePlanner({
   onOpenAccountSettings,
   optimizationObjective = "distance",
 }: RoutePlannerProps) {
+  const location = useLocation();
+  const autoOptimizeToday =
+    (location.state as { autoOptimizeToday?: boolean } | null)?.autoOptimizeToday === true;
   const [showSchedulingNotice, setShowSchedulingNotice] = useState(false);
   const {
     handleSubmit,
@@ -39,6 +43,7 @@ function RoutePlanner({
     nurseBreakGapThresholdMinutes,
     onOpenAccountSettings,
     optimizationObjective,
+    autoOptimizeToday,
   });
 
   return (

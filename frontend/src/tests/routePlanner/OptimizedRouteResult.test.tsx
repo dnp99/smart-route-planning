@@ -81,6 +81,173 @@ describe("OptimizedRouteResult", () => {
     cleanup();
   });
 
+  it("shows confidence banner when all stops are on time and no issues", () => {
+    render(
+      <OptimizedRouteResult
+        result={buildResult()}
+        conflictWarningsDismissed={false}
+        onDismissConflictWarnings={() => undefined}
+        latenessWarningsDismissed={false}
+        onDismissLatenessWarnings={() => undefined}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
+      />,
+    );
+
+    expect(screen.getByText("Schedule looks good")).toBeTruthy();
+    expect(screen.getByText(/All 1 visit on time/)).toBeTruthy();
+  });
+
+  it("includes estimated finish time in confidence banner from last task serviceEndTime", () => {
+    render(
+      <OptimizedRouteResult
+        result={buildResult()}
+        conflictWarningsDismissed={false}
+        onDismissConflictWarnings={() => undefined}
+        latenessWarningsDismissed={false}
+        onDismissLatenessWarnings={() => undefined}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
+      />,
+    );
+
+    // The default buildResult has serviceEndTime "2026-03-20T09:30:00-04:00"
+    expect(screen.getByText(/Finishes around/)).toBeTruthy();
+  });
+
+  it("omits confidence banner when there are undismissed conflict warnings", () => {
+    render(
+      <OptimizedRouteResult
+        result={buildResult({
+          warnings: [
+            {
+              type: "window_conflict",
+              patientIds: ["patient-1", "patient-2"],
+              message: "Two fixed windows overlap.",
+            },
+          ],
+        })}
+        conflictWarningsDismissed={false}
+        onDismissConflictWarnings={() => undefined}
+        latenessWarningsDismissed={false}
+        onDismissLatenessWarnings={() => undefined}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
+      />,
+    );
+
+    expect(screen.queryByText("Schedule looks good")).toBeNull();
+  });
+
+  it("omits confidence banner when there are unscheduled tasks", () => {
+    render(
+      <OptimizedRouteResult
+        result={buildResult({
+          unscheduledTasks: [
+            {
+              visitId: "visit-x",
+              patientId: "patient-x",
+              patientName: "alex unscheduled",
+              address: "99 Missed St",
+              windowStart: "10:00",
+              windowEnd: "11:00",
+              windowType: "fixed",
+              reason: "fixed_window_unreachable",
+            },
+          ],
+        })}
+        conflictWarningsDismissed={false}
+        onDismissConflictWarnings={() => undefined}
+        latenessWarningsDismissed={false}
+        onDismissLatenessWarnings={() => undefined}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
+      />,
+    );
+
+    expect(screen.queryByText("Schedule looks good")).toBeNull();
+  });
+
+  it("omits confidence banner when there are no intermediate scheduled stops", () => {
+    render(
+      <OptimizedRouteResult
+        result={buildResult({
+          orderedStops: [
+            {
+              stopId: "stop-end-only",
+              address: "99 Home Road",
+              lat: 43.72,
+              lng: -79.42,
+              distanceFromPreviousKm: 0,
+              durationFromPreviousSeconds: 0,
+              arrivalTime: "2026-03-20T08:30:00-04:00",
+              departureTime: "2026-03-20T08:30:00-04:00",
+              isEndingPoint: true,
+              tasks: [],
+            },
+          ],
+          routeLegs: [],
+        })}
+        conflictWarningsDismissed={false}
+        onDismissConflictWarnings={() => undefined}
+        latenessWarningsDismissed={false}
+        onDismissLatenessWarnings={() => undefined}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
+      />,
+    );
+
+    expect(screen.queryByText("Schedule looks good")).toBeNull();
+  });
+
+  it("shows confidence banner after conflict warnings are dismissed", () => {
+    render(
+      <OptimizedRouteResult
+        result={buildResult({
+          warnings: [
+            {
+              type: "window_conflict",
+              patientIds: ["patient-1", "patient-2"],
+              message: "Two fixed windows overlap.",
+            },
+          ],
+        })}
+        conflictWarningsDismissed={true}
+        onDismissConflictWarnings={() => undefined}
+        latenessWarningsDismissed={false}
+        onDismissLatenessWarnings={() => undefined}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
+      />,
+    );
+
+    expect(screen.getByText("Schedule looks good")).toBeTruthy();
+  });
+
   it("renders warnings, stop list, and unscheduled task details while leave-by is hidden", () => {
     const onDismissConflictWarnings = vi.fn();
     const onDismissLatenessWarnings = vi.fn();

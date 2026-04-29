@@ -550,11 +550,24 @@ export default function HomePage({
     }
   };
 
+  const handlePlanMyDayClick = () => {
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+    clearRoutePlannerDraft();
+    navigate("/route-planner", { state: { autoOptimizeToday: true } });
+  };
+
   const renderAuthenticatedActions = () => (
     <>
-      <Link to="/route-planner" className={responsiveStyles.primaryButton}>
-        Open Route Planner
-      </Link>
+      <button
+        type="button"
+        className={responsiveStyles.primaryButton}
+        onClick={handlePlanMyDayClick}
+      >
+        Plan my day
+      </button>
       <Link to="/clients" className={responsiveStyles.secondaryButton}>
         Go to Clients
       </Link>
