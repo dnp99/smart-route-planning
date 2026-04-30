@@ -260,6 +260,8 @@ export const routeOptimizationRuns = pgTable(
     warnings: jsonb("warnings")
       .notNull()
       .default(sql`'[]'::jsonb`),
+    requestPayload: jsonb("request_payload"),
+    resultPayload: jsonb("result_payload"),
     requestId: text("request_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
   },

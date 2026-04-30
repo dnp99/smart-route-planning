@@ -24,8 +24,14 @@ function RoutePlanner({
   optimizationObjective = "distance",
 }: RoutePlannerProps) {
   const location = useLocation();
-  const autoOptimizeToday =
-    (location.state as { autoOptimizeToday?: boolean } | null)?.autoOptimizeToday === true;
+  const locationState = location.state as {
+    autoOptimizeToday?: boolean;
+    savedRouteRunId?: string;
+    planningDate?: string;
+  } | null;
+  const autoOptimizeToday = locationState?.autoOptimizeToday === true;
+  const savedRouteRunId = locationState?.savedRouteRunId ?? null;
+  const savedRouteRunPlanningDate = locationState?.planningDate ?? null;
   const [showSchedulingNotice, setShowSchedulingNotice] = useState(false);
   const {
     handleSubmit,
@@ -44,6 +50,8 @@ function RoutePlanner({
     onOpenAccountSettings,
     optimizationObjective,
     autoOptimizeToday,
+    savedRouteRunId,
+    savedRouteRunPlanningDate,
   });
 
   return (

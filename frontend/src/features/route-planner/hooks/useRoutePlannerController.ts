@@ -15,6 +15,8 @@ import type {
   VisitInstance,
   WeeklyWorkingHours,
 } from "../../../../../shared/contracts";
+import { parseOptimizeRouteV2Response } from "../../../../../shared/contracts";
+import { fetchRouteRunById } from "../../../components/home/homeDashboardService";
 import { usePatientSearch } from "./usePatientSearch";
 import { useRouteOptimization } from "./useRouteOptimization";
 import {
@@ -61,6 +63,8 @@ type UseRoutePlannerControllerParams = {
   onOpenAccountSettings?: () => void;
   optimizationObjective: "time" | "distance";
   autoOptimizeToday?: boolean;
+  savedRouteRunId?: string | null;
+  savedRouteRunPlanningDate?: string | null;
 };
 
 type TemplatePickerOption = {
@@ -81,6 +85,8 @@ export function useRoutePlannerController({
   onOpenAccountSettings,
   optimizationObjective,
   autoOptimizeToday = false,
+  savedRouteRunId = null,
+  savedRouteRunPlanningDate = null,
 }: UseRoutePlannerControllerParams) {
   const pendingAutoOptimizeRef = useRef(autoOptimizeToday);
   const initialDraft = useMemo(() => readRoutePlannerDraft(), []);
@@ -95,6 +101,7 @@ export function useRoutePlannerController({
     showOptimizeFlash,
     hasAttemptedOptimize,
     restoreCachedResult,
+    loadSavedResult,
     optimizeRoute,
   } = useRouteOptimization();
 
@@ -255,6 +262,63 @@ export function useRoutePlannerController({
     setSelectedTemplateId("auto");
     setManualTemplateSelectionLock(false);
   }, [planningDate]);
+
+  useEffect(() => {
+    if (!savedRouteRunId) return;
+
+    let isSubscribed = true;
+
+    const loadRun = async () => {
+      try {
+        const run = await fetchRouteRunById(savedRouteRunId);
+
+        if (!isSubscribed) return;
+
+        if (savedRouteRunPlanningDate) {
+          setPlanningDate(savedRouteRunPlanningDate);
+        }
+
+        const parsedResult = parseOptimizeRouteV2Response(run.resultPayload);
+        if (!parsedResult) return;
+
+        const requestVisits: Array<{
+          visitId: string;
+          patientName?: string;
+          address?: string;
+          windowStart?: string;
+          windowEnd?: string;
+          windowType?: "fixed" | "flexible";
+        }> = Array.isArray((run.requestPayload as Record<string, unknown> | null)?.visits)
+          ? ((run.requestPayload as Record<string, unknown>).visits as typeof requestVisits)
+          : [];
+
+        const visitById = new Map(requestVisits.map((v) => [v.visitId, v]));
+
+        const unscheduledTasks = parsedResult.unscheduledTasks.map((task) => {
+          const source = visitById.get(task.visitId);
+          if (!source) return task;
+          return {
+            ...task,
+            patientName: source.patientName,
+            address: source.address,
+            windowStart: source.windowStart,
+            windowEnd: source.windowEnd,
+            windowType: source.windowType,
+          };
+        });
+
+        loadSavedResult({ ...parsedResult, unscheduledTasks });
+      } catch {
+        // silently ignore — UI already shows empty state
+      }
+    };
+
+    void loadRun();
+
+    return () => {
+      isSubscribed = false;
+    };
+  }, [savedRouteRunId, savedRouteRunPlanningDate, setPlanningDate, loadSavedResult]);
 
   useEffect(() => {
     let isSubscribed = true;
