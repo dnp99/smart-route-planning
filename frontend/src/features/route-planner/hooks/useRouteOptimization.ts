@@ -101,6 +101,13 @@ export const useRouteOptimization = () => {
     return true;
   }, []);
 
+  const loadSavedResult = useCallback((savedResult: OptimizeRouteResponse) => {
+    setError("");
+    setResult(savedResult);
+    setHasAttemptedOptimize(true);
+    runtimeCache = null;
+  }, []);
+
   const optimizeRoute = async ({
     startAddress,
     startGooglePlaceId,
@@ -172,6 +179,7 @@ export const useRouteOptimization = () => {
     showOptimizeFlash,
     hasAttemptedOptimize,
     restoreCachedResult,
+    loadSavedResult,
     optimizeRoute,
   };
 };

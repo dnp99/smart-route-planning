@@ -78,6 +78,49 @@ const toRouteRunSummary = (value: unknown): RouteRunSummary | null => {
   };
 };
 
+export type RouteRunDetail = RouteRunSummary & {
+  requestPayload: unknown;
+  resultPayload: unknown;
+};
+
+const toRouteRunDetail = (value: unknown): RouteRunDetail | null => {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const candidate = value as Record<string, unknown>;
+  const summary = toRouteRunSummary(candidate);
+  if (!summary) {
+    return null;
+  }
+
+  return {
+    ...summary,
+    requestPayload: candidate.requestPayload,
+    resultPayload: candidate.resultPayload,
+  };
+};
+
+export const fetchRouteRunById = async (runId: string): Promise<RouteRunDetail> => {
+  const payload = await requestAuthedJson(
+    `/api/route-runs/${encodeURIComponent(runId)}`,
+    { method: "GET" },
+    "Unable to load saved route.",
+  );
+
+  if (!payload || typeof payload !== "object") {
+    throw new Error("Unexpected saved route response format.");
+  }
+
+  const runRaw = (payload as Record<string, unknown>).run;
+  const run = toRouteRunDetail(runRaw);
+  if (!run) {
+    throw new Error("Unexpected saved route response format.");
+  }
+
+  return run;
+};
+
 export const fetchRouteRunsForPlanningDate = async (
   planningDate: string,
 ): Promise<RouteRunSummary[]> => {

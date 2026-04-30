@@ -368,6 +368,8 @@ export const recordOptimizationRun = async ({
         totalDistanceMeters: toNonNegativeInt(result.metrics.totalDistanceMeters),
         totalDurationSeconds: toNonNegativeInt(result.metrics.totalDurationSeconds),
         warnings: result.warnings ?? [],
+        requestPayload: request as unknown as Record<string, unknown>,
+        resultPayload: result as unknown as Record<string, unknown>,
         requestId: requestId ?? null,
       })
       .returning({ id: routeOptimizationRuns.id });
