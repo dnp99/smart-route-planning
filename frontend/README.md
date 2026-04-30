@@ -8,6 +8,8 @@ This folder contains the Vite + React frontend for CareFlow.
 - Require login before allowing access to client and route-planner pages.
 - Fetch Google Places-backed address suggestions from the backend autocomplete endpoint.
 - Submit route optimization requests to the backend (production path: `POST /api/optimize-route/v3`) with a selectable optimization objective (`"distance"` or `"time"`) and a configurable planning date (defaults to tomorrow).
+- "Plan my day" dashboard button: clears the draft, navigates to the Route Planner with today's date, and triggers automatic optimization once instances load and home address is present — no manual submit required. Uses `"time"` as the optimization objective. Requires home address to be set in Account Settings; without it, the planner opens pre-seeded but does not auto-run.
+- Route result confidence banner: green "Schedule looks good" header with visit count and estimated finish time shown when `issueCount === 0` and at least one stop is scheduled. Suppressed when any conflict warning, lateness warning, or unscheduled task is present (even after dismissal resets the count to zero it re-renders correctly on next result).
 - Render the optimized route with Leaflet.
 - Support manual stop reordering with recalculated ETA flow.
 - Keep optimization results in memory only (no browser storage persistence).
@@ -90,7 +92,9 @@ or:
 - `src/features/route-planner/hooks/useCreatePatientForm.ts` - create-client modal/form state and handlers
 - `src/features/route-planner/hooks/useManualReorder.ts` - manual stop drag/reorder with stale-order tracking
 - `src/features/route-planner/hooks/useRouteOptimization.ts` - optimization request state and runtime result cache lifecycle
-- `src/features/route-planner/ui/OptimizedRouteResult.tsx` - dispatch plan view (stat cards, route timeline, map, warnings)
+- `src/features/route-planner/ui/OptimizedRouteResult.tsx` - dispatch plan view (stat cards, route timeline, map, warnings, confidence banner)
+- `src/features/route-planner/hooks/useRoutePlannerOptimizationState.ts` - optimization submit logic; exposes `triggerOptimize` for programmatic (non-form) invocation
+- `src/components/home/HomePage.tsx` - dashboard with "Plan my day" button that clears draft and navigates with `autoOptimizeToday` flag
 - `src/components/auth/authSession.ts` - in-memory auth user store, session-presence flag (`careflow.session-presence.v1`) for optimistic bootstrap, and auth-change cleanup
 - `src/components/auth/LoginPage.tsx` - login screen
 - `src/components/auth/authFetch.ts` - authenticated backend fetch helper

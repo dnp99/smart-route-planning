@@ -10,6 +10,8 @@ Routefy is a route planning app for care workers, with a React frontend and Next
 - Prevents duplicate client visit windows (same start/end pair) at API and DB layers.
 - Optimizes daily visits with time windows, travel distance/time, and visit duration; planning date defaults to tomorrow and is configurable per session.
 - Auto-seeds the Route Planner with all scheduled visit instances across every recurring template that matches the planning date's day of week, with manual override support.
+- "Plan my day" dashboard button: clears any stale draft, navigates to the Route Planner with today's date pre-selected, auto-seeds clients from today's recurring templates, and triggers optimization automatically once instances and home address are ready — no manual steps required.
+- Route result confidence banner: shows a green "Schedule looks good" summary (visit count and estimated finish time) when all stops are on time; automatically suppressed if there are any warnings or unscheduled visits.
 - Supports manual stop reordering with recalculated ETA flow.
 - Renders the planned route on a Leaflet map with stop markers and driving path.
 - Keeps optimized route results in memory only for the current tab lifecycle.
