@@ -6,6 +6,7 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    env: { NODE_ENV: "development" },
     coverage: {
       provider: "v8",
       reporter: ["text", "json-summary"],

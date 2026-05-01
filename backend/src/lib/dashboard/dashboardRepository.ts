@@ -335,6 +335,32 @@ const buildAlerts = ({
   return alerts.slice(0, 3);
 };
 
+const scrubRequestPayload = (
+  request: ValidatedOptimizeRouteV2Request,
+): Record<string, unknown> => ({
+  ...request,
+  visits: request.visits.map(({ patientName: _pn, address: _addr, ...rest }) => rest),
+});
+
+const scrubResultPayload = (result: OptimizeRouteResultV2): Record<string, unknown> => ({
+  ...result,
+  orderedStops: result.orderedStops.map((stop) => ({
+    ...stop,
+    tasks: stop.tasks.map(({ patientName: _pn, address: _addr, ...rest }) => rest),
+  })),
+  unscheduledTasks: result.unscheduledTasks.map((task) => {
+    if ("patientName" in task) {
+      const { patientName: _pn, ...rest } = task as typeof task & { patientName: string };
+      return rest;
+    }
+    if ("patientNames" in task) {
+      const { patientNames: _pns, ...rest } = task as typeof task & { patientNames: string[] };
+      return rest;
+    }
+    return task;
+  }),
+});
+
 export const recordOptimizationRun = async ({
   nurseId,
   endpointVersion,
@@ -368,8 +394,8 @@ export const recordOptimizationRun = async ({
         totalDistanceMeters: toNonNegativeInt(result.metrics.totalDistanceMeters),
         totalDurationSeconds: toNonNegativeInt(result.metrics.totalDurationSeconds),
         warnings: result.warnings ?? [],
-        requestPayload: request as unknown as Record<string, unknown>,
-        resultPayload: result as unknown as Record<string, unknown>,
+        requestPayload: scrubRequestPayload(request),
+        resultPayload: scrubResultPayload(result),
         requestId: requestId ?? null,
       })
       .returning({ id: routeOptimizationRuns.id });

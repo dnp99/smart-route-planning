@@ -27,6 +27,33 @@ type RouteOptimizationRuntimeCache = {
 
 let runtimeCache: RouteOptimizationRuntimeCache | null = null;
 
+const SESSION_KEY = "routeOptimizationResult";
+
+const readSessionResult = (): OptimizeRouteResponse | null => {
+  try {
+    const raw = sessionStorage.getItem(SESSION_KEY);
+    return raw ? (JSON.parse(raw) as OptimizeRouteResponse) : null;
+  } catch {
+    return null;
+  }
+};
+
+const writeSessionResult = (result: OptimizeRouteResponse) => {
+  try {
+    sessionStorage.setItem(SESSION_KEY, JSON.stringify(result));
+  } catch {
+    // sessionStorage unavailable (e.g. private mode quota) — silently skip
+  }
+};
+
+const clearSessionResult = () => {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch {
+    // ignore
+  }
+};
+
 const buildOptimizationSnapshot = ({
   planningDate,
   optimizationObjective,
@@ -55,13 +82,14 @@ const buildOptimizationSnapshot = ({
   ].join("||");
 
 export const useRouteOptimization = () => {
-  const [result, setResult] = useState<OptimizeRouteResponse | null>(null);
+  const sessionResult = readSessionResult();
+  const [result, setResult] = useState<OptimizeRouteResponse | null>(sessionResult);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [showOptimizeSuccess, setShowOptimizeSuccess] = useState(false);
   const [showOptimizeFlash, setShowOptimizeFlash] = useState(false);
-  const [hasAttemptedOptimize, setHasAttemptedOptimize] = useState(false);
+  const [hasAttemptedOptimize, setHasAttemptedOptimize] = useState(sessionResult !== null);
 
   useEffect(() => {
     if (!showOptimizeSuccess) {
@@ -106,6 +134,7 @@ export const useRouteOptimization = () => {
     setResult(savedResult);
     setHasAttemptedOptimize(true);
     runtimeCache = null;
+    clearSessionResult();
   }, []);
 
   const optimizeRoute = async ({
@@ -123,6 +152,7 @@ export const useRouteOptimization = () => {
   }: OptimizeRouteInput) => {
     setError("");
     setResult(null);
+    clearSessionResult();
     setShowOptimizeFlash(false);
     setHasAttemptedOptimize(true);
 
@@ -150,6 +180,7 @@ export const useRouteOptimization = () => {
       });
 
       setResult(optimizedResult);
+      writeSessionResult(optimizedResult);
       runtimeCache = {
         snapshot: buildOptimizationSnapshot({
           planningDate,
