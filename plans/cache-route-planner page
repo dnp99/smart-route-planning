@@ -1,0 +1,26 @@
+Two separate questions:
+
+1. Tab switching clears the result
+
+The route result lives in React state — navigating away unmounts the component and the state is lost. Options:
+
+Persist result to sessionStorage (simplest) — serialize the result on every change, rehydrate on mount. Survives tab switches within the same browser session.
+Keep the component mounted, hide it — use CSS display:none instead of unmounting when switching tabs. Works but wastes memory.
+Save to a route run and replay it — the infrastructure we just built actually handles this already for saved runs from the dashboard. Could wire the same loadSavedResult path after a fresh optimize too.
+Recommendation: sessionStorage is the right tradeoff — simple, no server cost, clears when the browser closes.
+
+2. PHI compliance
+
+Current PHI exposure points:
+
+patientName and address are stored in route_optimization_tasks (columns exist in schema, currently set to null on insert — good)
+request_payload and result_payload in route_optimization_runs contain the full optimize request/response including patient names and addresses from the visits array
+Audit logs may capture metadata with identifiable info
+What needs to happen:
+
+request_payload / result_payload: Either encrypt at rest (Neon supports transparent encryption) or strip patient names/addresses before storing — keep only patientId, visitId, coordinates
+route_optimization_tasks: The patientName and address columns should stay null (already the case) or be dropped entirely (the deferred cleanup noted in memory)
+Audit logs: Ensure no PHI leaks into metadata fields
+Transport: Verify all API routes use HTTPS in prod (Vercel handles this)
+Access control: Every endpoint already gates on auth.nurseId — good
+The biggest risk right now is request_payload — it stores the full request including patientName fields for every visit. That's the first thing to address before any compliance claim.
