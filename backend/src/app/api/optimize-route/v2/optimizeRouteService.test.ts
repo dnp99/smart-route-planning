@@ -643,7 +643,7 @@ describe("optimizeRouteV2 service", () => {
     });
   });
 
-  it("groups consecutive same-location visits into one stop and returns metrics", async () => {
+  it("groups consecutive same-location flexible visits into one stop and returns metrics", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Shared Address", coords: { lat: 43.7, lon: -79.7 } },
@@ -665,23 +665,23 @@ describe("optimizeRouteV2 service", () => {
         },
         visits: [
           {
-            visitId: "fixed-am",
+            visitId: "flex-am",
             patientId: "patient-1",
             patientName: "Yasmin Ramji",
             address: "Shared Address",
             windowStart: "08:30",
             windowEnd: "09:00",
-            windowType: "fixed",
+            windowType: "flexible",
             serviceDurationMinutes: 20,
           },
           {
-            visitId: "fixed-pm",
+            visitId: "flex-pm",
             patientId: "patient-2",
             patientName: "Hassan Ramji",
             address: "Shared Address",
             windowStart: "09:30",
             windowEnd: "10:00",
-            windowType: "fixed",
+            windowType: "flexible",
             serviceDurationMinutes: 20,
           },
         ],
@@ -692,8 +692,8 @@ describe("optimizeRouteV2 service", () => {
     expect(result.algorithmVersion).toBe("v2.5.4-edf-tier");
     expect(result.orderedStops).toHaveLength(2);
     expect(result.orderedStops[0].tasks).toHaveLength(2);
-    expect(result.orderedStops[0].tasks[0].visitId).toBe("fixed-am");
-    expect(result.orderedStops[0].tasks[1].visitId).toBe("fixed-pm");
+    expect(result.orderedStops[0].tasks[0].visitId).toBe("flex-am");
+    expect(result.orderedStops[0].tasks[1].visitId).toBe("flex-pm");
     expect(result.orderedStops[1].isEndingPoint).toBe(true);
     expect(result.routeLegs[0]).toMatchObject({
       fromStopId: "start",
