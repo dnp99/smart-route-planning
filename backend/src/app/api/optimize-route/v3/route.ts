@@ -12,7 +12,7 @@ import {
   type VisitInstanceMeta,
 } from "../../../../lib/recurrence/recurrenceRepository";
 import { optimizeRouteV3 } from "./optimizeRouteService";
-import { parseAndValidateBody } from "../v2/validation";
+import { parseAndValidateBody } from "./validation";
 import {
   buildOptimizeRouteCorsHeaders,
   prepareOptimizeRouteRequest,

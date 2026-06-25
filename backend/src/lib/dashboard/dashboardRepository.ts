@@ -15,8 +15,8 @@ import {
   routeOptimizationTasks,
 } from "../../db/schema";
 import type { VisitInstanceMeta } from "../recurrence/recurrenceRepository";
-import type { OptimizeRouteResultV2 } from "../../app/api/optimize-route/v2/types";
-import type { ValidatedOptimizeRouteV2Request } from "../../app/api/optimize-route/v2/validation";
+import type { OptimizeRouteResultV2 } from "../../app/api/optimize-route/v3/types";
+import type { ValidatedOptimizeRouteV2Request } from "../../app/api/optimize-route/v3/validation";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth } from "../../../lib/auth/requireAuth";
 import { buildCorsHeaders } from "../../../lib/http";
 import { enforceOptimizeRouteRateLimit, requireOptimizeRouteApiKey } from "./requestGuards";
-import type { ValidatedOptimizeRouteV2Request } from "./v2/validation";
+import type { ValidatedOptimizeRouteV2Request } from "./v3/validation";
 
 export const buildOptimizeRouteCorsHeaders = (request: Request) =>
   buildCorsHeaders(request, {

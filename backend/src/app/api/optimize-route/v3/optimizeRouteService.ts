@@ -12,13 +12,13 @@ import type {
   TaskResultV2,
   UnscheduledTaskV2,
   VisitV2,
-} from "../v2/types";
-import type { ValidatedOptimizeRouteV2Request } from "../v2/validation";
+} from "./types";
+import type { ValidatedOptimizeRouteV2Request } from "./validation";
 import {
   buildPlanningTravelDurationMatrix,
   type TravelDurationMatrix,
   type TravelMatrixNode,
-} from "../v2/travelMatrix";
+} from "./travelMatrix";
 
 const ALGORITHM_VERSION = "v3.0.0-ils-seeded";
 const FIXED_LATE_TOLERANCE_SECONDS = 15 * 60;

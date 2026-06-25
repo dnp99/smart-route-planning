@@ -9,14 +9,13 @@ vi.mock("../routing", () => ({
   buildDrivingRoute: vi.fn(),
 }));
 
-vi.mock("../v2/travelMatrix", () => ({
+vi.mock("./travelMatrix", () => ({
   buildPlanningTravelDurationMatrix: vi.fn(),
 }));
 
 import { geocodeTargetsSequentially } from "../geocoding";
 import { buildDrivingRoute } from "../routing";
-import { buildPlanningTravelDurationMatrix } from "../v2/travelMatrix";
-import { optimizeRouteV2 } from "../v2/optimizeRouteService";
+import { buildPlanningTravelDurationMatrix } from "./travelMatrix";
 import {
   __groupVisitsIntoStops,
   __shouldFallbackDistanceToTimeForFixedSafety,
@@ -495,18 +494,16 @@ describe("optimizeRouteV3 service", () => {
       ],
     };
 
-    const v2Result = await optimizeRouteV2(request, "google-key");
     const v3Result = await optimizeRouteV3(request, "google-key");
-    const v2Order = v2Result.orderedStops
-      .filter((stop) => !stop.isEndingPoint)
-      .map((stop) => stop.address);
     const v3Order = v3Result.orderedStops
       .filter((stop) => !stop.isEndingPoint)
       .map((stop) => stop.address);
 
-    expect(v2Order).toEqual(["B", "D", "A", "C"]);
+    // Baseline ordering the legacy greedy seed produced for this matrix; the ILS
+    // refinement must beat its route cost.
+    const legacySeedOrder = ["B", "D", "A", "C"];
     expect(v3Order).toEqual(["D", "A", "C", "B"]);
-    expect(routeCost(v3Order, matrix)).toBeLessThan(routeCost(v2Order, matrix));
+    expect(routeCost(v3Order, matrix)).toBeLessThan(routeCost(legacySeedOrder, matrix));
   });
 
   it("logs seed versus ILS diagnostics when shadow comparison is enabled", async () => {
@@ -4544,7 +4541,6 @@ describe("optimizeRouteV3 service", () => {
       optimizationObjective: "time" as const,
     };
 
-    const v2Result = await optimizeRouteV2(request, "google-key");
     const v3Result = await optimizeRouteV3(request, "google-key");
     const v3Order = v3Result.orderedStops
       .filter((stop) => !stop.isEndingPoint)
@@ -4555,8 +4551,8 @@ describe("optimizeRouteV3 service", () => {
     expect(nasimIndex).toBeGreaterThan(-1);
     expect(ianIndex).toBeGreaterThan(-1);
     expect(nasimIndex).toBeLessThan(ianIndex);
+    // v3 eliminates the late flexible-window penalty entirely.
     expect(v3Result.metrics.totalLateSeconds).toBe(0);
-    expect(v3Result.metrics.totalLateSeconds).toBeLessThan(v2Result.metrics.totalLateSeconds);
   });
 
   it("matches the amended Mississauga sequence through Cheryl and keeps the Ian tail aligned", async () => {

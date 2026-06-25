@@ -5,7 +5,6 @@ type NavigateEasyWindow = Window & {
 declare global {
   interface ImportMetaEnv {
     readonly VITE_API_BASE_URL?: string;
-    readonly VITE_ENABLE_ILS_OPTIMIZER?: string;
   }
 }
 

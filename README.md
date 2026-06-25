@@ -73,8 +73,7 @@ Recent schema changes:
   - `GET /api/visit-instances?planningDate=YYYY-MM-DD`
   - `PATCH /api/visit-instances/:id`
 - Route planning:
-  - `POST /api/optimize-route/v3` (current production planner flow)
-  - `POST /api/optimize-route/v2` (legacy compatibility / rollback path)
+  - `POST /api/optimize-route/v3` (route optimizer)
 - Address suggestions:
   - `GET /api/address-autocomplete?query=...`
 
@@ -150,17 +149,11 @@ Notes:
 - `"distance"` prioritizes less driving with bounded idle-gap tradeoffs.
 - `"time"` prioritizes finishing sooner (combined wait + travel), with safeguards so it does not lose to an earlier equally-safe alternative when one exists.
 
-## Optimizer endpoint selection
+## Optimizer endpoint
 
-Current production endpoint is `POST /api/optimize-route/v3`.
-
-Frontend still supports rollback routing:
-
-- `VITE_ENABLE_ILS_OPTIMIZER=true` -> `POST /api/optimize-route/v3` (recommended / prod)
-- unset / `false` -> `POST /api/optimize-route/v2` (legacy fallback)
-
-`v3` and `v2` keep the same request/response contract, so UI render paths remain compatible.
-For production parity, set `VITE_ENABLE_ILS_OPTIMIZER=true` in deployed frontend environments.
+The route optimizer endpoint is `POST /api/optimize-route/v3` (ILS-seeded). The
+legacy `v2` engine and the `VITE_ENABLE_ILS_OPTIMIZER` rollback flag have been
+removed; the frontend always calls `v3`.
 
 ## Additional docs
 

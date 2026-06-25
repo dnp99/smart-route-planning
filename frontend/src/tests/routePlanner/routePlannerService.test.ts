@@ -58,8 +58,7 @@ describe("requestOptimizedRoute", () => {
     window.localStorage.clear();
   });
 
-  it("returns optimize-route v2 payload when response is valid", async () => {
-    vi.stubEnv("VITE_ENABLE_ILS_OPTIMIZER", "false");
+  it("returns optimize-route payload when response is valid", async () => {
     const payload = buildValidResponse();
 
     fetchMock.mockResolvedValue({
@@ -97,7 +96,7 @@ describe("requestOptimizedRoute", () => {
     expect(result).toEqual(payload);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://api.example.com/api/optimize-route/v2");
+    expect(url).toBe("http://api.example.com/api/optimize-route/v3");
     expect(init.method).toBe("POST");
 
     expect(JSON.parse(String(init.body))).toEqual({
@@ -140,29 +139,7 @@ describe("requestOptimizedRoute", () => {
     expect(init.credentials).toBe("include");
   });
 
-  it("calls optimize-route v3 when ILS flag is enabled", async () => {
-    vi.stubEnv("VITE_ENABLE_ILS_OPTIMIZER", "true");
-
-    fetchMock.mockResolvedValue({
-      ok: true,
-      json: async () => buildValidResponse(),
-    } as Response);
-
-    await requestOptimizedRoute({
-      startAddress: "Start",
-      endAddress: "End",
-      planningDate: "2026-03-13",
-      timezone: "America/Toronto",
-      destinations: [],
-    });
-
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://api.example.com/api/optimize-route/v3");
-  });
-
   it("includes manual start and end place ids when provided", async () => {
-    vi.stubEnv("VITE_ENABLE_ILS_OPTIMIZER", "false");
     fetchMock.mockResolvedValue({
       ok: true,
       json: async () => buildValidResponse(),
@@ -180,7 +157,7 @@ describe("requestOptimizedRoute", () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("http://api.example.com/api/optimize-route/v2");
+    expect(url).toBe("http://api.example.com/api/optimize-route/v3");
     expect(init.method).toBe("POST");
     expect(JSON.parse(String(init.body))).toEqual({
       planningDate: "2026-03-13",
