@@ -8,14 +8,14 @@ Routefy uses DB-backed sessions (opaque session UUID in an httpOnly cookie, vali
 2. **Password change doesn't revoke other sessions.** [update-password/route.ts:87](backend/src/app/api/auth/update-password/route.ts#L87) updates the hash but leaves every other session active, so a reset can't lock out a compromised device.
 3. **Session table doubles as a forensic record.** Revoked rows are retained 30 days ([sessionRepository.ts:97](backend/src/lib/auth/sessionRepository.ts#L97)); fine only if a *separate* retained audit log is the real access record.
 
-This plan adds a **dual timeout** (sliding idle + absolute cap), **sibling-session revocation on password change**, and **tightens retention** once the audit log is confirmed as the system of record.
+This plan adds a **dual timeout** (sliding idle + absolute cap), **sibling-session revocation on password change**, **persists auth events to a durable audit log**, and only then **tightens session retention**. The retention cut is deliberately gated: today login/logout history lives durably *only* in the session rows, so shortening retention before auth events are persisted would destroy forensic evidence.
 
 **No DB schema migration is required** — `expiresAt`, `createdAt`, `revokedAt`, `lastSeenAt` already exist on `auth_sessions` ([schema.ts](backend/src/db/schema.ts)). Only their semantics/usage change.
 
 ## Goals / Non-goals
 
-- **Goals:** idle timeout (~30 min) + absolute cap (~12 h); throttled sliding so it doesn't write on every request; log-out-everywhere on password change; shorter, well-justified session retention.
-- **Non-goals (note, don't build now):** a user-facing "active sessions / log out everywhere" UI; concurrent-session caps; moving the auth audit log into Postgres. Flag these as follow-ups.
+- **Goals:** idle timeout (~30 min) + absolute cap (~12 h); throttled sliding so it doesn't write on every request; log-out-everywhere on password change; durable auth audit events; shorter, well-justified session retention.
+- **Non-goals (note, don't build now):** a user-facing "active sessions / log out everywhere" UI; concurrent-session caps; shipping a Vercel Log Drain to an external SIEM. Flag these as follow-ups.
 
 ## Current state (grounded)
 
@@ -54,11 +54,31 @@ This plan adds a **dual timeout** (sliding idle + absolute cap), **sibling-sessi
 2. Call it in [update-password/route.ts](backend/src/app/api/auth/update-password/route.ts) right after `updateNursePasswordHash` succeeds (line 87), passing `auth.nurseId` and `auth.sessionId` — keeps the current device signed in, logs out all others.
    - Index already exists (`auth_sessions_nurse_id_idx`), so the update is cheap.
 
-### Phase 3 — Tighten retention (after confirming the audit log)
+### Phase 3 — Persist auth audit events (prerequisite for Phase 4)
 
-1. **Verify** the auth audit log ([auditLogger.ts](backend/src/lib/auth/auditLogger.ts), `console.info` JSON) is shipped to a **retained** sink (Vercel Log Drain / external SIEM). If it isn't, that's a prerequisite follow-up (persist auth events) — note it; don't silently shorten retention without it.
-2. Once confirmed, lower the `cleanupAuthSessions` default `revokedRetentionDays` from 30 → **14** ([sessionRepository.ts:97](backend/src/lib/auth/sessionRepository.ts#L97)); expired rows are already purged immediately. `SESSION_CLEANUP_REVOKED_RETENTION_DAYS` env override stays.
-   - Depends on the separate cron-auth fix (the route must actually run — see the `CRON_SECRET` change) or this has no effect.
+Today there are **two** audit loggers, and only one is durable:
+- `lib/audit/auditLogger.ts` → `logAuditEvent()` **inserts into the `audit_events` table** ([schema.ts:398](backend/src/db/schema.ts#L398)) — used everywhere for PHI access (patients, optimize-route, visit-instances, dashboard).
+- `lib/auth/auditLogger.ts` → `logAuthAuditEvent()` only does `console.info` ([auditLogger.ts](backend/src/lib/auth/auditLogger.ts)) — **ephemeral**, and no Log Drain is configured. So login/logout history lives durably **only** in the session rows themselves.
+
+This phase makes auth events durable so the session table stops being the de-facto login-forensics record:
+
+1. Route auth events into the existing `audit_events` table by reusing `logAuditEvent` (don't invent a new sink). For each login/logout/password-change, write a row with:
+   - `action`: `auth.login` / `auth.logout` / `auth.password_change`
+   - `resourceType`: `auth_session`, `resourceId`: the session id
+   - `outcome`: success / invalid_credentials / rate_limited / etc.
+   - `actorNurseId`: set on success (null on failed/unknown-account attempts — column is nullable)
+   - `ipAddress`, `userAgent`; attempted email (masked) in `metadata`
+2. Call it from the login, logout, and update-password routes. Keep the existing `console.info` line too if you still want it for live tailing — it's the *durability* that was missing, not the log line.
+3. Confirm `audit_events` retention itself meets your compliance window (it's the long-lived record now); it is **not** touched by `cleanupAuthSessions`.
+
+> Out of scope but adjacent: shipping a Vercel **Log Drain** to an external SIEM would also satisfy "retained sink." Persisting to `audit_events` is the lower-effort path since the table + writer already exist.
+
+### Phase 4 — Tighten retention (depends on Phase 3 + cron running)
+
+Only after Phase 3 lands (auth history is durable) **and** the cleanup cron is confirmed running (the `CRON_SECRET` fix — a 401 cron deletes nothing):
+
+1. Lower the `cleanupAuthSessions` default `revokedRetentionDays` from 30 → **14** ([sessionRepository.ts:97](backend/src/lib/auth/sessionRepository.ts#L97)). Expired rows are already purged immediately; this only shortens how long *revoked* rows linger. `SESSION_CLEANUP_REVOKED_RETENTION_DAYS` env override stays.
+2. Rationale: once login forensics live in `audit_events`, session rows carry no unique evidence, so a shorter window is pure data-minimization upside (less stale IP/device PII in the hot table).
 
 ## Risks / edge cases
 
@@ -74,11 +94,25 @@ This plan adds a **dual timeout** (sliding idle + absolute cap), **sibling-sessi
   - Idle expiry: a session with `expiresAt < now` is rejected by `findValidSessionWithNurse`.
   - `revokeOtherAuthSessionsForNurse`: revokes siblings, **preserves** the current session, ignores already-revoked rows.
   - update-password route: asserts sibling revocation is invoked with `(nurseId, currentSessionId)` after a successful change; not invoked on a wrong-current-password 403.
-  - Retention default = 14 in `cleanupAuthSessions`.
+  - **Phase 3:** login/logout/password-change routes write an `audit_events` row with the expected `action`/`outcome`/`actorNurseId` (mock the `logAuditEvent` writer and assert the payload; failed-login case has null `actorNurseId`).
+  - **Phase 4:** retention default = 14 in `cleanupAuthSessions`.
 - **Manual e2e (preview):** log in on two browsers → change password on one → the other gets 401 on its next call. Leave a session idle past 30 min → next request 401. Keep clicking for >12 h (or temporarily shrink the absolute constant in a test) → forced re-login at the cap.
 - **Pre-push (mandatory):** from `frontend/` run `npm run lint` and `npm run test`; from `backend/` run `npm run lint` (eslint + es-compat — avoid `Array/String.includes`, use `.some`/`.indexOf`) and `vitest run`.
 
-## Rollout
+## Rollout & dependencies
 
-- No DB migration. Ship Phases 1–2 together; Phase 3 only after the audit-log sink is confirmed and the session-cleanup cron is verified running (200, not 401).
-- Tunable later via the new constants (idle 15–30 min, absolute 8–12 h) without schema changes.
+Ordering (Phases 1, 2, 3 are independent of each other; **Phase 4 depends on Phase 3 + the cron**):
+
+```
+Phase 1  idle/absolute timeout          ─┐
+Phase 2  sibling revocation             ─┤ independent, ship anytime
+Phase 3  persist auth events → audit_events ─┘
+                                              │
+CRON_SECRET fix (done, deploying) ────────────┤
+                                              ▼
+Phase 4  shorten retention 30 → 14   (only after Phase 3 AND a 200 cron run)
+```
+
+- **No DB migration** anywhere: `auth_sessions` columns all exist (Phases 1, 2, 4) and `audit_events` already exists (Phase 3).
+- Suggested shipping order: Phases 1+2 together (the security wins), then Phase 3, then Phase 4 once the cron is verified `200`.
+- Timeouts are tunable later via the new constants (idle 15–30 min, absolute 8–12 h) without schema changes.
