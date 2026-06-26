@@ -9,18 +9,37 @@ vi.mock("../routing", () => ({
   buildDrivingRoute: vi.fn(),
 }));
 
-vi.mock("../v2/travelMatrix", () => ({
+vi.mock("./travelMatrix", () => ({
   buildPlanningTravelDurationMatrix: vi.fn(),
 }));
 
 import { geocodeTargetsSequentially } from "../geocoding";
 import { buildDrivingRoute } from "../routing";
-import { buildPlanningTravelDurationMatrix } from "../v2/travelMatrix";
-import { optimizeRouteV2 } from "../v2/optimizeRouteService";
+import { buildPlanningTravelDurationMatrix } from "./travelMatrix";
 import {
+  __groupVisitsIntoStops,
   __shouldFallbackDistanceToTimeForFixedSafety,
   optimizeRouteV3,
 } from "./optimizeRouteService";
+
+type GroupingVisit = Parameters<typeof __groupVisitsIntoStops>[0][number];
+
+const makeGroupingVisit = (
+  overrides: Pick<GroupingVisit, "visitId" | "address" | "locationKey" | "windowType"> &
+    Partial<GroupingVisit>,
+): GroupingVisit => ({
+  patientId: `patient-${overrides.visitId}`,
+  patientName: `Patient ${overrides.visitId}`,
+  googlePlaceId: null,
+  windowStart: "",
+  windowEnd: "",
+  serviceDurationMinutes: 15,
+  coords: { lat: 43.7, lon: -79.7 },
+  hasPreferredWindow: overrides.windowType === "fixed",
+  windowStartSeconds: 0,
+  windowEndSeconds: 0,
+  ...overrides,
+});
 
 const mockedGeocodeTargetsSequentially = vi.mocked(geocodeTargetsSequentially);
 const mockedBuildDrivingRoute = vi.mocked(buildDrivingRoute);
@@ -475,18 +494,16 @@ describe("optimizeRouteV3 service", () => {
       ],
     };
 
-    const v2Result = await optimizeRouteV2(request, "google-key");
     const v3Result = await optimizeRouteV3(request, "google-key");
-    const v2Order = v2Result.orderedStops
-      .filter((stop) => !stop.isEndingPoint)
-      .map((stop) => stop.address);
     const v3Order = v3Result.orderedStops
       .filter((stop) => !stop.isEndingPoint)
       .map((stop) => stop.address);
 
-    expect(v2Order).toEqual(["B", "D", "A", "C"]);
+    // Baseline ordering the legacy greedy seed produced for this matrix; the ILS
+    // refinement must beat its route cost.
+    const legacySeedOrder = ["B", "D", "A", "C"];
     expect(v3Order).toEqual(["D", "A", "C", "B"]);
-    expect(routeCost(v3Order, matrix)).toBeLessThan(routeCost(v2Order, matrix));
+    expect(routeCost(v3Order, matrix)).toBeLessThan(routeCost(legacySeedOrder, matrix));
   });
 
   it("logs seed versus ILS diagnostics when shadow comparison is enabled", async () => {
@@ -2348,7 +2365,7 @@ describe("optimizeRouteV3 service", () => {
     });
   });
 
-  it("groups consecutive same-location visits into one stop and returns metrics", async () => {
+  it("groups consecutive same-location flexible visits into one stop and returns metrics", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
       { address: "Shared Address", coords: { lat: 43.7, lon: -79.7 } },
@@ -2370,23 +2387,23 @@ describe("optimizeRouteV3 service", () => {
         },
         visits: [
           {
-            visitId: "fixed-am",
+            visitId: "flex-am",
             patientId: "patient-1",
             patientName: "Yasmin Ramji",
             address: "Shared Address",
             windowStart: "08:30",
             windowEnd: "09:00",
-            windowType: "fixed",
+            windowType: "flexible",
             serviceDurationMinutes: 20,
           },
           {
-            visitId: "fixed-pm",
+            visitId: "flex-pm",
             patientId: "patient-2",
             patientName: "Hassan Ramji",
             address: "Shared Address",
             windowStart: "09:30",
             windowEnd: "10:00",
-            windowType: "fixed",
+            windowType: "flexible",
             serviceDurationMinutes: 20,
           },
         ],
@@ -2397,8 +2414,8 @@ describe("optimizeRouteV3 service", () => {
     expect(result.algorithmVersion).toBe("v3.0.0-ils-seeded");
     expect(result.orderedStops).toHaveLength(2);
     expect(result.orderedStops[0].tasks).toHaveLength(2);
-    expect(result.orderedStops[0].tasks[0].visitId).toBe("fixed-am");
-    expect(result.orderedStops[0].tasks[1].visitId).toBe("fixed-pm");
+    expect(result.orderedStops[0].tasks[0].visitId).toBe("flex-am");
+    expect(result.orderedStops[0].tasks[1].visitId).toBe("flex-pm");
     expect(result.orderedStops[1].isEndingPoint).toBe(true);
     expect(result.routeLegs[0]).toMatchObject({
       fromStopId: "start",
@@ -4524,7 +4541,6 @@ describe("optimizeRouteV3 service", () => {
       optimizationObjective: "time" as const,
     };
 
-    const v2Result = await optimizeRouteV2(request, "google-key");
     const v3Result = await optimizeRouteV3(request, "google-key");
     const v3Order = v3Result.orderedStops
       .filter((stop) => !stop.isEndingPoint)
@@ -4535,8 +4551,8 @@ describe("optimizeRouteV3 service", () => {
     expect(nasimIndex).toBeGreaterThan(-1);
     expect(ianIndex).toBeGreaterThan(-1);
     expect(nasimIndex).toBeLessThan(ianIndex);
+    // v3 eliminates the late flexible-window penalty entirely.
     expect(v3Result.metrics.totalLateSeconds).toBe(0);
-    expect(v3Result.metrics.totalLateSeconds).toBeLessThan(v2Result.metrics.totalLateSeconds);
   });
 
   it("matches the amended Mississauga sequence through Cheryl and keeps the Ian tail aligned", async () => {
@@ -5320,6 +5336,88 @@ describe("optimizeRouteV3 service", () => {
     ).rejects.toMatchObject({
       status: 400,
       message: "planningDate must be a valid calendar date.",
+    });
+  });
+
+  describe("groupVisitsIntoStops", () => {
+    const end = { address: "End", coords: { lat: 43.8, lon: -79.8 } };
+
+    it("keeps two fixed windows at the same address as separate, individually-movable stops", () => {
+      const stops = __groupVisitsIntoStops(
+        [
+          makeGroupingVisit({
+            visitId: "yasmin-am",
+            address: "100 Main St",
+            locationKey: "address:100 main st",
+            windowType: "fixed",
+            windowStart: "08:40",
+            windowEnd: "08:55",
+          }),
+          makeGroupingVisit({
+            visitId: "yasmin-pm",
+            address: "100 Main St",
+            locationKey: "address:100 main st",
+            windowType: "fixed",
+            windowStart: "10:45",
+            windowEnd: "11:00",
+          }),
+        ],
+        end,
+      );
+
+      const visitStops = stops.filter((stop) => !stop.isEndingPoint);
+      expect(visitStops).toHaveLength(2);
+      expect(visitStops.every((stop) => stop.tasks.length === 1)).toBe(true);
+      expect(visitStops.map((stop) => stop.tasks[0]?.visitId)).toEqual(["yasmin-am", "yasmin-pm"]);
+    });
+
+    it("still groups consecutive flexible visits at the same address into one stop", () => {
+      const stops = __groupVisitsIntoStops(
+        [
+          makeGroupingVisit({
+            visitId: "flex-a",
+            address: "100 Main St",
+            locationKey: "address:100 main st",
+            windowType: "flexible",
+          }),
+          makeGroupingVisit({
+            visitId: "flex-b",
+            address: "100 Main St",
+            locationKey: "address:100 main st",
+            windowType: "flexible",
+          }),
+        ],
+        end,
+      );
+
+      const visitStops = stops.filter((stop) => !stop.isEndingPoint);
+      expect(visitStops).toHaveLength(1);
+      expect(visitStops[0]?.tasks.map((task) => task.visitId)).toEqual(["flex-a", "flex-b"]);
+    });
+
+    it("does not merge a flexible visit into a stop that already holds a fixed appointment", () => {
+      const stops = __groupVisitsIntoStops(
+        [
+          makeGroupingVisit({
+            visitId: "fixed-first",
+            address: "100 Main St",
+            locationKey: "address:100 main st",
+            windowType: "fixed",
+            windowStart: "08:40",
+            windowEnd: "08:55",
+          }),
+          makeGroupingVisit({
+            visitId: "flex-second",
+            address: "100 Main St",
+            locationKey: "address:100 main st",
+            windowType: "flexible",
+          }),
+        ],
+        end,
+      );
+
+      const visitStops = stops.filter((stop) => !stop.isEndingPoint);
+      expect(visitStops).toHaveLength(2);
     });
   });
 });

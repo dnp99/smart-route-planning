@@ -288,6 +288,123 @@ describe("useManualReorder", () => {
     expect(stopEndArrivalMs).toBeGreaterThan(task2EndMs);
   });
 
+  it("moves another client between two fixed-window stops at the same address", () => {
+    // Regression: the backend now emits two same-address fixed appointments as
+    // separate stops, so a third client can be reordered to land between them.
+    const result = buildResult({
+      orderedStops: [
+        {
+          stopId: "stop-fixed-am",
+          address: "Shared Address",
+          coords: { lat: 43.7, lon: -79.7 },
+          arrivalTime: "2026-03-21T08:40:00-04:00",
+          departureTime: "2026-03-21T08:55:00-04:00",
+          tasks: [
+            {
+              visitId: "yasmin-am",
+              patientId: "patient-1",
+              patientName: "Yasmin Ramji",
+              address: "Shared Address",
+              windowStart: "08:40",
+              windowEnd: "08:55",
+              windowType: "fixed",
+              serviceDurationMinutes: 15,
+              arrivalTime: "2026-03-21T08:40:00-04:00",
+              serviceStartTime: "2026-03-21T08:40:00-04:00",
+              serviceEndTime: "2026-03-21T08:55:00-04:00",
+              waitSeconds: 0,
+              lateBySeconds: 0,
+              onTime: true,
+            },
+          ],
+          distanceFromPreviousKm: 5,
+          durationFromPreviousSeconds: 1200,
+        },
+        {
+          stopId: "stop-fixed-pm",
+          address: "Shared Address",
+          coords: { lat: 43.7, lon: -79.7 },
+          arrivalTime: "2026-03-21T10:45:00-04:00",
+          departureTime: "2026-03-21T11:00:00-04:00",
+          tasks: [
+            {
+              visitId: "yasmin-pm",
+              patientId: "patient-1",
+              patientName: "Yasmin Ramji",
+              address: "Shared Address",
+              windowStart: "10:45",
+              windowEnd: "11:00",
+              windowType: "fixed",
+              serviceDurationMinutes: 15,
+              arrivalTime: "2026-03-21T10:45:00-04:00",
+              serviceStartTime: "2026-03-21T10:45:00-04:00",
+              serviceEndTime: "2026-03-21T11:00:00-04:00",
+              waitSeconds: 0,
+              lateBySeconds: 0,
+              onTime: true,
+            },
+          ],
+          distanceFromPreviousKm: 0,
+          durationFromPreviousSeconds: 0,
+        },
+        {
+          stopId: "stop-other",
+          address: "Yousra Address",
+          coords: { lat: 43.68, lon: -79.68 },
+          arrivalTime: "2026-03-21T11:06:00-04:00",
+          departureTime: "2026-03-21T11:26:00-04:00",
+          tasks: [
+            {
+              visitId: "yousra",
+              patientId: "patient-2",
+              patientName: "Yousra T N Abbud",
+              address: "Yousra Address",
+              windowStart: "",
+              windowEnd: "",
+              windowType: "flexible",
+              serviceDurationMinutes: 20,
+              arrivalTime: "2026-03-21T11:06:00-04:00",
+              serviceStartTime: "2026-03-21T11:06:00-04:00",
+              serviceEndTime: "2026-03-21T11:26:00-04:00",
+              waitSeconds: 0,
+              lateBySeconds: 0,
+              onTime: true,
+            },
+          ],
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 600,
+        },
+        {
+          stopId: "stop-end",
+          address: "End",
+          coords: { lat: 43.72, lon: -79.72 },
+          arrivalTime: "2026-03-21T11:40:00-04:00",
+          departureTime: "2026-03-21T11:40:00-04:00",
+          tasks: [],
+          distanceFromPreviousKm: 2.5,
+          durationFromPreviousSeconds: 900,
+          isEndingPoint: true,
+        },
+      ],
+    });
+
+    const { result: hookResult } = renderHook(() => useManualReorder(result));
+
+    // The third client sits after both fixed stops and can move up between them.
+    expect(hookResult.current.canMoveStop("stop-other", "up")).toBe(true);
+
+    act(() => {
+      hookResult.current.moveStop("stop-other", "up");
+    });
+
+    expect(hookResult.current.orderedStops.map((stop) => stop.stopId)).toEqual([
+      "stop-fixed-am",
+      "stop-other",
+      "stop-fixed-pm",
+      "stop-end",
+    ]);
+  });
+
   it("advances cursor past a no-coords stop so subsequent arrival times are later", () => {
     // Setup: [stop-1 (coords), stop-no-coords (no coords, 600s leg), stop-3 (coords), stop-end (coords)]
     // After moving stop-3 up: [stop-1, stop-3, stop-no-coords, stop-end]

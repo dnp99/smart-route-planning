@@ -4,8 +4,7 @@ This folder contains the Next.js backend for CareFlow.
 
 ## Responsibilities
 
-- Expose `POST /api/optimize-route/v3` for the current production route optimization flow.
-- Keep `POST /api/optimize-route/v2` available as a legacy compatibility / rollback path.
+- Expose `POST /api/optimize-route/v3` for route optimization.
 - Expose `GET /api/address-autocomplete` for address suggestions.
 - Expose auth endpoints for signup, login, logout, current-user identity, and password updates.
 - Manage client (patient) records and visit windows.
@@ -77,7 +76,7 @@ Production/runtime behavior:
   - Optional but recommended contact email used in fallback Nominatim geocoding requests.
   - Example: `you@example.com`.
 - `OPTIMIZE_ROUTE_API_KEY`
-  - Optional shared secret for `POST /api/optimize-route/v2` and `POST /api/optimize-route/v3`.
+  - Optional shared secret for `POST /api/optimize-route/v3`.
   - When set, requests must include header `x-optimize-route-key`.
 - `OPTIMIZE_ROUTE_RATE_LIMIT_MAX_REQUESTS`
   - Optional.
@@ -211,13 +210,8 @@ Authentication behavior:
 
 - `POST /api/optimize-route/v3`
   - Requires authenticated session
-  - Current production optimizer endpoint
-  - Same request/response contract as `v2`
+  - Route optimizer endpoint (greedy seed + seeded ILS)
   - Enforces per-client in-memory rate limiting and optional API-key protection
-- `POST /api/optimize-route/v2`
-  - Requires authenticated session
-  - Legacy compatibility / rollback endpoint
-  - Enforces the same API-key and per-client rate-limit rules as `v3`
 
 ### Recurring visit templates
 
@@ -298,7 +292,7 @@ Routefy uses process-local in-memory caches for expensive routing dependencies:
   - Max entries: 5000
   - Keys: normalized address and (when available) Google Place ID
   - Includes in-flight dedupe so concurrent requests for the same target share one upstream call
-- Travel matrix cache (`src/app/api/optimize-route/v2/travelMatrix.ts`)
+- Travel matrix cache (`src/app/api/optimize-route/v3/travelMatrix.ts`)
   - TTL: 10 minutes
   - Max entries: 500
   - Key: normalized set of nodes (location key + rounded coordinates)
@@ -385,12 +379,11 @@ The optimizer returns an optional `warnings[]` array:
 
 ## Key files
 
-- `src/app/api/optimize-route/v3/optimizeRouteService.ts` — production scheduling algorithm (greedy seed + seeded ILS)
-- `src/app/api/optimize-route/v3/route.ts` — v3 endpoint wiring
-- `src/app/api/optimize-route/v2/optimizeRouteService.ts` — legacy scheduling algorithm
-- `src/app/api/optimize-route/v2/travelMatrix.ts` — Google Routes travel duration matrix
-- `src/app/api/optimize-route/v2/validation.ts` — request validation
-- `src/app/api/optimize-route/v2/types.ts` — internal types
+- `src/app/api/optimize-route/v3/optimizeRouteService.ts` — scheduling algorithm (greedy seed + seeded ILS)
+- `src/app/api/optimize-route/v3/route.ts` — endpoint wiring
+- `src/app/api/optimize-route/v3/travelMatrix.ts` — Google Routes travel duration matrix
+- `src/app/api/optimize-route/v3/validation.ts` — request validation
+- `src/app/api/optimize-route/v3/types.ts` — internal types
 - `src/app/api/address-autocomplete/route.ts`
 - `src/app/api/patients/route.ts`
 - `src/app/api/patients/[id]/route.ts`

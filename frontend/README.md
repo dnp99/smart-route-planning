@@ -53,12 +53,8 @@ If neither is provided:
 - local hosts (`localhost`, `127.0.0.1`, `::1`) default to `http://localhost:3000`,
 - non-local hosts default to same-origin (`""`), which works with the `/api/*` rewrite.
 
-Route optimizer engine selection is controlled by `VITE_ENABLE_ILS_OPTIMIZER`:
-
-- `true`: calls `POST /api/optimize-route/v3` (current production endpoint)
-- unset / `false`: calls `POST /api/optimize-route/v2` (legacy fallback)
-
-The `v3` path keeps the same response contract as `v2`.
+The route optimizer always calls `POST /api/optimize-route/v3`. The legacy `v2`
+engine and the `VITE_ENABLE_ILS_OPTIMIZER` flag have been removed.
 
 ## PHI policy (frontend)
 

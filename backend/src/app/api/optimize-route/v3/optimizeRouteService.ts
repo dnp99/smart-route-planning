@@ -12,13 +12,13 @@ import type {
   TaskResultV2,
   UnscheduledTaskV2,
   VisitV2,
-} from "../v2/types";
-import type { ValidatedOptimizeRouteV2Request } from "../v2/validation";
+} from "./types";
+import type { ValidatedOptimizeRouteV2Request } from "./validation";
 import {
   buildPlanningTravelDurationMatrix,
   type TravelDurationMatrix,
   type TravelMatrixNode,
-} from "../v2/travelMatrix";
+} from "./travelMatrix";
 
 const ALGORITHM_VERSION = "v3.0.0-ils-seeded";
 const FIXED_LATE_TOLERANCE_SECONDS = 15 * 60;
@@ -235,10 +235,21 @@ const groupVisitsIntoStops = (
   end: GeocodeTarget & { coords: LatLng },
 ) => {
   const stops: PlannedStop[] = [];
+  const isFixedWindowVisit = (visit: VisitWithCoords) => visit.windowType === "fixed";
 
   orderedVisits.forEach((visit) => {
     const previous = stops[stops.length - 1];
-    if (previous && previous.locationKey === visit.locationKey) {
+    // Merge consecutive same-location visits into one stop, EXCEPT when a fixed
+    // appointment is involved. Two fixed windows for the same address (e.g. 08:40
+    // and 10:45) are distinct appointments the user must be able to reorder
+    // independently — fusing them into one atomic stop makes it impossible to
+    // insert another client between them in the manual-reorder UI.
+    const canMergeIntoPrevious =
+      previous &&
+      previous.locationKey === visit.locationKey &&
+      !isFixedWindowVisit(visit) &&
+      !previous.tasks.some(isFixedWindowVisit);
+    if (canMergeIntoPrevious) {
       previous.tasks.push(visit);
       return;
     }
@@ -270,6 +281,9 @@ const groupVisitsIntoStops = (
 
   return stops;
 };
+
+/** @internal Exposed for unit tests only. */
+export const __groupVisitsIntoStops = groupVisitsIntoStops;
 
 const toIsoFromLocalSeconds = (
   localSeconds: number,
