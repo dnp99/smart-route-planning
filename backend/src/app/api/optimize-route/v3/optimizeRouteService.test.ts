@@ -193,6 +193,124 @@ describe("optimizeRouteV3 service", () => {
     vi.unstubAllEnvs();
   });
 
+  it("fills the idle gap between two same-address fixed windows with nearby flexible visits", async () => {
+    // Same client with fixed windows at 08:40 and 10:45, plus three nearby
+    // no-window clients. The route must serve the flexible visits during the
+    // ~2h gap instead of idling at the fixed location the whole time.
+    // unique target order: start, Yasmin(FP), Yousra(Chalfont), Miriam(GlenErin), Tracy(Ponderosa)
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      {
+        address: "44 Nineteenth Street, Etobicoke, ON",
+        coords: { lat: 43.6002405, lon: -79.5191135 },
+      },
+      {
+        address: "6931 Forest Park Drive, Mississauga, ON",
+        coords: { lat: 43.5802635, lon: -79.7768111 },
+      },
+      {
+        address: "5860 Chalfont Crescent, Mississauga, ON",
+        coords: { lat: 43.5652414, lon: -79.7465538 },
+      },
+      {
+        address: "6779 Glen Erin Drive, Mississauga, ON",
+        coords: { lat: 43.5881166, lon: -79.7597186 },
+      },
+      {
+        address: "3899 Ponderosa Lane, Mississauga, ON",
+        coords: { lat: 43.5672779, lon: -79.7709929 },
+      },
+    ]);
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-06-26",
+        timezone: "America/Toronto",
+        start: { address: "44 Nineteenth Street, Etobicoke, ON" },
+        end: { address: "44 Nineteenth Street, Etobicoke, ON" },
+        visits: [
+          {
+            visitId: "yasmin-am",
+            patientId: "y",
+            patientName: "Yasmin Ramji",
+            address: "6931 Forest Park Drive, Mississauga, ON",
+            googlePlaceId: "place-fp",
+            windowStart: "08:40",
+            windowEnd: "08:55",
+            windowType: "fixed",
+            serviceDurationMinutes: 15,
+          },
+          {
+            visitId: "yasmin-pm",
+            patientId: "y",
+            patientName: "Yasmin Ramji",
+            address: "6931 Forest Park Drive, Mississauga, ON",
+            googlePlaceId: "place-fp",
+            windowStart: "10:45",
+            windowEnd: "11:00",
+            windowType: "fixed",
+            serviceDurationMinutes: 15,
+          },
+          {
+            visitId: "yousra",
+            patientId: "yo",
+            patientName: "Yousra T N Abbud",
+            address: "5860 Chalfont Crescent, Mississauga, ON",
+            googlePlaceId: "place-ch",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "miriam",
+            patientId: "m",
+            patientName: "Miriam Abu-halimeh",
+            address: "6779 Glen Erin Drive, Mississauga, ON",
+            googlePlaceId: "place-ge",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "tracy",
+            patientId: "t",
+            patientName: "Tracy Cantin",
+            address: "3899 Ponderosa Lane, Mississauga, ON",
+            googlePlaceId: "place-pl",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+        ],
+        nurseWorkingHours: { workStart: "09:00", workEnd: "17:00" },
+        optimizationObjective: "time",
+      },
+      "google-key",
+    );
+
+    const visitOrder = result.orderedStops
+      .filter((stop) => !stop.isEndingPoint)
+      .map((stop) => stop.tasks[0]?.visitId ?? "");
+    const firstFixedIndex = visitOrder.indexOf("yasmin-am");
+    const secondFixedIndex = visitOrder.indexOf("yasmin-pm");
+
+    // The two fixed visits must not be adjacent — flexible visits fill the gap.
+    expect(firstFixedIndex).toBeGreaterThanOrEqual(0);
+    expect(secondFixedIndex).toBeGreaterThan(firstFixedIndex + 1);
+    const between = visitOrder.slice(firstFixedIndex + 1, secondFixedIndex);
+    expect(between).toEqual(expect.arrayContaining(["tracy", "miriam", "yousra"]));
+
+    // No fixed window is missed, and the wasteful ~2h idle block is eliminated.
+    expect(result.metrics.totalLateSeconds).toBe(0);
+    expect(result.metrics.fixedWindowViolations).toBe(0);
+    expect(result.metrics.totalWaitSeconds).toBeLessThan(6000);
+  });
+
   it("falls back from distance to time benchmark when distance has more fixed-window misses", () => {
     expect(
       __shouldFallbackDistanceToTimeForFixedSafety(
