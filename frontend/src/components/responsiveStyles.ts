@@ -158,7 +158,7 @@ export const responsiveStyles = {
   dateInputTrigger:
     "flex items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-1 ring-blue-100 transition hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-blue-800 dark:bg-slate-900 dark:text-slate-100 dark:ring-blue-900/40 cursor-pointer",
   dateInputTriggerCompact:
-    "flex w-36 shrink-0 items-center gap-2 rounded-xl border border-blue-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none ring-1 ring-blue-100 transition hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-blue-800 dark:bg-slate-900 dark:text-slate-100 dark:ring-blue-900/40 cursor-pointer",
+    "flex shrink-0 items-center gap-2.5 rounded-xl border border-blue-200 bg-white px-4 py-2.5 text-sm outline-none transition hover:border-blue-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-blue-800 dark:bg-slate-900 cursor-pointer",
   calendarPopover:
     "absolute z-50 mt-1 rounded-xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-700 dark:bg-slate-900",
   calendarNav: "flex items-center justify-between pb-2",
@@ -471,6 +471,23 @@ export const responsiveStyles = {
     "inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-blue-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-blue-300 dark:hover:bg-slate-800",
   mobileDeleteButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
+  // Route planner: trip-setup bookend (START → N stops rail → END)
+  tripBookendRow: "flex items-center gap-4",
+  tripStartMarker:
+    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300",
+  tripEndMarker:
+    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-300",
+  tripStartLabel:
+    "m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-600 dark:text-emerald-400",
+  tripEndLabel:
+    "m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-blue-700 dark:text-blue-300",
+  tripAddressPrimary: "m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100",
+  tripAddressSecondary: "m-0 truncate text-xs text-slate-400 dark:text-slate-500",
+  tripStopsPill:
+    "inline-flex shrink-0 items-center gap-1.5 rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-950/40 dark:text-blue-300",
+  tripRailDashed: "h-px flex-1 border-t border-dashed border-slate-300 dark:border-slate-700",
+  tripEditButton:
+    "inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-medium text-blue-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-blue-300 dark:hover:bg-slate-800",
   dashboardNudgeCard:
     "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
   dashboardAlertItem:

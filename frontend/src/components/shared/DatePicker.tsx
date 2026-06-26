@@ -180,7 +180,7 @@ export const DatePicker = ({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="shrink-0 text-slate-400"
+          className={`shrink-0 ${compact ? "text-blue-600 dark:text-blue-400" : "text-slate-400"}`}
           aria-hidden="true"
         >
           <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
@@ -188,7 +188,17 @@ export const DatePicker = ({
           <line x1="8" y1="2" x2="8" y2="6" />
           <line x1="3" y1="10" x2="21" y2="10" />
         </svg>
-        <span className={value ? "text-slate-900 dark:text-slate-100" : "text-slate-400"}>
+        <span
+          className={
+            compact
+              ? value
+                ? "font-semibold text-blue-900 dark:text-blue-200"
+                : "text-slate-400"
+              : value
+                ? "text-slate-900 dark:text-slate-100"
+                : "text-slate-400"
+          }
+        >
           {value ? formatDisplay(value) : "Select date"}
         </span>
       </button>
