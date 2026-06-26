@@ -157,7 +157,7 @@ const seedAuthenticatedSession = (displayName = "Nurse One", homeAddress: string
 };
 
 const waitForPatientsPage = async () => {
-  await screen.findByRole("heading", { name: /^Clients \(\d+\)$/ });
+  await screen.findByRole("heading", { name: /^Clients \d+( of \d+)?$/ });
 };
 
 describe("Footer", () => {

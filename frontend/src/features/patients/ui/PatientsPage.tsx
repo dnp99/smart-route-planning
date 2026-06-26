@@ -25,6 +25,7 @@ import {
   validateForm,
 } from "../domain/patientForm";
 import { useClientStats } from "../hooks/useClientStats";
+import type { WindowFilter } from "../domain/visitType";
 import { createPatient, deletePatient, listPatients, updatePatient } from "../api/patientService";
 import {
   createRecurringVisitTemplate,
@@ -53,6 +54,7 @@ const PlusIcon = ({ className }: { className?: string }) => (
 const PatientsPage = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const clientStats = useClientStats(patients);
+  const [windowFilter, setWindowFilter] = useState<WindowFilter>("all");
   const [totalPatientCount, setTotalPatientCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingPatients, setIsLoadingPatients] = useState(true);
@@ -412,9 +414,12 @@ const PatientsPage = () => {
         <div className={responsiveStyles.sectionHeader}>
           <div className="flex items-start justify-between gap-3">
             <h1 className="m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-              {searchQuery.trim() || hasTemplateFilter
-                ? `Clients (${patients.length} of ${totalPatientCount})`
-                : `Clients (${patients.length})`}
+              Clients{" "}
+              <span className={responsiveStyles.clientsTitleCount}>
+                {searchQuery.trim() || hasTemplateFilter
+                  ? `${patients.length} of ${totalPatientCount}`
+                  : patients.length}
+              </span>
             </h1>
             <button
               type="button"
@@ -562,6 +567,28 @@ const PatientsPage = () => {
               )}
             </div>
 
+            <div
+              className={responsiveStyles.clientFilterToggle}
+              role="group"
+              aria-label="Filter clients by window type"
+            >
+              {(["all", "fixed", "flexible"] as const).map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setWindowFilter(filter)}
+                  aria-pressed={windowFilter === filter}
+                  className={`${responsiveStyles.clientFilterOption} ${
+                    windowFilter === filter
+                      ? responsiveStyles.clientFilterOptionActive
+                      : responsiveStyles.clientFilterOptionInactive
+                  }`}
+                >
+                  {filter === "all" ? "All" : filter === "fixed" ? "Fixed" : "Flexible"}
+                </button>
+              ))}
+            </div>
+
             <button
               type="button"
               onClick={openCreateModal}
@@ -577,6 +604,8 @@ const PatientsPage = () => {
             isSubmitting={isSubmitting}
             patients={patients}
             searchQuery={searchQuery}
+            windowFilter={windowFilter}
+            onWindowFilterChange={setWindowFilter}
             onDelete={handleDelete}
             onEdit={openEditModal}
             recurringTemplatesByPatientId={recurringTemplatesByPatientId}

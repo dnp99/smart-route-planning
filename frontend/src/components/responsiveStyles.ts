@@ -442,6 +442,22 @@ export const responsiveStyles = {
   clientStatValueFlexible:
     "m-0 mt-2 text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-300",
   clientStatValueSuffix: "ml-1 text-sm font-normal text-slate-500 dark:text-slate-400",
+  // ── Clients page: title count, window filter, table avatar + repeat ──────────
+  clientsTitleCount: "font-semibold text-slate-400 dark:text-slate-500",
+  clientFilterToggle:
+    "hidden shrink-0 items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800 md:inline-flex",
+  clientFilterOption:
+    "rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
+  clientFilterOptionActive:
+    "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100",
+  clientFilterOptionInactive:
+    "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
+  clientAvatar:
+    "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold uppercase text-blue-700 dark:bg-blue-950/50 dark:text-blue-200",
+  repeatIconActive: "h-5 w-5 text-blue-600 dark:text-blue-300",
+  repeatIconMuted: "h-5 w-5 text-slate-300 dark:text-slate-600",
+  repeatCountBadge:
+    "absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold leading-none text-white dark:bg-blue-500",
   dashboardNudgeCard:
     "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
   dashboardAlertItem:
@@ -488,9 +504,9 @@ export const responsiveStyles = {
   tableEmptyState:
     "rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
   tableIconButton:
-    "inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200",
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200",
   tableIconButtonDestructive:
-    "inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
 
   // ── Dropdown menus ────────────────────────────────────────────────────────
   dropdownMenu:

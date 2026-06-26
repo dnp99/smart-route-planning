@@ -2,6 +2,9 @@ import type { Patient } from "../../../../../shared/contracts";
 
 export type VisitTypeLabel = "fixed" | "flexible" | "mixed";
 
+/** Window filter selection for the clients list (All / Fixed / Flexible). */
+export type WindowFilter = "all" | "fixed" | "flexible";
+
 /**
  * Classifies a client as fixed / flexible / mixed from its visit windows
  * (falling back to the legacy `visitTimeType` when no windows are present).
