@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { AddressSuggestion } from "../types";
 import { parseAddressAutocompleteResponse } from "../../../../shared/contracts";
 import { requestAuthedJson } from "../auth/authFetch";
+import { responsiveStyles } from "../responsiveStyles";
 
 type AddressAutocompleteInputProps = {
   id: string;
@@ -134,14 +135,16 @@ function AddressAutocompleteInput({
 
   return (
     <div className="grid gap-1">
-      <label htmlFor={id} className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-        <span>{label}</span>
+      <div className="flex items-center gap-1">
+        <label htmlFor={id} className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+          {label}
+        </label>
         {required && (
-          <span className="ml-2 rounded-full bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-300">
-            Required
+          <span className={responsiveStyles.requiredAsterisk} aria-hidden="true">
+            *
           </span>
         )}
-      </label>
+      </div>
       <div className="relative w-full">
         <input
           id={id}
