@@ -18,8 +18,15 @@ const parsePositiveInteger = (rawValue: string | undefined, fallback: number) =>
 };
 
 const requireCleanupSecret = (request: Request) => {
-  const expectedSecret = process.env.SESSION_CLEANUP_CRON_SECRET?.trim();
-  if (!expectedSecret) {
+  // Accept the dedicated secret OR Vercel's native CRON_SECRET. Vercel Cron only
+  // attaches `Authorization: Bearer <CRON_SECRET>` to its invocations when a
+  // CRON_SECRET env var is set, so without this the scheduled cron 401s and the
+  // cleanup never runs.
+  const configuredSecrets = [process.env.SESSION_CLEANUP_CRON_SECRET, process.env.CRON_SECRET]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+
+  if (configuredSecrets.length === 0) {
     throw new HttpError(503, "Session cleanup is not configured.");
   }
 
@@ -30,7 +37,8 @@ const requireCleanupSecret = (request: Request) => {
   const fallbackHeader = request.headers.get("x-session-cleanup-key")?.trim();
   const providedSecret = bearerToken || fallbackHeader;
 
-  if (!providedSecret || providedSecret !== expectedSecret) {
+  const matchesConfiguredSecret = configuredSecrets.some((secret) => secret === providedSecret);
+  if (!providedSecret || !matchesConfiguredSecret) {
     throw new HttpError(401, "Unauthorized.");
   }
 };

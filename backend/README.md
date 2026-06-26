@@ -89,6 +89,7 @@ Production/runtime behavior:
 - `SESSION_CLEANUP_CRON_SECRET`
   - Required in production when running scheduled session cleanup.
   - Secret used by `GET/POST /api/internal/session-cleanup` via `Authorization: Bearer <secret>` (or `x-session-cleanup-key`).
+  - On Vercel you can instead set `CRON_SECRET` (the route accepts it too); Vercel Cron auto-sends it as `Authorization: Bearer <CRON_SECRET>`, so the scheduled job in `vercel.json` authenticates without extra config.
 - `SESSION_CLEANUP_REVOKED_RETENTION_DAYS`
   - Optional.
   - Number of days to keep revoked sessions before cleanup deletes them.

@@ -12,10 +12,12 @@ import { GET, POST } from "./route";
 
 describe("/api/internal/session-cleanup route", () => {
   const originalSecret = process.env.SESSION_CLEANUP_CRON_SECRET;
+  const originalCronSecret = process.env.CRON_SECRET;
   const originalRetentionDays = process.env.SESSION_CLEANUP_REVOKED_RETENTION_DAYS;
 
   beforeEach(() => {
     process.env.SESSION_CLEANUP_CRON_SECRET = "cleanup-secret";
+    delete process.env.CRON_SECRET;
     delete process.env.SESSION_CLEANUP_REVOKED_RETENTION_DAYS;
     cleanupAuthSessionsMock.mockReset();
     cleanupAuthSessionsMock.mockResolvedValue({
@@ -30,6 +32,12 @@ describe("/api/internal/session-cleanup route", () => {
       delete process.env.SESSION_CLEANUP_CRON_SECRET;
     } else {
       process.env.SESSION_CLEANUP_CRON_SECRET = originalSecret;
+    }
+
+    if (originalCronSecret === undefined) {
+      delete process.env.CRON_SECRET;
+    } else {
+      process.env.CRON_SECRET = originalCronSecret;
     }
 
     if (originalRetentionDays === undefined) {
@@ -77,6 +85,37 @@ describe("/api/internal/session-cleanup route", () => {
 
     expect(response.status).toBe(200);
     expect(cleanupAuthSessionsMock).toHaveBeenCalledWith({ revokedRetentionDays: 30 });
+  });
+
+  it("accepts Vercel's native CRON_SECRET bearer token", async () => {
+    // Vercel Cron injects `Authorization: Bearer <CRON_SECRET>` on scheduled runs.
+    delete process.env.SESSION_CLEANUP_CRON_SECRET;
+    process.env.CRON_SECRET = "vercel-cron-secret";
+
+    const response = await GET(
+      new Request("http://localhost:3000/api/internal/session-cleanup", {
+        headers: {
+          authorization: "Bearer vercel-cron-secret",
+        },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(cleanupAuthSessionsMock).toHaveBeenCalledWith({ revokedRetentionDays: 30 });
+  });
+
+  it("rejects a token that matches neither configured secret", async () => {
+    process.env.CRON_SECRET = "vercel-cron-secret";
+
+    const response = await GET(
+      new Request("http://localhost:3000/api/internal/session-cleanup", {
+        headers: {
+          authorization: "Bearer wrong-secret",
+        },
+      }),
+    );
+
+    expect(response.status).toBe(401);
   });
 
   it("uses configured revoked-session retention days", async () => {
