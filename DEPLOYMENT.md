@@ -42,6 +42,7 @@ Use two environments:
   - Required for route legs and address autocomplete.
 - `SESSION_CLEANUP_CRON_SECRET`
   - Required in production to authorize `GET/POST /api/internal/session-cleanup` cron invocations.
+  - On Vercel, set `CRON_SECRET` to the same purpose instead — Vercel Cron injects it as `Authorization: Bearer <CRON_SECRET>`, which the route now accepts. Without it the daily cron in `vercel.json` returns 401 and sessions never get cleaned.
 
 ### Frontend SPA routing
 
