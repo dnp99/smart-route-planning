@@ -25,7 +25,7 @@ const FIXED_LATE_TOLERANCE_SECONDS = 15 * 60;
 const FLEXIBLE_LATE_TOLERANCE_SECONDS = 60 * 60;
 const FLEXIBLE_URGENCY_THRESHOLD_SECONDS = 90 * 60;
 const ESTIMATED_DRIVE_SPEED_KM_PER_HOUR = 40;
-const IDLE_GAP_FILL_THRESHOLD_SECONDS = 30 * 60;
+const IDLE_GAP_FILL_THRESHOLD_SECONDS = 25 * 60;
 const IDLE_GAP_RETURN_BUFFER_SECONDS = 5 * 60;
 const IDLE_GAP_FILLER_MAX_WAIT_SECONDS = 10 * 60;
 const IDLE_GAP_MIN_UTILIZATION_SECONDS = 15 * 60;
@@ -1122,6 +1122,55 @@ const hasNearbyPairFixedWindowConflict = (
   return !canServePairConsecutivelyWithoutFixedWindowConflict(right, left, resolveTravelSeconds);
 };
 
+// The nearby-non-consecutive penalty exists to stop the route from leaving a
+// geographic cluster and zig-zagging back to it. But two nearby fixed
+// appointments whose windows are far apart (e.g. the same client at 08:40 and
+// again at 10:45) CAN only be served back-to-back by idling for the whole gap.
+// In that case keeping them apart so other nearby visits fill the idle time is
+// the better plan, not a violation — so we exempt the pair when serving it
+// consecutively (in whichever order is feasible) would force an idle wait at
+// least as large as the gap-fill threshold.
+const nearbyPairConsecutiveServiceForcesIdle = (
+  left: VisitWithCoords,
+  right: VisitWithCoords,
+  resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
+) => {
+  if (left.windowType !== "fixed" && right.windowType !== "fixed") {
+    return false;
+  }
+
+  const forcedWaitWhenServedInOrder = (first: VisitWithCoords, second: VisitWithCoords) => {
+    if (!isFixedOnTimeWhenServedFirst(first)) {
+      return null;
+    }
+
+    const firstServiceEndSeconds = first.windowStartSeconds + first.serviceDurationMinutes * 60;
+    const secondArrivalSeconds = firstServiceEndSeconds + resolveTravelSeconds(first, second);
+    const secondServiceStartSeconds = Math.max(secondArrivalSeconds, second.windowStartSeconds);
+
+    if (second.windowType === "fixed" && second.hasPreferredWindow) {
+      const secondServiceEndSeconds =
+        secondServiceStartSeconds + second.serviceDurationMinutes * 60;
+      if (secondServiceEndSeconds > second.windowEndSeconds) {
+        return null;
+      }
+    }
+
+    return Math.max(0, secondServiceStartSeconds - secondArrivalSeconds);
+  };
+
+  const candidateWaits = [
+    forcedWaitWhenServedInOrder(left, right),
+    forcedWaitWhenServedInOrder(right, left),
+  ].filter((wait): wait is number => wait !== null);
+
+  if (candidateWaits.length === 0) {
+    return false;
+  }
+
+  return Math.min(...candidateWaits) >= IDLE_GAP_FILL_THRESHOLD_SECONDS;
+};
+
 const countNearbyNonConsecutiveVisits = (
   orderedVisits: VisitWithCoords[],
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
@@ -1152,6 +1201,10 @@ const countNearbyNonConsecutiveVisits = (
       }
 
       if (hasNearbyPairFixedWindowConflict(left, right, resolveTravelSeconds)) {
+        continue;
+      }
+
+      if (nearbyPairConsecutiveServiceForcesIdle(left, right, resolveTravelSeconds)) {
         continue;
       }
 
