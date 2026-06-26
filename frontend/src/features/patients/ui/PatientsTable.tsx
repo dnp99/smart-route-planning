@@ -58,24 +58,6 @@ const EditIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const MoreActionsIcon = ({ className }: { className?: string }) => (
-  <svg
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-    className={className}
-  >
-    <circle cx="12" cy="5" r="1.5" />
-    <circle cx="12" cy="12" r="1.5" />
-    <circle cx="12" cy="19" r="1.5" />
-  </svg>
-);
-
 const CalendarIcon = ({ className }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -140,20 +122,6 @@ const resolvePatientWindowRows = (patient: Patient): PatientWindowRow[] => {
       timeLabel: formatWindowRange(patient.preferredVisitStartTime, patient.preferredVisitEndTime),
     },
   ];
-};
-
-const formatRecurringSummary = (templates: RecurringVisitTemplate[] | undefined) => {
-  if (!templates || templates.length === 0) {
-    return "No recurring templates configured yet.";
-  }
-
-  const activeCount = templates.filter((template) => template.isActive).length;
-  if (activeCount === 0) {
-    return "All recurring templates are paused.";
-  }
-
-  const templateLabel = activeCount === 1 ? "recurring template" : "recurring templates";
-  return `${activeCount} active ${templateLabel}`;
 };
 
 const renderVisitTypePill = (visitType: "fixed" | "flexible" | "mixed") => {
@@ -258,8 +226,6 @@ export const PatientsTable = ({
   onEdit,
   recurringTemplatesByPatientId,
 }: PatientsTableProps) => {
-  const [openActionsMenuKey, setOpenActionsMenuKey] = useState<string | null>(null);
-  const actionsMenuRef = useRef<HTMLDivElement | null>(null);
   const [openWindowsPopoverKey, setOpenWindowsPopoverKey] = useState<string | null>(null);
   const windowsPopoverRef = useRef<HTMLDivElement | null>(null);
   const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
@@ -316,43 +282,6 @@ export const PatientsTable = ({
       return next;
     });
   };
-
-  useEffect(() => {
-    if (!openActionsMenuKey) {
-      return;
-    }
-
-    const onMouseDown = (event: MouseEvent) => {
-      if (!actionsMenuRef.current?.contains(event.target as Node)) {
-        setOpenActionsMenuKey(null);
-      }
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpenActionsMenuKey(null);
-      }
-    };
-
-    document.addEventListener("mousedown", onMouseDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mousedown", onMouseDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [openActionsMenuKey]);
-
-  useEffect(() => {
-    if (!openActionsMenuKey) {
-      return;
-    }
-
-    const patientId = openActionsMenuKey.split(":")[1];
-    const hasOpenMenuPatient = patients.some((patient) => patient.id === patientId);
-    if (!hasOpenMenuPatient) {
-      setOpenActionsMenuKey(null);
-    }
-  }, [openActionsMenuKey, patients]);
 
   useEffect(() => {
     if (!openWindowsPopoverKey) {
@@ -449,108 +378,54 @@ export const PatientsTable = ({
           const windowRows = resolvePatientWindowRows(patient);
           const visitType = resolveVisitTypeLabel(patient);
           const patientDisplayName = getPatientDisplayName(patient);
-          const mobileMenuKey = `mobile:${patient.id}`;
-          const isMobileMenuOpen = openActionsMenuKey === mobileMenuKey;
-          const recurringSummary = formatRecurringSummary(
-            recurringTemplatesByPatientId.get(patient.id),
-          );
-
+          const { street, cityRegion } = splitAddress(patient.address);
           const isExpanded = expandedPatients.has(patient.id);
 
           return (
             <article key={patient.id} className={responsiveStyles.mobileClientCard}>
-              <div className="grid grid-cols-[1fr_auto] items-center gap-x-1">
-                <button
-                  type="button"
-                  onClick={() => toggleExpanded(patient.id)}
-                  aria-expanded={isExpanded}
-                  aria-label={
-                    isExpanded ? `Collapse ${patientDisplayName}` : `Expand ${patientDisplayName}`
-                  }
-                  className="-mx-1 flex min-w-0 items-center gap-1.5 rounded-lg px-1 py-1 text-left transition active:bg-slate-100 dark:active:bg-slate-800"
-                >
-                  <ChevronIcon
-                    className={`h-3.5 w-3.5 shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${isExpanded ? "rotate-90" : "rotate-0"}`}
-                  />
-                  <h3 className="m-0 min-w-0 text-base font-semibold text-slate-900 dark:text-slate-100">
+              <button
+                type="button"
+                onClick={() => toggleExpanded(patient.id)}
+                aria-expanded={isExpanded}
+                aria-label={
+                  isExpanded ? `Collapse ${patientDisplayName}` : `Expand ${patientDisplayName}`
+                }
+                className="flex w-full items-center gap-3 rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+              >
+                <span className={responsiveStyles.clientAvatar} aria-hidden="true">
+                  {getPatientInitials(patient.firstName, patient.lastName)}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="m-0 truncate text-base font-semibold text-slate-900 dark:text-slate-100">
                     {patientDisplayName}
                   </h3>
-                </button>
-
-                <div ref={isMobileMenuOpen ? actionsMenuRef : undefined} className="relative">
-                  <button
-                    type="button"
-                    aria-label={`Open actions for ${patientDisplayName}`}
-                    title={`Open actions for ${patientDisplayName}`}
-                    onClick={() =>
-                      setOpenActionsMenuKey((current) =>
-                        current === mobileMenuKey ? null : mobileMenuKey,
-                      )
-                    }
-                    className={responsiveStyles.mobileActionButton}
-                  >
-                    <MoreActionsIcon className="h-4 w-4" />
-                  </button>
-                  {isMobileMenuOpen && (
-                    <div className={responsiveStyles.dropdownMenu}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenActionsMenuKey(null);
-                          onEdit(patient);
-                        }}
-                        aria-label={`Edit client ${patientDisplayName}`}
-                        className={responsiveStyles.dropdownMenuItem}
-                      >
-                        <EditIcon className="h-3.5 w-3.5" />
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setOpenActionsMenuKey(null);
-                          void onDelete(patient.id);
-                        }}
-                        disabled={isSubmitting}
-                        aria-label={`Delete client ${patientDisplayName}`}
-                        className={responsiveStyles.dropdownMenuItemDestructive}
-                      >
-                        <TrashIcon className="h-3.5 w-3.5" />
-                        Remove
-                      </button>
+                  {!isExpanded && (
+                    <div className="mt-1 flex items-center gap-2">
+                      {renderVisitTypePill(visitType)}
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        {patient.visitDurationMinutes} min
+                      </span>
                     </div>
                   )}
                 </div>
-              </div>
+                <ChevronIcon
+                  className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${isExpanded ? "rotate-90" : "rotate-0"}`}
+                />
+              </button>
 
               {isExpanded && (
-                <dl className="mt-2 grid gap-2 text-sm">
+                <div className="mt-3 grid gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
                   <div>
-                    <dt className="font-semibold text-slate-700 dark:text-slate-300">Address</dt>
-                    <dd className="m-0">
-                      {(() => {
-                        const { street, cityRegion } = splitAddress(patient.address);
-                        return (
-                          <>
-                            <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
-                              {street}
-                            </p>
-                            {cityRegion && (
-                              <p className="m-0 text-xs text-slate-400 dark:text-slate-500">
-                                {cityRegion}
-                              </p>
-                            )}
-                          </>
-                        );
-                      })()}
-                    </dd>
+                    <p className={responsiveStyles.formGroupEyebrow}>Address</p>
+                    <p className="m-0 mt-1 text-sm text-slate-800 dark:text-slate-200">{street}</p>
+                    {cityRegion && (
+                      <p className="m-0 text-xs text-slate-400 dark:text-slate-500">{cityRegion}</p>
+                    )}
                   </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3">
-                    <div>
-                      <dt className="font-semibold text-slate-700 dark:text-slate-300">
-                        Time windows
-                      </dt>
-                      <dd className="m-0 grid gap-1.5">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="min-w-0">
+                      <p className={responsiveStyles.formGroupEyebrow}>Window</p>
+                      <div className="mt-1 grid gap-1.5">
                         {windowRows[0]?.timeLabel === "Not set" ? (
                           <div className="flex items-center gap-1.5">
                             {renderVisitTypePill(visitType)}
@@ -560,7 +435,7 @@ export const PatientsTable = ({
                           </div>
                         ) : (
                           windowRows.map((window) => (
-                            <div key={window.id} className="flex items-center gap-1.5">
+                            <div key={window.id} className="flex flex-wrap items-center gap-1.5">
                               {renderVisitTypePill(visitType)}
                               <span className="whitespace-nowrap text-sm text-slate-600 dark:text-slate-400">
                                 {window.timeLabel}
@@ -568,20 +443,37 @@ export const PatientsTable = ({
                             </div>
                           ))
                         )}
-                      </dd>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <dt className="font-semibold text-slate-700 dark:text-slate-300">
-                        Visit duration
-                      </dt>
-                      <dd className="m-0 text-slate-600 dark:text-slate-400">
+                    <div className="min-w-0">
+                      <p className={responsiveStyles.formGroupEyebrow}>Duration</p>
+                      <p className="m-0 mt-1 text-sm text-slate-700 dark:text-slate-300">
                         {patient.visitDurationMinutes} min
-                      </dd>
-                      <dt className={`mt-2 ${responsiveStyles.recurrenceLabel}`}>Recurrence</dt>
-                      <dd className={responsiveStyles.recurrenceValue}>{recurringSummary}</dd>
+                      </p>
                     </div>
                   </div>
-                </dl>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onEdit(patient)}
+                      aria-label={`Edit ${patientDisplayName}`}
+                      className={responsiveStyles.mobileEditButton}
+                    >
+                      <EditIcon className="h-4 w-4" />
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void onDelete(patient.id)}
+                      disabled={isSubmitting}
+                      aria-label={`Delete ${patientDisplayName}`}
+                      title="Delete"
+                      className={responsiveStyles.mobileDeleteButton}
+                    >
+                      <TrashIcon className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
               )}
             </article>
           );
