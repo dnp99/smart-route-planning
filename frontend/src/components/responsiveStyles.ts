@@ -430,7 +430,7 @@ export const responsiveStyles = {
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
   // Clients page summary stats row (desktop only — hidden below md)
-  clientStatsRow: "mb-6 hidden grid-cols-4 gap-3 md:grid md:max-w-4xl",
+  clientStatsRow: "mb-6 hidden grid-cols-4 gap-6 md:grid",
   clientStatCard:
     "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-3.5",
   clientStatLabel:
