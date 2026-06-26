@@ -387,8 +387,7 @@ describe("patients and route planner integration", () => {
       expect(listPatientsMock).toHaveBeenLastCalledWith("doe");
     });
 
-    fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Jane Doe/i })[0]);
-    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
+    fireEvent.click(screen.getByRole("button", { name: "Edit Jane Doe" }));
     fireEvent.change(screen.getByLabelText("First name"), {
       target: { value: "Janet" },
     });
@@ -398,8 +397,7 @@ describe("patients and route planner integration", () => {
       expect(screen.getAllByText("Janet Doe").length).toBeGreaterThan(0);
     });
 
-    fireEvent.click(screen.getAllByRole("button", { name: /Open actions for Janet Doe/i })[0]);
-    fireEvent.click(screen.getByRole("button", { name: /Delete client Janet Doe/i }));
+    fireEvent.click(screen.getByRole("button", { name: "Delete Janet Doe" }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
     await waitFor(() => {

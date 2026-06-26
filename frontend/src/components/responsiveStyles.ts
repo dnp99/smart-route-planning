@@ -458,6 +458,19 @@ export const responsiveStyles = {
   repeatIconMuted: "h-5 w-5 text-slate-300 dark:text-slate-600",
   repeatCountBadge:
     "absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold leading-none text-white dark:bg-blue-500",
+  // Mobile clients: filter pills (own row below search) + expanded-card actions
+  clientFilterPills: "mb-6 flex flex-wrap gap-2 md:hidden",
+  clientFilterPill:
+    "rounded-full border px-4 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
+  clientFilterPillActive: "border-blue-600 bg-blue-600 text-white",
+  clientFilterPillInactive:
+    "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+  addClientMobileButton:
+    "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700",
+  mobileEditButton:
+    "inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-semibold text-blue-600 transition hover:bg-slate-50 dark:border-slate-700 dark:text-blue-300 dark:hover:bg-slate-800",
+  mobileDeleteButton:
+    "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
   dashboardNudgeCard:
     "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
   dashboardAlertItem:

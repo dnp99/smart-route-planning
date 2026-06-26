@@ -424,11 +424,10 @@ const PatientsPage = () => {
             <button
               type="button"
               onClick={openCreateModal}
-              aria-label="Add client"
-              title="Add client"
-              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:hidden"
+              className={`${responsiveStyles.addClientMobileButton} sm:hidden`}
             >
               <PlusIcon className="h-4 w-4" />
+              Add
             </button>
           </div>
           <div className="flex items-center gap-2">
@@ -597,6 +596,28 @@ const PatientsPage = () => {
               <PlusIcon className="h-4 w-4" />
               Add Client
             </button>
+          </div>
+
+          <div
+            className={responsiveStyles.clientFilterPills}
+            role="group"
+            aria-label="Filter clients by window type"
+          >
+            {(["all", "fixed", "flexible"] as const).map((filter) => (
+              <button
+                key={filter}
+                type="button"
+                onClick={() => setWindowFilter(filter)}
+                aria-pressed={windowFilter === filter}
+                className={`${responsiveStyles.clientFilterPill} ${
+                  windowFilter === filter
+                    ? responsiveStyles.clientFilterPillActive
+                    : responsiveStyles.clientFilterPillInactive
+                }`}
+              >
+                {filter === "all" ? "All" : filter === "fixed" ? "Fixed" : "Flexible"}
+              </button>
+            ))}
           </div>
 
           <PatientsTable

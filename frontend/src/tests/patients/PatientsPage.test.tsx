@@ -133,10 +133,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(
-      (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
+    fireEvent.click(await screen.findByRole("button", { name: "Edit Jane Doe" }));
 
     expect(screen.getByText("Edit Client")).toBeTruthy();
     expect((screen.getByLabelText("First name") as HTMLInputElement).value).toBe("Jane");
@@ -175,7 +172,7 @@ describe("PatientsPage", () => {
     expect(screen.getByTitle("1 active recurring template")).toBeTruthy();
 
     // Filter to Fixed → the flexible client drops out
-    fireEvent.click(screen.getByRole("button", { name: "Fixed" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Fixed" })[0]);
     expect(screen.queryByText("John Smith")).toBeNull();
     expect(screen.getAllByText("Jane Doe").length).toBeGreaterThan(0);
   });
@@ -270,10 +267,7 @@ describe("PatientsPage", () => {
       expect(mockedListRecurringVisitTemplates).toHaveBeenCalled();
     });
 
-    fireEvent.click(
-      (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
+    fireEvent.click(await screen.findByRole("button", { name: "Edit Jane Doe" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Tue" }));
     fireEvent.click(screen.getByRole("button", { name: /Save changes/i }));
@@ -311,10 +305,7 @@ describe("PatientsPage", () => {
       expect(mockedListRecurringVisitTemplates).toHaveBeenCalled();
     });
 
-    fireEvent.click(
-      (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
+    fireEvent.click(await screen.findByRole("button", { name: "Edit Jane Doe" }));
 
     fireEvent.change(screen.getByLabelText("Start date"), {
       target: { value: "2026-04-10" },
@@ -354,10 +345,7 @@ describe("PatientsPage", () => {
       expect(mockedListRecurringVisitTemplates).toHaveBeenCalled();
     });
 
-    fireEvent.click(
-      (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
+    fireEvent.click(await screen.findByRole("button", { name: "Edit Jane Doe" }));
 
     fireEvent.change(screen.getByLabelText("End from date forward"), {
       target: { value: "2026-04-10" },
@@ -385,10 +373,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(
-      (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
-    );
-    fireEvent.click(screen.getByRole("button", { name: /Delete client Jane Doe/i }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete Jane Doe" }));
 
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
 
@@ -558,10 +543,7 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("");
     });
 
-    fireEvent.click(
-      (await screen.findAllByRole("button", { name: /Open actions for Jane Doe/i }))[0],
-    );
-    fireEvent.click(screen.getAllByRole("button", { name: /Edit client Jane Doe/i })[0]);
+    fireEvent.click(await screen.findByRole("button", { name: "Edit Jane Doe" }));
     fireEvent.change(screen.getByLabelText("Visit duration (minutes)"), {
       target: { value: "130" },
     });
