@@ -19,12 +19,21 @@ Desktop is a two-column layout (client search/list on the left, route timeline o
 
 Build in **4 phases**, each shippable + verifiable + committed on its own. Before each phase I'll do a focused read of the exact component(s) it touches and confirm specifics, then build. Phases are ordered to minimize churn; the controller hook (`useRoutePlannerController`) is touched incrementally.
 
+## Status
+
+- **Phase 1 — ✅ DONE** (commit `448a36b`).
+- **Phase 2 — NEXT.** Mid-exploration: reading the client search/list in [PatientSelectorSection.tsx](frontend/src/features/route-planner/ui/PatientSelectorSection.tsx) (the `isContentVisible` block, ~line 223 onward — search input + `destinationSearchResults` list). The selected-destinations state + search hook already exist; Phase 2 is a presentational rework of that list into avatar cards.
+- Phases 3, 4 — pending.
+
+> **Finding from Phase 1:** the `Less driving / Finish sooner` toggle **and** the `Optimize/Re-optimize Route` button already exist in the Clients card header ([PatientSelectorSection.tsx:116](frontend/src/features/route-planner/ui/PatientSelectorSection.tsx#L116)) and already match the design's labels — so the "relocate optimize controls" work was a no-op. Phase 1 ended up being just the trip-setup bookend.
+
 ---
 
-### Phase 1 — Trip setup bookend + optimize controls
-- Rework `TripSetupSection` into the **bookend card**: `START` (green target) address → a "• N stops" rail → `END` (flag) address, with the **planning date** chip and an **Edit** affordance. Collapsed read view + edit mode.
-- Relocate the objective selector into a **`Less driving / Finish sooner` segmented toggle** (maps to `optimizationObjective` distance/time) plus the **`Re-optimize Route`** button, in the route/clients controls header.
-- New tokens for the bookend rail, start/end markers, segmented toggle (reuse `authSegmentedControl` family), date chip.
+### Phase 1 — Trip setup bookend ✅ DONE
+- Reworked the **desktop collapsed** view of `TripSetupSection` into the bookend: `TRIP SETUP` eyebrow + planning-date chip header, then `START` (green target marker) → dashed "• N stops" rail → `END` (blue flag marker) + `Edit`. Threaded `stopCount` (`destinationCount`) through the controller. Expanded edit view (two address inputs) unchanged.
+- Matched the **planning-date chip** to the design (blue calendar icon, bold dark-blue date, more padding, auto width) — `DatePicker` is compact-only, used only here. Made the `END` label blue.
+- New tokens: `tripBookendRow`, `trip{Start,End}Marker`, `trip{Start,End}Label`, `tripAddress{Primary,Secondary}`, `tripStopsPill`, `tripRailDashed`, `tripEditButton`.
+- Note: the center rail + stops pill shows at `lg+`; below that it collapses to Start … End + Edit (avoids cramping). Optimize toggle/button already existed — not touched.
 
 ### Phase 2 — Client list (left column)
 - Rework `PatientSelectorSection` into the **search + client-card list**: avatar initials (reuse `getPatientInitials`), name, address, and an `In route` badge (selected) vs `+` add button. Two-column shell (left) on desktop.
