@@ -1,7 +1,6 @@
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import AddressAutocompleteInput from "../../../components/shared/AddressAutocompleteInput";
-import { SelectField } from "../../../components/SelectField";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { Patient, VisitTimeType } from "../../../../../shared/contracts";
 import type {
@@ -147,11 +146,13 @@ export const PatientFormModal = ({
         <form className="grid gap-4" onSubmit={onSubmit}>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <label htmlFor="patient-first-name" className={responsiveStyles.formLabel}>
                   First name
                 </label>
-                <span className={responsiveStyles.requiredBadge}>Required</span>
+                <span className={responsiveStyles.requiredAsterisk} aria-hidden="true">
+                  *
+                </span>
               </div>
               <input
                 id="patient-first-name"
@@ -165,11 +166,13 @@ export const PatientFormModal = ({
             </div>
 
             <div className="grid gap-1">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <label htmlFor="patient-last-name" className={responsiveStyles.formLabel}>
                   Last name
                 </label>
-                <span className={responsiveStyles.requiredBadge}>Required</span>
+                <span className={responsiveStyles.requiredAsterisk} aria-hidden="true">
+                  *
+                </span>
               </div>
               <input
                 id="patient-last-name"
@@ -198,18 +201,28 @@ export const PatientFormModal = ({
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="grid gap-1">
-              <label htmlFor="patient-visit-type" className={responsiveStyles.formLabel}>
-                Visit type
-              </label>
-              <SelectField
-                id="patient-visit-type"
-                value={selectedVisitType}
-                options={[
-                  { value: "fixed", label: "Fixed" },
-                  { value: "flexible", label: "Flexible" },
-                ]}
-                onChange={(v) => onVisitTypeChange(v as VisitTimeType)}
-              />
+              <span className={responsiveStyles.formLabel}>Visit type</span>
+              <div
+                className={responsiveStyles.authSegmentedControl}
+                role="group"
+                aria-label="Visit type"
+              >
+                {(["flexible", "fixed"] as const).map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => onVisitTypeChange(type)}
+                    aria-pressed={selectedVisitType === type}
+                    className={`${responsiveStyles.authSegmentedButton} ${
+                      selectedVisitType === type
+                        ? responsiveStyles.authSegmentedButtonActive
+                        : responsiveStyles.authSegmentedButtonInactive
+                    }`}
+                  >
+                    {type === "flexible" ? "Flexible" : "Fixed"}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="grid gap-1">
@@ -239,11 +252,9 @@ export const PatientFormModal = ({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2 grid gap-3 rounded-2xl border border-slate-200 p-3 dark:border-slate-800">
+            <div className={`sm:col-span-2 ${responsiveStyles.formGroupSection}`}>
               <div className="flex items-center justify-between gap-2">
-                <p className="m-0 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                  Visit windows
-                </p>
+                <p className={responsiveStyles.formGroupEyebrow}>Visit windows</p>
                 <button
                   type="button"
                   onClick={onAddVisitWindow}
@@ -356,11 +367,9 @@ export const PatientFormModal = ({
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="sm:col-span-2 grid gap-3 rounded-2xl border border-slate-200 p-3 dark:border-slate-800">
+            <div className={`sm:col-span-2 ${responsiveStyles.formGroupSection}`}>
               <div className="flex items-center justify-between gap-2">
-                <p className="m-0 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                  Recurring templates
-                </p>
+                <p className={responsiveStyles.formGroupEyebrow}>Recurring templates</p>
                 <button
                   type="button"
                   onClick={onAddRecurringTemplate}
@@ -633,7 +642,7 @@ export const PatientFormModal = ({
             <p className="m-0 text-xs text-red-600 dark:text-red-400">{fixedWindowDurationError}</p>
           )}
 
-          <div className="sticky bottom-0 z-10 -mx-5 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:static sm:m-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-0 sm:flex-row sm:justify-end">
+          <div className={responsiveStyles.modalStickyFooter}>
             <button
               type="button"
               onClick={onClose}

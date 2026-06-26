@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Patient, RecurringVisitTemplate } from "../../../../../shared/contracts";
 import { getPatientDisplayName, toTimeInput } from "../domain/patientForm";
+import { resolveVisitTypeLabel } from "../domain/visitType";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 
 type SortField = "name" | "duration" | null;
@@ -117,20 +118,6 @@ const resolvePatientWindowRows = (patient: Patient): PatientWindowRow[] => {
       timeLabel: formatWindowRange(patient.preferredVisitStartTime, patient.preferredVisitEndTime),
     },
   ];
-};
-
-const resolveVisitTypeLabel = (patient: Patient): "fixed" | "flexible" | "mixed" => {
-  const windows = Array.isArray(patient.visitWindows) ? patient.visitWindows : [];
-  if (windows.length === 0) {
-    return patient.visitTimeType === "flexible" ? "flexible" : "fixed";
-  }
-
-  const visitTypes = new Set(windows.map((window) => window.visitTimeType));
-  if (visitTypes.size > 1) {
-    return "mixed";
-  }
-
-  return visitTypes.has("flexible") ? "flexible" : "fixed";
 };
 
 const formatRecurringSummary = (templates: RecurringVisitTemplate[] | undefined) => {

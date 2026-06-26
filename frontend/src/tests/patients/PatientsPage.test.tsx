@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import PatientsPage from "../../features/patients/ui/PatientsPage";
 
@@ -141,6 +141,25 @@ describe("PatientsPage", () => {
     expect(screen.getByText("Edit Client")).toBeTruthy();
     expect((screen.getByLabelText("First name") as HTMLInputElement).value).toBe("Jane");
     expect((screen.getByLabelText("Last name") as HTMLInputElement).value).toBe("Doe");
+  });
+
+  it("renders the client summary stats row with derived counts", async () => {
+    // seedPatient: fixed / 30 min, secondPatient: flexible / 45 min
+    mockedListPatients.mockResolvedValue([seedPatient, secondPatient]);
+
+    render(<PatientsPage />);
+
+    const statsRow = await screen.findByTestId("client-stats");
+    const cardFor = (label: string) =>
+      within(statsRow).getByText(label).closest("div") as HTMLElement;
+
+    expect(within(cardFor("Total Clients")).getByText("2")).toBeTruthy();
+    expect(within(cardFor("Fixed Window")).getByText("1")).toBeTruthy();
+    expect(within(cardFor("Flexible")).getByText("1")).toBeTruthy();
+    // round((30 + 45) / 2) = 38
+    const avgCard = cardFor("Avg Duration");
+    expect(avgCard.textContent).toContain("38");
+    expect(avgCard.textContent).toContain("min");
   });
 
   it("submits create flow and resets to empty create mode", async () => {
