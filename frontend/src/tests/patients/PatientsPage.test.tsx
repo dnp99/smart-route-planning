@@ -162,6 +162,24 @@ describe("PatientsPage", () => {
     expect(avgCard.textContent).toContain("min");
   });
 
+  it("filters via the All/Fixed/Flexible toggle and shows the repeat badge", async () => {
+    // seedPatient: Jane Doe (fixed) with an active template; secondPatient: John Smith (flexible)
+    mockedListPatients.mockResolvedValue([seedPatient, secondPatient]);
+    mockedListRecurringVisitTemplates.mockResolvedValue([seedRecurringTemplate]);
+
+    render(<PatientsPage />);
+
+    expect((await screen.findAllByText("Jane Doe")).length).toBeGreaterThan(0);
+    expect(screen.getAllByText("John Smith").length).toBeGreaterThan(0);
+    // Jane Doe (patient-1) has one active recurring template → repeat badge
+    expect(screen.getByTitle("1 active recurring template")).toBeTruthy();
+
+    // Filter to Fixed → the flexible client drops out
+    fireEvent.click(screen.getByRole("button", { name: "Fixed" }));
+    expect(screen.queryByText("John Smith")).toBeNull();
+    expect(screen.getAllByText("Jane Doe").length).toBeGreaterThan(0);
+  });
+
   it("submits create flow and resets to empty create mode", async () => {
     mockedListPatients.mockResolvedValue([]);
     mockedCreatePatient.mockResolvedValue(seedPatient);

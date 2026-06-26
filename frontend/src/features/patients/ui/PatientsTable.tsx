@@ -1,18 +1,21 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { Patient, RecurringVisitTemplate } from "../../../../../shared/contracts";
 import { getPatientDisplayName, toTimeInput } from "../domain/patientForm";
-import { resolveVisitTypeLabel } from "../domain/visitType";
+import { getPatientInitials } from "../domain/patientName";
+import { resolveVisitTypeLabel, type WindowFilter } from "../domain/visitType";
+import { countActiveRecurringTemplates } from "../domain/recurringTemplate";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 
 type SortField = "name" | "duration" | null;
 type SortDir = "asc" | "desc";
-type WindowFilter = "all" | "fixed" | "flexible";
 
 type PatientsTableProps = {
   isLoading: boolean;
   isSubmitting: boolean;
   patients: Patient[];
   searchQuery: string;
+  windowFilter: WindowFilter;
+  onWindowFilterChange: (windowFilter: WindowFilter) => void;
   onDelete: (patientId: string) => Promise<void> | void;
   onEdit: (patient: Patient) => void;
   recurringTemplatesByPatientId: Map<string, RecurringVisitTemplate[]>;
@@ -70,6 +73,25 @@ const MoreActionsIcon = ({ className }: { className?: string }) => (
     <circle cx="12" cy="5" r="1.5" />
     <circle cx="12" cy="12" r="1.5" />
     <circle cx="12" cy="19" r="1.5" />
+  </svg>
+);
+
+const CalendarIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <rect x="3" y="4" width="18" height="18" rx="2" />
+    <path d="M16 2v4" />
+    <path d="M8 2v4" />
+    <path d="M3 10h18" />
   </svg>
 );
 
@@ -230,6 +252,8 @@ export const PatientsTable = ({
   isSubmitting,
   patients,
   searchQuery,
+  windowFilter,
+  onWindowFilterChange,
   onDelete,
   onEdit,
   recurringTemplatesByPatientId,
@@ -241,7 +265,6 @@ export const PatientsTable = ({
   const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
-  const [windowFilter, setWindowFilter] = useState<WindowFilter>("all");
 
   const handleSortClick = (field: "name" | "duration") => {
     if (sortField === field) {
@@ -253,7 +276,9 @@ export const PatientsTable = ({
   };
 
   const cycleWindowFilter = () => {
-    setWindowFilter((f) => (f === "all" ? "fixed" : f === "fixed" ? "flexible" : "all"));
+    onWindowFilterChange(
+      windowFilter === "all" ? "fixed" : windowFilter === "fixed" ? "flexible" : "all",
+    );
   };
 
   const sortedFilteredPatients = useMemo(() => {
@@ -371,9 +396,10 @@ export const PatientsTable = ({
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
               <colgroup>
-                <col className="w-[32%]" />
-                <col className="w-[38%]" />
-                <col className="w-[20%]" />
+                <col className="w-[28%]" />
+                <col className="w-[34%]" />
+                <col className="w-[18%]" />
+                <col className="w-24" />
                 <col className="w-20" />
                 <col className="w-20" />
               </colgroup>
@@ -391,6 +417,9 @@ export const PatientsTable = ({
                     </td>
                     <td className="px-4 py-5">
                       <div className="h-4 w-12 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
+                    </td>
+                    <td className="px-4 py-5">
+                      <div className="mx-auto h-4 w-5 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
                     </td>
                     <td className="px-4 py-5" />
                   </tr>
@@ -412,8 +441,6 @@ export const PatientsTable = ({
   }
 
   const windowFilterActive = windowFilter !== "all";
-  const windowFilterLabel =
-    windowFilter === "fixed" ? "Fixed" : windowFilter === "flexible" ? "Flexible" : null;
 
   return (
     <>
@@ -565,9 +592,10 @@ export const PatientsTable = ({
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <colgroup>
-              <col className="w-[32%]" />
-              <col className="w-[38%]" />
-              <col className="w-[20%]" />
+              <col className="w-[28%]" />
+              <col className="w-[34%]" />
+              <col className="w-[18%]" />
+              <col className="w-24" />
               <col className="w-20" />
               <col className="w-20" />
             </colgroup>
@@ -603,33 +631,27 @@ export const PatientsTable = ({
                     ].join(" ")}
                   >
                     Window
-                    {windowFilterLabel ? (
-                      <span className="rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] normal-case tracking-normal text-blue-700 dark:bg-blue-950/50 dark:text-blue-300">
-                        {windowFilterLabel}
-                      </span>
-                    ) : (
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        aria-hidden="true"
-                        className="h-3.5 w-3.5 opacity-85"
-                      >
-                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                      </svg>
-                    )}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      className="h-3.5 w-3.5 opacity-85"
+                    >
+                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                    </svg>
                   </button>
                 </th>
-                <th className="px-4 py-3 text-right">
+                <th className="px-4 py-3 text-left">
                   <button
                     type="button"
                     onClick={() => handleSortClick("duration")}
                     className={[
-                      responsiveStyles.tableSortButtonBaseEnd,
+                      responsiveStyles.tableSortButtonBase,
                       sortField === "duration"
                         ? responsiveStyles.tableSortButtonActive
                         : responsiveStyles.tableSortButtonInactive,
@@ -639,6 +661,9 @@ export const PatientsTable = ({
                     <SortIcon field="duration" sortField={sortField} sortDir={sortDir} />
                   </button>
                 </th>
+                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
+                  Repeat
+                </th>
                 <th className="px-4 py-3" aria-label="Actions" />
               </tr>
             </thead>
@@ -646,7 +671,7 @@ export const PatientsTable = ({
               {sortedFilteredPatients.length === 0 && (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
                   >
                     No clients match the current filter.
@@ -657,15 +682,20 @@ export const PatientsTable = ({
                 const windowRows = resolvePatientWindowRows(patient);
                 const visitType = resolveVisitTypeLabel(patient);
                 const patientDisplayName = getPatientDisplayName(patient);
-                const recurringSummary = formatRecurringSummary(
+                const activeRecurringCount = countActiveRecurringTemplates(
                   recurringTemplatesByPatientId.get(patient.id),
                 );
                 return (
                   <tr key={patient.id} className={responsiveStyles.tableRow}>
                     <td className="px-6 py-5">
-                      <p className="m-0 line-clamp-2 text-sm font-bold text-slate-900 dark:text-slate-100">
-                        {patientDisplayName}
-                      </p>
+                      <div className="flex items-center gap-3">
+                        <span className={responsiveStyles.clientAvatar} aria-hidden="true">
+                          {getPatientInitials(patient.firstName, patient.lastName)}
+                        </span>
+                        <p className="m-0 line-clamp-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                          {patientDisplayName}
+                        </p>
+                      </div>
                     </td>
                     <td className="px-6 py-5">
                       {(() => {
@@ -723,8 +753,8 @@ export const PatientsTable = ({
                         </div>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-5 text-right text-sm text-slate-600 dark:text-slate-300">
-                      <span className="inline-flex items-center justify-end gap-1">
+                    <td className="whitespace-nowrap px-4 py-5 text-left text-sm text-slate-600 dark:text-slate-300">
+                      <span className="inline-flex items-center gap-1">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           viewBox="0 0 24 24"
@@ -741,9 +771,31 @@ export const PatientsTable = ({
                         </svg>
                         {patient.visitDurationMinutes} min
                       </span>
-                      <p className={`mt-1 ${responsiveStyles.recurrenceValue}`}>
-                        {recurringSummary}
-                      </p>
+                    </td>
+                    <td className="px-4 py-5">
+                      <div className="flex items-center justify-center">
+                        {activeRecurringCount > 0 ? (
+                          <span
+                            className="relative inline-flex"
+                            aria-label={`${activeRecurringCount} active recurring ${
+                              activeRecurringCount === 1 ? "template" : "templates"
+                            }`}
+                            title={`${activeRecurringCount} active recurring ${
+                              activeRecurringCount === 1 ? "template" : "templates"
+                            }`}
+                          >
+                            <CalendarIcon className={responsiveStyles.repeatIconActive} />
+                            <span className={responsiveStyles.repeatCountBadge}>
+                              {activeRecurringCount}
+                            </span>
+                          </span>
+                        ) : (
+                          <CalendarIcon
+                            className={responsiveStyles.repeatIconMuted}
+                            aria-label="No recurring templates"
+                          />
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-5 text-right">
                       <div className="flex items-center justify-end gap-0.5">
