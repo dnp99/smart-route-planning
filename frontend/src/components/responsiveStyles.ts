@@ -429,6 +429,19 @@ export const responsiveStyles = {
   dashboardKpiProgressTrack: "mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700",
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
+  // Clients page summary stats row (desktop only — hidden below md)
+  clientStatsRow: "mb-6 hidden grid-cols-4 gap-3 md:grid",
+  clientStatCard:
+    "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-5",
+  clientStatLabel:
+    "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
+  clientStatValue:
+    "m-0 mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100",
+  clientStatValueFixed:
+    "m-0 mt-2 text-2xl font-semibold tracking-tight text-blue-600 dark:text-blue-300",
+  clientStatValueFlexible:
+    "m-0 mt-2 text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-300",
+  clientStatValueSuffix: "ml-1 text-sm font-normal text-slate-500 dark:text-slate-400",
   dashboardNudgeCard:
     "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
   dashboardAlertItem:

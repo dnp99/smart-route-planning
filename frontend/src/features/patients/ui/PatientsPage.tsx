@@ -24,6 +24,7 @@ import {
   toFormValues,
   validateForm,
 } from "../domain/patientForm";
+import { useClientStats } from "../hooks/useClientStats";
 import { createPatient, deletePatient, listPatients, updatePatient } from "../api/patientService";
 import {
   createRecurringVisitTemplate,
@@ -51,6 +52,7 @@ const PlusIcon = ({ className }: { className?: string }) => (
 
 const PatientsPage = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
+  const clientStats = useClientStats(patients);
   const [totalPatientCount, setTotalPatientCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingPatients, setIsLoadingPatients] = useState(true);
@@ -483,6 +485,28 @@ const PatientsPage = () => {
             {pageError}
           </p>
         )}
+
+        <div className={responsiveStyles.clientStatsRow} data-testid="client-stats">
+          <div className={responsiveStyles.clientStatCard}>
+            <p className={responsiveStyles.clientStatLabel}>Total Clients</p>
+            <p className={responsiveStyles.clientStatValue}>{clientStats.total}</p>
+          </div>
+          <div className={responsiveStyles.clientStatCard}>
+            <p className={responsiveStyles.clientStatLabel}>Fixed Window</p>
+            <p className={responsiveStyles.clientStatValueFixed}>{clientStats.fixed}</p>
+          </div>
+          <div className={responsiveStyles.clientStatCard}>
+            <p className={responsiveStyles.clientStatLabel}>Flexible</p>
+            <p className={responsiveStyles.clientStatValueFlexible}>{clientStats.flexible}</p>
+          </div>
+          <div className={responsiveStyles.clientStatCard}>
+            <p className={responsiveStyles.clientStatLabel}>Avg Duration</p>
+            <p className={responsiveStyles.clientStatValue}>
+              {clientStats.avgDuration}
+              <span className={responsiveStyles.clientStatValueSuffix}>min</span>
+            </p>
+          </div>
+        </div>
 
         <div>
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
