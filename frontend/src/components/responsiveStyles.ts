@@ -488,6 +488,17 @@ export const responsiveStyles = {
   tripRailDashed: "h-px flex-1 border-t border-dashed border-slate-300 dark:border-slate-700",
   tripEditButton:
     "inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-medium text-blue-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-blue-300 dark:hover:bg-slate-800",
+  // Route planner: client search list cards (left column)
+  routeClientCard:
+    "flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700",
+  routeClientCardSelected:
+    "border-blue-200 bg-blue-50/60 hover:border-blue-300 dark:border-blue-900 dark:bg-blue-950/30",
+  routeClientName: "m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100",
+  routeClientAddress: "m-0 truncate text-xs text-slate-500 dark:text-slate-400",
+  routeInRouteBadge:
+    "inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white dark:bg-blue-500",
+  routeAddClientButton:
+    "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300",
   dashboardNudgeCard:
     "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
   dashboardAlertItem:

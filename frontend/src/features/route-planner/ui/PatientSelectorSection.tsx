@@ -2,10 +2,43 @@ import { responsiveStyles } from "../../../components/responsiveStyles";
 import { SelectedDestinationsSection } from "./SelectedDestinationsSection";
 import type { SelectedPatientDestination } from "../domain/routePlannerTypes";
 import type { Patient } from "../../../../../shared/contracts/patients";
-import { formatPatientNameFromParts } from "../../patients/domain/patientName";
+import { formatPatientNameFromParts, getPatientInitials } from "../../patients/domain/patientName";
 
 const MOBILE_SEARCH_VISIBLE_ROWS = 15;
 const MOBILE_SEARCH_ROW_HEIGHT_PX = 88;
+
+const CheckIcon = () => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 5v14" />
+    <path d="M5 12h14" />
+  </svg>
+);
 
 type PatientSelectorSectionProps = {
   isVisible: boolean;
@@ -36,7 +69,10 @@ type PatientSelectorSectionProps = {
   ) => void;
   onSetDestinationPersistPlanningWindow: (visitKey: string, persistPlanningWindow: boolean) => void;
   activeVisitInstanceActionId: string | null;
-  onVisitInstanceStatusChange: (visitId: string, status: "scheduled" | "cancelled") => Promise<void>;
+  onVisitInstanceStatusChange: (
+    visitId: string,
+    status: "scheduled" | "cancelled",
+  ) => Promise<void>;
   onVisitInstanceReschedule: (
     visitId: string,
     updates: { planningDate?: string; windowStart?: string; windowEnd?: string },
@@ -144,6 +180,10 @@ export const PatientSelectorSection = ({
         Finish sooner
       </button>
     </div>
+  );
+
+  const inRoutePatientIds = new Set(
+    selectedDestinations.map((destination) => destination.patientId),
   );
 
   return (
@@ -296,20 +336,40 @@ export const PatientSelectorSection = ({
                         patient.firstName,
                         patient.lastName,
                       );
+                      const isInRoute = inRoutePatientIds.has(patient.id);
                       return (
                         <li key={patient.id} className="pr-2">
-                          <button
-                            type="button"
-                            onClick={() => onAddPatient(patient)}
-                            className={responsiveStyles.selectableItemButton}
+                          <div
+                            className={`${responsiveStyles.routeClientCard} ${
+                              isInRoute ? responsiveStyles.routeClientCardSelected : ""
+                            }`}
                           >
-                            <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
-                              {patientName}
-                              <span className="pl-2 font-normal m-0 text-slate-600 dark:text-slate-300">
-                                | {patient.address}
+                            <span className={responsiveStyles.clientAvatar} aria-hidden="true">
+                              {getPatientInitials(patient.firstName, patient.lastName)}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className={responsiveStyles.routeClientName}>{patientName}</p>
+                              <p className={responsiveStyles.routeClientAddress}>
+                                {patient.address}
+                              </p>
+                            </div>
+                            {isInRoute ? (
+                              <span className={responsiveStyles.routeInRouteBadge}>
+                                <CheckIcon />
+                                In route
                               </span>
-                            </p>
-                          </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => onAddPatient(patient)}
+                                aria-label={`Add ${patientName}`}
+                                title={`Add ${patientName}`}
+                                className={responsiveStyles.routeAddClientButton}
+                              >
+                                <PlusIcon />
+                              </button>
+                            )}
+                          </div>
                         </li>
                       );
                     })}
