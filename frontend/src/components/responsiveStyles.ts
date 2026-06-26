@@ -430,17 +430,17 @@ export const responsiveStyles = {
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
   // Clients page summary stats row (desktop only — hidden below md)
-  clientStatsRow: "mb-6 hidden grid-cols-4 gap-3 md:grid",
+  clientStatsRow: "mb-6 hidden grid-cols-4 gap-3 md:grid md:max-w-4xl",
   clientStatCard:
-    "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-5",
+    "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-3.5",
   clientStatLabel:
     "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
   clientStatValue:
-    "m-0 mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-slate-100",
+    "m-0 mt-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100",
   clientStatValueFixed:
-    "m-0 mt-2 text-2xl font-semibold tracking-tight text-blue-600 dark:text-blue-300",
+    "m-0 mt-1 text-xl font-semibold tracking-tight text-blue-600 dark:text-blue-300",
   clientStatValueFlexible:
-    "m-0 mt-2 text-2xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-300",
+    "m-0 mt-1 text-xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-300",
   clientStatValueSuffix: "ml-1 text-sm font-normal text-slate-500 dark:text-slate-400",
   // ── Clients page: title count, window filter, table avatar + repeat ──────────
   clientsTitleCount: "font-semibold text-slate-400 dark:text-slate-500",
