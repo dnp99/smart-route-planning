@@ -3,11 +3,73 @@ import { DatePicker } from "../../../components/shared/DatePicker";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { AddressSuggestion } from "../types";
 
+const splitAddressLine = (address: string) => {
+  const idx = address.indexOf(", ");
+  if (idx === -1) return { primary: address, secondary: "" };
+  return { primary: address.slice(0, idx), secondary: address.slice(idx + 2) };
+};
+
+const TargetIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="7" />
+    <line x1="12" y1="2" x2="12" y2="5" />
+    <line x1="12" y1="19" x2="12" y2="22" />
+    <line x1="2" y1="12" x2="5" y2="12" />
+    <line x1="19" y1="12" x2="22" y2="12" />
+    <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+  </svg>
+);
+
+const FlagIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+    <line x1="4" y1="22" x2="4" y2="15" />
+  </svg>
+);
+
+const PencilIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+);
+
 type TripSetupSectionProps = {
   isVisible: boolean;
   isMobileViewport: boolean;
   isExpanded: boolean;
   onSetExpanded: (v: boolean) => void;
+  stopCount: number;
   startAddress: string;
   resolvedEndAddress: string;
   manualEndAddress: string;
@@ -30,6 +92,7 @@ export const TripSetupSection = ({
   isMobileViewport,
   isExpanded,
   onSetExpanded,
+  stopCount,
   startAddress,
   resolvedEndAddress,
   manualEndAddress,
@@ -49,55 +112,69 @@ export const TripSetupSection = ({
   if (!isVisible) return null;
 
   if (!isExpanded && !isMobileViewport) {
+    const start = splitAddressLine(startAddress);
+    const end = splitAddressLine(resolvedEndAddress);
     return (
       <section className={responsiveStyles.panel}>
-        <div className="flex items-center gap-3">
-          <p className="m-0 min-w-0 flex-1 text-sm dark:text-slate-300">
-            <span className="break-words">
-              <span className="font-semibold text-slate-900 dark:text-slate-100">
-                {startAddress}
-              </span>{" "}
-              <span className="text-slate-400">→</span>{" "}
-              <span className="font-semibold text-slate-900 dark:text-slate-100">
-                {resolvedEndAddress}
-              </span>
-            </span>{" "}
-            <span className="text-slate-400">—</span>{" "}
+        <div className="flex items-center justify-between gap-2">
+          <p className={responsiveStyles.formGroupEyebrow}>Trip setup</p>
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              Planning date
+            </span>
+            <DatePicker
+              id="planningDate"
+              value={planningDate}
+              onChange={onPlanningDateChange}
+              compact
+              ariaLabel="Planning date"
+            />
+          </div>
+        </div>
+
+        <div className={responsiveStyles.tripBookendRow}>
+          <div className="flex min-w-0 flex-1 items-center gap-3">
+            <span className={responsiveStyles.tripStartMarker}>
+              <TargetIcon />
+            </span>
+            <div className="min-w-0">
+              <p className={responsiveStyles.tripStartLabel}>Start</p>
+              <p className={responsiveStyles.tripAddressPrimary}>{start.primary}</p>
+              {start.secondary && (
+                <p className={responsiveStyles.tripAddressSecondary}>{start.secondary}</p>
+              )}
+            </div>
+          </div>
+
+          <div className="hidden flex-1 items-center gap-2 lg:flex">
+            <span className={responsiveStyles.tripRailDashed} />
+            <span className={responsiveStyles.tripStopsPill}>
+              <span aria-hidden="true">•</span>
+              {stopCount} {stopCount === 1 ? "stop" : "stops"}
+            </span>
+            <span className={responsiveStyles.tripRailDashed} />
+          </div>
+
+          <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+            <div className="min-w-0 text-right">
+              <p className={responsiveStyles.tripEndLabel}>End</p>
+              <p className={responsiveStyles.tripAddressPrimary}>{end.primary}</p>
+              {end.secondary && (
+                <p className={responsiveStyles.tripAddressSecondary}>{end.secondary}</p>
+              )}
+            </div>
+            <span className={responsiveStyles.tripEndMarker}>
+              <FlagIcon />
+            </span>
             <button
               type="button"
               onClick={() => onSetExpanded(true)}
-              className={responsiveStyles.inlineEditLink}
+              className={responsiveStyles.tripEditButton}
             >
+              <PencilIcon />
               Edit
             </button>
-          </p>
-          <DatePicker
-            id="planningDate"
-            value={planningDate}
-            onChange={onPlanningDateChange}
-            compact
-            ariaLabel="Planning date"
-          />
-          <button
-            type="button"
-            aria-label="Expand trip setup"
-            onClick={() => onSetExpanded(true)}
-            className={responsiveStyles.panelChevronButton}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
+          </div>
         </div>
       </section>
     );

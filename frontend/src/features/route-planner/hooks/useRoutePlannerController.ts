@@ -747,6 +747,7 @@ export function useRoutePlannerController({
     isMobileViewport,
     isExpanded: isTripSetupExpanded,
     onSetExpanded: setIsTripSetupExpanded,
+    stopCount: destinationCount,
     startAddress,
     resolvedEndAddress,
     manualEndAddress,
