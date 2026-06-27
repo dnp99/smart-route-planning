@@ -493,11 +493,37 @@ export function OptimizedRouteResult({
                   Visit order
                 </h3>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2">
                 <span className="inline-flex items-center whitespace-nowrap rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                   {scheduledStopCount} stop{scheduledStopCount === 1 ? "" : "s"}
                 </span>
-                {hasIntermediateStops && (
+                {isManualOrderStale && onResetManualOrder && (
+                  <button
+                    type="button"
+                    onClick={onResetManualOrder}
+                    className={responsiveStyles.routeResetButton}
+                  >
+                    Reset order
+                  </button>
+                )}
+                {isManualOrderStale && onRecalculateManualOrder && (
+                  <button
+                    type="button"
+                    onClick={onRecalculateManualOrder}
+                    disabled={isRecalculatingManualOrder}
+                    title={
+                      unscheduledResubmitCount > 0
+                        ? `Re-submits ${unscheduledResubmitCount} previously unscheduled visit${
+                            unscheduledResubmitCount === 1 ? "" : "s"
+                          }`
+                        : undefined
+                    }
+                    className={responsiveStyles.routeRecalculateButton}
+                  >
+                    {isRecalculatingManualOrder ? "Recalculating…" : "Recalculate times"}
+                  </button>
+                )}
+                {hasIntermediateStops && !isManualOrderStale && (
                   <button
                     type="button"
                     onClick={handleSaveImage}
@@ -529,42 +555,6 @@ export function OptimizedRouteResult({
 
             {hasIntermediateStops ? (
               <>
-                {isManualOrderStale && (
-                  <div className="mt-3 rounded-2xl border border-blue-200/90 bg-blue-50 px-3 py-2 text-sm text-blue-900 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/25 dark:text-blue-100">
-                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                      <span className="m-0 font-medium">
-                        Route manually adjusted. Times are estimated.
-                        {unscheduledResubmitCount > 0 && (
-                          <span className="ml-1 font-normal">
-                            {unscheduledResubmitCount} previously unscheduled visit
-                            {unscheduledResubmitCount === 1 ? "" : "s"} will be re-submitted.
-                          </span>
-                        )}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        {onResetManualOrder && (
-                          <button
-                            type="button"
-                            onClick={onResetManualOrder}
-                            className="rounded-xl border border-slate-300 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                          >
-                            Reset order
-                          </button>
-                        )}
-                        {onRecalculateManualOrder && (
-                          <button
-                            type="button"
-                            onClick={onRecalculateManualOrder}
-                            disabled={isRecalculatingManualOrder}
-                            className="rounded-xl bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600"
-                          >
-                            {isRecalculatingManualOrder ? "Recalculating..." : "Recalculate times"}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )}
                 <OptimizedStopList
                   orderedStops={displayedOrderedStops}
                   startAddress={result.start.address}
