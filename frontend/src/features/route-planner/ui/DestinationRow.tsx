@@ -103,6 +103,7 @@ type DestinationRowProps = {
   destination: SelectedPatientDestination;
   index: number;
   showIndex?: boolean;
+  avatarInitials?: string;
   compact?: boolean;
   displayName?: string;
   displaySubtitle?: string;
@@ -129,6 +130,7 @@ export const DestinationRow = ({
   destination,
   index,
   showIndex = true,
+  avatarInitials,
   compact = false,
   displayName,
   displaySubtitle,
@@ -160,13 +162,18 @@ export const DestinationRow = ({
       destination.windowEnd !== (destination.originalWindowEnd ?? destination.windowEnd));
 
   return (
-    <li
+    <div
       className={`flex flex-col justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 ${
         compact ? "min-h-11 py-2" : "min-h-14 py-2.5"
       } ${destination.isIncluded ? "" : "opacity-60"}`}
     >
       <div className="flex items-center gap-2">
         {showIndex && <span className={responsiveStyles.destinationIndex}>{index + 1}.</span>}
+        {avatarInitials && (
+          <span className={responsiveStyles.clientAvatar} aria-hidden="true">
+            {avatarInitials}
+          </span>
+        )}
         <div className="min-w-0 flex-1">
           <button
             type="button"
@@ -371,6 +378,6 @@ export const DestinationRow = ({
       {isModalOpen && (
         <PatientInfoModal destination={destination} onClose={() => setIsModalOpen(false)} />
       )}
-    </li>
+    </div>
   );
 };

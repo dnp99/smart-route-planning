@@ -8,6 +8,9 @@ type SelectedDestinationsSectionProps = {
   isMobileViewport: boolean;
   isLoading: boolean;
   autoSeedHint: string;
+  startAddress: string;
+  endAddress: string;
+  planningDate: string;
   selectedDestinations: SelectedPatientDestination[];
   onClearSelectedDestinations: () => void;
   expandedDestinationVisitKeys: Record<string, boolean>;
@@ -31,10 +34,34 @@ type SelectedDestinationsSectionProps = {
   ) => Promise<void>;
 };
 
+const getInitialsFromName = (name: string) => {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+};
+
+const formatPlanningWeekday = (planningDate: string) => {
+  if (!planningDate) return "";
+  const parsed = new Date(`${planningDate}T12:00:00`);
+  const time = parsed.getTime();
+  if (time !== time) return ""; // NaN guard (Number.isNaN unavailable per es-compat)
+  return parsed.toLocaleDateString("en-US", { weekday: "long" });
+};
+
+const splitAddressLine = (address: string) => {
+  const idx = address.indexOf(", ");
+  if (idx === -1) return { primary: address, secondary: "" };
+  return { primary: address.slice(0, idx), secondary: address.slice(idx + 2) };
+};
+
 export const SelectedDestinationsSection = ({
   isMobileViewport,
   isLoading,
   autoSeedHint,
+  startAddress,
+  endAddress,
+  planningDate,
   selectedDestinations,
   onClearSelectedDestinations,
   expandedDestinationVisitKeys,
@@ -54,6 +81,7 @@ export const SelectedDestinationsSection = ({
   }px`;
   const [collapsedPatientGroups, setCollapsedPatientGroups] = useState<Record<string, boolean>>({});
   const selectedVisitCount = selectedDestinations.length;
+  const planningWeekday = formatPlanningWeekday(planningDate);
 
   const selectedByPatient = useMemo(() => {
     const groups: Array<{
@@ -110,19 +138,16 @@ export const SelectedDestinationsSection = ({
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <p className={`${responsiveStyles.patientColumnLabel} shrink-0`}>Selected</p>
+            <p className={`${responsiveStyles.patientColumnLabel} shrink-0`}>Your Route</p>
             <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               {selectedByPatient.length} client{selectedByPatient.length === 1 ? "" : "s"} ·{" "}
               {selectedVisitCount} visit{selectedVisitCount === 1 ? "" : "s"}
+              {planningWeekday ? ` · scheduled for ${planningWeekday}` : ""}
             </span>
           </div>
-          {autoSeedHint.length > 0 ? (
+          {autoSeedHint.length > 0 && (
             <p className="m-0 mt-1 truncate text-xs text-slate-600 dark:text-slate-300">
               {autoSeedHint}
-            </p>
-          ) : (
-            <p className="m-0 mt-1 text-xs text-slate-500 dark:text-slate-400">
-              These visits will be used when you optimize the route.
             </p>
           )}
         </div>
@@ -152,7 +177,7 @@ export const SelectedDestinationsSection = ({
               <path d="M10 11v6" />
               <path d="M14 11v6" />
             </svg>
-            <span>Clear list</span>
+            <span>Clear</span>
           </button>
         </div>
       </div>
@@ -177,124 +202,195 @@ export const SelectedDestinationsSection = ({
         ) : selectedDestinations.length === 0 ? (
           <p className={responsiveStyles.panelEmptyText}>No clients selected yet.</p>
         ) : (
-          <ol className="m-0 space-y-2 pr-2">
-            {selectedByPatient.map((group, groupIndex) => {
-              const collapsedByDefault = group.destinations.length > 1;
-              const isCollapsed = isPatientGroupCollapsed(group.patientId, collapsedByDefault);
-
-              if (group.destinations.length === 1) {
+          <div className={responsiveStyles.routeTimelineRail}>
+            {startAddress.length > 0 &&
+              (() => {
+                const start = splitAddressLine(startAddress);
                 return (
-                  <DestinationRow
-                    key={group.destinations[0].visitKey}
-                    destination={group.destinations[0]}
-                    index={groupIndex}
-                    compact
-                    displayName={group.patientName}
-                    displaySubtitle={formatSingleRowSubtitle(group.destinations[0])}
-                    inputLabelPrefix={group.patientName}
-                    isExpanded={
-                      expandedDestinationVisitKeys[group.destinations[0].visitKey] ?? false
-                    }
-                    onToggleDetails={() =>
-                      onToggleDestinationDetails(group.destinations[0].visitKey)
-                    }
-                    onRemove={() => onRemoveDestinationVisit(group.destinations[0].visitKey)}
-                    onSetIncluded={(v) =>
-                      onSetDestinationVisitIncluded(group.destinations[0].visitKey, v)
-                    }
-                    onUpdateWindow={(field, value) =>
-                      onUpdateDestinationPlanningWindow(
-                        group.destinations[0].visitKey,
-                        field,
-                        value,
-                      )
-                    }
-                    onSetPersistWindow={(v) =>
-                      onSetDestinationPersistPlanningWindow(group.destinations[0].visitKey, v)
-                    }
-                    activeVisitInstanceActionId={activeVisitInstanceActionId}
-                    onVisitInstanceStatusChange={onVisitInstanceStatusChange}
-                    onVisitInstanceReschedule={onVisitInstanceReschedule}
-                  />
-                );
-              }
-
-              return (
-                <li key={group.patientId} className="px-2 py-1">
-                  <button
-                    type="button"
-                    aria-expanded={!isCollapsed}
-                    aria-label={`Toggle windows for ${group.patientName}`}
-                    onClick={() => togglePatientGroupCollapsed(group.patientId, collapsedByDefault)}
-                    className="mb-1 flex w-full items-center gap-2 rounded-lg px-1 py-1.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
-                  >
-                    <span className={responsiveStyles.destinationIndex}>{groupIndex + 1}.</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        {group.patientName}
-                      </p>
-                      <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
-                        {group.destinations.length} visit windows
-                      </p>
-                    </div>
-                    <span className="text-sm text-slate-500 dark:text-slate-400">
-                      {group.destinations.length} windows
+                  <div className="relative pb-3">
+                    <span className={responsiveStyles.routeTimelineStartNode}>
+                      <span className="h-2 w-2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
                     </span>
-                    <svg
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      className="text-slate-500 dark:text-slate-400"
-                    >
-                      {isCollapsed ? (
-                        <polyline points="6 9 12 15 18 9" />
-                      ) : (
-                        <polyline points="18 15 12 9 6 15" />
-                      )}
-                    </svg>
-                  </button>
-                  {!isCollapsed && (
-                    <ol className="m-0 space-y-2 pr-2 pl-3">
-                      {group.destinations.map((destination, windowIndex) => (
-                        <DestinationRow
-                          key={destination.visitKey}
-                          destination={destination}
-                          index={windowIndex}
-                          showIndex={false}
-                          compact
-                          displayName={formatWindowLabel(destination, windowIndex)}
-                          displaySubtitle={formatWindowSubtitle(windowIndex)}
-                          inputLabelPrefix={`${group.patientName} window ${windowIndex + 1}`}
-                          removeAriaLabel={`Remove ${group.patientName} window ${windowIndex + 1}`}
-                          isExpanded={expandedDestinationVisitKeys[destination.visitKey] ?? false}
-                          onToggleDetails={() => onToggleDestinationDetails(destination.visitKey)}
-                          onRemove={() => onRemoveDestinationVisit(destination.visitKey)}
-                          onSetIncluded={(v) =>
-                            onSetDestinationVisitIncluded(destination.visitKey, v)
+                    <p className={responsiveStyles.routeTimelineStartLabel}>Start</p>
+                    <p className="m-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {start.primary}
+                    </p>
+                    {start.secondary && (
+                      <p className="m-0 truncate text-xs text-slate-400 dark:text-slate-500">
+                        {start.secondary}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+
+            <ol className="m-0 list-none space-y-3 p-0">
+              {selectedByPatient.map((group, groupIndex) => {
+                const collapsedByDefault = group.destinations.length > 1;
+                const isCollapsed = isPatientGroupCollapsed(group.patientId, collapsedByDefault);
+                const initials = getInitialsFromName(group.patientName);
+
+                return (
+                  <li key={group.patientId} className="relative">
+                    <span className={responsiveStyles.selectedTimelineNode}>{groupIndex + 1}</span>
+                    {group.destinations.length === 1 ? (
+                      <DestinationRow
+                        destination={group.destinations[0]}
+                        index={groupIndex}
+                        showIndex={false}
+                        avatarInitials={initials}
+                        compact
+                        displayName={group.patientName}
+                        displaySubtitle={formatSingleRowSubtitle(group.destinations[0])}
+                        inputLabelPrefix={group.patientName}
+                        isExpanded={
+                          expandedDestinationVisitKeys[group.destinations[0].visitKey] ?? false
+                        }
+                        onToggleDetails={() =>
+                          onToggleDestinationDetails(group.destinations[0].visitKey)
+                        }
+                        onRemove={() => onRemoveDestinationVisit(group.destinations[0].visitKey)}
+                        onSetIncluded={(v) =>
+                          onSetDestinationVisitIncluded(group.destinations[0].visitKey, v)
+                        }
+                        onUpdateWindow={(field, value) =>
+                          onUpdateDestinationPlanningWindow(
+                            group.destinations[0].visitKey,
+                            field,
+                            value,
+                          )
+                        }
+                        onSetPersistWindow={(v) =>
+                          onSetDestinationPersistPlanningWindow(group.destinations[0].visitKey, v)
+                        }
+                        activeVisitInstanceActionId={activeVisitInstanceActionId}
+                        onVisitInstanceStatusChange={onVisitInstanceStatusChange}
+                        onVisitInstanceReschedule={onVisitInstanceReschedule}
+                      />
+                    ) : (
+                      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                        <button
+                          type="button"
+                          aria-expanded={!isCollapsed}
+                          aria-label={`Toggle windows for ${group.patientName}`}
+                          onClick={() =>
+                            togglePatientGroupCollapsed(group.patientId, collapsedByDefault)
                           }
-                          onUpdateWindow={(field, value) =>
-                            onUpdateDestinationPlanningWindow(destination.visitKey, field, value)
-                          }
-                          onSetPersistWindow={(v) =>
-                            onSetDestinationPersistPlanningWindow(destination.visitKey, v)
-                          }
-                          activeVisitInstanceActionId={activeVisitInstanceActionId}
-                          onVisitInstanceStatusChange={onVisitInstanceStatusChange}
-                          onVisitInstanceReschedule={onVisitInstanceReschedule}
-                        />
-                      ))}
-                    </ol>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
+                          className="flex w-full items-center gap-3 px-3 py-2.5 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                        >
+                          <span className={responsiveStyles.clientAvatar} aria-hidden="true">
+                            {initials}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                              {group.patientName}
+                            </p>
+                            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
+                              {group.destinations.length} visit windows
+                            </p>
+                          </div>
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                            {group.destinations.length} windows
+                            <svg
+                              width="14"
+                              height="14"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              {isCollapsed ? (
+                                <polyline points="6 9 12 15 18 9" />
+                              ) : (
+                                <polyline points="18 15 12 9 6 15" />
+                              )}
+                            </svg>
+                          </span>
+                        </button>
+                        {!isCollapsed && (
+                          <div className="space-y-2 border-t border-slate-100 px-3 py-2.5 dark:border-slate-800">
+                            {group.destinations.map((destination, windowIndex) => (
+                              <DestinationRow
+                                key={destination.visitKey}
+                                destination={destination}
+                                index={windowIndex}
+                                showIndex={false}
+                                compact
+                                displayName={formatWindowLabel(destination, windowIndex)}
+                                displaySubtitle={formatWindowSubtitle(windowIndex)}
+                                inputLabelPrefix={`${group.patientName} window ${windowIndex + 1}`}
+                                removeAriaLabel={`Remove ${group.patientName} window ${windowIndex + 1}`}
+                                isExpanded={
+                                  expandedDestinationVisitKeys[destination.visitKey] ?? false
+                                }
+                                onToggleDetails={() =>
+                                  onToggleDestinationDetails(destination.visitKey)
+                                }
+                                onRemove={() => onRemoveDestinationVisit(destination.visitKey)}
+                                onSetIncluded={(v) =>
+                                  onSetDestinationVisitIncluded(destination.visitKey, v)
+                                }
+                                onUpdateWindow={(field, value) =>
+                                  onUpdateDestinationPlanningWindow(
+                                    destination.visitKey,
+                                    field,
+                                    value,
+                                  )
+                                }
+                                onSetPersistWindow={(v) =>
+                                  onSetDestinationPersistPlanningWindow(destination.visitKey, v)
+                                }
+                                activeVisitInstanceActionId={activeVisitInstanceActionId}
+                                onVisitInstanceStatusChange={onVisitInstanceStatusChange}
+                                onVisitInstanceReschedule={onVisitInstanceReschedule}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+
+            {endAddress.length > 0 &&
+              (() => {
+                const end = splitAddressLine(endAddress);
+                return (
+                  <div className="relative pt-1">
+                    <span className={responsiveStyles.routeTimelineEndNode}>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-3 w-3"
+                        aria-hidden="true"
+                      >
+                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                        <line x1="4" y1="22" x2="4" y2="15" />
+                      </svg>
+                    </span>
+                    <p className={responsiveStyles.tripEndLabel}>End</p>
+                    <p className="m-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                      {end.primary}
+                    </p>
+                    {end.secondary && (
+                      <p className="m-0 truncate text-xs text-slate-400 dark:text-slate-500">
+                        {end.secondary}
+                      </p>
+                    )}
+                  </div>
+                );
+              })()}
+          </div>
         )}
       </div>
     </div>

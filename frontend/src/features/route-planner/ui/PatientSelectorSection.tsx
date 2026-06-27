@@ -108,6 +108,9 @@ type PatientSelectorSectionProps = {
   isVisitInstancesLoading: boolean;
   searchError: string;
   createPatientError: string;
+  startAddress: string;
+  resolvedEndAddress: string;
+  planningDate: string;
   selectedDestinations: SelectedPatientDestination[];
   expandedDestinationVisitKeys: Record<string, boolean>;
   onAddPatient: (patient: Patient) => void;
@@ -156,6 +159,9 @@ export const PatientSelectorSection = ({
   isVisitInstancesLoading,
   searchError,
   createPatientError,
+  startAddress,
+  resolvedEndAddress,
+  planningDate,
   selectedDestinations,
   expandedDestinationVisitKeys,
   onAddPatient,
@@ -334,7 +340,7 @@ export const PatientSelectorSection = ({
           <div className={responsiveStyles.patientSelectionGrid}>
             <div className="grid gap-2">
               <p className={responsiveStyles.patientColumnLabel}>
-                Search clients ({destinationSearchResults.length})
+                Search clients · {destinationSearchResults.length}
               </p>
               <div className={responsiveStyles.patientSearchContainer}>
                 {createPatientError && (
@@ -362,7 +368,7 @@ export const PatientSelectorSection = ({
                       aria-label="Destination client search"
                       value={destinationSearchQuery}
                       onChange={(e) => onSearchQueryChange(e.target.value)}
-                      placeholder="Search clients by first or last name"
+                      placeholder="Search by first or last name"
                       className={`${responsiveStyles.searchInputCompact} pl-9 sm:pl-10`}
                     />
                   </div>
@@ -370,23 +376,10 @@ export const PatientSelectorSection = ({
                     type="button"
                     onClick={onOpenCreatePatient}
                     aria-label="Add Client"
-                    className={`${responsiveStyles.secondaryIconButton} sm:h-auto sm:w-auto sm:px-3 sm:py-1.5`}
+                    className={responsiveStyles.addClientButton}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      className="h-5 w-5 sm:hidden"
-                    >
-                      <path d="M12 5v14" />
-                      <path d="M5 12h14" />
-                    </svg>
-                    <span className="hidden sm:inline">Add Client</span>
+                    <PlusIcon />
+                    Add
                   </button>
                 </div>
                 {isSearchLoading && (
@@ -451,6 +444,9 @@ export const PatientSelectorSection = ({
               isMobileViewport={isMobileViewport}
               isLoading={isVisitInstancesLoading}
               autoSeedHint={autoSeedHint}
+              startAddress={startAddress}
+              endAddress={resolvedEndAddress}
+              planningDate={planningDate}
               selectedDestinations={selectedDestinations}
               expandedDestinationVisitKeys={expandedDestinationVisitKeys}
               onToggleDestinationDetails={onToggleDestinationDetails}

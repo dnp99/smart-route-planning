@@ -772,6 +772,9 @@ export function useRoutePlannerController({
     isVisitInstancesLoading:
       isVisitInstancesLoading && !hasVisitInstancesLoaded && !manualTemplateSelectionLock,
     searchError: destinationSearchError || visitInstancesError || "",
+    startAddress,
+    resolvedEndAddress,
+    planningDate,
     createPatientError: createPatientError ?? "",
     selectedDestinations,
     expandedDestinationVisitKeys,

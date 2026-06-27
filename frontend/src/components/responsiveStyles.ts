@@ -207,6 +207,9 @@ export const responsiveStyles = {
     "flex min-h-0 flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3 max-h-72 md:max-h-none md:h-[26rem]",
   secondaryIconButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
+  // '+ Add' button beside the client search — outline style to pair with the bordered search input
+  addClientButton:
+    "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 sm:py-1.5",
 
   // ── Selectable list (patient search results) ───────────────────────────────
   selectableList: "m-0 min-h-0 flex-1 list-none space-y-2 overflow-y-auto p-0 pr-2",
@@ -507,6 +510,9 @@ export const responsiveStyles = {
     "m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-600 dark:text-emerald-400",
   routeTimelineEndNode:
     "absolute -left-[34px] top-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-500 ring-4 ring-white dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-900",
+  // 'Your route' selection preview: numbered node circle on the rail (one per client)
+  selectedTimelineNode:
+    "absolute -left-[35px] top-3 flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white ring-4 ring-white dark:bg-blue-500 dark:ring-slate-900",
   // Route planner: stale-route actions, folded into the timeline header (shown only when manually reordered)
   routeRecalculateButton:
     "inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600",
