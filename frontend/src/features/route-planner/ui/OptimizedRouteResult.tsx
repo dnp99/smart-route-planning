@@ -567,6 +567,7 @@ export function OptimizedRouteResult({
                 )}
                 <OptimizedStopList
                   orderedStops={displayedOrderedStops}
+                  startAddress={result.start.address}
                   isStale={isManualOrderStale}
                   onMoveStop={onMoveStop}
                   canMoveStop={canMoveStop}

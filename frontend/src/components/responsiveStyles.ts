@@ -499,6 +499,12 @@ export const responsiveStyles = {
     "inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white dark:bg-blue-500",
   routeAddClientButton:
     "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300",
+  // Route planner: 'Your route' timeline rail (continuous line + START/END caps)
+  routeTimelineRail: "relative ml-2 mt-3 border-l-2 border-slate-200 pl-6 dark:border-slate-700",
+  routeTimelineStartNode:
+    "absolute -left-[33px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 ring-4 ring-white dark:bg-emerald-950/50 dark:ring-slate-900",
+  routeTimelineStartLabel:
+    "m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-600 dark:text-emerald-400",
   dashboardNudgeCard:
     "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
   dashboardAlertItem:
