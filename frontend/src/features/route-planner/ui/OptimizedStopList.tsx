@@ -290,14 +290,32 @@ export function OptimizedStopList({
                           normalizedHomeAddress,
                         );
                         return (
-                          <EndingStopCard
-                            stop={stop}
-                            stopLabel="E"
-                            isStale={isStale}
-                            isExpanded={Boolean(expandedResultEndingStopIds[endingDetailsKey])}
-                            onToggle={() => onToggleResultEndingStop(endingDetailsKey)}
-                            isHomeEndingPoint={isHomeEndingPoint}
-                          />
+                          <div className="relative">
+                            <span className={responsiveStyles.routeTimelineEndNode}>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-3 w-3"
+                                aria-hidden="true"
+                              >
+                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                                <line x1="4" y1="22" x2="4" y2="15" />
+                              </svg>
+                            </span>
+                            <EndingStopCard
+                              stop={stop}
+                              stopLabel="E"
+                              isStale={isStale}
+                              isExpanded={Boolean(expandedResultEndingStopIds[endingDetailsKey])}
+                              onToggle={() => onToggleResultEndingStop(endingDetailsKey)}
+                              isHomeEndingPoint={isHomeEndingPoint}
+                            />
+                          </div>
                         );
                       })()
                     ) : (
