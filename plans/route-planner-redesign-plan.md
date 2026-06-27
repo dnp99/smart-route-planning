@@ -21,11 +21,19 @@ Build in **4 phases**, each shippable + verifiable + committed on its own. Befor
 
 ## Status
 
-- **Phase 1 — ✅ DONE** (commit `448a36b`).
-- **Phase 2 — NEXT.** Mid-exploration: reading the client search/list in [PatientSelectorSection.tsx](frontend/src/features/route-planner/ui/PatientSelectorSection.tsx) (the `isContentVisible` block, ~line 223 onward — search input + `destinationSearchResults` list). The selected-destinations state + search hook already exist; Phase 2 is a presentational rework of that list into avatar cards.
-- Phases 3, 4 — pending.
+_All work below is on `develop` and **pushed** (through commit `3d4472a`)._
 
-> **Finding from Phase 1:** the `Less driving / Finish sooner` toggle **and** the `Optimize/Re-optimize Route` button already exist in the Clients card header ([PatientSelectorSection.tsx:116](frontend/src/features/route-planner/ui/PatientSelectorSection.tsx#L116)) and already match the design's labels — so the "relocate optimize controls" work was a no-op. Phase 1 ended up being just the trip-setup bookend.
+- **Phase 1 — ✅ DONE** (`448a36b`) — trip-setup bookend.
+- **Phase 2 — ✅ DONE** (`cfa27ea`) — client-card list.
+- **Phase 3 — ✅ DONE** (`e3f72c0`, `2b81ced`) — result timeline rail (START → numbered nodes → END flag). Decision taken: **one node per stop** (preserves the same-address reorder fix); per-client-window grouping deferred. Stats kept in the existing "Dispatch Plan" block under the route header (not relocated).
+- **Timeline header polish — ✅ DONE** (`067646f`) — Reset/Recalculate folded into the header; Save-as-image shown only in default (non-stale) mode.
+- **Outside-click collapse — ✅ DONE** (`990dc66`) — trip card collapses on click-outside / Esc (desktop, when both points set).
+- **Optimize-control icons — ✅ DONE** (`e006ecd`).
+- **"Your Route" preview + search header — ✅ DONE** (`51eedde`).
+- **Figma-match pass for the Clients / "Your Route" panel — ✅ DONE** (`3d4472a`) — stacked header, blue count badge, greyed collapsed title, borderless lists, gray Your-Route canvas + vertical separator, timeline node restyle (trip-style START/END at numbered-node size, thin ring outline, dark-blue rail), Scheduled pill restored + inline on single cards, pencil-icon edit.
+- **Phase 4 — NEXT** (mobile single-column). Decisions locked in — see below.
+
+> **Finding from Phase 1:** the `Less driving / Finish sooner` toggle **and** the `Optimize/Re-optimize Route` button already exist in the Clients card header ([PatientSelectorSection.tsx](frontend/src/features/route-planner/ui/PatientSelectorSection.tsx)) and already match the design's labels — so the "relocate optimize controls" work was a no-op. Phase 1 ended up being just the trip-setup bookend.
 
 ---
 
@@ -43,8 +51,35 @@ Build in **4 phases**, each shippable + verifiable + committed on its own. Befor
 - Rework `RouteResultSection` / [OptimizedRouteResult.tsx](frontend/src/features/route-planner/ui/OptimizedRouteResult.tsx) + [OptimizedStopList.tsx](frontend/src/features/route-planner/ui/OptimizedStopList.tsx) into a **vertical numbered timeline**: `START` node → numbered stop nodes on a connecting rail → `END` node. Each stop is a card; multi-window clients are **collapsible** ("N windows"), each window a row with a quiet **"Scheduled"/late** pill (not a full button). Preserve manual reorder + "Recalculate times" behavior under the new visuals.
 - Move **result stats directly under the route**: on-time banner ("All N visits on time · Finishes around …"), **Distance**, **Scheduled stops**, **Leave by**. Reuse existing metrics; restyle into the compact card row + banner.
 
-### Phase 4 — Mobile single-column layout
-- Replace the step-wizard (`mobileSteps`/`activeMobileStep` in `useRoutePlannerController` + the `mobileStepNav` in `RoutePlanner.tsx`) with the **single-column scroll**: trip card → optimize toggle → `Re-optimize` → on-time banner → timeline. ⚠️ Decision to confirm at this phase: fully remove the wizard vs. keep it as a fallback. (Leaning: remove, per the mock.)
+### Phase 4 — Mobile single-column layout — NEXT
+
+Replace the mobile 3-step wizard (Trip → Clients → Review) with a single scrollable column, keeping each section contained so it isn't an endless scroll.
+
+**Decisions locked in:**
+1. **Fully remove the wizard** (per the mock). One commit, easily revertible.
+2. Mobile Optimize action = **sticky bottom CTA bar** (always reachable), replacing the per-step "Continue to…" footers.
+3. **Full removal of `activeMobileStep`** from the persisted draft (the more thorough draft-cleanup option).
+4. Trip card stays **collapsible** on mobile.
+
+**How add-client still works (the concern raised):** the wizard only gated *which step is visible* — it never enabled adding. The search box + `+ Add` + results list (`+` / `In route` toggles) + the Your-Route list all live in the Clients card, which already collapses to one column on mobile (`patientSelectionGrid` is `grid-cols-1 md:grid-cols-2`). So on mobile: scroll to Clients → search → tap `+` → it's added and shows in Your Route below.
+
+**Changes, file by file:**
+- **`useRoutePlannerController.ts`** — set `isTripStepVisible` / `isPatientsStepVisible` / `isReviewStepVisible` to `true` (always render all sections); delete the `mobileSteps` array; stop returning `mobileSteps` / `activeMobileStep` / `setActiveMobileStep`.
+- **`RoutePlanner.tsx`** — remove the `mobileStepNav` block. Sections already render stacked → natural single column.
+- **`RouteResultSection.tsx`** — remove the "Continue to Clients →" / "Continue to Review →" sticky footers and the "Ready to optimize" review card. Replace with a single **sticky bottom Optimize/Re-optimize bar** (mobile only).
+- **Draft cleanup** — `routePlannerDraft.ts` (drop `activeMobileStep` from the type + serialize/validate) and `useRoutePlannerDraftState.ts` (drop the state + reset). Keep **old saved drafts parsing** (ignore the now-stale field; don't necessarily bump version) so existing localStorage drafts don't break.
+
+**Containment (avoid endless scroll):**
+- Trip card collapses once start+end set (the bookend).
+- Clients card's search-results + Your-Route lists keep their capped mobile scroll heights (`mobileSearchListMaxHeight` / `mobileSelectedListMaxHeight`) so each list scrolls internally.
+- Result timeline renders below once optimized.
+
+**Test impact:**
+- `RouteResultSection.test.tsx` — ~4 wizard tests ("Continue to Clients →", "Continue to Review →", "Ready to optimize", mobile optimize) → rewrite for the single-column + sticky-CTA behavior.
+- `routePlannerDraft.test.ts` — update for the removed `activeMobileStep` (valid-draft fixture + the invalid-value case).
+- `RoutePlanner.patientSelection.test.tsx` — one fixture sets `activeMobileStep: "trip"`; drop it.
+
+**Verification:** mobile-viewport screenshots — stacked flow, search+add works, sticky Optimize bar, lists scroll internally, collapsible trip card.
 
 ---
 
