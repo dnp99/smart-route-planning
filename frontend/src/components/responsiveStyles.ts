@@ -204,7 +204,7 @@ export const responsiveStyles = {
   patientColumnLabel:
     "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400",
   patientSearchContainer:
-    "flex min-h-0 flex-col gap-2 px-0 py-1 max-h-72 md:max-h-none md:h-[26rem]",
+    "flex min-h-0 flex-col gap-2 px-0 pt-1 max-h-72 md:max-h-none md:h-[26rem]",
   secondaryIconButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
   // '+ Add' button beside the client search — outline style to pair with the bordered search input
@@ -221,7 +221,7 @@ export const responsiveStyles = {
   actionButtons: "flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center",
 
   // ── Destination list ───────────────────────────────────────────────────────
-  destinationList: "overflow-y-auto py-1 pl-4 pr-1 md:h-[26rem]",
+  destinationList: "overflow-y-auto pb-1 pl-4 pr-1 pt-2 md:h-[26rem]",
   // 'Your route' column (desktop): subtle gray canvas + vertical separator from the search column
   selectedRouteColumn:
     "md:border-l md:border-slate-200 md:bg-slate-50/60 md:pl-4 dark:md:border-slate-800 dark:md:bg-slate-900/30",
