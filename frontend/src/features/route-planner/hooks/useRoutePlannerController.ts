@@ -229,19 +229,12 @@ export function useRoutePlannerController({
       byId.set(patient.id, patient);
     });
 
-    return [...byId.values()].filter((patient) => {
-      if (selectedDestinationIdSet.has(patient.id)) {
-        return false;
-      }
-
-      return patientMatchesSearchQuery(patient, destinationSearchQuery);
-    });
-  }, [
-    destinationSearchPatients,
-    destinationSearchQuery,
-    locallyCreatedPatients,
-    selectedDestinationIdSet,
-  ]);
+    // Keep already-selected patients in the list (shown with an "In route"
+    // badge) rather than removing them, matching the redesigned client list.
+    return [...byId.values()].filter((patient) =>
+      patientMatchesSearchQuery(patient, destinationSearchQuery),
+    );
+  }, [destinationSearchPatients, destinationSearchQuery, locallyCreatedPatients]);
 
   const { planningDate, setPlanningDate, isMobileViewport, activeMobileStep, setActiveMobileStep } =
     useRoutePlannerDraftState({
@@ -779,6 +772,9 @@ export function useRoutePlannerController({
     isVisitInstancesLoading:
       isVisitInstancesLoading && !hasVisitInstancesLoaded && !manualTemplateSelectionLock,
     searchError: destinationSearchError || visitInstancesError || "",
+    startAddress,
+    resolvedEndAddress,
+    planningDate,
     createPatientError: createPatientError ?? "",
     selectedDestinations,
     expandedDestinationVisitKeys,

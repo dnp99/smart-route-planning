@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import type { OrderedStop } from "../types";
+import { responsiveStyles } from "../../../components/responsiveStyles";
 import { OptimizedStopCard, EndingStopCard } from "./OptimizedStopCard";
 import {
   expectedStartTimeFormatter,
@@ -10,6 +11,7 @@ import { formatDuration } from "./routePlannerUtils";
 
 type OptimizedStopListProps = {
   orderedStops: OrderedStop[];
+  startAddress?: string;
   isStale?: boolean;
   onMoveStop?: (stopId: string, direction: "up" | "down") => void;
   canMoveStop?: (stopId: string, direction: "up" | "down") => boolean;
@@ -44,6 +46,7 @@ function isLunchBreak(
 
 export function OptimizedStopList({
   orderedStops,
+  startAddress,
   isStale = false,
   onMoveStop,
   canMoveStop,
@@ -71,236 +74,271 @@ export function OptimizedStopList({
   });
 
   return (
-    <ol className="mb-0 mt-3 list-none space-y-3 p-0">
-      {orderedStops.map((stop, stopIndex) => {
-        const prevStop = stopIndex > 0 ? orderedStops[stopIndex - 1] : null;
-        let idleGapMinutes = 0;
-        let breakStartMs = 0;
-        let breakEndMs = 0;
-        if (prevStop && !stop.isEndingPoint && stop.tasks.length > 0) {
-          const prevDepartureMs = new Date(prevStop.departureTime).getTime();
-          const nextServiceStartMs = new Date(stop.tasks[0].serviceStartTime).getTime();
-          const travelMs = stop.durationFromPreviousSeconds * 1000;
-          idleGapMinutes = (nextServiceStartMs - prevDepartureMs - travelMs) / 60000;
-          breakStartMs = prevDepartureMs;
-          breakEndMs = nextServiceStartMs - travelMs;
-        }
-        const showBreakCard =
-          effectiveBreakGapThreshold !== null && idleGapMinutes >= effectiveBreakGapThreshold;
-        const isLunch =
-          showBreakCard &&
-          isLunchBreak(breakStartMs, idleGapMinutes, lunchStartTime, lunchDurationMinutes);
+    <div className={responsiveStyles.routeTimelineRail}>
+      {startAddress && (
+        <div className="relative pb-3">
+          <span className={responsiveStyles.routeTimelineStartNode}>
+            <span className="h-2 w-2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+          </span>
+          <p className={responsiveStyles.routeTimelineStartLabel}>Start</p>
+          <p className="m-0 text-sm text-slate-700 dark:text-slate-300">{startAddress}</p>
+        </div>
+      )}
+      <ol className="mb-0 list-none space-y-3 p-0">
+        {orderedStops.map((stop, stopIndex) => {
+          const prevStop = stopIndex > 0 ? orderedStops[stopIndex - 1] : null;
+          let idleGapMinutes = 0;
+          let breakStartMs = 0;
+          let breakEndMs = 0;
+          if (prevStop && !stop.isEndingPoint && stop.tasks.length > 0) {
+            const prevDepartureMs = new Date(prevStop.departureTime).getTime();
+            const nextServiceStartMs = new Date(stop.tasks[0].serviceStartTime).getTime();
+            const travelMs = stop.durationFromPreviousSeconds * 1000;
+            idleGapMinutes = (nextServiceStartMs - prevDepartureMs - travelMs) / 60000;
+            breakStartMs = prevDepartureMs;
+            breakEndMs = nextServiceStartMs - travelMs;
+          }
+          const showBreakCard =
+            effectiveBreakGapThreshold !== null && idleGapMinutes >= effectiveBreakGapThreshold;
+          const isLunch =
+            showBreakCard &&
+            isLunchBreak(breakStartMs, idleGapMinutes, lunchStartTime, lunchDurationMinutes);
 
-        return (
-          <Fragment key={stop.stopId}>
-            {showBreakCard && (
-              <div className="flex items-center gap-3 py-1">
-                <div className="flex items-center gap-2.5 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
-                  {isLunch ? (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
-                      aria-hidden="true"
-                    >
-                      <path d="M3 11h18" />
-                      <path d="M3 7h18" />
-                      <path d="M3 15h18" />
-                      <path d="M5 19h14a2 2 0 0 0 2-2v-1H3v1a2 2 0 0 0 2 2z" />
-                      <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2" />
-                    </svg>
-                  ) : (
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
-                      aria-hidden="true"
-                    >
-                      <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
-                      <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
-                      <line x1="6" y1="2" x2="6" y2="4" />
-                      <line x1="10" y1="2" x2="10" y2="4" />
-                      <line x1="14" y1="2" x2="14" y2="4" />
-                    </svg>
-                  )}
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                      {isLunch ? "Lunch" : "Break"} · {formatBreakGap(idleGapMinutes)}
-                    </span>
-                    <span className="text-xs text-blue-700/90 dark:text-blue-300/90">
-                      {isStale ? "~ " : ""}
-                      {expectedStartTimeFormatter.format(new Date(breakStartMs))} –{" "}
-                      {expectedStartTimeFormatter.format(new Date(breakEndMs))}
-                    </span>
+          return (
+            <Fragment key={stop.stopId}>
+              {showBreakCard && (
+                <div className="flex items-center gap-3 py-1">
+                  <div className="flex items-center gap-2.5 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
+                    {isLunch ? (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
+                        aria-hidden="true"
+                      >
+                        <path d="M3 11h18" />
+                        <path d="M3 7h18" />
+                        <path d="M3 15h18" />
+                        <path d="M5 19h14a2 2 0 0 0 2-2v-1H3v1a2 2 0 0 0 2 2z" />
+                        <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2" />
+                      </svg>
+                    ) : (
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
+                        aria-hidden="true"
+                      >
+                        <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+                        <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+                        <line x1="6" y1="2" x2="6" y2="4" />
+                        <line x1="10" y1="2" x2="10" y2="4" />
+                        <line x1="14" y1="2" x2="14" y2="4" />
+                      </svg>
+                    )}
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                        {isLunch ? "Lunch" : "Break"} · {formatBreakGap(idleGapMinutes)}
+                      </span>
+                      <span className="text-xs text-blue-700/90 dark:text-blue-300/90">
+                        {isStale ? "~ " : ""}
+                        {expectedStartTimeFormatter.format(new Date(breakStartMs))} –{" "}
+                        {expectedStartTimeFormatter.format(new Date(breakEndMs))}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            <li className="min-w-0">
-              {stop.tasks.length > 0 ? (
-                <div className="space-y-1.5">
-                  {stop.tasks.map((task, taskIndex) => {
-                    const detailsKey = `${task.visitId}`;
+              )}
+              <li className="min-w-0">
+                {stop.tasks.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {stop.tasks.map((task, taskIndex) => {
+                      const detailsKey = `${task.visitId}`;
 
-                    let interTaskBreakMinutes = 0;
-                    let interTaskBreakStartMs = 0;
-                    let interTaskBreakEndMs = 0;
-                    if (taskIndex > 0) {
-                      const prevTask = stop.tasks[taskIndex - 1];
-                      interTaskBreakStartMs = new Date(prevTask.serviceEndTime).getTime();
-                      interTaskBreakEndMs = new Date(task.serviceStartTime).getTime();
-                      interTaskBreakMinutes = (interTaskBreakEndMs - interTaskBreakStartMs) / 60000;
-                    }
-                    const showInterTaskBreak =
-                      effectiveBreakGapThreshold !== null &&
-                      interTaskBreakMinutes >= effectiveBreakGapThreshold;
-                    const isInterTaskLunch =
-                      showInterTaskBreak &&
-                      isLunchBreak(
-                        interTaskBreakStartMs,
-                        interTaskBreakMinutes,
-                        lunchStartTime,
-                        lunchDurationMinutes,
-                      );
+                      let interTaskBreakMinutes = 0;
+                      let interTaskBreakStartMs = 0;
+                      let interTaskBreakEndMs = 0;
+                      if (taskIndex > 0) {
+                        const prevTask = stop.tasks[taskIndex - 1];
+                        interTaskBreakStartMs = new Date(prevTask.serviceEndTime).getTime();
+                        interTaskBreakEndMs = new Date(task.serviceStartTime).getTime();
+                        interTaskBreakMinutes =
+                          (interTaskBreakEndMs - interTaskBreakStartMs) / 60000;
+                      }
+                      const showInterTaskBreak =
+                        effectiveBreakGapThreshold !== null &&
+                        interTaskBreakMinutes >= effectiveBreakGapThreshold;
+                      const isInterTaskLunch =
+                        showInterTaskBreak &&
+                        isLunchBreak(
+                          interTaskBreakStartMs,
+                          interTaskBreakMinutes,
+                          lunchStartTime,
+                          lunchDurationMinutes,
+                        );
 
-                    return (
-                      <Fragment key={task.visitId}>
-                        {showInterTaskBreak && (
-                          <div className="flex items-center gap-3 py-1">
-                            <div className="flex items-center gap-2.5 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
-                              {isInterTaskLunch ? (
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M3 11h18" />
-                                  <path d="M3 7h18" />
-                                  <path d="M3 15h18" />
-                                  <path d="M5 19h14a2 2 0 0 0 2-2v-1H3v1a2 2 0 0 0 2 2z" />
-                                  <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2" />
-                                </svg>
-                              ) : (
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                  stroke="currentColor"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                  className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
-                                  aria-hidden="true"
-                                >
-                                  <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
-                                  <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
-                                  <line x1="6" y1="2" x2="6" y2="4" />
-                                  <line x1="10" y1="2" x2="10" y2="4" />
-                                  <line x1="14" y1="2" x2="14" y2="4" />
-                                </svg>
-                              )}
-                              <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
-                                  {isInterTaskLunch ? "Lunch" : "Break"} ·{" "}
-                                  {formatBreakGap(interTaskBreakMinutes)}
-                                </span>
-                                <span className="text-xs text-blue-700/90 dark:text-blue-300/90">
-                                  {isStale ? "~ " : ""}
-                                  {expectedStartTimeFormatter.format(
-                                    new Date(interTaskBreakStartMs),
-                                  )}{" "}
-                                  –{" "}
-                                  {expectedStartTimeFormatter.format(new Date(interTaskBreakEndMs))}
-                                </span>
+                      return (
+                        <Fragment key={task.visitId}>
+                          {showInterTaskBreak && (
+                            <div className="flex items-center gap-3 py-1">
+                              <div className="flex items-center gap-2.5 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-2 shadow-sm dark:border-blue-900/50 dark:bg-blue-950/20">
+                                {isInterTaskLunch ? (
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
+                                    aria-hidden="true"
+                                  >
+                                    <path d="M3 11h18" />
+                                    <path d="M3 7h18" />
+                                    <path d="M3 15h18" />
+                                    <path d="M5 19h14a2 2 0 0 0 2-2v-1H3v1a2 2 0 0 0 2 2z" />
+                                    <path d="M3 7V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v2" />
+                                  </svg>
+                                ) : (
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    className="h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300"
+                                    aria-hidden="true"
+                                  >
+                                    <path d="M17 8h1a4 4 0 1 1 0 8h-1" />
+                                    <path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z" />
+                                    <line x1="6" y1="2" x2="6" y2="4" />
+                                    <line x1="10" y1="2" x2="10" y2="4" />
+                                    <line x1="14" y1="2" x2="14" y2="4" />
+                                  </svg>
+                                )}
+                                <div className="flex flex-col">
+                                  <span className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                                    {isInterTaskLunch ? "Lunch" : "Break"} ·{" "}
+                                    {formatBreakGap(interTaskBreakMinutes)}
+                                  </span>
+                                  <span className="text-xs text-blue-700/90 dark:text-blue-300/90">
+                                    {isStale ? "~ " : ""}
+                                    {expectedStartTimeFormatter.format(
+                                      new Date(interTaskBreakStartMs),
+                                    )}{" "}
+                                    –{" "}
+                                    {expectedStartTimeFormatter.format(
+                                      new Date(interTaskBreakEndMs),
+                                    )}
+                                  </span>
+                                </div>
                               </div>
                             </div>
+                          )}
+                          <div
+                            id={`stop-${task.visitId}`}
+                            className="rounded-2xl target:ring-2 target:ring-amber-400 target:ring-offset-2"
+                          >
+                            <OptimizedStopCard
+                              task={task}
+                              stop={stop}
+                              stopLabel={String(taskLabels.get(task.visitId) ?? stopIndex + 1)}
+                              isStale={isStale}
+                              showMoveControls={taskIndex === 0}
+                              canMoveUp={
+                                taskIndex === 0 &&
+                                typeof canMoveStop === "function" &&
+                                canMoveStop(stop.stopId, "up")
+                              }
+                              canMoveDown={
+                                taskIndex === 0 &&
+                                typeof canMoveStop === "function" &&
+                                canMoveStop(stop.stopId, "down")
+                              }
+                              onMoveUp={() => onMoveStop?.(stop.stopId, "up")}
+                              onMoveDown={() => onMoveStop?.(stop.stopId, "down")}
+                              isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
+                              onToggle={() => onToggleResultTask(detailsKey)}
+                              workStart={workStart}
+                              workEnd={workEnd}
+                            />
                           </div>
-                        )}
-                        <div
-                          id={`stop-${task.visitId}`}
-                          className="rounded-2xl target:ring-2 target:ring-amber-400 target:ring-offset-2"
-                        >
-                          <OptimizedStopCard
-                            task={task}
-                            stop={stop}
-                            stopLabel={String(taskLabels.get(task.visitId) ?? stopIndex + 1)}
-                            isStale={isStale}
-                            showMoveControls={taskIndex === 0}
-                            canMoveUp={
-                              taskIndex === 0 &&
-                              typeof canMoveStop === "function" &&
-                              canMoveStop(stop.stopId, "up")
-                            }
-                            canMoveDown={
-                              taskIndex === 0 &&
-                              typeof canMoveStop === "function" &&
-                              canMoveStop(stop.stopId, "down")
-                            }
-                            onMoveUp={() => onMoveStop?.(stop.stopId, "up")}
-                            onMoveDown={() => onMoveStop?.(stop.stopId, "down")}
-                            isExpanded={Boolean(expandedResultTaskIds[detailsKey])}
-                            onToggle={() => onToggleResultTask(detailsKey)}
-                            workStart={workStart}
-                            workEnd={workEnd}
-                          />
-                        </div>
-                      </Fragment>
-                    );
-                  })}
-                </div>
-              ) : (
-                <>
-                  {stop.isEndingPoint ? (
-                    (() => {
-                      const endingDetailsKey = `ending:${stop.stopId}`;
-                      const isHomeEndingPoint = addressesMatch(stop.address, normalizedHomeAddress);
-                      return (
-                        <EndingStopCard
-                          stop={stop}
-                          stopLabel="E"
-                          isStale={isStale}
-                          isExpanded={Boolean(expandedResultEndingStopIds[endingDetailsKey])}
-                          onToggle={() => onToggleResultEndingStop(endingDetailsKey)}
-                          isHomeEndingPoint={isHomeEndingPoint}
-                        />
+                        </Fragment>
                       );
-                    })()
-                  ) : (
-                    <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
-                      <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                        {stopIndex + 1}. {stop.address}
-                      </p>
-                      <small className="mt-1 block text-xs font-medium text-blue-600 dark:text-blue-300">
-                        No scheduled visit tasks at this stop.
-                      </small>
-                      <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
-                        {stop.distanceFromPreviousKm} km •{" "}
-                        {formatDuration(stop.durationFromPreviousSeconds)} from previous stop
-                      </small>
-                    </div>
-                  )}
-                </>
-              )}
-            </li>
-          </Fragment>
-        );
-      })}
-    </ol>
+                    })}
+                  </div>
+                ) : (
+                  <>
+                    {stop.isEndingPoint ? (
+                      (() => {
+                        const endingDetailsKey = `ending:${stop.stopId}`;
+                        const isHomeEndingPoint = addressesMatch(
+                          stop.address,
+                          normalizedHomeAddress,
+                        );
+                        return (
+                          <div className="relative">
+                            <span className={responsiveStyles.routeTimelineEndNode}>
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                className="h-3 w-3"
+                                aria-hidden="true"
+                              >
+                                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                                <line x1="4" y1="22" x2="4" y2="15" />
+                              </svg>
+                            </span>
+                            <EndingStopCard
+                              stop={stop}
+                              stopLabel="E"
+                              isStale={isStale}
+                              isExpanded={Boolean(expandedResultEndingStopIds[endingDetailsKey])}
+                              onToggle={() => onToggleResultEndingStop(endingDetailsKey)}
+                              isHomeEndingPoint={isHomeEndingPoint}
+                            />
+                          </div>
+                        );
+                      })()
+                    ) : (
+                      <div className="rounded-2xl border border-slate-200 bg-white px-3 py-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/40">
+                        <p className="m-0 text-sm font-semibold text-slate-900 dark:text-slate-100">
+                          {stopIndex + 1}. {stop.address}
+                        </p>
+                        <small className="mt-1 block text-xs font-medium text-blue-600 dark:text-blue-300">
+                          No scheduled visit tasks at this stop.
+                        </small>
+                        <small className="mt-1 block text-xs text-slate-500 dark:text-slate-400">
+                          {stop.distanceFromPreviousKm} km •{" "}
+                          {formatDuration(stop.durationFromPreviousSeconds)} from previous stop
+                        </small>
+                      </div>
+                    )}
+                  </>
+                )}
+              </li>
+            </Fragment>
+          );
+        })}
+      </ol>
+    </div>
   );
 }

@@ -204,9 +204,12 @@ export const responsiveStyles = {
   patientColumnLabel:
     "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400",
   patientSearchContainer:
-    "flex min-h-0 flex-col gap-2 rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3 max-h-72 md:max-h-none md:h-[26rem]",
+    "flex min-h-0 flex-col gap-2 px-0 py-1 max-h-72 md:max-h-none md:h-[26rem]",
   secondaryIconButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
+  // '+ Add' button beside the client search — outline style to pair with the bordered search input
+  addClientButton:
+    "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 sm:py-1.5",
 
   // ── Selectable list (patient search results) ───────────────────────────────
   selectableList: "m-0 min-h-0 flex-1 list-none space-y-2 overflow-y-auto p-0 pr-2",
@@ -218,8 +221,10 @@ export const responsiveStyles = {
   actionButtons: "flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center",
 
   // ── Destination list ───────────────────────────────────────────────────────
-  destinationList:
-    "overflow-y-auto rounded-2xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-slate-900 sm:px-4 sm:py-3 md:h-[26rem]",
+  destinationList: "overflow-y-auto py-1 pl-4 pr-1 md:h-[26rem]",
+  // 'Your route' column (desktop): subtle gray canvas + vertical separator from the search column
+  selectedRouteColumn:
+    "md:border-l md:border-slate-200 md:bg-slate-50/60 md:pl-4 dark:md:border-slate-800 dark:md:bg-slate-900/30",
   selectedListClearButton:
     "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-2.5 text-xs font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-400",
   destinationItem:
@@ -229,8 +234,11 @@ export const responsiveStyles = {
     "w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800 sm:w-auto",
   destinationRemove:
     "w-full rounded-lg border border-red-200 px-2 py-1.5 text-xs font-medium text-red-700 transition hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/30 sm:w-auto sm:self-start sm:py-1",
+  // Selected-list row actions — bordered icon buttons (edit pencil + delete trash), paired per Figma
+  destinationEditIcon:
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:bg-slate-50 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-slate-800",
   destinationRemoveIcon:
-    "inline-flex h-7 w-7 items-center justify-center rounded-lg text-slate-400 transition hover:bg-red-50 hover:text-red-600 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
   destinationNameButton:
     "block w-full truncate text-left text-sm font-semibold text-slate-900 transition hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-300",
   destinationPopover:
@@ -255,7 +263,7 @@ export const responsiveStyles = {
     "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-200",
   visitTypePillMixed: "bg-amber-100 text-amber-700 dark:bg-amber-950/50 dark:text-amber-200",
   countPill:
-    "rounded-full bg-slate-200 px-3 py-0.5 text-xs font-bold text-slate-700 dark:bg-slate-700 dark:text-slate-200 sm:text-sm",
+    "rounded-full bg-blue-50 px-3 py-0.5 text-xs font-bold text-blue-600 dark:bg-blue-950/40 dark:text-blue-300 sm:text-sm",
 
   // ── Optimize CTA ──────────────────────────────────────────────────────────
   optimizeButton:
@@ -488,6 +496,41 @@ export const responsiveStyles = {
   tripRailDashed: "h-px flex-1 border-t border-dashed border-slate-300 dark:border-slate-700",
   tripEditButton:
     "inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm font-medium text-blue-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-blue-300 dark:hover:bg-slate-800",
+  // Route planner: client search list cards (left column)
+  routeClientCard:
+    "flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-left transition hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700",
+  routeClientCardSelected:
+    "border-blue-200 bg-blue-50/60 hover:border-blue-300 dark:border-blue-900 dark:bg-blue-950/30",
+  routeClientName: "m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100",
+  routeClientAddress: "m-0 truncate text-xs text-slate-500 dark:text-slate-400",
+  routeInRouteBadge:
+    "inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white dark:bg-blue-500",
+  routeAddClientButton:
+    "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 dark:border-slate-700 dark:text-slate-400 dark:hover:bg-blue-950/30 dark:hover:text-blue-300",
+  // Route planner: 'Your route' timeline rail (continuous line + START/END caps)
+  routeTimelineRail: "relative ml-2 mt-3 border-l-2 border-slate-200 pl-6 dark:border-slate-700",
+  routeTimelineStartNode:
+    "absolute -left-[33px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 ring-4 ring-white dark:bg-emerald-950/50 dark:ring-slate-900",
+  routeTimelineStartLabel:
+    "m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-600 dark:text-emerald-400",
+  routeTimelineEndNode:
+    "absolute -left-[34px] top-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-500 ring-4 ring-white dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-900",
+  // 'Your route' selection preview: blue rail line (no top margin — aligns START with the search input)
+  selectedTimelineRail:
+    "relative ml-2 space-y-3 border-l-2 border-blue-600 pl-6 dark:border-blue-500",
+  // 'Your route' selection preview: numbered node circle on the rail (one per client)
+  selectedTimelineNode:
+    "absolute -left-[39px] top-2 flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white ring-1 ring-blue-200 ring-offset-4 ring-offset-white dark:bg-blue-500 dark:ring-blue-800 dark:ring-offset-slate-900",
+  // START/END caps reuse the trip-setup markers (green target / blue flag), with a border
+  selectedTimelineStartNode:
+    "absolute -left-[37px] top-0 flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 ring-offset-4 ring-offset-white dark:bg-emerald-950/40 dark:text-emerald-300 dark:ring-emerald-800 dark:ring-offset-slate-900",
+  selectedTimelineEndNode:
+    "absolute -left-[37px] top-0 flex h-7 w-7 items-center justify-center rounded-full bg-blue-50 text-blue-600 ring-1 ring-blue-200 ring-offset-4 ring-offset-white dark:bg-blue-950/40 dark:text-blue-300 dark:ring-blue-800 dark:ring-offset-slate-900",
+  // Route planner: stale-route actions, folded into the timeline header (shown only when manually reordered)
+  routeRecalculateButton:
+    "inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600",
+  routeResetButton:
+    "inline-flex items-center gap-1 whitespace-nowrap rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800",
   dashboardNudgeCard:
     "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
   dashboardAlertItem:

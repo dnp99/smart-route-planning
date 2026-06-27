@@ -137,10 +137,10 @@ describe("DestinationRow", () => {
   });
 
   it("applies opacity when isIncluded is false", () => {
-    render(
+    const { container } = render(
       <DestinationRow destination={buildDestination({ isIncluded: false })} {...defaultProps} />,
     );
-    const li = screen.getByText("Alex Johnson").closest("li");
-    expect(li?.className).toContain("opacity-60");
+    // Root is a <div> (the rail in SelectedDestinationsSection provides the <li>).
+    expect((container.firstChild as HTMLElement)?.className).toContain("opacity-60");
   });
 });

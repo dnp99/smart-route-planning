@@ -2,10 +2,97 @@ import { responsiveStyles } from "../../../components/responsiveStyles";
 import { SelectedDestinationsSection } from "./SelectedDestinationsSection";
 import type { SelectedPatientDestination } from "../domain/routePlannerTypes";
 import type { Patient } from "../../../../../shared/contracts/patients";
-import { formatPatientNameFromParts } from "../../patients/domain/patientName";
+import { formatPatientNameFromParts, getPatientInitials } from "../../patients/domain/patientName";
 
 const MOBILE_SEARCH_VISIBLE_ROWS = 15;
 const MOBILE_SEARCH_ROW_HEIGHT_PX = 88;
+
+const CheckIcon = () => (
+  <svg
+    width="12"
+    height="12"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="3"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <polyline points="20 6 9 17 4 12" />
+  </svg>
+);
+
+const PlusIcon = () => (
+  <svg
+    width="16"
+    height="16"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M12 5v14" />
+    <path d="M5 12h14" />
+  </svg>
+);
+
+const RouteIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="6" cy="19" r="3" />
+    <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+    <circle cx="18" cy="5" r="3" />
+  </svg>
+);
+
+const ClockIcon = () => (
+  <svg
+    width="14"
+    height="14"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="10" />
+    <polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+
+const SyncIcon = () => (
+  <svg
+    width="15"
+    height="15"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+    <path d="M3 3v5h5" />
+    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+    <path d="M21 21v-5h-5" />
+  </svg>
+);
 
 type PatientSelectorSectionProps = {
   isVisible: boolean;
@@ -21,6 +108,9 @@ type PatientSelectorSectionProps = {
   isVisitInstancesLoading: boolean;
   searchError: string;
   createPatientError: string;
+  startAddress: string;
+  resolvedEndAddress: string;
+  planningDate: string;
   selectedDestinations: SelectedPatientDestination[];
   expandedDestinationVisitKeys: Record<string, boolean>;
   onAddPatient: (patient: Patient) => void;
@@ -36,7 +126,10 @@ type PatientSelectorSectionProps = {
   ) => void;
   onSetDestinationPersistPlanningWindow: (visitKey: string, persistPlanningWindow: boolean) => void;
   activeVisitInstanceActionId: string | null;
-  onVisitInstanceStatusChange: (visitId: string, status: "scheduled" | "cancelled") => Promise<void>;
+  onVisitInstanceStatusChange: (
+    visitId: string,
+    status: "scheduled" | "cancelled",
+  ) => Promise<void>;
   onVisitInstanceReschedule: (
     visitId: string,
     updates: { planningDate?: string; windowStart?: string; windowEnd?: string },
@@ -66,6 +159,9 @@ export const PatientSelectorSection = ({
   isVisitInstancesLoading,
   searchError,
   createPatientError,
+  startAddress,
+  resolvedEndAddress,
+  planningDate,
   selectedDestinations,
   expandedDestinationVisitKeys,
   onAddPatient,
@@ -114,46 +210,71 @@ export const PatientSelectorSection = ({
   const defaultObjectiveLabel =
     defaultOptimizationObjective === "distance" ? "Less driving" : "Finish sooner";
   const routePreferenceControl = (
-    <div
-      className={responsiveStyles.segmentedControlContainer}
-      aria-label={`Route preference (default: ${defaultObjectiveLabel})`}
-      title={`Route preference (default: ${defaultObjectiveLabel})`}
-    >
-      <button
-        type="button"
-        onClick={() => onOptimizationObjectiveChange("distance")}
-        aria-pressed={optimizationObjective === "distance"}
-        className={`${responsiveStyles.segmentedControlButtonBase} ${
-          optimizationObjective === "distance"
-            ? responsiveStyles.segmentedControlButtonActive
-            : responsiveStyles.segmentedControlButtonInactive
-        }`}
+    <div className="flex items-center gap-2">
+      <span className="hidden whitespace-nowrap text-sm font-medium text-slate-500 dark:text-slate-400 lg:inline">
+        Optimize for
+      </span>
+      <div
+        className={responsiveStyles.segmentedControlContainer}
+        aria-label={`Route preference (default: ${defaultObjectiveLabel})`}
+        title={`Route preference (default: ${defaultObjectiveLabel})`}
       >
-        Less driving
-      </button>
-      <button
-        type="button"
-        onClick={() => onOptimizationObjectiveChange("time")}
-        aria-pressed={optimizationObjective === "time"}
-        className={`${responsiveStyles.segmentedControlButtonBase} ${
-          optimizationObjective === "time"
-            ? responsiveStyles.segmentedControlButtonActive
-            : responsiveStyles.segmentedControlButtonInactive
-        }`}
-      >
-        Finish sooner
-      </button>
+        <button
+          type="button"
+          onClick={() => onOptimizationObjectiveChange("distance")}
+          aria-pressed={optimizationObjective === "distance"}
+          className={`${responsiveStyles.segmentedControlButtonBase} ${
+            optimizationObjective === "distance"
+              ? responsiveStyles.segmentedControlButtonActive
+              : responsiveStyles.segmentedControlButtonInactive
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <RouteIcon />
+            Less driving
+          </span>
+        </button>
+        <button
+          type="button"
+          onClick={() => onOptimizationObjectiveChange("time")}
+          aria-pressed={optimizationObjective === "time"}
+          className={`${responsiveStyles.segmentedControlButtonBase} ${
+            optimizationObjective === "time"
+              ? responsiveStyles.segmentedControlButtonActive
+              : responsiveStyles.segmentedControlButtonInactive
+          }`}
+        >
+          <span className="flex items-center gap-1.5">
+            <ClockIcon />
+            Finish sooner
+          </span>
+        </button>
+      </div>
     </div>
+  );
+
+  const inRoutePatientIds = new Set(
+    selectedDestinations.map((destination) => destination.patientId),
   );
 
   return (
     <section className={responsiveStyles.panel}>
-      <div className="flex items-center justify-between gap-2">
+      <div
+        className={`flex items-center justify-between gap-2 ${
+          isContentVisible ? "border-b border-slate-200 pb-3 dark:border-slate-800" : ""
+        }`}
+      >
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1.5">
-            <h2 className={responsiveStyles.cardTitle}>Clients</h2>
-            {destinationCount > 0 && (
-              <span className={responsiveStyles.countPill}>{destinationCount}</span>
+            <h2
+              className={
+                isCollapsedDesktop ? responsiveStyles.formGroupEyebrow : responsiveStyles.cardTitle
+              }
+            >
+              Clients
+            </h2>
+            {inRoutePatientIds.size > 0 && (
+              <span className={responsiveStyles.countPill}>{inRoutePatientIds.size}</span>
             )}
           </div>
         </div>
@@ -169,7 +290,11 @@ export const PatientSelectorSection = ({
                 data-loading={isLoading ? "true" : "false"}
                 data-success={showOptimizeSuccess ? "true" : "false"}
               >
-                {isLoading && <span className={responsiveStyles.spinnerWhite} aria-hidden="true" />}
+                {isLoading ? (
+                  <span className={responsiveStyles.spinnerWhite} aria-hidden="true" />
+                ) : (
+                  <SyncIcon />
+                )}
                 {isLoading ? "Optimizing..." : hasResult ? "Re-optimize Route" : "Optimize Route"}
               </button>
             )}
@@ -224,9 +349,11 @@ export const PatientSelectorSection = ({
         <>
           <div className={responsiveStyles.patientSelectionGrid}>
             <div className="grid gap-2">
-              <p className={responsiveStyles.patientColumnLabel}>
-                Search clients ({destinationSearchResults.length})
-              </p>
+              <div className="flex min-h-10 items-start">
+                <p className={responsiveStyles.patientColumnLabel}>
+                  Search clients · {destinationSearchResults.length}
+                </p>
+              </div>
               <div className={responsiveStyles.patientSearchContainer}>
                 {createPatientError && (
                   <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
@@ -253,7 +380,7 @@ export const PatientSelectorSection = ({
                       aria-label="Destination client search"
                       value={destinationSearchQuery}
                       onChange={(e) => onSearchQueryChange(e.target.value)}
-                      placeholder="Search clients by first or last name"
+                      placeholder="Search by first or last name"
                       className={`${responsiveStyles.searchInputCompact} pl-9 sm:pl-10`}
                     />
                   </div>
@@ -261,23 +388,10 @@ export const PatientSelectorSection = ({
                     type="button"
                     onClick={onOpenCreatePatient}
                     aria-label="Add Client"
-                    className={`${responsiveStyles.secondaryIconButton} sm:h-auto sm:w-auto sm:px-3 sm:py-1.5`}
+                    className={responsiveStyles.addClientButton}
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      className="h-5 w-5 sm:hidden"
-                    >
-                      <path d="M12 5v14" />
-                      <path d="M5 12h14" />
-                    </svg>
-                    <span className="hidden sm:inline">Add Client</span>
+                    <PlusIcon />
+                    Add
                   </button>
                 </div>
                 {isSearchLoading && (
@@ -296,20 +410,40 @@ export const PatientSelectorSection = ({
                         patient.firstName,
                         patient.lastName,
                       );
+                      const isInRoute = inRoutePatientIds.has(patient.id);
                       return (
                         <li key={patient.id} className="pr-2">
-                          <button
-                            type="button"
-                            onClick={() => onAddPatient(patient)}
-                            className={responsiveStyles.selectableItemButton}
+                          <div
+                            className={`${responsiveStyles.routeClientCard} ${
+                              isInRoute ? responsiveStyles.routeClientCardSelected : ""
+                            }`}
                           >
-                            <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">
-                              {patientName}
-                              <span className="pl-2 font-normal m-0 text-slate-600 dark:text-slate-300">
-                                | {patient.address}
+                            <span className={responsiveStyles.clientAvatar} aria-hidden="true">
+                              {getPatientInitials(patient.firstName, patient.lastName)}
+                            </span>
+                            <div className="min-w-0 flex-1">
+                              <p className={responsiveStyles.routeClientName}>{patientName}</p>
+                              <p className={responsiveStyles.routeClientAddress}>
+                                {patient.address}
+                              </p>
+                            </div>
+                            {isInRoute ? (
+                              <span className={responsiveStyles.routeInRouteBadge}>
+                                <CheckIcon />
+                                In route
                               </span>
-                            </p>
-                          </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => onAddPatient(patient)}
+                                aria-label={`Add ${patientName}`}
+                                title={`Add ${patientName}`}
+                                className={responsiveStyles.routeAddClientButton}
+                              >
+                                <PlusIcon />
+                              </button>
+                            )}
+                          </div>
                         </li>
                       );
                     })}
@@ -318,22 +452,27 @@ export const PatientSelectorSection = ({
               </div>
             </div>
 
-            <SelectedDestinationsSection
-              isMobileViewport={isMobileViewport}
-              isLoading={isVisitInstancesLoading}
-              autoSeedHint={autoSeedHint}
-              selectedDestinations={selectedDestinations}
-              expandedDestinationVisitKeys={expandedDestinationVisitKeys}
-              onToggleDestinationDetails={onToggleDestinationDetails}
-              onClearSelectedDestinations={onClearSelectedDestinations}
-              onRemoveDestinationVisit={onRemoveDestinationVisit}
-              onSetDestinationVisitIncluded={onSetDestinationVisitIncluded}
-              onUpdateDestinationPlanningWindow={onUpdateDestinationPlanningWindow}
-              onSetDestinationPersistPlanningWindow={onSetDestinationPersistPlanningWindow}
-              activeVisitInstanceActionId={activeVisitInstanceActionId}
-              onVisitInstanceStatusChange={onVisitInstanceStatusChange}
-              onVisitInstanceReschedule={onVisitInstanceReschedule}
-            />
+            <div className={responsiveStyles.selectedRouteColumn}>
+              <SelectedDestinationsSection
+                isMobileViewport={isMobileViewport}
+                isLoading={isVisitInstancesLoading}
+                autoSeedHint={autoSeedHint}
+                startAddress={startAddress}
+                endAddress={resolvedEndAddress}
+                planningDate={planningDate}
+                selectedDestinations={selectedDestinations}
+                expandedDestinationVisitKeys={expandedDestinationVisitKeys}
+                onToggleDestinationDetails={onToggleDestinationDetails}
+                onClearSelectedDestinations={onClearSelectedDestinations}
+                onRemoveDestinationVisit={onRemoveDestinationVisit}
+                onSetDestinationVisitIncluded={onSetDestinationVisitIncluded}
+                onUpdateDestinationPlanningWindow={onUpdateDestinationPlanningWindow}
+                onSetDestinationPersistPlanningWindow={onSetDestinationPersistPlanningWindow}
+                activeVisitInstanceActionId={activeVisitInstanceActionId}
+                onVisitInstanceStatusChange={onVisitInstanceStatusChange}
+                onVisitInstanceReschedule={onVisitInstanceReschedule}
+              />
+            </div>
           </div>
         </>
       )}

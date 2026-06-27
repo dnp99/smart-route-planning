@@ -1,6 +1,7 @@
 import AddressAutocompleteInput from "../../../components/shared/AddressAutocompleteInput";
 import { DatePicker } from "../../../components/shared/DatePicker";
 import { responsiveStyles } from "../../../components/responsiveStyles";
+import { useDismissOnOutside } from "../../../components/hooks/useClickOutside";
 import type { AddressSuggestion } from "../types";
 
 const splitAddressLine = (address: string) => {
@@ -109,6 +110,15 @@ export const TripSetupSection = ({
   planningDate,
   onPlanningDateChange,
 }: TripSetupSectionProps) => {
+  const bothPointsSet = startAddress.length > 0 && resolvedEndAddress.length > 0;
+  // Desktop only: clicking outside (or Escape) collapses the expanded card into
+  // the bookend — but only once the trip is complete, so a half-filled card
+  // never auto-collapses. Mobile has no collapsed state.
+  const cardRef = useDismissOnOutside<HTMLElement>(
+    isVisible && isExpanded && !isMobileViewport && bothPointsSet,
+    () => onSetExpanded(false),
+  );
+
   if (!isVisible) return null;
 
   if (!isExpanded && !isMobileViewport) {
@@ -181,7 +191,7 @@ export const TripSetupSection = ({
   }
 
   return (
-    <section className={responsiveStyles.panel}>
+    <section className={responsiveStyles.panel} ref={cardRef}>
       <div className={responsiveStyles.cardHeader}>
         <div className="flex items-center justify-between gap-2">
           <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>

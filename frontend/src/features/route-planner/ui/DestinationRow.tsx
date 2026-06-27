@@ -21,6 +21,23 @@ const TrashIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const PencilIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M12 20h9" />
+    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+  </svg>
+);
+
 const XIcon = ({ className }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"
@@ -103,6 +120,9 @@ type DestinationRowProps = {
   destination: SelectedPatientDestination;
   index: number;
   showIndex?: boolean;
+  avatarInitials?: string;
+  roundedLarge?: boolean;
+  inlineScheduledPill?: boolean;
   compact?: boolean;
   displayName?: string;
   displaySubtitle?: string;
@@ -129,6 +149,9 @@ export const DestinationRow = ({
   destination,
   index,
   showIndex = true,
+  avatarInitials,
+  roundedLarge = false,
+  inlineScheduledPill = false,
   compact = false,
   displayName,
   displaySubtitle,
@@ -159,14 +182,34 @@ export const DestinationRow = ({
       destination.windowStart !== (destination.originalWindowStart ?? destination.windowStart) ||
       destination.windowEnd !== (destination.originalWindowEnd ?? destination.windowEnd));
 
+  const scheduledPill = (
+    <span
+      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold leading-tight ${
+        isCancelledOccurrence
+          ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300"
+          : "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"
+      }`}
+    >
+      <span aria-hidden="true">•</span>
+      {isCancelledOccurrence ? "Skipped" : "Scheduled"}
+    </span>
+  );
+
   return (
-    <li
-      className={`flex flex-col justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm text-slate-900 shadow-sm dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 ${
-        compact ? "min-h-11 py-2" : "min-h-14 py-2.5"
-      } ${destination.isIncluded ? "" : "opacity-60"}`}
+    <div
+      className={`flex flex-col justify-center border border-slate-200 bg-white px-3 text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 ${
+        roundedLarge ? "rounded-2xl" : "rounded-xl"
+      } ${compact ? "min-h-11 py-2" : "min-h-14 py-2.5"} ${
+        destination.isIncluded ? "" : "opacity-60"
+      }`}
     >
       <div className="flex items-center gap-2">
         {showIndex && <span className={responsiveStyles.destinationIndex}>{index + 1}.</span>}
+        {avatarInitials && (
+          <span className={responsiveStyles.clientAvatar} aria-hidden="true">
+            {avatarInitials}
+          </span>
+        )}
         <div className="min-w-0 flex-1">
           <button
             type="button"
@@ -176,32 +219,30 @@ export const DestinationRow = ({
           >
             {visibleName}
           </button>
-          {displaySubtitle && (
-            <p className="m-0 mt-0.5 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
-              {displaySubtitle}
-            </p>
+          {(displaySubtitle || inlineScheduledPill) && (
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+              {displaySubtitle && (
+                <p className="m-0 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
+                  {displaySubtitle}
+                </p>
+              )}
+              {inlineScheduledPill && scheduledPill}
+            </div>
           )}
         </div>
-        <div className="flex shrink-0 items-center gap-1">
-          {isVisitInstance && (
-            <span
-              className={`hidden sm:inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-                isCancelledOccurrence
-                  ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-300"
-                  : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-300"
-              }`}
-            >
-              {isCancelledOccurrence ? "Skipped" : "Scheduled"}
-            </span>
-          )}
+        <div className="flex shrink-0 items-center gap-1.5">
+          {!inlineScheduledPill && <span className="hidden sm:inline-flex">{scheduledPill}</span>}
           <button
             type="button"
             onClick={onToggleDetails}
             aria-label={isExpanded ? "Hide details" : "Edit window"}
-            className={responsiveStyles.destinationDetailsToggle}
+            className={responsiveStyles.destinationEditIcon}
           >
-            <span className="hidden sm:inline">{isExpanded ? "Hide details" : "Edit window"}</span>
-            <span className="sm:hidden">{isExpanded ? "Hide" : "Edit"}</span>
+            {isExpanded ? (
+              <XIcon className="h-3.5 w-3.5" />
+            ) : (
+              <PencilIcon className="h-3.5 w-3.5" />
+            )}
           </button>
           <button
             type="button"
@@ -213,18 +254,8 @@ export const DestinationRow = ({
           </button>
         </div>
       </div>
-      {isVisitInstance && (
-        <div className="mt-1 flex items-center gap-1.5 sm:hidden">
-          <span
-            className={`inline-flex items-center rounded-full border px-2.5 py-1 text-[11px] font-semibold ${
-              isCancelledOccurrence
-                ? "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/70 dark:bg-amber-950/30 dark:text-amber-300"
-                : "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/30 dark:text-emerald-300"
-            }`}
-          >
-            {isCancelledOccurrence ? "Skipped" : "Scheduled"}
-          </span>
-        </div>
+      {!inlineScheduledPill && (
+        <div className="mt-1 flex items-center gap-1.5 sm:hidden">{scheduledPill}</div>
       )}
 
       {isExpanded && (
@@ -371,6 +402,6 @@ export const DestinationRow = ({
       {isModalOpen && (
         <PatientInfoModal destination={destination} onClose={() => setIsModalOpen(false)} />
       )}
-    </li>
+    </div>
   );
 };

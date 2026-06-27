@@ -236,8 +236,11 @@ export function OptimizedStopCard({
         </div>
       )}
 
-      <div className="mt-1 grid gap-y-0 text-xs leading-5 text-slate-500 dark:text-slate-400">
-        {(task.windowStart && task.windowEnd) || visitDurationLabel ? (
+      {/* Window/duration detail is hidden when collapsed (nurses know it for
+          regular fixed visits; saves vertical space on long lists) — revealed
+          on expand. */}
+      {isExpanded && ((task.windowStart && task.windowEnd) || visitDurationLabel) ? (
+        <div className="mt-1 grid gap-y-0 text-xs leading-5 text-slate-500 dark:text-slate-400">
           <span className="min-w-0 text-slate-500 dark:text-slate-400">
             {task.windowStart && task.windowEnd
               ? `Window: ${task.windowStart} – ${task.windowEnd}`
@@ -245,8 +248,8 @@ export function OptimizedStopCard({
             {task.windowStart && task.windowEnd && visitDurationLabel ? " | " : ""}
             {visitDurationLabel ? `${visitDurationLabel} visit` : ""}
           </span>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       {task.windowStart && task.windowEnd && task.lateBySeconds > 0 && (
         <p
