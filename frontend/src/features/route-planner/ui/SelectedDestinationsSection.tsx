@@ -135,16 +135,14 @@ export const SelectedDestinationsSection = ({
 
   return (
     <div className="grid gap-2">
-      <div className="flex items-start gap-3">
+      <div className="flex min-h-10 items-start gap-3">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <p className={`${responsiveStyles.patientColumnLabel} shrink-0`}>Your Route</p>
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-              {selectedByPatient.length} client{selectedByPatient.length === 1 ? "" : "s"} ·{" "}
-              {selectedVisitCount} visit{selectedVisitCount === 1 ? "" : "s"}
-              {planningWeekday ? ` · scheduled for ${planningWeekday}` : ""}
-            </span>
-          </div>
+          <p className={responsiveStyles.patientColumnLabel}>Your Route</p>
+          <span className="mt-0.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
+            {selectedByPatient.length} client{selectedByPatient.length === 1 ? "" : "s"} ·{" "}
+            {selectedVisitCount} visit{selectedVisitCount === 1 ? "" : "s"}
+            {planningWeekday ? ` · scheduled for ${planningWeekday}` : ""}
+          </span>
           {autoSeedHint.length > 0 && (
             <p className="m-0 mt-1 truncate text-xs text-slate-600 dark:text-slate-300">
               {autoSeedHint}
@@ -202,14 +200,31 @@ export const SelectedDestinationsSection = ({
         ) : selectedDestinations.length === 0 ? (
           <p className={responsiveStyles.panelEmptyText}>No clients selected yet.</p>
         ) : (
-          <div className={responsiveStyles.routeTimelineRail}>
+          <div className={responsiveStyles.selectedTimelineRail}>
             {startAddress.length > 0 &&
               (() => {
                 const start = splitAddressLine(startAddress);
                 return (
-                  <div className="relative pb-3">
-                    <span className={responsiveStyles.routeTimelineStartNode}>
-                      <span className="h-2 w-2 rounded-full bg-emerald-600 dark:bg-emerald-400" />
+                  <div className="relative">
+                    <span className={responsiveStyles.selectedTimelineStartNode}>
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                      >
+                        <circle cx="12" cy="12" r="7" />
+                        <line x1="12" y1="2" x2="12" y2="5" />
+                        <line x1="12" y1="19" x2="12" y2="22" />
+                        <line x1="2" y1="12" x2="5" y2="12" />
+                        <line x1="19" y1="12" x2="22" y2="12" />
+                        <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
+                      </svg>
                     </span>
                     <p className={responsiveStyles.routeTimelineStartLabel}>Start</p>
                     <p className="m-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
@@ -239,6 +254,8 @@ export const SelectedDestinationsSection = ({
                         index={groupIndex}
                         showIndex={false}
                         avatarInitials={initials}
+                        roundedLarge
+                        inlineScheduledPill
                         compact
                         displayName={group.patientName}
                         displaySubtitle={formatSingleRowSubtitle(group.destinations[0])}
@@ -268,7 +285,7 @@ export const SelectedDestinationsSection = ({
                         onVisitInstanceReschedule={onVisitInstanceReschedule}
                       />
                     ) : (
-                      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-950">
+                      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-950">
                         <button
                           type="button"
                           aria-expanded={!isCollapsed}
@@ -361,8 +378,8 @@ export const SelectedDestinationsSection = ({
               (() => {
                 const end = splitAddressLine(endAddress);
                 return (
-                  <div className="relative pt-1">
-                    <span className={responsiveStyles.routeTimelineEndNode}>
+                  <div className="relative">
+                    <span className={responsiveStyles.selectedTimelineEndNode}>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         viewBox="0 0 24 24"
@@ -371,7 +388,7 @@ export const SelectedDestinationsSection = ({
                         strokeWidth="2"
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        className="h-3 w-3"
+                        className="h-4 w-4"
                         aria-hidden="true"
                       >
                         <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />

@@ -259,12 +259,22 @@ export const PatientSelectorSection = ({
 
   return (
     <section className={responsiveStyles.panel}>
-      <div className="flex items-center justify-between gap-2">
+      <div
+        className={`flex items-center justify-between gap-2 ${
+          isContentVisible ? "border-b border-slate-200 pb-3 dark:border-slate-800" : ""
+        }`}
+      >
         <div className="min-w-0">
           <div className="flex min-w-0 items-center gap-1.5">
-            <h2 className={responsiveStyles.cardTitle}>Clients</h2>
-            {destinationCount > 0 && (
-              <span className={responsiveStyles.countPill}>{destinationCount}</span>
+            <h2
+              className={
+                isCollapsedDesktop ? responsiveStyles.formGroupEyebrow : responsiveStyles.cardTitle
+              }
+            >
+              Clients
+            </h2>
+            {inRoutePatientIds.size > 0 && (
+              <span className={responsiveStyles.countPill}>{inRoutePatientIds.size}</span>
             )}
           </div>
         </div>
@@ -339,9 +349,11 @@ export const PatientSelectorSection = ({
         <>
           <div className={responsiveStyles.patientSelectionGrid}>
             <div className="grid gap-2">
-              <p className={responsiveStyles.patientColumnLabel}>
-                Search clients · {destinationSearchResults.length}
-              </p>
+              <div className="flex min-h-10 items-start">
+                <p className={responsiveStyles.patientColumnLabel}>
+                  Search clients · {destinationSearchResults.length}
+                </p>
+              </div>
               <div className={responsiveStyles.patientSearchContainer}>
                 {createPatientError && (
                   <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
@@ -440,25 +452,27 @@ export const PatientSelectorSection = ({
               </div>
             </div>
 
-            <SelectedDestinationsSection
-              isMobileViewport={isMobileViewport}
-              isLoading={isVisitInstancesLoading}
-              autoSeedHint={autoSeedHint}
-              startAddress={startAddress}
-              endAddress={resolvedEndAddress}
-              planningDate={planningDate}
-              selectedDestinations={selectedDestinations}
-              expandedDestinationVisitKeys={expandedDestinationVisitKeys}
-              onToggleDestinationDetails={onToggleDestinationDetails}
-              onClearSelectedDestinations={onClearSelectedDestinations}
-              onRemoveDestinationVisit={onRemoveDestinationVisit}
-              onSetDestinationVisitIncluded={onSetDestinationVisitIncluded}
-              onUpdateDestinationPlanningWindow={onUpdateDestinationPlanningWindow}
-              onSetDestinationPersistPlanningWindow={onSetDestinationPersistPlanningWindow}
-              activeVisitInstanceActionId={activeVisitInstanceActionId}
-              onVisitInstanceStatusChange={onVisitInstanceStatusChange}
-              onVisitInstanceReschedule={onVisitInstanceReschedule}
-            />
+            <div className={responsiveStyles.selectedRouteColumn}>
+              <SelectedDestinationsSection
+                isMobileViewport={isMobileViewport}
+                isLoading={isVisitInstancesLoading}
+                autoSeedHint={autoSeedHint}
+                startAddress={startAddress}
+                endAddress={resolvedEndAddress}
+                planningDate={planningDate}
+                selectedDestinations={selectedDestinations}
+                expandedDestinationVisitKeys={expandedDestinationVisitKeys}
+                onToggleDestinationDetails={onToggleDestinationDetails}
+                onClearSelectedDestinations={onClearSelectedDestinations}
+                onRemoveDestinationVisit={onRemoveDestinationVisit}
+                onSetDestinationVisitIncluded={onSetDestinationVisitIncluded}
+                onUpdateDestinationPlanningWindow={onUpdateDestinationPlanningWindow}
+                onSetDestinationPersistPlanningWindow={onSetDestinationPersistPlanningWindow}
+                activeVisitInstanceActionId={activeVisitInstanceActionId}
+                onVisitInstanceStatusChange={onVisitInstanceStatusChange}
+                onVisitInstanceReschedule={onVisitInstanceReschedule}
+              />
+            </div>
           </div>
         </>
       )}
