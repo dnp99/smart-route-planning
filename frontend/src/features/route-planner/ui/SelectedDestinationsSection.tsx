@@ -58,7 +58,6 @@ const splitAddressLine = (address: string) => {
 export const SelectedDestinationsSection = ({
   isMobileViewport,
   isLoading,
-  autoSeedHint,
   startAddress,
   endAddress,
   planningDate,
@@ -135,19 +134,14 @@ export const SelectedDestinationsSection = ({
 
   return (
     <div className="grid gap-2">
-      <div className="flex min-h-10 items-start gap-3">
+      <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className={responsiveStyles.patientColumnLabel}>Your Route</p>
-          <span className="mt-0.5 block text-xs font-medium text-slate-500 dark:text-slate-400">
+          <span className="mt-0.5 block text-xs font-medium text-slate-600 dark:text-slate-300">
             {selectedByPatient.length} client{selectedByPatient.length === 1 ? "" : "s"} ·{" "}
             {selectedVisitCount} visit{selectedVisitCount === 1 ? "" : "s"}
             {planningWeekday ? ` · scheduled for ${planningWeekday}` : ""}
           </span>
-          {autoSeedHint.length > 0 && (
-            <p className="m-0 mt-1 truncate text-xs text-slate-600 dark:text-slate-300">
-              {autoSeedHint}
-            </p>
-          )}
         </div>
         <div className="shrink-0">
           <button

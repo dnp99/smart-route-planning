@@ -349,11 +349,9 @@ export const PatientSelectorSection = ({
         <>
           <div className={responsiveStyles.patientSelectionGrid}>
             <div className="grid gap-2">
-              <div className="flex min-h-10 items-start">
-                <p className={responsiveStyles.patientColumnLabel}>
-                  Search clients · {destinationSearchResults.length}
-                </p>
-              </div>
+              <p className={responsiveStyles.patientColumnLabel}>
+                Search clients · {destinationSearchResults.length}
+              </p>
               <div className={responsiveStyles.patientSearchContainer}>
                 {createPatientError && (
                   <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
