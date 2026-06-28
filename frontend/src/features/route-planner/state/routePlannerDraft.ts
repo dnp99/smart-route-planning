@@ -1,10 +1,7 @@
 export const ROUTE_PLANNER_DRAFT_STORAGE_KEY = "careflow.route-planner.draft.v1";
 
-export type MobilePlannerStep = "trip" | "patients" | "review";
-
 export type RoutePlannerDraft = {
   version: 1;
-  activeMobileStep: MobilePlannerStep;
   selectedDestinationStates: RoutePlannerDraftDestinationState[];
   planningDate?: string;
 };
@@ -19,9 +16,6 @@ export type RoutePlannerDraftDestinationState = {
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null;
-
-const isMobilePlannerStep = (value: unknown): value is MobilePlannerStep =>
-  value === "trip" || value === "patients" || value === "review";
 
 export const parseRoutePlannerDraftDestinationState = (
   value: unknown,
@@ -65,9 +59,8 @@ export const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
       return null;
     }
 
-    if (!isMobilePlannerStep(parsed.activeMobileStep)) {
-      return null;
-    }
+    // Note: legacy drafts may carry an `activeMobileStep` field — it is ignored
+    // (the mobile step-wizard was removed in favour of a single-column layout).
 
     const rawDestinationStates = Array.isArray(parsed.selectedDestinationStates)
       ? parsed.selectedDestinationStates
@@ -90,7 +83,6 @@ export const readRoutePlannerDraft = (): RoutePlannerDraft | null => {
 
     return {
       version: 1,
-      activeMobileStep: parsed.activeMobileStep,
       selectedDestinationStates,
       ...(typeof parsed.planningDate === "string" ? { planningDate: parsed.planningDate } : {}),
     };
@@ -108,7 +100,6 @@ export const persistRoutePlannerDraft = (draft: RoutePlannerDraft): void => {
     ROUTE_PLANNER_DRAFT_STORAGE_KEY,
     JSON.stringify({
       version: 1,
-      activeMobileStep: draft.activeMobileStep,
       selectedDestinationStates: draft.selectedDestinationStates,
       ...(typeof draft.planningDate === "string" ? { planningDate: draft.planningDate } : {}),
     }),

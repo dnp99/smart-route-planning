@@ -18,7 +18,6 @@ const draftDestinationState = {
 
 const validDraft: RoutePlannerDraft = {
   version: 1,
-  activeMobileStep: "review",
   selectedDestinationStates: [draftDestinationState],
 };
 
@@ -66,12 +65,6 @@ describe("routePlannerDraft", () => {
 
     window.localStorage.setItem(
       ROUTE_PLANNER_DRAFT_STORAGE_KEY,
-      JSON.stringify({ ...validDraft, activeMobileStep: "archive" }),
-    );
-    expect(readRoutePlannerDraft()).toBeNull();
-
-    window.localStorage.setItem(
-      ROUTE_PLANNER_DRAFT_STORAGE_KEY,
       JSON.stringify({
         ...validDraft,
         selectedDestinationStates: [{ ...draftDestinationState, patientId: 123 }],
@@ -86,5 +79,14 @@ describe("routePlannerDraft", () => {
 
     clearRoutePlannerDraft();
     expect(window.localStorage.getItem(ROUTE_PLANNER_DRAFT_STORAGE_KEY)).toBeNull();
+  });
+
+  it("ignores a legacy activeMobileStep field (step-wizard removed)", () => {
+    window.localStorage.setItem(
+      ROUTE_PLANNER_DRAFT_STORAGE_KEY,
+      JSON.stringify({ ...validDraft, activeMobileStep: "review" }),
+    );
+    // Legacy drafts still parse; the stale field is dropped, not rejected.
+    expect(readRoutePlannerDraft()).toEqual(validDraft);
   });
 });

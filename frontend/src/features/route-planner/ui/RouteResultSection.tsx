@@ -1,13 +1,9 @@
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { OptimizedRouteResult } from "./OptimizedRouteResult";
-import type { MobilePlannerStep } from "../state/routePlannerDraft";
 import type { OptimizeRouteResponse, OrderedStop } from "../types";
 
 type RouteResultSectionProps = {
   isMobileViewport: boolean;
-  activeMobileStep: MobilePlannerStep;
-  onSetActiveMobileStep: (step: MobilePlannerStep) => void;
-  isReviewStepVisible: boolean;
   hasValidTripAddresses: boolean;
   destinationCount: number;
   selectedDestinationsCount: number;
@@ -133,13 +129,8 @@ const OptimizedRouteSkeleton = () => (
 
 export const RouteResultSection = ({
   isMobileViewport,
-  activeMobileStep,
-  onSetActiveMobileStep,
-  isReviewStepVisible,
   hasValidTripAddresses,
-  destinationCount,
   selectedDestinationsCount,
-  resolvedEndAddress,
   isLoading,
   canOptimize,
   result,
@@ -174,72 +165,20 @@ export const RouteResultSection = ({
   lunchDurationMinutes,
   planningDate,
 }: RouteResultSectionProps) => {
+  // Mobile single-column: one persistent sticky Optimize bar (no step-wizard).
+  const mobileOptimizeHint = !hasValidTripAddresses
+    ? "Add a starting and ending point to optimize."
+    : selectedDestinationsCount === 0
+      ? "Add at least one client to optimize."
+      : "";
+
   return (
     <>
-      {isMobileViewport && activeMobileStep === "trip" && (
+      {isMobileViewport && (
         <div className={responsiveStyles.stickyFooter}>
-          {!hasValidTripAddresses && (
-            <p className={responsiveStyles.mobileContinueHint}>
-              Add a starting and ending point to continue.
-            </p>
+          {mobileOptimizeHint && (
+            <p className={responsiveStyles.mobileContinueHint}>{mobileOptimizeHint}</p>
           )}
-          <button
-            type="button"
-            disabled={!hasValidTripAddresses}
-            onClick={() => onSetActiveMobileStep("patients")}
-            className={responsiveStyles.mobileContinueButton}
-          >
-            Continue to Clients →
-          </button>
-        </div>
-      )}
-
-      {isMobileViewport && activeMobileStep === "patients" && (
-        <div className={responsiveStyles.stickyFooter}>
-          {selectedDestinationsCount === 0 && (
-            <p className={responsiveStyles.mobileContinueHint}>
-              Add at least one client to continue.
-            </p>
-          )}
-          <button
-            type="button"
-            disabled={selectedDestinationsCount === 0}
-            onClick={() => onSetActiveMobileStep("review")}
-            className={responsiveStyles.mobileContinueButton}
-          >
-            Continue to Review →
-          </button>
-        </div>
-      )}
-
-      {isReviewStepVisible && isMobileViewport && (
-        <section className={responsiveStyles.mobileReviewCard}>
-          <p className="m-0 font-semibold text-slate-900 dark:text-slate-100">Ready to optimize</p>
-          <p className="m-0 text-xs text-slate-600 dark:text-slate-300">
-            {destinationCount} destination(s) included
-            {resolvedEndAddress.trim().length === 0 ? " • ending point missing" : ""}
-          </p>
-          <div className="grid grid-cols-2 gap-2">
-            <button
-              type="button"
-              onClick={() => onSetActiveMobileStep("trip")}
-              className={responsiveStyles.secondaryButton}
-            >
-              Edit trip
-            </button>
-            <button
-              type="button"
-              onClick={() => onSetActiveMobileStep("patients")}
-              className={responsiveStyles.secondaryButton}
-            >
-              Edit clients
-            </button>
-          </div>
-        </section>
-      )}
-
-      {isMobileViewport && isReviewStepVisible && (
-        <div className={responsiveStyles.stickyFooter}>
           <button
             type="submit"
             disabled={isLoading || !canOptimize || (!!result && !hasChangedSinceLastOptimize)}
