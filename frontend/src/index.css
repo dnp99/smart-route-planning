@@ -13,8 +13,18 @@
     -moz-osx-font-smoothing: grayscale;
   }
 
+  /* Guard against stray horizontal scroll on mobile (notably native iOS/Android
+     browsers, which can surface sub-pixel / full-bleed overflow that desktop
+     DevTools device mode does not). `clip` (not `hidden`) avoids creating a
+     scroll container, so position: sticky keeps working. */
+  html {
+    overflow-x: clip;
+  }
+
   body {
     @apply m-0 min-h-screen bg-slate-200 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+    overflow-x: clip;
+    max-width: 100%;
   }
 }
 
