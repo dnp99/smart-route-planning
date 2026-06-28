@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { RouteResultSection } from "../../features/route-planner/ui/RouteResultSection";
 import type { OptimizeRouteResponse } from "../../components/types";
@@ -23,9 +23,6 @@ afterEach(() => {
 
 const buildProps = () => ({
   isMobileViewport: false,
-  activeMobileStep: "trip" as const,
-  onSetActiveMobileStep: vi.fn(),
-  isReviewStepVisible: false,
   hasValidTripAddresses: false,
   destinationCount: 0,
   selectedDestinationsCount: 0,
@@ -62,57 +59,40 @@ const buildProps = () => ({
 });
 
 describe("RouteResultSection", () => {
-  it("shows mobile trip-step CTA and hint state correctly", () => {
+  it("shows one sticky Optimize bar with contextual hints (mobile, single-column)", () => {
     const props = buildProps();
     props.isMobileViewport = true;
-    props.activeMobileStep = "trip";
+    props.canOptimize = false;
 
     const { rerender } = render(<RouteResultSection {...props} />);
 
-    expect(screen.getByText("Add a starting and ending point to continue.")).toBeTruthy();
-    const continueButton = screen.getByRole("button", { name: "Continue to Clients →" });
-    expect(continueButton).toHaveProperty("disabled", true);
+    // No trip yet → hint + disabled Optimize button (no step-wizard / Continue buttons).
+    expect(screen.getByText("Add a starting and ending point to optimize.")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Continue to/ })).toBeNull();
+    expect(screen.getByRole("button", { name: "Optimize Route" })).toHaveProperty("disabled", true);
 
+    // Trip set, no clients → client hint.
     props.hasValidTripAddresses = true;
     rerender(<RouteResultSection {...props} />);
-    const enabledContinueButton = screen.getByRole("button", { name: "Continue to Clients →" });
-    expect(enabledContinueButton).toHaveProperty("disabled", false);
-    fireEvent.click(enabledContinueButton);
-    expect(props.onSetActiveMobileStep).toHaveBeenCalledWith("patients");
-  });
+    expect(screen.getByText("Add at least one client to optimize.")).toBeTruthy();
 
-  it("shows mobile patients-step CTA and review card actions", () => {
-    const props = buildProps();
-    props.isMobileViewport = true;
-    props.activeMobileStep = "patients";
-
-    const { rerender } = render(<RouteResultSection {...props} />);
-
-    expect(screen.getByText("Add at least one client to continue.")).toBeTruthy();
-    const continueButton = screen.getByRole("button", { name: "Continue to Review →" });
-    expect(continueButton).toHaveProperty("disabled", true);
-
+    // Ready → hint gone, button enabled.
     props.selectedDestinationsCount = 2;
-    props.destinationCount = 2;
-    props.isReviewStepVisible = true;
-    props.activeMobileStep = "review";
+    props.canOptimize = true;
     rerender(<RouteResultSection {...props} />);
-
-    expect(screen.getByText("Ready to optimize")).toBeTruthy();
-    expect(screen.getByText("2 destination(s) included • ending point missing")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Edit trip" }));
-    fireEvent.click(screen.getByRole("button", { name: "Edit clients" }));
-    expect(props.onSetActiveMobileStep).toHaveBeenCalledWith("trip");
-    expect(props.onSetActiveMobileStep).toHaveBeenCalledWith("patients");
+    expect(screen.queryByText(/Add at least one client/)).toBeNull();
+    expect(screen.getByRole("button", { name: "Optimize Route" })).toHaveProperty(
+      "disabled",
+      false,
+    );
   });
 
   it("renders optimize CTA states and warnings/errors (mobile)", () => {
     // On desktop the CTA lives in PatientSelectorSection; this test covers mobile.
     const props = buildProps();
     props.isMobileViewport = true;
-    props.isReviewStepVisible = true;
-    props.destinationCount = 1;
-    props.activeMobileStep = "review";
+    props.hasValidTripAddresses = true;
+    props.selectedDestinationsCount = 1;
 
     const { rerender } = render(<RouteResultSection {...props} />);
 

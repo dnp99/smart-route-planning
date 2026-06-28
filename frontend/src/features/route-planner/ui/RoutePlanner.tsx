@@ -36,9 +36,6 @@ function RoutePlanner({
   const {
     handleSubmit,
     isMobileViewport,
-    activeMobileStep,
-    setActiveMobileStep,
-    mobileSteps,
     tripSetupSectionProps,
     patientSelectorSectionProps,
     routeResultSectionProps,
@@ -90,45 +87,6 @@ function RoutePlanner({
         )}
 
         <form className={responsiveStyles.form} onSubmit={handleSubmit}>
-          {isMobileViewport && (
-            <nav aria-label="Route planner steps" className={responsiveStyles.mobileStepNav}>
-              {mobileSteps.map((step) => {
-                const isActive = activeMobileStep === step.key;
-                return (
-                  <button
-                    key={step.key}
-                    type="button"
-                    aria-pressed={isActive}
-                    onClick={() => setActiveMobileStep(step.key)}
-                    className={`${responsiveStyles.mobileStepButton} ${isActive ? responsiveStyles.mobileStepButtonActive : responsiveStyles.mobileStepButtonInactive}`}
-                  >
-                    <span className="flex items-center justify-center gap-1">
-                      {step.isComplete && !isActive ? (
-                        <svg
-                          width="11"
-                          height="11"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                          className={responsiveStyles.stepCheckIcon}
-                        >
-                          <polyline points="20 6 9 17 4 12" />
-                        </svg>
-                      ) : (
-                        <span className={responsiveStyles.stepNumberBadge}>{step.stepNumber}</span>
-                      )}
-                      {step.label}
-                    </span>
-                  </button>
-                );
-              })}
-            </nav>
-          )}
-
           <TripSetupSection {...tripSetupSectionProps} />
 
           <div className="mt-2">

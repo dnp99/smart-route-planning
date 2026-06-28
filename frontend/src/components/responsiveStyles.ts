@@ -187,15 +187,6 @@ export const responsiveStyles = {
     "w-full rounded-xl bg-slate-100 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700 sm:w-auto sm:py-1.5",
 
   // ── Mobile step nav ────────────────────────────────────────────────────────
-  mobileStepNav: "grid grid-cols-3 gap-1.5 sm:gap-2",
-  mobileStepButton:
-    "rounded-xl border px-2 py-2.5 text-[0.72rem] font-semibold leading-tight transition sm:px-2.5 sm:py-2 sm:text-xs",
-  mobileStepButtonActive:
-    "border-blue-600 bg-blue-50 text-blue-700 dark:border-blue-500 dark:bg-blue-950/40 dark:text-blue-200",
-  mobileStepButtonInactive:
-    "border-slate-300 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800",
-  mobileReviewCard:
-    "grid gap-2 rounded-2xl border border-slate-200 bg-slate-50/90 p-3 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-200",
   stickyFooter:
     "sticky bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 rounded-2xl border border-slate-200 bg-white/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 sm:bottom-3 sm:pb-3",
 
@@ -327,11 +318,7 @@ export const responsiveStyles = {
     "m-0 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 dark:border-emerald-900/70 dark:bg-emerald-950/40 dark:text-emerald-300",
 
   // ── Mobile planner ───────────────────────────────────────────────────────────
-  mobileContinueButton:
-    "inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70",
   mobileContinueHint: "m-0 mb-2 text-center text-xs text-slate-500 dark:text-slate-400",
-  stepCheckIcon: "shrink-0 text-green-600 dark:text-green-400",
-  stepNumberBadge: "text-[0.6rem] font-bold opacity-50",
 
   // ── Optimization objective selector ─────────────────────────────────────────
   objectiveSelectorGroup: "flex gap-3 sm:gap-4",

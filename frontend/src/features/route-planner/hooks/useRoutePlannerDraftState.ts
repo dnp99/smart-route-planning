@@ -1,10 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Patient, VisitInstance } from "../../../../../shared/contracts";
-import {
-  persistRoutePlannerDraft,
-  type MobilePlannerStep,
-  type RoutePlannerDraft,
-} from "../state/routePlannerDraft";
+import { persistRoutePlannerDraft, type RoutePlannerDraft } from "../state/routePlannerDraft";
 import type { SelectedPatientDestination } from "../domain/routePlannerTypes";
 
 const MOBILE_MEDIA_QUERY = "(max-width: 639px)";
@@ -46,9 +42,6 @@ export function useRoutePlannerDraftState({
 
     return window.matchMedia(MOBILE_MEDIA_QUERY).matches;
   });
-  const [activeMobileStep, setActiveMobileStep] = useState<MobilePlannerStep>(
-    initialDraft?.activeMobileStep ?? "trip",
-  );
   const [hasHydratedDraftDestinations, setHasHydratedDraftDestinations] = useState(false);
 
   useEffect(() => {
@@ -59,9 +52,6 @@ export function useRoutePlannerDraftState({
     const mediaQueryList = window.matchMedia(MOBILE_MEDIA_QUERY);
     const updateMobileViewport = (matches: boolean) => {
       setIsMobileViewport(matches);
-      if (!matches) {
-        setActiveMobileStep("trip");
-      }
     };
 
     updateMobileViewport(mediaQueryList.matches);
@@ -92,12 +82,10 @@ export function useRoutePlannerDraftState({
 
     persistRoutePlannerDraft({
       version: 1,
-      activeMobileStep,
       selectedDestinationStates: selectedDestinations,
       planningDate,
     });
   }, [
-    activeMobileStep,
     hasHydratedDraftDestinations,
     initialDraft?.selectedDestinationStates?.length,
     planningDate,
@@ -165,7 +153,5 @@ export function useRoutePlannerDraftState({
     planningDate,
     setPlanningDate,
     isMobileViewport,
-    activeMobileStep,
-    setActiveMobileStep,
   };
 }

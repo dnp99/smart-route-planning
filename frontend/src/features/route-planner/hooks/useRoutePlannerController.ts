@@ -30,7 +30,7 @@ import {
   patientMatchesSearchQuery,
   toSelectedVisitInstanceDestinations,
 } from "../domain/routePlannerHelpers";
-import { readRoutePlannerDraft, type MobilePlannerStep } from "../state/routePlannerDraft";
+import { readRoutePlannerDraft } from "../state/routePlannerDraft";
 import { useManualReorder } from "./useManualReorder";
 import { useCreatePatientForm } from "./useCreatePatientForm";
 import { useRoutePlannerDestinations } from "./useRoutePlannerDestinations";
@@ -236,20 +236,19 @@ export function useRoutePlannerController({
     );
   }, [destinationSearchPatients, destinationSearchQuery, locallyCreatedPatients]);
 
-  const { planningDate, setPlanningDate, isMobileViewport, activeMobileStep, setActiveMobileStep } =
-    useRoutePlannerDraftState({
-      initialDraft,
-      resolveDefaultPlanningDate: autoOptimizeToday ? todayPlanningDate : defaultPlanningDate,
-      selectedDestinations,
-      destinationSearchPatients,
-      isDestinationSearchLoading,
-      locallyCreatedPatients,
-      visitInstancesByPatientId,
-      selectedDestinationIdSet,
-      addDestinationPatient,
-      setDestinationVisitIncluded,
-      setDestinationPersistPlanningWindow,
-    });
+  const { planningDate, setPlanningDate, isMobileViewport } = useRoutePlannerDraftState({
+    initialDraft,
+    resolveDefaultPlanningDate: autoOptimizeToday ? todayPlanningDate : defaultPlanningDate,
+    selectedDestinations,
+    destinationSearchPatients,
+    isDestinationSearchLoading,
+    locallyCreatedPatients,
+    visitInstancesByPatientId,
+    selectedDestinationIdSet,
+    addDestinationPatient,
+    setDestinationVisitIncluded,
+    setDestinationPersistPlanningWindow,
+  });
 
   useEffect(() => {
     setSelectedTemplateId("auto");
@@ -715,25 +714,9 @@ export function useRoutePlannerController({
     return resolved.constraint;
   }, [result, nurseWorkingHours, planningDate]);
 
-  const isTripStepVisible = !isMobileViewport || activeMobileStep === "trip";
-  const isPatientsStepVisible = !isMobileViewport || activeMobileStep === "patients";
-  const isReviewStepVisible = !isMobileViewport || activeMobileStep === "review";
-
-  const mobileSteps: Array<{
-    key: MobilePlannerStep;
-    label: string;
-    stepNumber: number;
-    isComplete: boolean;
-  }> = [
-    { key: "trip", label: "Trip", stepNumber: 1, isComplete: hasValidTripAddresses },
-    {
-      key: "patients",
-      label: "Clients",
-      stepNumber: 2,
-      isComplete: selectedDestinations.length > 0,
-    },
-    { key: "review", label: "Review", stepNumber: 3, isComplete: false },
-  ];
+  // Mobile is a single scrollable column (no step-wizard) — all sections always render.
+  const isTripStepVisible = true;
+  const isPatientsStepVisible = true;
 
   const tripSetupSectionProps = {
     isVisible: isTripStepVisible,
@@ -801,9 +784,6 @@ export function useRoutePlannerController({
 
   const routeResultSectionProps = {
     isMobileViewport,
-    activeMobileStep,
-    onSetActiveMobileStep: setActiveMobileStep,
-    isReviewStepVisible,
     hasValidTripAddresses,
     destinationCount,
     selectedDestinationsCount: selectedDestinations.length,
@@ -868,9 +848,6 @@ export function useRoutePlannerController({
   return {
     handleSubmit,
     isMobileViewport,
-    activeMobileStep,
-    setActiveMobileStep,
-    mobileSteps,
     tripSetupSectionProps,
     patientSelectorSectionProps,
     routeResultSectionProps,
