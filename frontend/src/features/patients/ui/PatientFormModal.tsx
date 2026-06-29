@@ -143,9 +143,9 @@ export const PatientFormModal = ({
           </button>
         </div>
 
-        <form className="grid gap-4" onSubmit={onSubmit}>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-1">
+        <form className="flex flex-col gap-4" onSubmit={onSubmit}>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1">
                 <label htmlFor="patient-first-name" className={responsiveStyles.formLabel}>
                   First name
@@ -165,7 +165,7 @@ export const PatientFormModal = ({
               )}
             </div>
 
-            <div className="grid gap-1">
+            <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1">
                 <label htmlFor="patient-last-name" className={responsiveStyles.formLabel}>
                   Last name
@@ -199,8 +199,8 @@ export const PatientFormModal = ({
             required
           />
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="grid gap-1">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="flex flex-col gap-1">
               <span className={responsiveStyles.formLabel}>Visit type</span>
               <div
                 className={responsiveStyles.authSegmentedControl}
@@ -225,7 +225,7 @@ export const PatientFormModal = ({
               </div>
             </div>
 
-            <div className="grid gap-1">
+            <div className="flex flex-col gap-1">
               <label htmlFor="patient-visit-duration" className={responsiveStyles.formLabel}>
                 Visit duration (minutes)
               </label>
@@ -251,7 +251,7 @@ export const PatientFormModal = ({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className={`sm:col-span-2 ${responsiveStyles.formGroupSection}`}>
               <div className="flex items-center justify-between gap-2">
                 <p className={responsiveStyles.formGroupEyebrow}>Visit windows</p>
@@ -275,7 +275,7 @@ export const PatientFormModal = ({
                     </p>
                   )}
 
-                  <div className="grid gap-1">
+                  <div className="flex flex-col gap-1">
                     <label
                       htmlFor={`patient-visit-start-${window.id}`}
                       className="text-xs font-semibold text-slate-700 dark:text-slate-300"
@@ -298,7 +298,7 @@ export const PatientFormModal = ({
                     )}
                   </div>
 
-                  <div className="grid gap-1">
+                  <div className="flex flex-col gap-1">
                     <label
                       htmlFor={`patient-visit-end-${window.id}`}
                       className="text-xs font-semibold text-slate-700 dark:text-slate-300"
@@ -366,7 +366,7 @@ export const PatientFormModal = ({
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className={`sm:col-span-2 ${responsiveStyles.formGroupSection}`}>
               <div className="flex items-center justify-between gap-2">
                 <p className={responsiveStyles.formGroupEyebrow}>Recurring templates</p>
@@ -401,10 +401,10 @@ export const PatientFormModal = ({
                 return (
                   <div
                     key={templateKey}
-                    className="grid gap-0 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden"
+                    className="flex flex-col gap-0 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden"
                   >
                     {/* Template name */}
-                    <div className="grid gap-1 p-3">
+                    <div className="flex flex-col gap-1 p-3">
                       <label
                         htmlFor={`recurring-template-name-${templateKey}`}
                         className={responsiveStyles.recurrenceLabel}
@@ -428,12 +428,12 @@ export const PatientFormModal = ({
                     <div className="border-t border-slate-200 dark:border-slate-800" />
 
                     {/* Schedule section */}
-                    <div className="grid gap-3 p-3">
+                    <div className="flex flex-col gap-3 p-3">
                       <p className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                         Schedule
                       </p>
-                      <div className="grid items-start gap-3 sm:grid-cols-2">
-                        <div className="grid gap-1">
+                      <div className="grid grid-cols-1 items-start gap-3 sm:grid-cols-2">
+                        <div className="flex flex-col gap-1">
                           <label
                             htmlFor={`recurring-template-start-date-${templateKey}`}
                             className={responsiveStyles.recurrenceLabel}
@@ -460,7 +460,7 @@ export const PatientFormModal = ({
                           )}
                         </div>
 
-                        <div className="grid gap-1">
+                        <div className="flex flex-col gap-1">
                           <label
                             htmlFor={`recurring-template-end-date-${templateKey}`}
                             className={responsiveStyles.recurrenceLabel}
@@ -489,7 +489,7 @@ export const PatientFormModal = ({
                       </div>
 
                       {template.templateId && (
-                        <div className="grid gap-1">
+                        <div className="flex flex-col gap-1">
                           <label
                             htmlFor={`recurring-template-end-from-date-${templateKey}`}
                             className={responsiveStyles.recurrenceLabel}
@@ -519,7 +519,7 @@ export const PatientFormModal = ({
                     <div className="border-t border-slate-200 dark:border-slate-800" />
 
                     {/* Repeat on section */}
-                    <div className="grid gap-3 p-3">
+                    <div className="flex flex-col gap-3 p-3">
                       <p className="m-0 text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
                         Repeat on
                       </p>
@@ -579,7 +579,7 @@ export const PatientFormModal = ({
                     <div className="border-t border-slate-200 dark:border-slate-800" />
 
                     {/* Active toggle */}
-                    <div className="grid gap-1 p-3">
+                    <div className="flex flex-col gap-1 p-3">
                       <label className="flex cursor-pointer items-center justify-between gap-3">
                         <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
                           Template is active
