@@ -368,39 +368,48 @@ export const SelectedDestinationsSection = ({
               })}
             </ol>
 
-            {endAddress.length > 0 &&
-              (() => {
-                const end = splitAddressLine(endAddress);
-                return (
-                  <div className="relative">
-                    <span className={responsiveStyles.selectedTimelineEndNode}>
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        className="h-4 w-4"
-                        aria-hidden="true"
-                      >
-                        <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
-                        <line x1="4" y1="22" x2="4" y2="15" />
-                      </svg>
-                    </span>
-                    <p className={responsiveStyles.tripEndLabel}>End</p>
-                    <p className="m-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {end.primary}
-                    </p>
-                    {end.secondary && (
-                      <p className="m-0 truncate text-xs text-slate-400 dark:text-slate-500">
-                        {end.secondary}
+            {(() => {
+              // Always render the END cap so the rail never dangles past the last
+              // node. When no ending point is set yet, prompt for one.
+              const end = endAddress.length > 0 ? splitAddressLine(endAddress) : null;
+              return (
+                <div className="relative">
+                  <span className={responsiveStyles.selectedTimelineEndNode}>
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden="true"
+                    >
+                      <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" />
+                      <line x1="4" y1="22" x2="4" y2="15" />
+                    </svg>
+                  </span>
+                  <p className={responsiveStyles.tripEndLabel}>End</p>
+                  {end ? (
+                    <>
+                      <p className="m-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {end.primary}
                       </p>
-                    )}
-                  </div>
-                );
-              })()}
+                      {end.secondary && (
+                        <p className="m-0 truncate text-xs text-slate-400 dark:text-slate-500">
+                          {end.secondary}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="m-0 text-sm italic text-slate-400 dark:text-slate-500">
+                      Set an ending point
+                    </p>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>
