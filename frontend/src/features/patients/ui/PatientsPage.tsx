@@ -492,7 +492,9 @@ const PatientsPage = () => {
   return (
     <main className={responsiveStyles.page}>
       <section className={responsiveStyles.section}>
-        <div className={responsiveStyles.sectionHeader}>
+        {/* Desktop figma has no page title (nav "Clients" + tab counts serve as it);
+            mobile figma keeps the heading, so this block is mobile-only. */}
+        <div className={`${responsiveStyles.sectionHeader} md:hidden`}>
           <div className="flex items-start justify-between gap-3">
             <h1 className="m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100">
               Clients{" "}
@@ -511,9 +513,6 @@ const PatientsPage = () => {
               Add
             </button>
           </div>
-          <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
-            Manage clients for route planning.
-          </p>
         </div>
 
         {hasTemplateFilter && (
