@@ -1,0 +1,2073 @@
+{
+  "id": "bd56b62f-fac0-489d-8204-8ba17e834e14",
+  "prevId": "09d01ade-ec7f-4e2b-bdbd-da2fde9ec6c0",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.audit_events": {
+      "name": "audit_events",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "actor_nurse_id": {
+          "name": "actor_nurse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resource_type": {
+          "name": "resource_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "resource_id": {
+          "name": "resource_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "audit_events_actor_created_idx": {
+          "name": "audit_events_actor_created_idx",
+          "columns": [
+            {
+              "expression": "actor_nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "audit_events_resource_created_idx": {
+          "name": "audit_events_resource_created_idx",
+          "columns": [
+            {
+              "expression": "resource_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "audit_events_actor_nurse_id_nurses_id_fk": {
+          "name": "audit_events_actor_nurse_id_nurses_id_fk",
+          "tableFrom": "audit_events",
+          "tableTo": "nurses",
+          "columnsFrom": [
+            "actor_nurse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.auth_sessions": {
+      "name": "auth_sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "nurse_id": {
+          "name": "nurse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "revoked_at": {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "device_type": {
+          "name": "device_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'unknown'"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "auth_sessions_nurse_id_idx": {
+          "name": "auth_sessions_nurse_id_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "auth_sessions_nurse_expires_idx": {
+          "name": "auth_sessions_nurse_expires_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "auth_sessions_expires_idx": {
+          "name": "auth_sessions_expires_idx",
+          "columns": [
+            {
+              "expression": "expires_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "auth_sessions_revoked_idx": {
+          "name": "auth_sessions_revoked_idx",
+          "columns": [
+            {
+              "expression": "revoked_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "auth_sessions_nurse_id_nurses_id_fk": {
+          "name": "auth_sessions_nurse_id_nurses_id_fk",
+          "tableFrom": "auth_sessions",
+          "tableTo": "nurses",
+          "columnsFrom": [
+            "nurse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "auth_sessions_device_type_chk": {
+          "name": "auth_sessions_device_type_chk",
+          "value": "\"auth_sessions\".\"device_type\" in ('desktop', 'mobile', 'tablet', 'bot', 'unknown')"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.nurses": {
+      "name": "nurses",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "external_key": {
+          "name": "external_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "home_address": {
+          "name": "home_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "working_hours": {
+          "name": "working_hours",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "break_gap_threshold_minutes": {
+          "name": "break_gap_threshold_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "optimization_objective": {
+          "name": "optimization_objective",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "legal_notice_accepted_at": {
+          "name": "legal_notice_accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "legal_notice_accepted_version": {
+          "name": "legal_notice_accepted_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password_hash": {
+          "name": "password_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "last_login_at": {
+          "name": "last_login_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_deactivated_clients_at": {
+          "name": "last_deactivated_clients_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "nurses_external_key_unique": {
+          "name": "nurses_external_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "external_key"
+          ]
+        },
+        "nurses_email_unique": {
+          "name": "nurses_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.patient_visit_windows": {
+      "name": "patient_visit_windows",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "patient_id": {
+          "name": "patient_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_time": {
+          "name": "start_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_time": {
+          "name": "end_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "visit_time_type": {
+          "name": "visit_time_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "patient_visit_windows_patient_id_idx": {
+          "name": "patient_visit_windows_patient_id_idx",
+          "columns": [
+            {
+              "expression": "patient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "patient_visit_windows_patient_time_unique_idx": {
+          "name": "patient_visit_windows_patient_time_unique_idx",
+          "columns": [
+            {
+              "expression": "patient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "start_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "end_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "patient_visit_windows_patient_id_patients_id_fk": {
+          "name": "patient_visit_windows_patient_id_patients_id_fk",
+          "tableFrom": "patient_visit_windows",
+          "tableTo": "patients",
+          "columnsFrom": [
+            "patient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "patient_visit_windows_visit_time_type_chk": {
+          "name": "patient_visit_windows_visit_time_type_chk",
+          "value": "\"patient_visit_windows\".\"visit_time_type\" in ('fixed', 'flexible')"
+        },
+        "patient_visit_windows_window_order_chk": {
+          "name": "patient_visit_windows_window_order_chk",
+          "value": "\"patient_visit_windows\".\"end_time\" > \"patient_visit_windows\".\"start_time\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.patients": {
+      "name": "patients",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nurse_id": {
+          "name": "nurse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "google_place_id": {
+          "name": "google_place_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "visit_duration_minutes": {
+          "name": "visit_duration_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 30
+        },
+        "preferred_visit_start_time": {
+          "name": "preferred_visit_start_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "preferred_visit_end_time": {
+          "name": "preferred_visit_end_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "visit_time_type": {
+          "name": "visit_time_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "last_scheduled_at": {
+          "name": "last_scheduled_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "patients_nurse_id_idx": {
+          "name": "patients_nurse_id_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "patients_nurse_active_idx": {
+          "name": "patients_nurse_active_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "is_active",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "patients_nurse_archived_idx": {
+          "name": "patients_nurse_archived_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "archived_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "patients_nurse_name_idx": {
+          "name": "patients_nurse_name_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "last_name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "first_name",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "patients_nurse_id_nurses_id_fk": {
+          "name": "patients_nurse_id_nurses_id_fk",
+          "tableFrom": "patients",
+          "tableTo": "nurses",
+          "columnsFrom": [
+            "nurse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "patients_visit_duration_minutes_chk": {
+          "name": "patients_visit_duration_minutes_chk",
+          "value": "\"patients\".\"visit_duration_minutes\" between 1 and 180"
+        },
+        "patients_visit_time_type_chk": {
+          "name": "patients_visit_time_type_chk",
+          "value": "\"patients\".\"visit_time_type\" in ('fixed', 'flexible')"
+        },
+        "patients_visit_window_order_chk": {
+          "name": "patients_visit_window_order_chk",
+          "value": "\"patients\".\"preferred_visit_end_time\" > \"patients\".\"preferred_visit_start_time\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.recurring_visit_template_days": {
+      "name": "recurring_visit_template_days",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "template_id": {
+          "name": "template_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "day_of_week": {
+          "name": "day_of_week",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "recurring_visit_template_days_template_id_idx": {
+          "name": "recurring_visit_template_days_template_id_idx",
+          "columns": [
+            {
+              "expression": "template_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recurring_visit_template_days_template_day_unique": {
+          "name": "recurring_visit_template_days_template_day_unique",
+          "columns": [
+            {
+              "expression": "template_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "day_of_week",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "recurring_visit_template_days_template_id_recurring_visit_templates_id_fk": {
+          "name": "recurring_visit_template_days_template_id_recurring_visit_templates_id_fk",
+          "tableFrom": "recurring_visit_template_days",
+          "tableTo": "recurring_visit_templates",
+          "columnsFrom": [
+            "template_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "recurring_visit_template_days_day_of_week_chk": {
+          "name": "recurring_visit_template_days_day_of_week_chk",
+          "value": "\"recurring_visit_template_days\".\"day_of_week\" between 0 and 6"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.recurring_visit_templates": {
+      "name": "recurring_visit_templates",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nurse_id": {
+          "name": "nurse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "patient_id": {
+          "name": "patient_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "recurrence_rule": {
+          "name": "recurrence_rule",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "recurring_visit_templates_nurse_id_idx": {
+          "name": "recurring_visit_templates_nurse_id_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recurring_visit_templates_patient_id_idx": {
+          "name": "recurring_visit_templates_patient_id_idx",
+          "columns": [
+            {
+              "expression": "patient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "recurring_visit_templates_nurse_active_idx": {
+          "name": "recurring_visit_templates_nurse_active_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "is_active",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "recurring_visit_templates_nurse_id_nurses_id_fk": {
+          "name": "recurring_visit_templates_nurse_id_nurses_id_fk",
+          "tableFrom": "recurring_visit_templates",
+          "tableTo": "nurses",
+          "columnsFrom": [
+            "nurse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "recurring_visit_templates_patient_id_patients_id_fk": {
+          "name": "recurring_visit_templates_patient_id_patients_id_fk",
+          "tableFrom": "recurring_visit_templates",
+          "tableTo": "patients",
+          "columnsFrom": [
+            "patient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "recurring_visit_templates_date_range_chk": {
+          "name": "recurring_visit_templates_date_range_chk",
+          "value": "\"recurring_visit_templates\".\"end_date\" is null or \"recurring_visit_templates\".\"end_date\" >= \"recurring_visit_templates\".\"start_date\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.route_optimization_runs": {
+      "name": "route_optimization_runs",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nurse_id": {
+          "name": "nurse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "planning_date": {
+          "name": "planning_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "endpoint_version": {
+          "name": "endpoint_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "optimizer_version": {
+          "name": "optimizer_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "algorithm_version": {
+          "name": "algorithm_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "optimization_objective": {
+          "name": "optimization_objective",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "preserve_order": {
+          "name": "preserve_order",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "requested_visit_count": {
+          "name": "requested_visit_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scheduled_visit_count": {
+          "name": "scheduled_visit_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "on_time_visit_count": {
+          "name": "on_time_visit_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unscheduled_visit_count": {
+          "name": "unscheduled_visit_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fixed_window_violations": {
+          "name": "fixed_window_violations",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_late_seconds": {
+          "name": "total_late_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_wait_seconds": {
+          "name": "total_wait_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_distance_meters": {
+          "name": "total_distance_meters",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "total_duration_seconds": {
+          "name": "total_duration_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "warnings": {
+          "name": "warnings",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'[]'::jsonb"
+        },
+        "request_payload": {
+          "name": "request_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "result_payload": {
+          "name": "result_payload",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "request_id": {
+          "name": "request_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "route_optimization_runs_nurse_id_idx": {
+          "name": "route_optimization_runs_nurse_id_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "route_optimization_runs_nurse_created_at_idx": {
+          "name": "route_optimization_runs_nurse_created_at_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "route_optimization_runs_nurse_planning_date_idx": {
+          "name": "route_optimization_runs_nurse_planning_date_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "planning_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "route_optimization_runs_nurse_id_nurses_id_fk": {
+          "name": "route_optimization_runs_nurse_id_nurses_id_fk",
+          "tableFrom": "route_optimization_runs",
+          "tableTo": "nurses",
+          "columnsFrom": [
+            "nurse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "route_optimization_runs_endpoint_version_chk": {
+          "name": "route_optimization_runs_endpoint_version_chk",
+          "value": "\"route_optimization_runs\".\"endpoint_version\" in ('v2', 'v3')"
+        },
+        "route_optimization_runs_optimization_objective_chk": {
+          "name": "route_optimization_runs_optimization_objective_chk",
+          "value": "\"route_optimization_runs\".\"optimization_objective\" is null or \"route_optimization_runs\".\"optimization_objective\" in ('time', 'distance')"
+        },
+        "route_optimization_runs_requested_visit_count_chk": {
+          "name": "route_optimization_runs_requested_visit_count_chk",
+          "value": "\"route_optimization_runs\".\"requested_visit_count\" >= 0"
+        },
+        "route_optimization_runs_scheduled_visit_count_chk": {
+          "name": "route_optimization_runs_scheduled_visit_count_chk",
+          "value": "\"route_optimization_runs\".\"scheduled_visit_count\" >= 0"
+        },
+        "route_optimization_runs_on_time_visit_count_chk": {
+          "name": "route_optimization_runs_on_time_visit_count_chk",
+          "value": "\"route_optimization_runs\".\"on_time_visit_count\" >= 0"
+        },
+        "route_optimization_runs_unscheduled_visit_count_chk": {
+          "name": "route_optimization_runs_unscheduled_visit_count_chk",
+          "value": "\"route_optimization_runs\".\"unscheduled_visit_count\" >= 0"
+        },
+        "route_optimization_runs_fixed_window_violations_chk": {
+          "name": "route_optimization_runs_fixed_window_violations_chk",
+          "value": "\"route_optimization_runs\".\"fixed_window_violations\" >= 0"
+        },
+        "route_optimization_runs_total_late_seconds_chk": {
+          "name": "route_optimization_runs_total_late_seconds_chk",
+          "value": "\"route_optimization_runs\".\"total_late_seconds\" >= 0"
+        },
+        "route_optimization_runs_total_wait_seconds_chk": {
+          "name": "route_optimization_runs_total_wait_seconds_chk",
+          "value": "\"route_optimization_runs\".\"total_wait_seconds\" >= 0"
+        },
+        "route_optimization_runs_total_distance_meters_chk": {
+          "name": "route_optimization_runs_total_distance_meters_chk",
+          "value": "\"route_optimization_runs\".\"total_distance_meters\" >= 0"
+        },
+        "route_optimization_runs_total_duration_seconds_chk": {
+          "name": "route_optimization_runs_total_duration_seconds_chk",
+          "value": "\"route_optimization_runs\".\"total_duration_seconds\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.route_optimization_tasks": {
+      "name": "route_optimization_tasks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "run_id": {
+          "name": "run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "nurse_id": {
+          "name": "nurse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "visit_id": {
+          "name": "visit_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "visit_instance_id": {
+          "name": "visit_instance_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "template_id": {
+          "name": "template_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "patient_id": {
+          "name": "patient_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "patient_name": {
+          "name": "patient_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "window_start": {
+          "name": "window_start",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "window_end": {
+          "name": "window_end",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "window_type": {
+          "name": "window_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "arrival_time": {
+          "name": "arrival_time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "service_start_time": {
+          "name": "service_start_time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "service_end_time": {
+          "name": "service_end_time",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "wait_seconds": {
+          "name": "wait_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "late_by_seconds": {
+          "name": "late_by_seconds",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "on_time": {
+          "name": "on_time",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_unscheduled": {
+          "name": "is_unscheduled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "unscheduled_reason": {
+          "name": "unscheduled_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "route_optimization_tasks_run_id_idx": {
+          "name": "route_optimization_tasks_run_id_idx",
+          "columns": [
+            {
+              "expression": "run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "route_optimization_tasks_nurse_id_idx": {
+          "name": "route_optimization_tasks_nurse_id_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "route_optimization_tasks_visit_instance_id_idx": {
+          "name": "route_optimization_tasks_visit_instance_id_idx",
+          "columns": [
+            {
+              "expression": "visit_instance_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "route_optimization_tasks_template_id_idx": {
+          "name": "route_optimization_tasks_template_id_idx",
+          "columns": [
+            {
+              "expression": "template_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "route_optimization_tasks_nurse_service_start_idx": {
+          "name": "route_optimization_tasks_nurse_service_start_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "service_start_time",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "route_optimization_tasks_run_id_route_optimization_runs_id_fk": {
+          "name": "route_optimization_tasks_run_id_route_optimization_runs_id_fk",
+          "tableFrom": "route_optimization_tasks",
+          "tableTo": "route_optimization_runs",
+          "columnsFrom": [
+            "run_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "route_optimization_tasks_nurse_id_nurses_id_fk": {
+          "name": "route_optimization_tasks_nurse_id_nurses_id_fk",
+          "tableFrom": "route_optimization_tasks",
+          "tableTo": "nurses",
+          "columnsFrom": [
+            "nurse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "route_optimization_tasks_visit_instance_id_visit_instances_id_fk": {
+          "name": "route_optimization_tasks_visit_instance_id_visit_instances_id_fk",
+          "tableFrom": "route_optimization_tasks",
+          "tableTo": "visit_instances",
+          "columnsFrom": [
+            "visit_instance_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "route_optimization_tasks_template_id_recurring_visit_templates_id_fk": {
+          "name": "route_optimization_tasks_template_id_recurring_visit_templates_id_fk",
+          "tableFrom": "route_optimization_tasks",
+          "tableTo": "recurring_visit_templates",
+          "columnsFrom": [
+            "template_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "route_optimization_tasks_window_type_chk": {
+          "name": "route_optimization_tasks_window_type_chk",
+          "value": "\"route_optimization_tasks\".\"window_type\" in ('fixed', 'flexible')"
+        },
+        "route_optimization_tasks_window_order_chk": {
+          "name": "route_optimization_tasks_window_order_chk",
+          "value": "\"route_optimization_tasks\".\"window_end\" > \"route_optimization_tasks\".\"window_start\""
+        },
+        "route_optimization_tasks_wait_seconds_chk": {
+          "name": "route_optimization_tasks_wait_seconds_chk",
+          "value": "\"route_optimization_tasks\".\"wait_seconds\" is null or \"route_optimization_tasks\".\"wait_seconds\" >= 0"
+        },
+        "route_optimization_tasks_late_by_seconds_chk": {
+          "name": "route_optimization_tasks_late_by_seconds_chk",
+          "value": "\"route_optimization_tasks\".\"late_by_seconds\" is null or \"route_optimization_tasks\".\"late_by_seconds\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.visit_instance_exceptions": {
+      "name": "visit_instance_exceptions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nurse_id": {
+          "name": "nurse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "visit_instance_id": {
+          "name": "visit_instance_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template_id": {
+          "name": "template_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "exception_date": {
+          "name": "exception_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rescheduled_date": {
+          "name": "rescheduled_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "override_start_time": {
+          "name": "override_start_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "override_end_time": {
+          "name": "override_end_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "override_visit_time_type": {
+          "name": "override_visit_time_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "override_service_duration_minutes": {
+          "name": "override_service_duration_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "visit_instance_exceptions_nurse_date_idx": {
+          "name": "visit_instance_exceptions_nurse_date_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "exception_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "visit_instance_exceptions_instance_id_idx": {
+          "name": "visit_instance_exceptions_instance_id_idx",
+          "columns": [
+            {
+              "expression": "visit_instance_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "visit_instance_exceptions_template_date_idx": {
+          "name": "visit_instance_exceptions_template_date_idx",
+          "columns": [
+            {
+              "expression": "template_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "exception_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "visit_instance_exceptions_nurse_id_nurses_id_fk": {
+          "name": "visit_instance_exceptions_nurse_id_nurses_id_fk",
+          "tableFrom": "visit_instance_exceptions",
+          "tableTo": "nurses",
+          "columnsFrom": [
+            "nurse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "visit_instance_exceptions_visit_instance_id_visit_instances_id_fk": {
+          "name": "visit_instance_exceptions_visit_instance_id_visit_instances_id_fk",
+          "tableFrom": "visit_instance_exceptions",
+          "tableTo": "visit_instances",
+          "columnsFrom": [
+            "visit_instance_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "visit_instance_exceptions_template_id_recurring_visit_templates_id_fk": {
+          "name": "visit_instance_exceptions_template_id_recurring_visit_templates_id_fk",
+          "tableFrom": "visit_instance_exceptions",
+          "tableTo": "recurring_visit_templates",
+          "columnsFrom": [
+            "template_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "visit_instance_exceptions_action_chk": {
+          "name": "visit_instance_exceptions_action_chk",
+          "value": "\"visit_instance_exceptions\".\"action\" in ('skip', 'reschedule', 'edit')"
+        },
+        "visit_instance_exceptions_override_visit_time_type_chk": {
+          "name": "visit_instance_exceptions_override_visit_time_type_chk",
+          "value": "\"visit_instance_exceptions\".\"override_visit_time_type\" is null or \"visit_instance_exceptions\".\"override_visit_time_type\" in ('fixed', 'flexible')"
+        },
+        "visit_instance_exceptions_override_window_order_chk": {
+          "name": "visit_instance_exceptions_override_window_order_chk",
+          "value": "\"visit_instance_exceptions\".\"override_end_time\" is null or \"visit_instance_exceptions\".\"override_start_time\" is null or \"visit_instance_exceptions\".\"override_end_time\" > \"visit_instance_exceptions\".\"override_start_time\""
+        },
+        "visit_instance_exceptions_override_duration_chk": {
+          "name": "visit_instance_exceptions_override_duration_chk",
+          "value": "\"visit_instance_exceptions\".\"override_service_duration_minutes\" is null or \"visit_instance_exceptions\".\"override_service_duration_minutes\" between 1 and 180"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.visit_instances": {
+      "name": "visit_instances",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "nurse_id": {
+          "name": "nurse_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "patient_id": {
+          "name": "patient_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "template_id": {
+          "name": "template_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "occurrence_key": {
+          "name": "occurrence_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "planning_date": {
+          "name": "planning_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "address": {
+          "name": "address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "google_place_id": {
+          "name": "google_place_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "window_start": {
+          "name": "window_start",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "window_end": {
+          "name": "window_end",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "visit_time_type": {
+          "name": "visit_time_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "service_duration_minutes": {
+          "name": "service_duration_minutes",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'scheduled'"
+        },
+        "is_manual_override": {
+          "name": "is_manual_override",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "visit_instances_nurse_planning_date_idx": {
+          "name": "visit_instances_nurse_planning_date_idx",
+          "columns": [
+            {
+              "expression": "nurse_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "planning_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "visit_instances_patient_planning_date_idx": {
+          "name": "visit_instances_patient_planning_date_idx",
+          "columns": [
+            {
+              "expression": "patient_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "planning_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "visit_instances_template_planning_date_idx": {
+          "name": "visit_instances_template_planning_date_idx",
+          "columns": [
+            {
+              "expression": "template_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "planning_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "visit_instances_nurse_id_nurses_id_fk": {
+          "name": "visit_instances_nurse_id_nurses_id_fk",
+          "tableFrom": "visit_instances",
+          "tableTo": "nurses",
+          "columnsFrom": [
+            "nurse_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "visit_instances_patient_id_patients_id_fk": {
+          "name": "visit_instances_patient_id_patients_id_fk",
+          "tableFrom": "visit_instances",
+          "tableTo": "patients",
+          "columnsFrom": [
+            "patient_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "visit_instances_template_id_recurring_visit_templates_id_fk": {
+          "name": "visit_instances_template_id_recurring_visit_templates_id_fk",
+          "tableFrom": "visit_instances",
+          "tableTo": "recurring_visit_templates",
+          "columnsFrom": [
+            "template_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "visit_instances_occurrence_key_unique": {
+          "name": "visit_instances_occurrence_key_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "occurrence_key"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "visit_instances_visit_time_type_chk": {
+          "name": "visit_instances_visit_time_type_chk",
+          "value": "\"visit_instances\".\"visit_time_type\" in ('fixed', 'flexible')"
+        },
+        "visit_instances_window_order_chk": {
+          "name": "visit_instances_window_order_chk",
+          "value": "\"visit_instances\".\"window_end\" > \"visit_instances\".\"window_start\""
+        },
+        "visit_instances_duration_chk": {
+          "name": "visit_instances_duration_chk",
+          "value": "\"visit_instances\".\"service_duration_minutes\" between 1 and 180"
+        },
+        "visit_instances_status_chk": {
+          "name": "visit_instances_status_chk",
+          "value": "\"visit_instances\".\"status\" in ('scheduled', 'cancelled')"
+        }
+      },
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

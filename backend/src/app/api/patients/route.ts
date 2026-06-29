@@ -43,14 +43,16 @@ export async function GET(request: Request) {
     const auth = await requireAuth(request);
     const requestUrl = new URL(request.url);
     const query = requestUrl.searchParams.get("query") ?? "";
+    const stateParam = requestUrl.searchParams.get("state");
+    const state = stateParam === "idle" || stateParam === "archived" ? stateParam : "active";
 
-    const patients = await listPatientsByNurse(auth.nurseId, query);
+    const patients = await listPatientsByNurse(auth.nurseId, { query, state });
     void logAuditEvent({
       actorNurseId: auth.nurseId,
       action: "patients.list",
       resourceType: "patient",
       outcome: "success",
-      metadata: { queryLength: query.trim().length, resultCount: patients.length },
+      metadata: { queryLength: query.trim().length, resultCount: patients.length, state },
       ipAddress: resolveRequestIpAddress(request),
       userAgent: resolveRequestUserAgent(request),
     });

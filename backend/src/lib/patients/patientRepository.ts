@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, inArray, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { getDb } from "../../db";
 import { nurses, patientVisitWindows, patients } from "../../db/schema";
 import type {
@@ -17,12 +17,29 @@ export class NurseEmailConflictError extends Error {
 const FALLBACK_FLEXIBLE_START_TIME = "00:00";
 const FALLBACK_FLEXIBLE_END_TIME = "23:59";
 const FALLBACK_FLEXIBLE_VISIT_TYPE = "flexible";
-// Clients unused for this long are surfaced for the user to review (we no longer
-// auto-archive them — the user decides).
+const DAY_MS = 24 * 60 * 60 * 1000;
+// A client is "idle" once it hasn't been scheduled (or, if never scheduled, created)
+// within this window.
 const SCHEDULING_INACTIVITY_WINDOW_DAYS = 30;
-// After the user dismisses ("Keep all") the review is snoozed for this long so it
-// doesn't nag, then re-surfaces with whatever is stale at that point.
-const STALE_REVIEW_SNOOZE_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+// Archived clients stay user-visible for this long, then drop out of every UI
+// surface (still retained in the DB — see plans/clients-lifecycle-states-plan.md).
+const ARCHIVED_VISIBILITY_DAYS = 7;
+
+export type PatientLifecycleState = "active" | "idle" | "archived";
+
+// "active" (not idle): scheduled within the window, or never scheduled but created
+// within it. Written as the explicit complement of idleCondition so a NULL
+// last_scheduled_at doesn't drop recent clients out of both buckets.
+const activeCondition = (cutoff: Date) =>
+  or(
+    gte(patients.lastScheduledAt, cutoff),
+    and(isNull(patients.lastScheduledAt), gte(patients.createdAt, cutoff)),
+  );
+const idleCondition = (cutoff: Date) =>
+  or(
+    lt(patients.lastScheduledAt, cutoff),
+    and(isNull(patients.lastScheduledAt), lt(patients.createdAt, cutoff)),
+  );
 
 const runInTransaction = async <T>(operation: (db: ReturnType<typeof getDb>) => Promise<T>) => {
   const db = getDb();
@@ -223,20 +240,42 @@ const attachVisitWindows = async (
   }));
 };
 
-export const listPatientsByNurse = async (nurseId: string, query?: string) => {
-  const normalizedQuery = query?.trim() ?? "";
+export const listPatientsByNurse = async (
+  nurseId: string,
+  options: { query?: string; state?: PatientLifecycleState } = {},
+) => {
+  const { query, state = "active" } = options;
+  const now = new Date();
+  const inactivityCutoff = new Date(now.getTime() - SCHEDULING_INACTIVITY_WINDOW_DAYS * DAY_MS);
 
-  const filters = [eq(patients.nurseId, nurseId), eq(patients.isActive, true)];
+  const filters = [eq(patients.nurseId, nurseId)];
+  if (state === "archived") {
+    // Only archived rows from the last ARCHIVED_VISIBILITY_DAYS are user-visible;
+    // older ones are retained in the DB but never surfaced.
+    const archivedCutoff = new Date(now.getTime() - ARCHIVED_VISIBILITY_DAYS * DAY_MS);
+    filters.push(eq(patients.isActive, false), gte(patients.archivedAt, archivedCutoff));
+  } else if (state === "idle") {
+    filters.push(eq(patients.isActive, true), idleCondition(inactivityCutoff)!);
+  } else {
+    filters.push(eq(patients.isActive, true), activeCondition(inactivityCutoff)!);
+  }
+
+  const normalizedQuery = query?.trim() ?? "";
   if (normalizedQuery.length > 0) {
     const searchTerm = `%${normalizedQuery}%`;
     filters.push(or(ilike(patients.firstName, searchTerm), ilike(patients.lastName, searchTerm))!);
   }
 
+  const orderBy =
+    state === "archived"
+      ? [desc(patients.archivedAt)]
+      : [asc(patients.lastName), asc(patients.firstName), asc(patients.createdAt)];
+
   const patientRows = await getDb()
     .select()
     .from(patients)
     .where(and(...filters))
-    .orderBy(asc(patients.lastName), asc(patients.firstName), asc(patients.createdAt));
+    .orderBy(...orderBy);
 
   return attachVisitWindows(patientRows);
 };
@@ -384,11 +423,14 @@ export const updatePatientForNurse = async (
   });
 };
 
+// Archive (soft-delete) a single client, scoped to the nurse. Stamps archived_at
+// so the 7-day visibility window starts now.
 export const deletePatientForNurse = async (nurseId: string, patientId: string) => {
   const [deletedPatient] = await getDb()
     .update(patients)
     .set({
       isActive: false,
+      archivedAt: new Date(),
       updatedAt: new Date(),
     })
     .where(
@@ -399,62 +441,37 @@ export const deletePatientForNurse = async (nurseId: string, patientId: string) 
   return deletedPatient ?? null;
 };
 
-export type StaleClientReview = {
-  snoozedUntil: string | null;
-  patients: PatientWithVisitWindows[];
-};
-
-// Read-only: active clients unused for SCHEDULING_INACTIVITY_WINDOW_DAYS+ days,
-// surfaced for the user to review and archive (we no longer auto-archive). The
-// review is suppressed during the snooze window after a "Keep all" dismiss —
-// `nurses.lastDeactivatedClientsAt` is reused as the last-reviewed timestamp.
-export const getStaleClientReviewForNurse = async (nurseId: string): Promise<StaleClientReview> => {
+// Restore an archived client back to active. Only works while still visible
+// (archived within ARCHIVED_VISIBILITY_DAYS); older rows aren't user-reachable.
+export const restorePatientForNurse = async (nurseId: string, patientId: string) => {
   const now = new Date();
-  const nurse = await findNurseById(nurseId);
-  const lastReviewedAt = nurse?.lastDeactivatedClientsAt ?? null;
-  if (lastReviewedAt && now.getTime() - lastReviewedAt.getTime() < STALE_REVIEW_SNOOZE_MS) {
-    return {
-      snoozedUntil: new Date(lastReviewedAt.getTime() + STALE_REVIEW_SNOOZE_MS).toISOString(),
-      patients: [],
-    };
-  }
+  const archivedCutoff = new Date(now.getTime() - ARCHIVED_VISIBILITY_DAYS * DAY_MS);
 
-  const inactivityCutoff = new Date(
-    now.getTime() - SCHEDULING_INACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-  );
-
-  const staleRows = await getDb()
-    .select()
-    .from(patients)
+  const [restored] = await getDb()
+    .update(patients)
+    .set({ isActive: true, archivedAt: null, updatedAt: now })
     .where(
       and(
+        eq(patients.id, patientId),
         eq(patients.nurseId, nurseId),
-        eq(patients.isActive, true),
-        or(
-          lt(patients.lastScheduledAt, inactivityCutoff),
-          and(isNull(patients.lastScheduledAt), lt(patients.createdAt, inactivityCutoff)),
-        ),
+        eq(patients.isActive, false),
+        gte(patients.archivedAt, archivedCutoff),
       ),
     )
-    .orderBy(asc(patients.lastScheduledAt), asc(patients.createdAt));
+    .returning();
 
-  return { snoozedUntil: null, patients: await attachVisitWindows(staleRows) };
-};
-
-// Snooze-aware count of stale clients (mirrors getStaleClientReviewForNurse but
-// returns just the number, no PII) — used by the dashboard nudge so it matches
-// the Clients-page review banner exactly. Returns 0 while snoozed.
-export const countStaleClientsForNurse = async (nurseId: string): Promise<number> => {
-  const now = new Date();
-  const nurse = await findNurseById(nurseId);
-  const lastReviewedAt = nurse?.lastDeactivatedClientsAt ?? null;
-  if (lastReviewedAt && now.getTime() - lastReviewedAt.getTime() < STALE_REVIEW_SNOOZE_MS) {
-    return 0;
+  if (!restored) {
+    return null;
   }
 
-  const inactivityCutoff = new Date(
-    now.getTime() - SCHEDULING_INACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000,
-  );
+  const [withWindows] = await attachVisitWindows([restored]);
+  return withWindows ?? null;
+};
+
+// Count of idle (active, unused 30+ days) clients — used by the dashboard
+// "Idle clients" nudge. Matches the Idle tab's set.
+export const countStaleClientsForNurse = async (nurseId: string): Promise<number> => {
+  const inactivityCutoff = new Date(Date.now() - SCHEDULING_INACTIVITY_WINDOW_DAYS * DAY_MS);
 
   const [row] = await getDb()
     .select({ count: sql<number>`count(*)::int` })
@@ -463,34 +480,24 @@ export const countStaleClientsForNurse = async (nurseId: string): Promise<number
       and(
         eq(patients.nurseId, nurseId),
         eq(patients.isActive, true),
-        or(
-          lt(patients.lastScheduledAt, inactivityCutoff),
-          and(isNull(patients.lastScheduledAt), lt(patients.createdAt, inactivityCutoff)),
-        ),
+        idleCondition(inactivityCutoff)!,
       ),
     );
 
   return row?.count ?? 0;
 };
 
-// "Keep all" — snooze the stale-client review for STALE_REVIEW_SNOOZE_MS.
-export const dismissStaleClientReviewForNurse = async (nurseId: string) => {
-  await getDb()
-    .update(nurses)
-    .set({ lastDeactivatedClientsAt: new Date() })
-    .where(eq(nurses.id, nurseId));
-};
-
-// Bulk soft-delete (archive) the given clients, scoped to the nurse. Returns the
-// ids actually archived (already-inactive or other nurses' ids are ignored).
+// Bulk archive the given clients, scoped to the nurse. Stamps archived_at.
+// Returns the ids actually archived (already-inactive or other nurses' ids ignored).
 export const archivePatientsForNurse = async (nurseId: string, patientIds: string[]) => {
   if (patientIds.length === 0) {
     return [];
   }
 
+  const now = new Date();
   const archived = await getDb()
     .update(patients)
-    .set({ isActive: false, updatedAt: new Date() })
+    .set({ isActive: false, archivedAt: now, updatedAt: now })
     .where(
       and(
         eq(patients.nurseId, nurseId),
