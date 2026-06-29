@@ -190,6 +190,40 @@ export const TripSetupSection = ({
     );
   }
 
+  // Mobile collapsed bookend: when both points are set (e.g. auto-filled from the
+  // home address) the card starts collapsed so the user doesn't re-enter addresses.
+  // The colored nodes (green start, blue end) carry the meaning; tap the pencil to edit.
+  if (!isExpanded && isMobileViewport && bothPointsSet) {
+    return (
+      <section className={responsiveStyles.panel}>
+        <div className="flex items-center gap-3">
+          <div className="relative min-w-0 flex-1 space-y-3 border-l-2 border-slate-200 py-0.5 pl-5 dark:border-slate-700">
+            <div className="relative">
+              <span className="absolute -left-[28px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-2 border-emerald-500 bg-white dark:border-emerald-400 dark:bg-slate-950" />
+              <p className="m-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                {startAddress}
+              </p>
+            </div>
+            <div className="relative">
+              <span className="absolute -left-[28px] top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-2 border-blue-600 bg-white dark:border-blue-400 dark:bg-slate-950" />
+              <p className="m-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                {resolvedEndAddress}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            aria-label="Edit trip setup"
+            onClick={() => onSetExpanded(true)}
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 text-blue-600 transition hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-blue-400 dark:hover:bg-slate-800"
+          >
+            <PencilIcon />
+          </button>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       ref={cardRef}
@@ -213,7 +247,7 @@ export const TripSetupSection = ({
               compact
               ariaLabel="Planning date"
             />
-            {!isMobileViewport && startAddress.length > 0 && resolvedEndAddress.length > 0 && (
+            {bothPointsSet && (
               <button
                 type="button"
                 aria-label="Collapse trip setup"
