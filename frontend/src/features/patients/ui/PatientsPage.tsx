@@ -595,8 +595,7 @@ const PatientsPage = () => {
 
         {lifecycleState === "archived" && (
           <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-            Archived clients stay here for 7 days, then drop off this list (their data is retained).
-            Restore one to move it back to Active.
+            Archived clients stay here for 7 days. Restore one to move it back to Active.
           </p>
         )}
 
