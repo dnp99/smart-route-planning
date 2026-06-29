@@ -425,7 +425,7 @@ export const PatientsTable = ({
                   <div className="grid grid-cols-2 gap-3">
                     <div className="min-w-0">
                       <p className={responsiveStyles.formGroupEyebrow}>Window</p>
-                      <div className="mt-1 grid gap-1.5">
+                      <div className="mt-1 flex flex-col gap-1.5">
                         {windowRows[0]?.timeLabel === "Not set" ? (
                           <div className="flex items-center gap-1.5">
                             {renderVisitTypePill(visitType)}

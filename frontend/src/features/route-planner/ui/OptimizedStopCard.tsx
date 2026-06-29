@@ -240,7 +240,7 @@ export function OptimizedStopCard({
           regular fixed visits; saves vertical space on long lists) — revealed
           on expand. */}
       {isExpanded && ((task.windowStart && task.windowEnd) || visitDurationLabel) ? (
-        <div className="mt-1 grid gap-y-0 text-xs leading-5 text-slate-500 dark:text-slate-400">
+        <div className="mt-1 flex flex-col gap-y-0 text-xs leading-5 text-slate-500 dark:text-slate-400">
           <span className="min-w-0 text-slate-500 dark:text-slate-400">
             {task.windowStart && task.windowEnd
               ? `Window: ${task.windowStart} – ${task.windowEnd}`
@@ -267,8 +267,8 @@ export function OptimizedStopCard({
       )}
 
       {isExpanded && (
-        <div className="mt-2.5 grid gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40">
-          <div className="grid gap-1.5 text-xs">
+        <div className="mt-2.5 flex flex-col gap-2 rounded-xl border border-slate-200 bg-white/80 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40">
+          <div className="flex flex-col gap-1.5 text-xs">
             <div className="flex gap-2">
               <span className="w-20 shrink-0 text-slate-400 dark:text-slate-500">Address</span>
               <span className="min-w-0 text-slate-700 dark:text-slate-300">{task.address}</span>
@@ -360,11 +360,11 @@ export function EndingStopCard({
       </p>
 
       {isExpanded && (
-        <div className="mt-2 grid gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-950/40">
+        <div className="mt-2 flex flex-col gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-xs dark:border-slate-700 dark:bg-slate-950/40">
           {isHomeEndingPoint && (
             <div className="flex gap-2">
               <span className="w-20 shrink-0 text-slate-400 dark:text-slate-500">Address</span>
-              <span className="text-slate-700 dark:text-slate-300">{stop.address}</span>
+              <span className="min-w-0 text-slate-700 dark:text-slate-300">{stop.address}</span>
             </div>
           )}
           <div className="flex gap-2">

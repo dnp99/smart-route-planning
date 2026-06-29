@@ -328,7 +328,7 @@ export const DestinationRow = ({
                   : "Adjust planning window (plan-only unless saved):"}
             </p>
             {!isCancelledOccurrence && isVisitInstance && (
-              <div className="mt-2 grid gap-1">
+              <div className="mt-2 flex flex-col gap-1">
                 <label
                   htmlFor={`${destination.visitKey}-planning-date`}
                   className="text-xs font-semibold text-slate-700 dark:text-slate-300"
