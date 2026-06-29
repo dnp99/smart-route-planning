@@ -261,12 +261,12 @@ export default function HomePage({
           progressPercent: 0,
         },
         {
-          label: "Inactive clients",
+          label: "Idle clients",
           value: "—",
           delta: "Not used in 30+ days",
           tone: "text-slate-500",
           trend: "No baseline yet",
-          href: "/clients",
+          href: "/clients?state=idle",
         },
       ];
     }
@@ -302,13 +302,13 @@ export default function HomePage({
         href: "/clients",
       },
       {
-        label: "Inactive clients",
+        label: "Idle clients",
         value: String(dashboardSummary.kpis.staleClientsCount),
         delta: "Not used in 30+ days",
         tone: dashboardSummary.kpis.staleClientsCount > 0 ? "text-amber-600" : "text-slate-500",
         trend: dashboardSummary.kpis.staleClientsCount > 0 ? "Tap to review & archive →" : "",
         // Nothing to act on at zero — the card becomes non-clickable (no redirect).
-        href: dashboardSummary.kpis.staleClientsCount > 0 ? "/clients?review=stale" : undefined,
+        href: dashboardSummary.kpis.staleClientsCount > 0 ? "/clients?state=idle" : undefined,
       },
       {
         label: "Template coverage",

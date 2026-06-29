@@ -238,9 +238,8 @@ vi.mock("../../features/patients/api/patientService", () => ({
   updatePatient: (patientId: string, request: Parameters<typeof updatePatientMock>[1]) =>
     updatePatientMock(patientId, request),
   deletePatient: (patientId: string) => deletePatientMock(patientId),
-  fetchStaleClients: () => Promise.resolve({ snoozedUntil: null, patients: [] }),
   archiveClients: () => Promise.resolve([]),
-  dismissStaleReview: () => Promise.resolve(),
+  restoreClient: () => Promise.resolve({}),
 }));
 
 vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({
@@ -400,8 +399,8 @@ describe("patients and route planner integration", () => {
       expect(screen.getAllByText("Janet Doe").length).toBeGreaterThan(0);
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete Janet Doe" }));
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Archive Janet Doe" }));
+    fireEvent.click(screen.getByRole("button", { name: "Archive" }));
 
     await waitFor(() => {
       expect(deletePatientMock).toHaveBeenCalledTimes(1);

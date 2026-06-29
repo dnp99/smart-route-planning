@@ -7,9 +7,8 @@ vi.mock("../../features/patients/api/patientService", () => ({
   createPatient: vi.fn(),
   updatePatient: vi.fn(),
   deletePatient: vi.fn(),
-  fetchStaleClients: vi.fn().mockResolvedValue({ snoozedUntil: null, patients: [] }),
   archiveClients: vi.fn().mockResolvedValue([]),
-  dismissStaleReview: vi.fn().mockResolvedValue(undefined),
+  restoreClient: vi.fn(),
 }));
 
 vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({
@@ -133,7 +132,7 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
     });
 
     fireEvent.click(await screen.findByRole("button", { name: "Edit Jane Doe" }));
@@ -187,7 +186,7 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
     });
 
     fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
@@ -220,7 +219,7 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
     });
 
     fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
@@ -266,7 +265,7 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
       expect(mockedListRecurringVisitTemplates).toHaveBeenCalled();
     });
 
@@ -304,7 +303,7 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
       expect(mockedListRecurringVisitTemplates).toHaveBeenCalled();
     });
 
@@ -344,7 +343,7 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
       expect(mockedListRecurringVisitTemplates).toHaveBeenCalled();
     });
 
@@ -373,12 +372,12 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
     });
 
-    fireEvent.click(await screen.findByRole("button", { name: "Delete Jane Doe" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Archive Jane Doe" }));
 
-    fireEvent.click(screen.getByRole("button", { name: "Delete" }));
+    fireEvent.click(screen.getByRole("button", { name: "Archive" }));
 
     await waitFor(() => {
       expect(mockedDeletePatient).toHaveBeenCalledWith("patient-1");
@@ -414,7 +413,7 @@ describe("PatientsPage", () => {
     });
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenLastCalledWith("smi");
+      expect(mockedListPatients).toHaveBeenLastCalledWith("smi", "active");
       expect(screen.queryAllByText("Jane Doe")).toHaveLength(0);
       expect(screen.getAllByText("John Smith").length).toBeGreaterThan(0);
     });
@@ -460,7 +459,7 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
     });
 
     fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
@@ -508,7 +507,7 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
     });
 
     fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
@@ -543,7 +542,7 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
     });
 
     fireEvent.click(await screen.findByRole("button", { name: "Edit Jane Doe" }));

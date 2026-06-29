@@ -6,9 +6,8 @@ vi.mock("../../features/patients/api/patientService", () => ({
   createPatient: vi.fn(),
   updatePatient: vi.fn(),
   deletePatient: vi.fn(),
-  fetchStaleClients: vi.fn().mockResolvedValue({ snoozedUntil: null, patients: [] }),
   archiveClients: vi.fn().mockResolvedValue([]),
-  dismissStaleReview: vi.fn().mockResolvedValue(undefined),
+  restoreClient: vi.fn(),
 }));
 
 vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({
@@ -98,7 +97,7 @@ describe("PatientsPage address autocomplete integration", () => {
     render(<PatientsPage />);
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("");
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
     });
 
     fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));

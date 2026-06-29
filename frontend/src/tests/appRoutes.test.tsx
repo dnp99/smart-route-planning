@@ -33,9 +33,8 @@ vi.mock("../components/auth/authService", () => ({
 
 vi.mock("../features/patients/api/patientService", () => ({
   listPatients: listPatientsMock,
-  fetchStaleClients: vi.fn().mockResolvedValue({ snoozedUntil: null, patients: [] }),
   archiveClients: vi.fn().mockResolvedValue([]),
-  dismissStaleReview: vi.fn().mockResolvedValue(undefined),
+  restoreClient: vi.fn(),
 }));
 
 vi.mock("../features/patients/api/recurringVisitTemplateService", () => ({
