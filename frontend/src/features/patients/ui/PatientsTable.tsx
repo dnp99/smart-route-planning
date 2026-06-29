@@ -373,11 +373,14 @@ export const PatientsTable = ({
   }
 
   if (patients.length === 0) {
-    return (
-      <div className={responsiveStyles.tableEmptyState}>
-        {searchQuery.trim() ? "No clients match this search." : "No clients added yet."}
-      </div>
-    );
+    const emptyMessage = searchQuery.trim()
+      ? "No clients match this search."
+      : lifecycleState === "idle"
+        ? "No idle clients — everyone's been used in the last 30 days."
+        : lifecycleState === "archived"
+          ? "No archived clients in the last 7 days."
+          : "No clients added yet.";
+    return <div className={responsiveStyles.tableEmptyState}>{emptyMessage}</div>;
   }
 
   const windowFilterActive = windowFilter !== "all";
