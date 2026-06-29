@@ -41,7 +41,7 @@ export const responsiveStyles = {
   navBarNav: "flex items-center gap-6 lg:gap-8",
   // ── Desktop left sidebar (md+) ───────────────────────────────────────────────
   sidebar:
-    "sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-7 border-r border-slate-200 bg-white px-4 py-6 dark:border-slate-800 dark:bg-slate-950 md:flex",
+    "sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-7 px-4 py-6 backdrop-blur-md bg-[linear-gradient(180deg,rgba(236,254,255,0.7)_0%,rgba(239,246,255,0.8)_50%,rgba(219,234,254,0.92)_100%)] dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.5)_0%,rgba(15,23,42,0.45)_50%,rgba(8,47,73,0.6)_100%)] md:flex",
   sidebarBrand:
     "flex items-center gap-2.5 rounded-xl px-2 py-1 no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40",
   sidebarBrandTile:
