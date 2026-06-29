@@ -31,6 +31,7 @@ export const toPatientDto = (patient: PatientWithVisitWindows): PatientContract 
     preferredVisitEndTime: toHourMinute(patient.preferredVisitEndTime),
     visitTimeType: toVisitTimeType(patient.visitTimeType),
     visitWindows,
+    lastScheduledAt: patient.lastScheduledAt ? patient.lastScheduledAt.toISOString() : null,
     createdAt: patient.createdAt.toISOString(),
     updatedAt: patient.updatedAt.toISOString(),
   };

@@ -210,6 +210,23 @@ describe("PatientsPage", () => {
     });
   });
 
+  it("swaps Duration for a Last scheduled column on the Idle tab", async () => {
+    mockedListPatients.mockResolvedValue([seedPatient]);
+
+    render(<PatientsPage />);
+
+    fireEvent.click(screen.getByRole("tab", { name: /Idle/ }));
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("", "idle");
+    });
+
+    // Column header swaps Duration -> Last scheduled on Idle.
+    expect(await screen.findByRole("button", { name: /Last scheduled/ })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Duration/ })).toBeNull();
+    // seedPatient has no lastScheduledAt → "Never scheduled".
+    expect(screen.getAllByText("Never scheduled").length).toBeGreaterThan(0);
+  });
+
   it("submits create flow and resets to empty create mode", async () => {
     mockedListPatients.mockResolvedValue([]);
     mockedCreatePatient.mockResolvedValue(seedPatient);

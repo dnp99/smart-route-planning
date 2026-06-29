@@ -90,6 +90,9 @@ export type Patient = {
   visitTimeType: VisitTimeType;
   visitWindows: PatientVisitWindow[];
   recurringVisitTemplates?: RecurringVisitTemplate[];
+  // Most recent time the client was placed on a route (drives the idle/active split).
+  // Null when never scheduled. Optional for backward compatibility with older payloads.
+  lastScheduledAt?: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -208,6 +211,9 @@ export const isPatient = (value: unknown): value is Patient => {
     typeof value.preferredVisitStartTime === "string" &&
     typeof value.preferredVisitEndTime === "string" &&
     isVisitTimeType(value.visitTimeType) &&
+    (value.lastScheduledAt === undefined ||
+      value.lastScheduledAt === null ||
+      typeof value.lastScheduledAt === "string") &&
     typeof value.createdAt === "string" &&
     typeof value.updatedAt === "string"
   );

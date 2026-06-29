@@ -55,6 +55,7 @@ describe("toPatientDto", () => {
           visitTimeType: "fixed",
         },
       ],
+      lastScheduledAt: null,
       createdAt: createdAt.toISOString(),
       updatedAt: updatedAt.toISOString(),
     });

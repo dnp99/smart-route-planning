@@ -6,7 +6,7 @@ import { resolveVisitTypeLabel, type WindowFilter } from "../domain/visitType";
 import { countActiveRecurringTemplates } from "../domain/recurringTemplate";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 
-type SortField = "name" | "duration" | null;
+type SortField = "name" | "duration" | "lastScheduled" | null;
 type SortDir = "asc" | "desc";
 
 type PatientsTableProps = {
@@ -136,6 +136,21 @@ const formatTime12h = (time: string) => {
 const formatWindowRange = (startTime: string, endTime: string) =>
   `${formatTime12h(toTimeInput(startTime))}\u00A0-\u00A0${formatTime12h(toTimeInput(endTime))}`;
 
+// Idle tab: relative age + date for the last time a client was put on a route.
+const formatLastScheduled = (iso?: string | null): { primary: string; secondary: string } => {
+  if (!iso) return { primary: "Never scheduled", secondary: "" };
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return { primary: "Never scheduled", secondary: "" };
+  const days = Math.floor((Date.now() - then) / 86_400_000);
+  const primary = days <= 0 ? "Today" : days === 1 ? "Yesterday" : `${days} days ago`;
+  const secondary = new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return { primary, secondary };
+};
+
 const splitAddress = (addr: string) => {
   const idx = addr.indexOf(", ");
   if (idx === -1) return { street: addr, cityRegion: "" };
@@ -204,7 +219,7 @@ const SortIcon = ({
   sortField,
   sortDir,
 }: {
-  field: "name" | "duration";
+  field: "name" | "duration" | "lastScheduled";
   sortField: SortField;
   sortDir: SortDir;
 }) => {
@@ -287,7 +302,19 @@ export const PatientsTable = ({
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
-  const handleSortClick = (field: "name" | "duration") => {
+  // Each tab has a sensible default sort: Idle leads with the most stale (oldest
+  // last-scheduled) at the top; the others sort by name.
+  useEffect(() => {
+    if (isIdle) {
+      setSortField("lastScheduled");
+      setSortDir("asc");
+    } else {
+      setSortField("name");
+      setSortDir("asc");
+    }
+  }, [isIdle]);
+
+  const handleSortClick = (field: "name" | "duration" | "lastScheduled") => {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -321,6 +348,10 @@ export const PatientsTable = ({
           ? a.visitDurationMinutes - b.visitDurationMinutes
           : b.visitDurationMinutes - a.visitDurationMinutes,
       );
+    } else if (sortField === "lastScheduled") {
+      // Never-scheduled (null) sorts as oldest (epoch) → most stale at the top in asc.
+      const ts = (p: Patient) => (p.lastScheduledAt ? new Date(p.lastScheduledAt).getTime() : 0);
+      result = [...result].sort((a, b) => (sortDir === "asc" ? ts(a) - ts(b) : ts(b) - ts(a)));
     }
 
     return result;
@@ -493,7 +524,9 @@ export const PatientsTable = ({
                       <div className="mt-1 flex items-center gap-2">
                         {renderVisitTypePill(visitType)}
                         <span className="text-xs text-slate-500 dark:text-slate-400">
-                          {patient.visitDurationMinutes} min
+                          {isIdle
+                            ? formatLastScheduled(patient.lastScheduledAt).primary
+                            : `${patient.visitDurationMinutes} min`}
                         </span>
                       </div>
                     )}
@@ -537,9 +570,13 @@ export const PatientsTable = ({
                       </div>
                     </div>
                     <div className="min-w-0">
-                      <p className={responsiveStyles.formGroupEyebrow}>Duration</p>
+                      <p className={responsiveStyles.formGroupEyebrow}>
+                        {isIdle ? "Last scheduled" : "Duration"}
+                      </p>
                       <p className="m-0 mt-1 text-sm text-slate-700 dark:text-slate-300">
-                        {patient.visitDurationMinutes} min
+                        {isIdle
+                          ? formatLastScheduled(patient.lastScheduledAt).primary
+                          : `${patient.visitDurationMinutes} min`}
                       </p>
                     </div>
                   </div>
@@ -699,16 +736,20 @@ export const PatientsTable = ({
                   <th className="px-4 py-3 text-left">
                     <button
                       type="button"
-                      onClick={() => handleSortClick("duration")}
+                      onClick={() => handleSortClick(isIdle ? "lastScheduled" : "duration")}
                       className={[
                         responsiveStyles.tableSortButtonBase,
-                        sortField === "duration"
+                        sortField === (isIdle ? "lastScheduled" : "duration")
                           ? responsiveStyles.tableSortButtonActive
                           : responsiveStyles.tableSortButtonInactive,
                       ].join(" ")}
                     >
-                      Duration
-                      <SortIcon field="duration" sortField={sortField} sortDir={sortDir} />
+                      {isIdle ? "Last scheduled" : "Duration"}
+                      <SortIcon
+                        field={isIdle ? "lastScheduled" : "duration"}
+                        sortField={sortField}
+                        sortDir={sortDir}
+                      />
                     </button>
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
@@ -823,23 +864,43 @@ export const PatientsTable = ({
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-5 text-left text-sm text-slate-600 dark:text-slate-300">
-                      <span className="inline-flex items-center gap-1">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                          className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <polyline points="12 6 12 12 16 14" />
-                        </svg>
-                        {patient.visitDurationMinutes} min
-                      </span>
+                      {isIdle ? (
+                        (() => {
+                          const { primary, secondary } = formatLastScheduled(
+                            patient.lastScheduledAt,
+                          );
+                          return (
+                            <div className="min-w-0">
+                              <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+                                {primary}
+                              </p>
+                              {secondary && (
+                                <p className="m-0 text-xs text-slate-400 dark:text-slate-500">
+                                  {secondary}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                            className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500"
+                          >
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          {patient.visitDurationMinutes} min
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-5">
                       <div className="flex items-center justify-center">
