@@ -4,6 +4,7 @@ import { responsiveStyles } from "../responsiveStyles";
 import { useScrollShrink } from "../hooks/useScrollShrink";
 import { useClickOutside } from "../hooks/useClickOutside";
 import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
+import AppTabs from "../navigation/AppTabs";
 
 type AuthUser = { displayName?: string; email?: string; homeAddress?: string } | null;
 
@@ -99,7 +100,13 @@ export default function AppHeader({
         </div>
 
         {isAuthenticated && (
-          <div className="ml-auto flex min-w-0 items-center gap-2">
+          <div className="hidden md:flex">
+            <AppTabs variant="header" />
+          </div>
+        )}
+
+        {isAuthenticated && (
+          <div className="flex min-w-0 items-center gap-2">
             <div ref={accountMenuRef} className="relative">
               <button
                 type="button"

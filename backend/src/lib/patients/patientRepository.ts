@@ -487,6 +487,46 @@ export const countStaleClientsForNurse = async (nurseId: string): Promise<number
   return row?.count ?? 0;
 };
 
+// Counts per lifecycle state for the Clients-page tabs (active / idle / archived,
+// archived limited to the 7-day visibility window).
+export const countPatientsByStateForNurse = async (nurseId: string) => {
+  const now = new Date();
+  const inactivityCutoff = new Date(now.getTime() - SCHEDULING_INACTIVITY_WINDOW_DAYS * DAY_MS);
+  const archivedCutoff = new Date(now.getTime() - ARCHIVED_VISIBILITY_DAYS * DAY_MS);
+
+  const countWhere = async (condition: ReturnType<typeof and>) => {
+    const [row] = await getDb()
+      .select({ count: sql<number>`count(*)::int` })
+      .from(patients)
+      .where(condition);
+    return row?.count ?? 0;
+  };
+
+  const active = await countWhere(
+    and(
+      eq(patients.nurseId, nurseId),
+      eq(patients.isActive, true),
+      activeCondition(inactivityCutoff)!,
+    ),
+  );
+  const idle = await countWhere(
+    and(
+      eq(patients.nurseId, nurseId),
+      eq(patients.isActive, true),
+      idleCondition(inactivityCutoff)!,
+    ),
+  );
+  const archived = await countWhere(
+    and(
+      eq(patients.nurseId, nurseId),
+      eq(patients.isActive, false),
+      gte(patients.archivedAt, archivedCutoff),
+    ),
+  );
+
+  return { active, idle, archived };
+};
+
 // Bulk archive the given clients, scoped to the nurse. Stamps archived_at.
 // Returns the ids actually archived (already-inactive or other nurses' ids ignored).
 export const archivePatientsForNurse = async (nurseId: string, patientIds: string[]) => {

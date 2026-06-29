@@ -21,6 +21,10 @@ type PatientsTableProps = {
   onEdit: (patient: Patient) => void;
   selectedIds: Set<string>;
   onToggleSelect: (patientId: string) => void;
+  onSelectAll: (ids: string[]) => void;
+  onClearSelection: () => void;
+  onArchiveSelected: () => void;
+  isBulkArchiving: boolean;
   onRestore: (patient: Patient) => void;
   restoringId: string | null;
   recurringTemplatesByPatientId: Map<string, RecurringVisitTemplate[]>;
@@ -60,6 +64,41 @@ const EditIcon = ({ className }: { className?: string }) => (
   >
     <path d="M12 20h9" />
     <path d="m16.5 3.5 4 4L8 20H4v-4z" />
+  </svg>
+);
+
+const ArchiveIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M21 8v13H3V8" />
+    <path d="M1 3h22v5H1z" />
+    <path d="M10 12h4" />
+  </svg>
+);
+
+const RefreshIcon = ({ className }: { className?: string }) => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+    className={className}
+  >
+    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+    <path d="M3 3v5h5" />
   </svg>
 );
 
@@ -232,11 +271,16 @@ export const PatientsTable = ({
   onEdit,
   selectedIds,
   onToggleSelect,
+  onSelectAll,
+  onClearSelection,
+  onArchiveSelected,
+  isBulkArchiving,
   onRestore,
   restoringId,
   recurringTemplatesByPatientId,
 }: PatientsTableProps) => {
   const isArchived = lifecycleState === "archived";
+  const isIdle = lifecycleState === "idle";
   const [openWindowsPopoverKey, setOpenWindowsPopoverKey] = useState<string | null>(null);
   const windowsPopoverRef = useRef<HTMLDivElement | null>(null);
   const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
@@ -385,6 +429,19 @@ export const PatientsTable = ({
 
   const windowFilterActive = windowFilter !== "all";
 
+  const visibleIds = sortedFilteredPatients.map((patient) => patient.id);
+  const selectedVisibleCount = visibleIds.filter((id) => selectedIds.has(id)).length;
+  const allSelected = visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
+  const showBulkBar = isIdle && selectedIds.size > 0;
+  const bulkCount = selectedIds.size;
+  const handleToggleSelectAll = () => {
+    if (allSelected) {
+      onClearSelection();
+    } else {
+      onSelectAll(visibleIds);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col gap-3 md:hidden">
@@ -475,6 +532,7 @@ export const PatientsTable = ({
                         aria-label={`Restore ${patientDisplayName}`}
                         className={responsiveStyles.mobileEditButton}
                       >
+                        <RefreshIcon className="h-4 w-4" />
                         {restoringId === patient.id ? "Restoring…" : "Restore"}
                       </button>
                     ) : (
@@ -512,6 +570,7 @@ export const PatientsTable = ({
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <colgroup>
+              {isIdle && <col className="w-12" />}
               <col className="w-[28%]" />
               <col className="w-[34%]" />
               <col className="w-[18%]" />
@@ -520,78 +579,128 @@ export const PatientsTable = ({
               <col className="w-20" />
             </colgroup>
             <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/80">
-              <tr>
-                <th className="px-6 py-3 text-left">
-                  <button
-                    type="button"
-                    onClick={() => handleSortClick("name")}
-                    className={[
-                      responsiveStyles.tableSortButtonBase,
-                      sortField === "name"
-                        ? responsiveStyles.tableSortButtonActive
-                        : responsiveStyles.tableSortButtonInactive,
-                    ].join(" ")}
-                  >
-                    Name
-                    <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
-                  </button>
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
-                  Address
-                </th>
-                <th className="px-6 py-3 text-left">
-                  <button
-                    type="button"
-                    onClick={cycleWindowFilter}
-                    className={[
-                      responsiveStyles.tableSortButtonFilterBase,
-                      windowFilterActive
-                        ? responsiveStyles.tableSortButtonActive
-                        : responsiveStyles.tableSortButtonInactive,
-                    ].join(" ")}
-                  >
-                    Window
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                      className="h-3.5 w-3.5 opacity-85"
+              {showBulkBar ? (
+                <tr>
+                  <th colSpan={7} className="p-0 font-normal">
+                    <div className={responsiveStyles.tableBulkBar}>
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={handleToggleSelectAll}
+                        aria-label="Select all idle clients"
+                        className={responsiveStyles.tableSelectCheckbox}
+                      />
+                      <span className={responsiveStyles.tableBulkLabel}>
+                        {bulkCount} client{bulkCount === 1 ? "" : "s"} selected
+                      </span>
+                      <span className={responsiveStyles.tableBulkDivider} aria-hidden="true" />
+                      <button
+                        type="button"
+                        onClick={onClearSelection}
+                        className={responsiveStyles.tableBulkClear}
+                      >
+                        Clear
+                      </button>
+                      <div className="flex-1" />
+                      <button
+                        type="button"
+                        onClick={onArchiveSelected}
+                        disabled={isBulkArchiving}
+                        className={responsiveStyles.tableBulkArchiveButton}
+                      >
+                        <ArchiveIcon className="h-4 w-4" />
+                        {isBulkArchiving
+                          ? "Archiving…"
+                          : `Archive ${bulkCount} client${bulkCount === 1 ? "" : "s"}`}
+                      </button>
+                    </div>
+                  </th>
+                </tr>
+              ) : (
+                <tr>
+                  {isIdle && (
+                    <th className="w-12 px-5 py-3 text-left">
+                      <input
+                        type="checkbox"
+                        checked={allSelected}
+                        onChange={handleToggleSelectAll}
+                        aria-label="Select all idle clients"
+                        className={responsiveStyles.tableSelectCheckbox}
+                      />
+                    </th>
+                  )}
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      type="button"
+                      onClick={() => handleSortClick("name")}
+                      className={[
+                        responsiveStyles.tableSortButtonBase,
+                        sortField === "name"
+                          ? responsiveStyles.tableSortButtonActive
+                          : responsiveStyles.tableSortButtonInactive,
+                      ].join(" ")}
                     >
-                      <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
-                    </svg>
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-left">
-                  <button
-                    type="button"
-                    onClick={() => handleSortClick("duration")}
-                    className={[
-                      responsiveStyles.tableSortButtonBase,
-                      sortField === "duration"
-                        ? responsiveStyles.tableSortButtonActive
-                        : responsiveStyles.tableSortButtonInactive,
-                    ].join(" ")}
-                  >
-                    Duration
-                    <SortIcon field="duration" sortField={sortField} sortDir={sortDir} />
-                  </button>
-                </th>
-                <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
-                  Repeat
-                </th>
-                <th className="px-4 py-3" aria-label="Actions" />
-              </tr>
+                      Name
+                      <SortIcon field="name" sortField={sortField} sortDir={sortDir} />
+                    </button>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
+                    Address
+                  </th>
+                  <th className="px-6 py-3 text-left">
+                    <button
+                      type="button"
+                      onClick={cycleWindowFilter}
+                      className={[
+                        responsiveStyles.tableSortButtonFilterBase,
+                        windowFilterActive
+                          ? responsiveStyles.tableSortButtonActive
+                          : responsiveStyles.tableSortButtonInactive,
+                      ].join(" ")}
+                    >
+                      Window
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                        className="h-3.5 w-3.5 opacity-85"
+                      >
+                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+                      </svg>
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-left">
+                    <button
+                      type="button"
+                      onClick={() => handleSortClick("duration")}
+                      className={[
+                        responsiveStyles.tableSortButtonBase,
+                        sortField === "duration"
+                          ? responsiveStyles.tableSortButtonActive
+                          : responsiveStyles.tableSortButtonInactive,
+                      ].join(" ")}
+                    >
+                      Duration
+                      <SortIcon field="duration" sortField={sortField} sortDir={sortDir} />
+                    </button>
+                  </th>
+                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
+                    Repeat
+                  </th>
+                  <th className="px-4 py-3" aria-label="Actions" />
+                </tr>
+              )}
             </thead>
             <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
               {sortedFilteredPatients.length === 0 && (
                 <tr>
                   <td
-                    colSpan={6}
+                    colSpan={isIdle ? 7 : 6}
                     className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
                   >
                     No clients match the current filter.
@@ -605,8 +714,26 @@ export const PatientsTable = ({
                 const activeRecurringCount = countActiveRecurringTemplates(
                   recurringTemplatesByPatientId.get(patient.id),
                 );
+                const isSelected = isIdle && selectedIds.has(patient.id);
                 return (
-                  <tr key={patient.id} className={responsiveStyles.tableRow}>
+                  <tr
+                    key={patient.id}
+                    className={[
+                      responsiveStyles.tableRow,
+                      isSelected ? responsiveStyles.tableRowSelected : "",
+                    ].join(" ")}
+                  >
+                    {isIdle && (
+                      <td className="px-5 py-5">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(patient.id)}
+                          onChange={() => onToggleSelect(patient.id)}
+                          aria-label={`Select ${patientDisplayName}`}
+                          className={responsiveStyles.tableSelectCheckbox}
+                        />
+                      </td>
+                    )}
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-3">
                         <span className={responsiveStyles.clientAvatar} aria-hidden="true">
@@ -725,21 +852,13 @@ export const PatientsTable = ({
                             onClick={() => onRestore(patient)}
                             disabled={restoringId === patient.id}
                             aria-label={`Restore ${patientDisplayName}`}
-                            className={responsiveStyles.outlineButton}
+                            className={responsiveStyles.restoreButton}
                           >
+                            <RefreshIcon className="h-3.5 w-3.5" />
                             {restoringId === patient.id ? "Restoring…" : "Restore"}
                           </button>
                         ) : (
-                          <div className="flex items-center gap-0.5">
-                            {lifecycleState === "idle" && (
-                              <input
-                                type="checkbox"
-                                checked={selectedIds.has(patient.id)}
-                                onChange={() => onToggleSelect(patient.id)}
-                                aria-label={`Select ${patientDisplayName}`}
-                                className="mr-2 h-4 w-4 accent-amber-600"
-                              />
-                            )}
+                          <div className="flex items-center gap-1">
                             <button
                               type="button"
                               onClick={() => onEdit(patient)}
@@ -749,16 +868,18 @@ export const PatientsTable = ({
                             >
                               <EditIcon className="h-3.5 w-3.5" />
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => void onDelete(patient.id)}
-                              disabled={isSubmitting}
-                              aria-label={`Archive ${patientDisplayName}`}
-                              title="Archive"
-                              className={responsiveStyles.tableIconButtonDestructive}
-                            >
-                              <TrashIcon className="h-3.5 w-3.5" />
-                            </button>
+                            {lifecycleState === "active" && (
+                              <button
+                                type="button"
+                                onClick={() => void onDelete(patient.id)}
+                                disabled={isSubmitting}
+                                aria-label={`Archive ${patientDisplayName}`}
+                                title="Archive"
+                                className={responsiveStyles.tableIconButtonDestructive}
+                              >
+                                <TrashIcon className="h-3.5 w-3.5" />
+                              </button>
+                            )}
                           </div>
                         )}
                       </div>

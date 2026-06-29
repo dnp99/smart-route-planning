@@ -62,7 +62,7 @@ function RoutePlanner({
             <p className={responsiveStyles.cardDescription}>
               {isMobileViewport
                 ? "Set start, end, and client addresses. Routefy prioritizes time-window feasibility first, then distance."
-                : "Enter your starting point, ending point, and destination addresses. The planner prioritizes time-window feasibility first, then distance, with the ending point as the final stop."}
+                : "Choose a start, an end, and the clients to visit. We'll order the stops to meet time windows first, then cut driving, finishing at your end point."}
             </p>
             <button
               type="button"

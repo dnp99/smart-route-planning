@@ -65,6 +65,12 @@ Correct workflow for every schema change:
 
 `npm run db:generate` requires a live `DATABASE_URL`. If the environment doesn't have one, ask the user to run step 2 themselves.
 
+**Never run `drizzle-kit push`** against prod or preview. `push` syncs the schema directly without recording anything in `drizzle.__drizzle_migrations`, so the journal falls behind the schema — then `migrate` tries to re-apply already-present changes and fails with `column … already exists`. Always use generate + migrate.
+
+Migrations apply automatically: on `npm run dev` (a `predev` hook) and on every Vercel **production/preview** build (`vercel.json` `buildCommand` → `scripts/migrate-on-deploy.mjs`). No manual `db:migrate` in normal flow.
+
+If a deploy/migrate fails with `column … already exists` (journal drift), see [`docs/database-migrations.md`](docs/database-migrations.md) for the reconciliation runbook.
+
 ## Stack
 
 - Frontend: React + TypeScript, Vite, Tailwind CSS

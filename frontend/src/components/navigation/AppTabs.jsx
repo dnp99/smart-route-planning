@@ -1,7 +1,8 @@
 import { NavLink } from "react-router-dom";
 import { responsiveStyles } from "../responsiveStyles";
 
-const resolveTabClassName = ({ isActive }) =>
+// Strip variant: the standalone underline-tab row used below the header on mobile.
+const stripTabClassName = (isActive) =>
   [
     "group flex items-center gap-2 border-b-[3px] px-1 pb-3 pt-3 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
     isActive
@@ -9,10 +10,31 @@ const resolveTabClassName = ({ isActive }) =>
       : "border-transparent text-slate-600 hover:border-slate-300 hover:text-slate-800 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-200",
   ].join(" ");
 
-export default function AppTabs() {
+// Header variant: inline nav inside the merged desktop header bar.
+const headerTabClassName = (isActive) =>
+  [
+    "group flex items-center gap-2 border-b-2 pb-1 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40",
+    isActive
+      ? "border-blue-600 font-semibold text-blue-600 dark:border-blue-400 dark:text-blue-300"
+      : "border-transparent font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200",
+  ].join(" ");
+
+const iconClassName = (isActive) =>
+  [
+    "h-4 w-4 shrink-0",
+    isActive
+      ? "text-blue-600 dark:text-blue-400"
+      : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
+  ].join(" ");
+
+export default function AppTabs({ variant = "strip" }) {
+  const isHeader = variant === "header";
+  const tabClassName = ({ isActive }) =>
+    isHeader ? headerTabClassName(isActive) : stripTabClassName(isActive);
+
   return (
-    <nav className={responsiveStyles.tabNav}>
-      <NavLink to="/home" end aria-label="Home" className={resolveTabClassName}>
+    <nav className={isHeader ? responsiveStyles.navBarNav : responsiveStyles.tabNav}>
+      <NavLink to="/home" end aria-label="Home" className={tabClassName}>
         {({ isActive }) => (
           <>
             <svg
@@ -24,12 +46,7 @@ export default function AppTabs() {
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
-              className={[
-                "h-4 w-4 shrink-0",
-                isActive
-                  ? "text-blue-600 dark:text-blue-400"
-                  : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
-              ].join(" ")}
+              className={iconClassName(isActive)}
             >
               <path d="M3 11.5 12 4l9 7.5" />
               <path d="M5.5 10.5V20h13V10.5" />
@@ -39,7 +56,7 @@ export default function AppTabs() {
           </>
         )}
       </NavLink>
-      <NavLink to="/clients" aria-label="Clients" className={resolveTabClassName}>
+      <NavLink to="/clients" aria-label="Clients" className={tabClassName}>
         {({ isActive }) => (
           <>
             <svg
@@ -51,12 +68,7 @@ export default function AppTabs() {
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
-              className={[
-                "h-4 w-4 shrink-0",
-                isActive
-                  ? "text-blue-600 dark:text-blue-400"
-                  : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
-              ].join(" ")}
+              className={iconClassName(isActive)}
             >
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
@@ -67,7 +79,7 @@ export default function AppTabs() {
           </>
         )}
       </NavLink>
-      <NavLink to="/route-planner" aria-label="Route Planner" className={resolveTabClassName}>
+      <NavLink to="/route-planner" aria-label="Route Planner" className={tabClassName}>
         {({ isActive }) => (
           <>
             <svg
@@ -79,12 +91,7 @@ export default function AppTabs() {
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
-              className={[
-                "h-4 w-4 shrink-0",
-                isActive
-                  ? "text-blue-600 dark:text-blue-400"
-                  : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
-              ].join(" ")}
+              className={iconClassName(isActive)}
             >
               <circle cx="3" cy="6" r="2" />
               <circle cx="21" cy="6" r="2" />

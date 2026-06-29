@@ -210,7 +210,14 @@ export const SelectedDestinationsSection = ({
             ))}
           </ul>
         ) : selectedDestinations.length === 0 ? (
-          <p className={responsiveStyles.panelEmptyText}>No clients selected yet.</p>
+          <div>
+            <p className="m-0 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              No clients selected yet
+            </p>
+            <p className={`${responsiveStyles.panelEmptyText} mt-1`}>
+              Add clients from the list on the left, then tap Optimize Route.
+            </p>
+          </div>
         ) : (
           <div className={responsiveStyles.selectedTimelineRail}>
             {startAddress.length > 0 &&

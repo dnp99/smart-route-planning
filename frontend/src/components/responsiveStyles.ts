@@ -37,6 +37,8 @@ export const responsiveStyles = {
     "mx-auto flex w-full max-w-7xl flex-col items-center gap-3 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:pb-4",
   contentWrapper: "mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6",
   tabNav: "flex gap-6 border-b border-slate-200/50 dark:border-slate-800/50",
+  // Inline primary nav inside the desktop header bar (merged header+tabs).
+  navBarNav: "flex items-center gap-6 lg:gap-8",
   // ── Account menu ──────────────────────────────────────────────────────────
   accountMenuButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-100 to-blue-50 text-sm font-bold uppercase tracking-[0.02em] text-blue-800 shadow-sm transition hover:from-blue-200 hover:to-blue-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-blue-700 dark:from-blue-900/70 dark:to-blue-950/60 dark:text-blue-100 dark:hover:from-blue-800 dark:hover:to-blue-900",
@@ -434,6 +436,10 @@ export const responsiveStyles = {
   clientStateTabActive: "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300",
   clientStateTabInactive:
     "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
+  // Per-tab helper line (icon + subtitle) under the lifecycle tabs.
+  clientTabHelper:
+    "mb-4 flex items-start gap-2 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400",
+  clientTabHelperIcon: "mt-px h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500",
   // Clients page summary stats row (desktop only — hidden below md)
   clientStatsRow: "mb-6 hidden grid-cols-4 gap-6 md:grid",
   clientStatCard:
@@ -573,6 +579,27 @@ export const responsiveStyles = {
   tableCard:
     "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900",
   tableRow: "group transition hover:bg-slate-50 dark:hover:bg-slate-800/40",
+  // Selected row (idle bulk-select) — blue selection surface per design-system §11.
+  tableRowSelected: "bg-blue-50/60 dark:bg-blue-950/30",
+  // Row / select-all checkbox.
+  tableSelectCheckbox:
+    "h-[18px] w-[18px] cursor-pointer rounded accent-blue-600 dark:accent-blue-500",
+  // In-header bulk toolbar (idle, ≥1 selected) — amber selection bar.
+  tableBulkBar: "flex items-center gap-3 bg-amber-50 px-5 py-2.5 dark:bg-amber-950/30",
+  tableBulkLabel: "text-sm font-semibold text-amber-900 dark:text-amber-200",
+  tableBulkDivider: "h-4 w-px bg-amber-300 dark:bg-amber-700",
+  tableBulkClear:
+    "text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200",
+  tableBulkArchiveButton:
+    "inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60",
+  // Archived-row Restore button — blue outline + refresh icon per figma.
+  restoreButton:
+    "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",
+  // Always-on privacy/compliance reminder at the foot of the Clients card.
+  clientPrivacyCard:
+    "mt-5 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-3.5 dark:border-blue-900/50 dark:bg-blue-950/20",
+  clientPrivacyTitle: "m-0 text-sm font-semibold text-blue-700 dark:text-blue-300",
+  clientPrivacyText: "m-0 mt-0.5 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400",
   tableEmptyState:
     "rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
   tableIconButton:

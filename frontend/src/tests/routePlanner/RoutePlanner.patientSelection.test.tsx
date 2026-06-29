@@ -936,7 +936,7 @@ describe("RoutePlanner patient selection integration", () => {
       planningDate: rescheduledDate,
     });
 
-    expect(screen.getByText("No clients selected yet.")).toBeTruthy();
+    expect(screen.getByText("No clients selected yet")).toBeTruthy();
     vi.useRealTimers();
   });
 
@@ -1286,7 +1286,7 @@ describe("RoutePlanner patient selection integration", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Remove John Smith/i }));
 
-    expect(screen.getByText("No clients selected yet.")).toBeTruthy();
+    expect(screen.getByText("No clients selected yet")).toBeTruthy();
   });
 
   it("auto-optimizes when autoOptimizeToday is set, instances are loaded, and home address is present", async () => {

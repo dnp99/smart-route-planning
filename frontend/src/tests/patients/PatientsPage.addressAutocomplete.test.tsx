@@ -8,6 +8,7 @@ vi.mock("../../features/patients/api/patientService", () => ({
   deletePatient: vi.fn(),
   archiveClients: vi.fn().mockResolvedValue([]),
   restoreClient: vi.fn(),
+  fetchPatientCounts: vi.fn().mockResolvedValue({ active: 0, idle: 0, archived: 0 }),
 }));
 
 vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({
