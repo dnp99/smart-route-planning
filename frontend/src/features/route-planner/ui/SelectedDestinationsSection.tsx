@@ -317,25 +317,23 @@ export const SelectedDestinationsSection = ({
                                   </p>
                                   <span className="inline-flex shrink-0 items-center gap-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                                     {group.destinations.length} windows
-                                    {!isMobileViewport && (
-                                      <svg
-                                        width="14"
-                                        height="14"
-                                        viewBox="0 0 24 24"
-                                        fill="none"
-                                        stroke="currentColor"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        aria-hidden="true"
-                                      >
-                                        {isCollapsed ? (
-                                          <polyline points="6 9 12 15 18 9" />
-                                        ) : (
-                                          <polyline points="18 15 12 9 6 15" />
-                                        )}
-                                      </svg>
-                                    )}
+                                    <svg
+                                      width="14"
+                                      height="14"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      aria-hidden="true"
+                                    >
+                                      {isCollapsed ? (
+                                        <polyline points="6 9 12 15 18 9" />
+                                      ) : (
+                                        <polyline points="18 15 12 9 6 15" />
+                                      )}
+                                    </svg>
                                   </span>
                                 </div>
                                 <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -351,13 +349,9 @@ export const SelectedDestinationsSection = ({
                               </div>
                             </>
                           );
-                          // On mobile the pills already show every window, so the card is
-                          // static — no toggle/expand. Desktop keeps the expand-to-edit.
-                          return isMobileViewport ? (
-                            <div className="flex w-full items-center gap-3 px-3 py-2.5">
-                              {headerInner}
-                            </div>
-                          ) : (
+                          // Tapping the header expands to per-window edit/delete (mobile
+                          // and desktop). The pills preview the windows when collapsed.
+                          return (
                             <button
                               type="button"
                               aria-expanded={!isCollapsed}
@@ -371,7 +365,7 @@ export const SelectedDestinationsSection = ({
                             </button>
                           );
                         })()}
-                        {!isMobileViewport && !isCollapsed && (
+                        {!isCollapsed && (
                           <div className="space-y-2 border-t border-slate-100 px-3 py-2.5 dark:border-slate-800">
                             {group.destinations.map((destination, windowIndex) => (
                               <DestinationRow
