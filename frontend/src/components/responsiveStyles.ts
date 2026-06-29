@@ -39,6 +39,16 @@ export const responsiveStyles = {
   tabNav: "flex gap-6 border-b border-slate-200/50 dark:border-slate-800/50",
   // Inline primary nav inside the desktop header bar (merged header+tabs).
   navBarNav: "flex items-center gap-6 lg:gap-8",
+  // ── Desktop left sidebar (md+) ───────────────────────────────────────────────
+  sidebar:
+    "sticky top-0 hidden h-screen w-60 shrink-0 flex-col gap-7 border-r border-slate-200 bg-white px-4 py-6 dark:border-slate-800 dark:bg-slate-950 md:flex",
+  sidebarBrand:
+    "flex items-center gap-2.5 rounded-xl px-2 py-1 no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40",
+  sidebarBrandTile:
+    "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40",
+  sidebarBrandWordmark:
+    "text-lg font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300",
+  sidebarNav: "flex flex-col gap-1",
   // ── Account menu ──────────────────────────────────────────────────────────
   accountMenuButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-100 to-blue-50 text-sm font-bold uppercase tracking-[0.02em] text-blue-800 shadow-sm transition hover:from-blue-200 hover:to-blue-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-blue-700 dark:from-blue-900/70 dark:to-blue-950/60 dark:text-blue-100 dark:hover:from-blue-800 dark:hover:to-blue-900",

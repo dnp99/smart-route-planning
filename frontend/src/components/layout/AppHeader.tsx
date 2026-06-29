@@ -5,7 +5,6 @@ import { responsiveStyles } from "../responsiveStyles";
 import { useScrollShrink } from "../hooks/useScrollShrink";
 import { useClickOutside } from "../hooks/useClickOutside";
 import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
-import AppTabs from "../navigation/AppTabs";
 
 type AuthUser = { displayName?: string; email?: string; homeAddress?: string } | null;
 
@@ -102,28 +101,21 @@ export default function AppHeader({
           "transition-all duration-300",
         ].join(" ")}
       >
-        <div className="flex min-w-0 items-center gap-6 lg:gap-10">
-          {isAuthenticated ? (
-            <Link
-              to="/home"
-              aria-label="Routefy home"
-              className="flex min-w-0 items-center gap-3 rounded-xl no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-            >
-              {brandContent}
-            </Link>
-          ) : (
-            <div className="flex min-w-0 items-center gap-3">{brandContent}</div>
-          )}
-
-          {isAuthenticated && (
-            <div className="hidden md:flex">
-              <AppTabs variant="header" scrolled={headerScrolled} />
-            </div>
-          )}
-        </div>
+        {/* Desktop puts the brand in the sidebar; the top bar shows it on mobile only. */}
+        {isAuthenticated ? (
+          <Link
+            to="/home"
+            aria-label="Routefy home"
+            className="flex min-w-0 items-center gap-3 rounded-xl no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 md:hidden"
+          >
+            {brandContent}
+          </Link>
+        ) : (
+          <div className="flex min-w-0 items-center gap-3">{brandContent}</div>
+        )}
 
         {isAuthenticated && (
-          <div className="flex min-w-0 items-center gap-2">
+          <div className="ml-auto flex min-w-0 items-center gap-2">
             <div ref={accountMenuRef} className="relative">
               <button
                 type="button"
