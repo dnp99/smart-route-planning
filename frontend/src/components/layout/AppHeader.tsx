@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { formatNameWords } from "../../features/patients/domain/patientName";
 import { responsiveStyles } from "../responsiveStyles";
 import { useScrollShrink } from "../hooks/useScrollShrink";
@@ -60,6 +61,34 @@ export default function AppHeader({
     ? responsiveStyles.appHeaderInner
     : "mx-auto flex w-full max-w-7xl items-center justify-center px-6";
 
+  const brandContent = (
+    <>
+      <div
+        className={[
+          "flex shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 transition-all duration-300",
+          headerScrolled ? "h-9 w-9" : "h-11 w-11 sm:h-12 sm:w-12 lg:h-12 lg:w-12",
+        ].join(" ")}
+      >
+        <RoutefyBrandMark
+          className={[
+            "text-blue-600 dark:text-blue-400 transition-all duration-300",
+            headerScrolled ? "h-5 w-5" : "h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8",
+          ].join(" ")}
+        />
+      </div>
+      <div className="min-w-0">
+        <p
+          className={[
+            "m-0 font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 transition-all duration-300",
+            headerScrolled ? "text-sm" : "text-base sm:text-lg lg:text-2xl",
+          ].join(" ")}
+        >
+          Routefy
+        </p>
+      </div>
+    </>
+  );
+
   return (
     <header
       className={[responsiveStyles.appHeader, responsiveStyles.appHeaderBackgroundGradient].join(
@@ -73,31 +102,17 @@ export default function AppHeader({
           "transition-all duration-300",
         ].join(" ")}
       >
-        <div className="flex min-w-0 items-center gap-3">
-          <div
-            className={[
-              "flex shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 transition-all duration-300",
-              headerScrolled ? "h-9 w-9" : "h-11 w-11 sm:h-12 sm:w-12 lg:h-12 lg:w-12",
-            ].join(" ")}
+        {isAuthenticated ? (
+          <Link
+            to="/home"
+            aria-label="Routefy home"
+            className="flex min-w-0 items-center gap-3 rounded-xl no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
           >
-            <RoutefyBrandMark
-              className={[
-                "text-blue-600 dark:text-blue-400 transition-all duration-300",
-                headerScrolled ? "h-5 w-5" : "h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8",
-              ].join(" ")}
-            />
-          </div>
-          <div className="min-w-0">
-            <p
-              className={[
-                "m-0 font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 transition-all duration-300",
-                headerScrolled ? "text-sm" : "text-base sm:text-lg lg:text-2xl",
-              ].join(" ")}
-            >
-              Routefy
-            </p>
-          </div>
-        </div>
+            {brandContent}
+          </Link>
+        ) : (
+          <div className="flex min-w-0 items-center gap-3">{brandContent}</div>
+        )}
 
         {isAuthenticated && (
           <div className="hidden md:flex">
