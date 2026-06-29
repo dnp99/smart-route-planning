@@ -737,16 +737,15 @@ const PatientsPage = () => {
 
           {lifecycleState === "idle" && selectedIds.size > 0 && (
             <div className="mb-4 flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 dark:border-amber-900/50 dark:bg-amber-950/30">
-              <span className="text-sm font-medium text-amber-900 dark:text-amber-200">
-                {selectedIds.size} selected
-              </span>
               <button
                 type="button"
                 onClick={() => void handleArchiveSelected()}
                 disabled={isBulkArchiving}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {isBulkArchiving ? "Archiving…" : "Archive selected"}
+                {isBulkArchiving
+                  ? "Archiving…"
+                  : `Archive ${selectedIds.size} client${selectedIds.size === 1 ? "" : "s"}`}
               </button>
             </div>
           )}
