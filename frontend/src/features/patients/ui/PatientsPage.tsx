@@ -587,17 +587,75 @@ const PatientsPage = () => {
           ))}
         </div>
 
+        {lifecycleState === "active" && (
+          <div className={responsiveStyles.clientTabHelper}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={responsiveStyles.clientTabHelperIcon}
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span>
+              Clients you’re actively scheduling visits for. Edit anyone’s details, or archive
+              clients you no longer see.
+            </span>
+          </div>
+        )}
+
         {lifecycleState === "idle" && (
-          <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-            No visits scheduled in the last 30 days. Select any clients you no longer need and
-            archive them to keep your active list clean.
-          </p>
+          <div className={responsiveStyles.clientTabHelper}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={responsiveStyles.clientTabHelperIcon}
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>
+              No visits scheduled in the last 30 days. Select any clients you no longer need and
+              archive them to keep your active list clean.
+            </span>
+          </div>
         )}
 
         {lifecycleState === "archived" && (
-          <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
-            Archived clients stay here for 7 days. Restore one to move it back to Active.
-          </p>
+          <div className={responsiveStyles.clientTabHelper}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={responsiveStyles.clientTabHelperIcon}
+            >
+              <path d="M21 8v13H3V8" />
+              <path d="M1 3h22v5H1z" />
+              <path d="M10 12h4" />
+            </svg>
+            <span>
+              Archived clients stay here for 7 days. Restore one to move it back to Active.
+            </span>
+          </div>
         )}
 
         {lifecycleState === "active" && (

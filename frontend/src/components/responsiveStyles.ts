@@ -436,6 +436,10 @@ export const responsiveStyles = {
   clientStateTabActive: "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300",
   clientStateTabInactive:
     "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
+  // Per-tab helper line (icon + subtitle) under the lifecycle tabs.
+  clientTabHelper:
+    "mb-4 flex items-start gap-2 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400",
+  clientTabHelperIcon: "mt-px h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500",
   // Clients page summary stats row (desktop only — hidden below md)
   clientStatsRow: "mb-6 hidden grid-cols-4 gap-6 md:grid",
   clientStatCard:
