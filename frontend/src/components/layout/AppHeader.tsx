@@ -1,13 +1,13 @@
-import { useEffect } from "react";
-import { Link } from "react-router-dom";
-import { formatNameWords } from "../../features/patients/domain/patientName";
+import { Link, useLocation } from "react-router-dom";
 import { responsiveStyles } from "../responsiveStyles";
-import { useScrollShrink } from "../hooks/useScrollShrink";
-import { useClickOutside } from "../hooks/useClickOutside";
 import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
-import AppTabs from "../navigation/AppTabs";
+import AccountMenu from "./AccountMenu";
 
-type AuthUser = { displayName?: string; email?: string; homeAddress?: string } | null;
+type AuthUser = {
+  displayName?: string;
+  email?: string;
+  homeAddress?: string;
+} | null;
 
 interface AppHeaderProps {
   isAuthenticated: boolean;
@@ -16,29 +16,17 @@ interface AppHeaderProps {
   onLogout: () => void;
 }
 
-const resolveAccountInitials = (displayName?: string, email?: string) => {
-  const normalizedDisplayName = formatNameWords(displayName ?? "");
-  if (normalizedDisplayName.length > 0) {
-    const parts = normalizedDisplayName.split(" ").filter(Boolean);
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    }
-    return normalizedDisplayName.slice(0, 2).toUpperCase();
-  }
+// Breadcrumb leaf label per route (the "Home" root is always shown).
+const CRUMB_LABEL: Record<string, string> = {
+  "/clients": "Clients",
+  "/route-planner": "Route Planner",
+};
 
-  const localEmail = (email ?? "").trim().split("@")[0];
-  const emailTokens = localEmail
-    .split(/[.\-_]/)
-    .map((token) => token.trim())
-    .filter(Boolean);
-  if (emailTokens.length >= 2) {
-    return `${emailTokens[0][0]}${emailTokens[1][0]}`.toUpperCase();
-  }
-  if (localEmail.length > 0) {
-    return localEmail.slice(0, 2).toUpperCase();
-  }
-
-  return "CF";
+const resolveCrumbLabel = (pathname: string) => {
+  const key = Object.keys(CRUMB_LABEL).find(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+  return key ? CRUMB_LABEL[key] : null;
 };
 
 export default function AppHeader({
@@ -47,160 +35,139 @@ export default function AppHeader({
   onOpenAccountSettings,
   onLogout,
 }: AppHeaderProps) {
-  const [isAccountMenuOpen, setIsAccountMenuOpen, accountMenuRef] =
-    useClickOutside<HTMLDivElement>();
-  const headerScrolled = useScrollShrink();
+  const { pathname } = useLocation();
+  const crumbLabel = resolveCrumbLabel(pathname);
+  const dateLabel = new Date().toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 
-  // Close menu when logged out
-  useEffect(() => {
-    if (!isAuthenticated) setIsAccountMenuOpen(false);
-  }, [isAuthenticated, setIsAccountMenuOpen]);
-
-  const accountInitials = resolveAccountInitials(authUser?.displayName, authUser?.email);
-  const headerInnerClassName = isAuthenticated
-    ? responsiveStyles.appHeaderInner
-    : "mx-auto flex w-full max-w-7xl items-center justify-center px-6";
-
-  const brandContent = (
+  const brand = (
     <>
-      <div
-        className={[
-          "flex shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40 transition-all duration-300",
-          headerScrolled ? "h-9 w-9" : "h-11 w-11 sm:h-12 sm:w-12 lg:h-12 lg:w-12",
-        ].join(" ")}
-      >
-        <RoutefyBrandMark
-          className={[
-            "text-blue-600 dark:text-blue-400 transition-all duration-300",
-            headerScrolled ? "h-5 w-5" : "h-6 w-6 sm:h-7 sm:w-7 lg:h-8 lg:w-8",
-          ].join(" ")}
-        />
-      </div>
-      <div className="min-w-0">
-        <p
-          className={[
-            "m-0 font-semibold uppercase tracking-[0.16em] text-blue-600 dark:text-blue-300 transition-all duration-300",
-            headerScrolled ? "text-sm" : "text-base sm:text-lg lg:text-2xl",
-          ].join(" ")}
-        >
-          Routefy
-        </p>
-      </div>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
+        <RoutefyBrandMark className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+      </span>
+      <span className="text-lg font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">
+        Routefy
+      </span>
     </>
   );
 
   return (
-    <header
-      className={[responsiveStyles.appHeader, responsiveStyles.appHeaderBackgroundGradient].join(
-        " ",
-      )}
-    >
+    <header className={responsiveStyles.appHeader}>
       <div
         className={[
-          headerInnerClassName,
-          headerScrolled ? "py-1" : "py-3 sm:py-4",
-          "transition-all duration-300",
+          "mx-auto flex h-14 w-full max-w-7xl items-center gap-3 px-4 sm:px-6",
+          isAuthenticated ? "" : "justify-center",
         ].join(" ")}
       >
         {isAuthenticated ? (
-          <Link
-            to="/home"
-            aria-label="Routefy home"
-            className="flex min-w-0 items-center gap-3 rounded-xl no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-          >
-            {brandContent}
-          </Link>
-        ) : (
-          <div className="flex min-w-0 items-center gap-3">{brandContent}</div>
-        )}
+          <>
+            {/* Brand shows on mobile only (no sidebar there). */}
+            <Link
+              to="/home"
+              aria-label="Routefy home"
+              className="flex items-center gap-2.5 no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 md:hidden"
+            >
+              {brand}
+            </Link>
 
-        {isAuthenticated && (
-          <div className="hidden md:flex">
-            <AppTabs variant="header" scrolled={headerScrolled} />
-          </div>
-        )}
+            {/* Breadcrumb takes the left on desktop. */}
+            <nav aria-label="Breadcrumb" className="hidden min-w-0 items-center gap-1.5 md:flex">
+              <Link
+                to="/home"
+                className="text-sm font-medium text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                Home
+              </Link>
+              {crumbLabel && (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 shrink-0 text-slate-300 dark:text-slate-600"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                  <span className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {crumbLabel}
+                  </span>
+                </>
+              )}
+            </nav>
 
-        {isAuthenticated && (
-          <div className="flex min-w-0 items-center gap-2">
-            <div ref={accountMenuRef} className="relative">
+            <div className="flex-1" />
+
+            <div className="flex items-center gap-2.5">
+              <span className={`${responsiveStyles.topBarDatePill} hidden md:inline-flex`}>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="#2563EB"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5"
+                >
+                  <rect x="3" y="4" width="18" height="18" rx="2" />
+                  <path d="M16 2v4M8 2v4M3 10h18" />
+                </svg>
+                {dateLabel}
+              </span>
               <button
                 type="button"
-                onClick={() => setIsAccountMenuOpen((v) => !v)}
-                aria-label="Open account options menu"
-                aria-haspopup="menu"
-                aria-expanded={isAccountMenuOpen}
-                title="Open account options menu"
-                className={responsiveStyles.accountMenuButton}
+                aria-label="Notifications"
+                className={`${responsiveStyles.topBarIconButton} hidden md:inline-flex`}
               >
-                <span aria-hidden="true" className="block leading-none">
-                  {accountInitials}
-                </span>
-              </button>
-
-              {isAccountMenuOpen && (
-                <div
-                  role="menu"
-                  aria-label="Account options menu"
-                  className={responsiveStyles.accountMenuDropdown}
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.9"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="h-[18px] w-[18px]"
                 >
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsAccountMenuOpen(false);
-                      onOpenAccountSettings();
-                    }}
-                    className={responsiveStyles.accountMenuItem}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                      <circle cx="12" cy="12" r="3" />
-                    </svg>
-                    Account settings
-                  </button>
-                  <hr className="my-1 border-slate-200 dark:border-slate-700" />
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      setIsAccountMenuOpen(false);
-                      onLogout();
-                    }}
-                    className={responsiveStyles.accountMenuItemDestructive}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="15"
-                      height="15"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      aria-hidden="true"
-                    >
-                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                      <polyline points="16 17 21 12 16 7" />
-                      <line x1="21" y1="12" x2="9" y2="12" />
-                    </svg>
-                    Logout
-                  </button>
-                </div>
-              )}
+                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                </svg>
+                <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900" />
+              </button>
+              <span className={responsiveStyles.topBarDivider} aria-hidden="true" />
+              {/* Desktop: quick logout (account settings live in the sidebar). */}
+              <AccountMenu
+                authUser={authUser}
+                isAuthenticated={isAuthenticated}
+                onOpenAccountSettings={onOpenAccountSettings}
+                onLogout={onLogout}
+                variant="avatar"
+                items="logoutOnly"
+                className="hidden md:block"
+              />
+              {/* Mobile: full menu (no sidebar to hold account settings). */}
+              <AccountMenu
+                authUser={authUser}
+                isAuthenticated={isAuthenticated}
+                onOpenAccountSettings={onOpenAccountSettings}
+                onLogout={onLogout}
+                variant="avatar"
+                className="md:hidden"
+              />
             </div>
-          </div>
+          </>
+        ) : (
+          <div className="flex items-center gap-2.5">{brand}</div>
         )}
       </div>
     </header>

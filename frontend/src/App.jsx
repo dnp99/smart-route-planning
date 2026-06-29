@@ -23,6 +23,7 @@ import AccountSettingsModal from "./components/modals/AccountSettingsModal";
 import LegalAcknowledgementModal from "./components/modals/LegalAcknowledgementModal";
 import ScrollToTopButton from "./components/layout/ScrollToTopButton";
 import AppRoutes from "./components/navigation/AppRoutes";
+import AppSidebar from "./components/navigation/AppSidebar";
 import AppTabs from "./components/navigation/AppTabs";
 import AuthBootstrapLoader from "./components/shared/AuthBootstrapLoader";
 
@@ -158,8 +159,19 @@ function App() {
   }
 
   return (
-    <div className={responsiveStyles.appShell}>
-      <div className={responsiveStyles.stickyHeaderShell}>
+    <div className={`flex min-h-screen w-full ${responsiveStyles.appCanvas}`}>
+      {isAuthenticated && (
+        <AppSidebar
+          authUser={authUser}
+          onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+          onLogout={() => {
+            void logout();
+            clearAuthSession();
+          }}
+        />
+      )}
+      <div className={`${responsiveStyles.appShell} min-w-0 flex-1`}>
+        <div className={responsiveStyles.stickyHeaderShell}>
         <AppHeader
           isAuthenticated={isAuthenticated}
           authUser={authUser}
@@ -205,6 +217,7 @@ function App() {
         onAgree={handleLegalNoticeAgree}
       />
       <ScrollToTopButton />
+      </div>
     </div>
   );
 }

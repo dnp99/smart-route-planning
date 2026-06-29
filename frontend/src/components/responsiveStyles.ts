@@ -22,13 +22,15 @@
 
 export const responsiveStyles = {
   // ── App shell (layout components) ─────────────────────────────────────────
+  // Page canvas gradient (design 2a): cool light slate-blue. Lives on the outer
+  // shell row + content column so the transparent sidebar reads against it.
+  appCanvas: "bg-[linear-gradient(180deg,#F4F7FB_0%,#F8FAFC_100%)] dark:bg-slate-950 dark:bg-none",
   appShell:
-    "flex min-h-screen flex-col bg-gradient-to-b from-slate-50 to-white dark:bg-none dark:bg-slate-950",
+    "flex min-h-screen flex-col bg-[linear-gradient(180deg,#F4F7FB_0%,#F8FAFC_100%)] dark:bg-none dark:bg-slate-950",
   stickyHeaderShell: "sticky top-0 z-30 w-full",
-  appHeader:
-    "relative z-40 w-full bg-[linear-gradient(270deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] backdrop-blur-md dark:bg-[linear-gradient(270deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
-  appHeaderBackgroundGradient:
-    "bg-[linear-gradient(135deg,rgba(255,255,255,0.96)_0%,rgba(248,250,252,0.94)_58%,rgba(236,254,255,0.92)_100%)] dark:bg-[linear-gradient(135deg,rgba(2,6,23,0.96)_0%,rgba(15,23,42,0.94)_60%,rgba(8,47,73,0.9)_100%)]",
+  // Transparent, frosted top bar that blends into the page canvas on scroll.
+  appHeader: "relative z-40 w-full bg-[#F4F7FB]/80 backdrop-blur-md dark:bg-slate-950/80",
+  appHeaderBackgroundGradient: "",
   appHeaderInner: "mx-auto flex w-full max-w-7xl items-center justify-between px-6",
   tabStrip: "relative z-30 w-full bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
   appFooter:
@@ -39,6 +41,43 @@ export const responsiveStyles = {
   tabNav: "flex gap-6 border-b border-slate-200/50 dark:border-slate-800/50",
   // Inline primary nav inside the desktop header bar (merged header+tabs).
   navBarNav: "flex items-center gap-6 lg:gap-8",
+  // ── Desktop left sidebar (md+) ───────────────────────────────────────────────
+  // Transparent rail (design 2a) — sits directly on the page canvas, no border.
+  sidebar: "sticky top-0 hidden h-screen w-[248px] shrink-0 flex-col md:flex",
+  sidebarBrandRow: "flex h-16 shrink-0 items-center gap-2.5 px-4",
+  sidebarBrand:
+    "flex items-center gap-2.5 rounded-xl no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40",
+  sidebarBrandTile:
+    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40",
+  sidebarBrandWordmark:
+    "text-lg font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300",
+  sidebarBody: "flex min-h-0 flex-1 flex-col px-3.5 pb-4",
+  sidebarSectionLabel:
+    "mx-1.5 mb-2 mt-1 text-[10.5px] font-semibold uppercase tracking-[0.13em] text-slate-400 dark:text-slate-500",
+  sidebarNav: "flex flex-col gap-1",
+  // Static (non-route) sidebar row, e.g. the Settings button — inactive item look.
+  sidebarNavButton:
+    "group flex w-full items-center gap-3 rounded-r-[10px] border-l-[3px] border-transparent px-3 py-2.5 text-left text-[13.5px] font-medium text-slate-600 transition hover:bg-slate-100/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:text-slate-300 dark:hover:bg-slate-800/40",
+  // Sidebar "Today" mini-card + account card at the foot of the rail.
+  sidebarTodayCard:
+    "mt-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/80",
+  sidebarTodayLabel:
+    "text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400 dark:text-slate-500",
+  sidebarTodayRow: "mt-2 flex items-center justify-between gap-2",
+  sidebarTodayKey: "text-xs font-medium text-slate-500 dark:text-slate-400",
+  sidebarTodayValue: "text-xs font-semibold text-slate-900 dark:text-slate-100",
+  sidebarAccountCard:
+    "mt-2.5 flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-slate-700 dark:bg-slate-900",
+  sidebarAccountAvatar:
+    "flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-xs font-bold text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200",
+  accountMenuDropdownUp:
+    "absolute bottom-full left-0 z-50 mb-2 w-full min-w-[12rem] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900",
+  // ── Top bar (design 2a): transparent, date pill + bell (desktop), avatar (mobile) ─
+  topBarDatePill:
+    "hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 sm:inline-flex",
+  topBarIconButton:
+    "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+  topBarDivider: "hidden h-6 w-px bg-slate-200 dark:bg-slate-700 md:block",
   // ── Account menu ──────────────────────────────────────────────────────────
   accountMenuButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-100 to-blue-50 text-sm font-bold uppercase tracking-[0.02em] text-blue-800 shadow-sm transition hover:from-blue-200 hover:to-blue-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-blue-700 dark:from-blue-900/70 dark:to-blue-950/60 dark:text-blue-100 dark:hover:from-blue-800 dark:hover:to-blue-900",
