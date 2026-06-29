@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { responsiveStyles } from "../responsiveStyles";
 import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
 import AccountMenu from "./AccountMenu";
@@ -16,12 +16,27 @@ interface AppHeaderProps {
   onLogout: () => void;
 }
 
+// Breadcrumb leaf label per route (the "Home" root is always shown).
+const CRUMB_LABEL: Record<string, string> = {
+  "/clients": "Clients",
+  "/route-planner": "Route Planner",
+};
+
+const resolveCrumbLabel = (pathname: string) => {
+  const key = Object.keys(CRUMB_LABEL).find(
+    (path) => pathname === path || pathname.startsWith(`${path}/`),
+  );
+  return key ? CRUMB_LABEL[key] : null;
+};
+
 export default function AppHeader({
   isAuthenticated,
   authUser,
   onOpenAccountSettings,
   onLogout,
 }: AppHeaderProps) {
+  const { pathname } = useLocation();
+  const crumbLabel = resolveCrumbLabel(pathname);
   const dateLabel = new Date().toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -30,7 +45,7 @@ export default function AppHeader({
 
   const brand = (
     <>
-      <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-950/40">
         <RoutefyBrandMark className="h-6 w-6 text-blue-600 dark:text-blue-400" />
       </span>
       <span className="text-lg font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">
@@ -43,14 +58,13 @@ export default function AppHeader({
     <header className={responsiveStyles.appHeader}>
       <div
         className={[
-          "mx-auto flex h-16 w-full max-w-7xl items-center gap-3 px-4 sm:px-6",
+          "mx-auto flex h-14 w-full max-w-7xl items-center gap-3 px-4 sm:px-6",
           isAuthenticated ? "" : "justify-center",
         ].join(" ")}
       >
         {isAuthenticated ? (
           <>
-            {/* Brand shows on mobile (no sidebar there); page title takes over on desktop. */}
-            {/* Brand shows on mobile only (no sidebar there); page owns its own title. */}
+            {/* Brand shows on mobile only (no sidebar there). */}
             <Link
               to="/home"
               aria-label="Routefy home"
@@ -58,6 +72,36 @@ export default function AppHeader({
             >
               {brand}
             </Link>
+
+            {/* Breadcrumb takes the left on desktop. */}
+            <nav aria-label="Breadcrumb" className="hidden min-w-0 items-center gap-1.5 md:flex">
+              <Link
+                to="/home"
+                className="text-sm font-medium text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              >
+                Home
+              </Link>
+              {crumbLabel && (
+                <>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="h-3.5 w-3.5 shrink-0 text-slate-300 dark:text-slate-600"
+                  >
+                    <path d="m9 18 6-6-6-6" />
+                  </svg>
+                  <span className="truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
+                    {crumbLabel}
+                  </span>
+                </>
+              )}
+            </nav>
 
             <div className="flex-1" />
 
@@ -100,6 +144,7 @@ export default function AppHeader({
                 </svg>
                 <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900" />
               </button>
+              <span className={responsiveStyles.topBarDivider} aria-hidden="true" />
               {/* Desktop: quick logout (account settings live in the sidebar). */}
               <AccountMenu
                 authUser={authUser}
