@@ -312,7 +312,7 @@ export const PatientsTable = ({
     return (
       <>
         {/* Mobile skeleton cards */}
-        <div className="grid gap-3 md:hidden">
+        <div className="flex flex-col gap-3 md:hidden">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className={responsiveStyles.mobileClientCard}>
               <div className="h-5 w-2/5 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
@@ -373,7 +373,7 @@ export const PatientsTable = ({
 
   return (
     <>
-      <div className="grid gap-3 md:hidden">
+      <div className="flex flex-col gap-3 md:hidden">
         {sortedFilteredPatients.map((patient) => {
           const windowRows = resolvePatientWindowRows(patient);
           const visitType = resolveVisitTypeLabel(patient);
@@ -414,7 +414,7 @@ export const PatientsTable = ({
               </button>
 
               {isExpanded && (
-                <div className="mt-3 grid gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+                <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
                   <div>
                     <p className={responsiveStyles.formGroupEyebrow}>Address</p>
                     <p className="m-0 mt-1 text-sm text-slate-800 dark:text-slate-200">{street}</p>
