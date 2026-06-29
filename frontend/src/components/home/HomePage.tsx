@@ -261,12 +261,12 @@ export default function HomePage({
           progressPercent: 0,
         },
         {
-          label: "Deleted clients",
+          label: "Idle clients",
           value: "—",
-          delta: "Last 30 days",
+          delta: "Not used in 30+ days",
           tone: "text-slate-500",
           trend: "No baseline yet",
-          href: "/clients",
+          href: "/clients?state=idle",
         },
       ];
     }
@@ -302,16 +302,13 @@ export default function HomePage({
         href: "/clients",
       },
       {
-        label: "Deleted clients",
-        value: String(dashboardSummary.kpis.deletedClientsLast30Days),
-        delta: "Last 30 days",
-        tone:
-          dashboardSummary.kpis.deletedClientsLast30Days > 0 ? "text-amber-600" : "text-slate-500",
-        trend:
-          dashboardSummary.kpis.deletedClientsLast30Days > 0
-            ? "Roster churn detected"
-            : "No recent client removals",
-        href: "/clients",
+        label: "Idle clients",
+        value: String(dashboardSummary.kpis.staleClientsCount),
+        delta: "Not used in 30+ days",
+        tone: dashboardSummary.kpis.staleClientsCount > 0 ? "text-amber-600" : "text-slate-500",
+        trend: dashboardSummary.kpis.staleClientsCount > 0 ? "Tap to review & archive →" : "",
+        // Nothing to act on at zero — the card becomes non-clickable (no redirect).
+        href: dashboardSummary.kpis.staleClientsCount > 0 ? "/clients?state=idle" : undefined,
       },
       {
         label: "Template coverage",
@@ -787,14 +784,8 @@ export default function HomePage({
                 );
               }
 
-              return (
-                <Link
-                  key={kpi.label}
-                  to={to}
-                  className={`${responsiveStyles.dashboardKpiCard} group`}
-                  style={{ animationDelay: `${80 + index * 45}ms` }}
-                  onClick={isCar ? triggerCar : undefined}
-                >
+              const cardBody = (
+                <>
                   <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
                   <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
                   <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
@@ -809,9 +800,36 @@ export default function HomePage({
                       />
                     </div>
                   )}
-                  <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
-                    {kpi.trend}
-                  </p>
+                  {kpi.trend && (
+                    <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                      {kpi.trend}
+                    </p>
+                  )}
+                </>
+              );
+
+              // No destination (e.g. zero inactive clients) → a static, non-clickable card.
+              if (!to) {
+                return (
+                  <div
+                    key={kpi.label}
+                    className={responsiveStyles.dashboardKpiCard}
+                    style={{ animationDelay: `${80 + index * 45}ms` }}
+                  >
+                    {cardBody}
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={kpi.label}
+                  to={to}
+                  className={`${responsiveStyles.dashboardKpiCard} group`}
+                  style={{ animationDelay: `${80 + index * 45}ms` }}
+                  onClick={isCar ? triggerCar : undefined}
+                >
+                  {cardBody}
                 </Link>
               );
             })}

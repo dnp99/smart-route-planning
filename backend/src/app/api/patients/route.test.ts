@@ -121,7 +121,10 @@ describe("/api/patients route", () => {
     await expect(response.json()).resolves.toEqual({
       patients: [{ id: "patient-1", firstName: "Jane" }],
     });
-    expect(listPatientsByNurseMock).toHaveBeenCalledWith("nurse-1", "Jane");
+    expect(listPatientsByNurseMock).toHaveBeenCalledWith("nurse-1", {
+      query: "Jane",
+      state: "active",
+    });
   });
 
   it("maps GET errors via toErrorResponse", async () => {
@@ -150,7 +153,7 @@ describe("/api/patients route", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ patients: [] });
-    expect(listPatientsByNurseMock).toHaveBeenCalledWith("nurse-1", "");
+    expect(listPatientsByNurseMock).toHaveBeenCalledWith("nurse-1", { query: "", state: "active" });
   });
 
   it("maps invalid POST body JSON to 400", async () => {

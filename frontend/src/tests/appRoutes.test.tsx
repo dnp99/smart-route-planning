@@ -33,6 +33,8 @@ vi.mock("../components/auth/authService", () => ({
 
 vi.mock("../features/patients/api/patientService", () => ({
   listPatients: listPatientsMock,
+  archiveClients: vi.fn().mockResolvedValue([]),
+  restoreClient: vi.fn(),
 }));
 
 vi.mock("../features/patients/api/recurringVisitTemplateService", () => ({
@@ -91,7 +93,7 @@ beforeEach(() => {
       visitsScheduledLast7Days: 45,
       activePatientCount: 24,
       templatedActivePatientCount: 8,
-      deletedClientsLast30Days: 2,
+      staleClientsCount: 2,
       driveHoursLast7Days: 7.4,
       totalDistanceKm7d: 120.5,
       onTimeRatePercent7d: 92,
@@ -390,7 +392,7 @@ describe("App routing", () => {
         visitsScheduledLast7Days: 12,
         activePatientCount: 24,
         templatedActivePatientCount: 8,
-        deletedClientsLast30Days: 1,
+        staleClientsCount: 1,
         driveHoursLast7Days: 2.1,
         totalDistanceKm7d: 35.2,
         onTimeRatePercent7d: 92,
@@ -448,7 +450,7 @@ describe("App routing", () => {
           visitsScheduledLast7Days: 31,
           activePatientCount: 24,
           templatedActivePatientCount: 10,
-          deletedClientsLast30Days: 0,
+          staleClientsCount: 0,
           driveHoursLast7Days: 5.5,
           totalDistanceKm7d: 88.1,
           onTimeRatePercent7d: 91,

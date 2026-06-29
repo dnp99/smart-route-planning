@@ -12,10 +12,18 @@ const requestJson = async (path: string, init: RequestInit, fallbackMessage: str
   return requestAuthedJson(path, init, fallbackMessage);
 };
 
-export const listPatients = async (query: string): Promise<Patient[]> => {
+export type PatientLifecycleState = "active" | "idle" | "archived";
+
+export const listPatients = async (
+  query: string,
+  state: PatientLifecycleState = "active",
+): Promise<Patient[]> => {
   const searchParams = new URLSearchParams();
   if (query.trim()) {
     searchParams.set("query", query.trim());
+  }
+  if (state !== "active") {
+    searchParams.set("state", state);
   }
 
   const querySuffix = searchParams.toString();
@@ -23,6 +31,42 @@ export const listPatients = async (query: string): Promise<Patient[]> => {
   const payload = await requestJson(path, { method: "GET" }, "Unable to load clients.");
 
   return parseListPatientsResponse(payload).patients;
+};
+
+export const restoreClient = async (patientId: string): Promise<Patient> => {
+  const payload = await requestJson(
+    `/api/patients/${encodeURIComponent(patientId)}/restore`,
+    { method: "POST" },
+    "Unable to restore client.",
+  );
+
+  if (!isPatient(payload)) {
+    throw new Error("Unexpected restore response format.");
+  }
+
+  return payload;
+};
+
+export const archiveClients = async (patientIds: string[]): Promise<string[]> => {
+  const payload = await requestJson(
+    "/api/patients/archive",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patientIds }),
+    },
+    "Unable to archive clients.",
+  );
+
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !Array.isArray((payload as { archivedIds?: unknown }).archivedIds)
+  ) {
+    throw new Error("Unexpected archive response format.");
+  }
+
+  return (payload as { archivedIds: string[] }).archivedIds;
 };
 
 export const createPatient = async (request: CreatePatientRequest): Promise<Patient> => {

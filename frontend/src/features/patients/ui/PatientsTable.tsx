@@ -13,11 +13,16 @@ type PatientsTableProps = {
   isLoading: boolean;
   isSubmitting: boolean;
   patients: Patient[];
+  lifecycleState: "active" | "idle" | "archived";
   searchQuery: string;
   windowFilter: WindowFilter;
   onWindowFilterChange: (windowFilter: WindowFilter) => void;
   onDelete: (patientId: string) => Promise<void> | void;
   onEdit: (patient: Patient) => void;
+  selectedIds: Set<string>;
+  onToggleSelect: (patientId: string) => void;
+  onRestore: (patient: Patient) => void;
+  restoringId: string | null;
   recurringTemplatesByPatientId: Map<string, RecurringVisitTemplate[]>;
 };
 
@@ -219,13 +224,19 @@ export const PatientsTable = ({
   isLoading,
   isSubmitting,
   patients,
+  lifecycleState,
   searchQuery,
   windowFilter,
   onWindowFilterChange,
   onDelete,
   onEdit,
+  selectedIds,
+  onToggleSelect,
+  onRestore,
+  restoringId,
   recurringTemplatesByPatientId,
 }: PatientsTableProps) => {
+  const isArchived = lifecycleState === "archived";
   const [openWindowsPopoverKey, setOpenWindowsPopoverKey] = useState<string | null>(null);
   const windowsPopoverRef = useRef<HTMLDivElement | null>(null);
   const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
@@ -362,11 +373,14 @@ export const PatientsTable = ({
   }
 
   if (patients.length === 0) {
-    return (
-      <div className={responsiveStyles.tableEmptyState}>
-        {searchQuery.trim() ? "No clients match this search." : "No clients added yet."}
-      </div>
-    );
+    const emptyMessage = searchQuery.trim()
+      ? "No clients match this search."
+      : lifecycleState === "idle"
+        ? "No idle clients — everyone's been used in the last 30 days."
+        : lifecycleState === "archived"
+          ? "No archived clients in the last 7 days."
+          : "No clients added yet.";
+    return <div className={responsiveStyles.tableEmptyState}>{emptyMessage}</div>;
   }
 
   const windowFilterActive = windowFilter !== "all";
@@ -453,25 +467,39 @@ export const PatientsTable = ({
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => onEdit(patient)}
-                      aria-label={`Edit ${patientDisplayName}`}
-                      className={responsiveStyles.mobileEditButton}
-                    >
-                      <EditIcon className="h-4 w-4" />
-                      Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => void onDelete(patient.id)}
-                      disabled={isSubmitting}
-                      aria-label={`Delete ${patientDisplayName}`}
-                      title="Delete"
-                      className={responsiveStyles.mobileDeleteButton}
-                    >
-                      <TrashIcon className="h-4 w-4" />
-                    </button>
+                    {isArchived ? (
+                      <button
+                        type="button"
+                        onClick={() => onRestore(patient)}
+                        disabled={restoringId === patient.id}
+                        aria-label={`Restore ${patientDisplayName}`}
+                        className={responsiveStyles.mobileEditButton}
+                      >
+                        {restoringId === patient.id ? "Restoring…" : "Restore"}
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          onClick={() => onEdit(patient)}
+                          aria-label={`Edit ${patientDisplayName}`}
+                          className={responsiveStyles.mobileEditButton}
+                        >
+                          <EditIcon className="h-4 w-4" />
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void onDelete(patient.id)}
+                          disabled={isSubmitting}
+                          aria-label={`Archive ${patientDisplayName}`}
+                          title="Archive"
+                          className={responsiveStyles.mobileDeleteButton}
+                        >
+                          <TrashIcon className="h-4 w-4" />
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -690,26 +718,49 @@ export const PatientsTable = ({
                       </div>
                     </td>
                     <td className="px-4 py-5 text-right">
-                      <div className="flex items-center justify-end gap-0.5">
-                        <button
-                          type="button"
-                          onClick={() => onEdit(patient)}
-                          aria-label={`Edit ${patientDisplayName}`}
-                          title="Edit"
-                          className={responsiveStyles.tableIconButton}
-                        >
-                          <EditIcon className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void onDelete(patient.id)}
-                          disabled={isSubmitting}
-                          aria-label={`Delete ${patientDisplayName}`}
-                          title="Delete"
-                          className={responsiveStyles.tableIconButtonDestructive}
-                        >
-                          <TrashIcon className="h-3.5 w-3.5" />
-                        </button>
+                      <div className="flex items-center justify-end gap-2">
+                        {isArchived ? (
+                          <button
+                            type="button"
+                            onClick={() => onRestore(patient)}
+                            disabled={restoringId === patient.id}
+                            aria-label={`Restore ${patientDisplayName}`}
+                            className={responsiveStyles.outlineButton}
+                          >
+                            {restoringId === patient.id ? "Restoring…" : "Restore"}
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-0.5">
+                            {lifecycleState === "idle" && (
+                              <input
+                                type="checkbox"
+                                checked={selectedIds.has(patient.id)}
+                                onChange={() => onToggleSelect(patient.id)}
+                                aria-label={`Select ${patientDisplayName}`}
+                                className="mr-2 h-4 w-4 accent-amber-600"
+                              />
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => onEdit(patient)}
+                              aria-label={`Edit ${patientDisplayName}`}
+                              title="Edit"
+                              className={responsiveStyles.tableIconButton}
+                            >
+                              <EditIcon className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => void onDelete(patient.id)}
+                              disabled={isSubmitting}
+                              aria-label={`Archive ${patientDisplayName}`}
+                              title="Archive"
+                              className={responsiveStyles.tableIconButtonDestructive}
+                            >
+                              <TrashIcon className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </td>
                   </tr>

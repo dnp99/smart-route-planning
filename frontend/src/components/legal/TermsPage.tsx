@@ -82,7 +82,9 @@ export default function TermsPage({ isModal = false }: LegalPageProps) {
         </p>
         <p className="m-0 mt-2">
           Client deletion operations in the product are archive-style (inactive status) to support
-          operational traceability.
+          operational traceability. Archived clients remain visible and restorable for 7 days, after
+          which they are removed from the interface but retained internally. Permanent erasure of an
+          individual&apos;s data can be requested separately.
         </p>
       </section>
 

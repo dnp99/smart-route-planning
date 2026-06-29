@@ -26,7 +26,15 @@ import {
 } from "../domain/patientForm";
 import { useClientStats } from "../hooks/useClientStats";
 import type { WindowFilter } from "../domain/visitType";
-import { createPatient, deletePatient, listPatients, updatePatient } from "../api/patientService";
+import {
+  archiveClients,
+  createPatient,
+  deletePatient,
+  listPatients,
+  restoreClient,
+  updatePatient,
+  type PatientLifecycleState,
+} from "../api/patientService";
 import {
   createRecurringVisitTemplate,
   deleteRecurringVisitTemplate,
@@ -78,6 +86,31 @@ const PatientsPage = () => {
   });
   const hasTemplateFilter = templateFilterMode === "without" || templateFilterMode === "with";
 
+  const [lifecycleState, setLifecycleState] = useState<PatientLifecycleState>(() => {
+    const search = typeof window !== "undefined" ? window.location.search : "";
+    const value = new URLSearchParams(search).get("state");
+    return value === "idle" || value === "archived" ? value : "active";
+  });
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [isBulkArchiving, setIsBulkArchiving] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+
+  const changeLifecycleState = (next: PatientLifecycleState) => {
+    if (next === lifecycleState) return;
+    setLifecycleState(next);
+    setSelectedIds(new Set());
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (next === "active") {
+        params.delete("state");
+      } else {
+        params.set("state", next);
+      }
+      const qs = params.toString();
+      window.history.replaceState({}, "", `${window.location.pathname}${qs ? `?${qs}` : ""}`);
+    }
+  };
+
   const selectedPatient = useMemo(
     () => patients.find((patient) => patient.id === selectedPatientId) ?? null,
     [patients, selectedPatientId],
@@ -90,7 +123,7 @@ const PatientsPage = () => {
 
     try {
       const [nextPatients, recurringTemplates] = await Promise.all([
-        listPatients(query),
+        listPatients(query, lifecycleState),
         listRecurringVisitTemplates(),
       ]);
       const nextRecurringTemplatesByPatientId = new Map<string, RecurringVisitTemplate[]>();
@@ -130,7 +163,48 @@ const PatientsPage = () => {
 
   useEffect(() => {
     void fetchPatients(searchQuery);
-  }, [hasTemplateFilter, searchQuery, templateFilterMode]);
+  }, [hasTemplateFilter, searchQuery, templateFilterMode, lifecycleState]);
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleArchiveSelected = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setIsBulkArchiving(true);
+    setPageError("");
+    try {
+      await archiveClients(ids);
+      setSelectedIds(new Set());
+      await fetchPatients(searchQuery);
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Unable to archive clients.");
+    } finally {
+      setIsBulkArchiving(false);
+    }
+  };
+
+  const handleRestore = async (patient: Patient) => {
+    setRestoringId(patient.id);
+    setPageError("");
+    try {
+      await restoreClient(patient.id);
+      await fetchPatients(searchQuery);
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Unable to restore client.");
+    } finally {
+      setRestoringId(null);
+    }
+  };
 
   const isDirty = useMemo(
     () => JSON.stringify(formValues) !== JSON.stringify(initialFormValues),
@@ -490,27 +564,64 @@ const PatientsPage = () => {
           </p>
         )}
 
-        <div className={responsiveStyles.clientStatsRow} data-testid="client-stats">
-          <div className={responsiveStyles.clientStatCard}>
-            <p className={responsiveStyles.clientStatLabel}>Total Clients</p>
-            <p className={responsiveStyles.clientStatValue}>{clientStats.total}</p>
-          </div>
-          <div className={responsiveStyles.clientStatCard}>
-            <p className={responsiveStyles.clientStatLabel}>Fixed Window</p>
-            <p className={responsiveStyles.clientStatValueFixed}>{clientStats.fixed}</p>
-          </div>
-          <div className={responsiveStyles.clientStatCard}>
-            <p className={responsiveStyles.clientStatLabel}>Flexible</p>
-            <p className={responsiveStyles.clientStatValueFlexible}>{clientStats.flexible}</p>
-          </div>
-          <div className={responsiveStyles.clientStatCard}>
-            <p className={responsiveStyles.clientStatLabel}>Avg Duration</p>
-            <p className={responsiveStyles.clientStatValue}>
-              {clientStats.avgDuration}
-              <span className={responsiveStyles.clientStatValueSuffix}>min</span>
-            </p>
-          </div>
+        <div
+          className={responsiveStyles.clientStateTabBar}
+          role="tablist"
+          aria-label="Client status"
+        >
+          {(
+            [
+              { key: "active", label: "Active" },
+              { key: "idle", label: "Idle" },
+              { key: "archived", label: "Archived" },
+            ] as const
+          ).map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={lifecycleState === tab.key}
+              onClick={() => changeLifecycleState(tab.key)}
+              className={`${responsiveStyles.clientStateTab} ${
+                lifecycleState === tab.key
+                  ? responsiveStyles.clientStateTabActive
+                  : responsiveStyles.clientStateTabInactive
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
+
+        {lifecycleState === "archived" && (
+          <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+            Archived clients stay here for 7 days. Restore one to move it back to Active.
+          </p>
+        )}
+
+        {lifecycleState === "active" && (
+          <div className={responsiveStyles.clientStatsRow} data-testid="client-stats">
+            <div className={responsiveStyles.clientStatCard}>
+              <p className={responsiveStyles.clientStatLabel}>Total Clients</p>
+              <p className={responsiveStyles.clientStatValue}>{clientStats.total}</p>
+            </div>
+            <div className={responsiveStyles.clientStatCard}>
+              <p className={responsiveStyles.clientStatLabel}>Fixed Window</p>
+              <p className={responsiveStyles.clientStatValueFixed}>{clientStats.fixed}</p>
+            </div>
+            <div className={responsiveStyles.clientStatCard}>
+              <p className={responsiveStyles.clientStatLabel}>Flexible</p>
+              <p className={responsiveStyles.clientStatValueFlexible}>{clientStats.flexible}</p>
+            </div>
+            <div className={responsiveStyles.clientStatCard}>
+              <p className={responsiveStyles.clientStatLabel}>Avg Duration</p>
+              <p className={responsiveStyles.clientStatValue}>
+                {clientStats.avgDuration}
+                <span className={responsiveStyles.clientStatValueSuffix}>min</span>
+              </p>
+            </div>
+          </div>
+        )}
 
         <div>
           <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
@@ -566,27 +677,29 @@ const PatientsPage = () => {
               )}
             </div>
 
-            <div
-              className={responsiveStyles.clientFilterToggle}
-              role="group"
-              aria-label="Filter clients by window type"
-            >
-              {(["all", "fixed", "flexible"] as const).map((filter) => (
-                <button
-                  key={filter}
-                  type="button"
-                  onClick={() => setWindowFilter(filter)}
-                  aria-pressed={windowFilter === filter}
-                  className={`${responsiveStyles.clientFilterOption} ${
-                    windowFilter === filter
-                      ? responsiveStyles.clientFilterOptionActive
-                      : responsiveStyles.clientFilterOptionInactive
-                  }`}
-                >
-                  {filter === "all" ? "All" : filter === "fixed" ? "Fixed" : "Flexible"}
-                </button>
-              ))}
-            </div>
+            {lifecycleState !== "archived" && (
+              <div
+                className={responsiveStyles.clientFilterToggle}
+                role="group"
+                aria-label="Filter clients by window type"
+              >
+                {(["all", "fixed", "flexible"] as const).map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    onClick={() => setWindowFilter(filter)}
+                    aria-pressed={windowFilter === filter}
+                    className={`${responsiveStyles.clientFilterOption} ${
+                      windowFilter === filter
+                        ? responsiveStyles.clientFilterOptionActive
+                        : responsiveStyles.clientFilterOptionInactive
+                    }`}
+                  >
+                    {filter === "all" ? "All" : filter === "fixed" ? "Fixed" : "Flexible"}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <button
               type="button"
@@ -598,47 +711,69 @@ const PatientsPage = () => {
             </button>
           </div>
 
-          <div
-            className={responsiveStyles.clientFilterPills}
-            role="group"
-            aria-label="Filter clients by window type"
-          >
-            {(["all", "fixed", "flexible"] as const).map((filter) => (
+          {lifecycleState !== "archived" && (
+            <div
+              className={responsiveStyles.clientFilterPills}
+              role="group"
+              aria-label="Filter clients by window type"
+            >
+              {(["all", "fixed", "flexible"] as const).map((filter) => (
+                <button
+                  key={filter}
+                  type="button"
+                  onClick={() => setWindowFilter(filter)}
+                  aria-pressed={windowFilter === filter}
+                  className={`${responsiveStyles.clientFilterPill} ${
+                    windowFilter === filter
+                      ? responsiveStyles.clientFilterPillActive
+                      : responsiveStyles.clientFilterPillInactive
+                  }`}
+                >
+                  {filter === "all" ? "All" : filter === "fixed" ? "Fixed" : "Flexible"}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {lifecycleState === "idle" && selectedIds.size > 0 && (
+            <div className="mb-4 flex items-center justify-end gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 dark:border-amber-900/50 dark:bg-amber-950/30">
               <button
-                key={filter}
                 type="button"
-                onClick={() => setWindowFilter(filter)}
-                aria-pressed={windowFilter === filter}
-                className={`${responsiveStyles.clientFilterPill} ${
-                  windowFilter === filter
-                    ? responsiveStyles.clientFilterPillActive
-                    : responsiveStyles.clientFilterPillInactive
-                }`}
+                onClick={() => void handleArchiveSelected()}
+                disabled={isBulkArchiving}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {filter === "all" ? "All" : filter === "fixed" ? "Fixed" : "Flexible"}
+                {isBulkArchiving
+                  ? "Archiving…"
+                  : `Archive ${selectedIds.size} client${selectedIds.size === 1 ? "" : "s"}`}
               </button>
-            ))}
-          </div>
+            </div>
+          )}
 
           <PatientsTable
             isLoading={isLoadingPatients}
             isSubmitting={isSubmitting}
             patients={patients}
+            lifecycleState={lifecycleState}
             searchQuery={searchQuery}
             windowFilter={windowFilter}
             onWindowFilterChange={setWindowFilter}
             onDelete={handleDelete}
             onEdit={openEditModal}
+            selectedIds={selectedIds}
+            onToggleSelect={toggleSelect}
+            onRestore={(patient) => void handleRestore(patient)}
+            restoringId={restoringId}
             recurringTemplatesByPatientId={recurringTemplatesByPatientId}
           />
         </div>
 
         {pendingDeleteId && (
           <ConfirmDialog
-            title="Delete client"
-            message="This action cannot be undone."
-            confirmLabel="Delete"
-            confirmLoadingLabel="Deleting..."
+            title="Archive client"
+            message="They’ll move to the Archived tab. You can restore them there for 7 days."
+            confirmLabel="Archive"
+            confirmLoadingLabel="Archiving..."
             onConfirm={confirmDelete}
             onCancel={() => setPendingDeleteId(null)}
             isLoading={isDeletingPatient}

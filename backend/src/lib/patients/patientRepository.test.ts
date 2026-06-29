@@ -9,6 +9,8 @@ vi.mock("../../db", () => ({
 }));
 
 import {
+  archivePatientsForNurse,
+  countStaleClientsForNurse,
   createNurseAccount,
   createPatientForNurse,
   deletePatientForNurse,
@@ -17,6 +19,7 @@ import {
   findPatientByIdForNurse,
   listPatientsByNurse,
   NurseEmailConflictError,
+  restorePatientForNurse,
   updateNurseDisplayName,
   updateNurseHomeAddress,
   updateNurseLastLoginAt,
@@ -200,45 +203,109 @@ describe("patientRepository", () => {
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
     getDbMock.mockReturnValue({ update: updateMock, select: selectMock });
 
-    await expect(listPatientsByNurse("nurse-1", " jane ")).resolves.toEqual([
+    await expect(listPatientsByNurse("nurse-1", { query: " jane " })).resolves.toEqual([
       { id: "patient-2", visitWindows: [] },
     ]);
   });
 
-  it("deactivates stale inactive-by-scheduling patients before listing", async () => {
-    // First update: nurses.lastDeactivatedClientsAt claim — returns a row to signal the
-    // deactivation window is open (null or older than 24h).
-    const nurseClaimReturningMock = vi.fn().mockResolvedValue([{ id: "nurse-1" }]);
-    const nurseClaimWhereMock = vi.fn().mockReturnValue({ returning: nurseClaimReturningMock });
-    const nurseClaimSetMock = vi.fn().mockReturnValue({ where: nurseClaimWhereMock });
-
-    // Second update: patients isActive=false
-    const patientUpdateWhereMock = vi.fn().mockResolvedValue(undefined);
-    const patientUpdateSetMock = vi.fn().mockReturnValue({ where: patientUpdateWhereMock });
-
-    const updateMock = vi
-      .fn()
-      .mockReturnValueOnce({ set: nurseClaimSetMock })
-      .mockReturnValueOnce({ set: patientUpdateSetMock });
-
-    const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-2" }]);
+  it("does not deactivate any patients while listing (auto-archive removed)", async () => {
+    const updateMock = vi.fn();
+    const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-1" }]);
     const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
     const fromMock = vi.fn().mockReturnValue({ where: whereMock });
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
+    getDbMock.mockReturnValue({ update: updateMock, select: selectMock });
+
+    await listPatientsByNurse("nurse-1");
+
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("lists archived clients for state=archived", async () => {
+    const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-9" }]);
+    const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+    const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+    const windowsWhereMock = vi.fn().mockResolvedValue([]);
+    const windowsFromMock = vi.fn().mockReturnValue({ where: windowsWhereMock });
+    const selectMock = vi
+      .fn()
+      .mockReturnValueOnce({ from: fromMock })
+      .mockReturnValueOnce({ from: windowsFromMock });
+    getDbMock.mockReturnValue({ select: selectMock });
+
+    await expect(listPatientsByNurse("nurse-1", { state: "archived" })).resolves.toEqual([
+      { id: "patient-9", visitWindows: [] },
+    ]);
+  });
+
+  it("restorePatientForNurse reactivates a client and clears archived_at", async () => {
+    const returningMock = vi.fn().mockResolvedValue([{ id: "patient-1", isActive: true }]);
+    const restoreWhereMock = vi.fn().mockReturnValue({ returning: returningMock });
+    const restoreSetMock = vi.fn().mockReturnValue({ where: restoreWhereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: restoreSetMock });
+
+    const windowsWhereMock = vi.fn().mockResolvedValue([]);
+    const windowsFromMock = vi.fn().mockReturnValue({ where: windowsWhereMock });
+    const selectMock = vi.fn().mockReturnValue({ from: windowsFromMock });
 
     getDbMock.mockReturnValue({ update: updateMock, select: selectMock });
 
-    await expect(listPatientsByNurse("nurse-1")).resolves.toEqual([
-      { id: "patient-2", visitWindows: [] },
-    ]);
+    await expect(restorePatientForNurse("nurse-1", "patient-1")).resolves.toEqual({
+      id: "patient-1",
+      isActive: true,
+      visitWindows: [],
+    });
+    expect(restoreSetMock).toHaveBeenCalledWith(
+      expect.objectContaining({ isActive: true, archivedAt: null, updatedAt: expect.any(Date) }),
+    );
+  });
 
-    expect(updateMock).toHaveBeenCalledTimes(2);
-    expect(nurseClaimSetMock).toHaveBeenCalledWith(
-      expect.objectContaining({ lastDeactivatedClientsAt: expect.any(Date) }),
+  it("restorePatientForNurse returns null when nothing is restorable", async () => {
+    const returningMock = vi.fn().mockResolvedValue([]);
+    const restoreWhereMock = vi.fn().mockReturnValue({ returning: returningMock });
+    const restoreSetMock = vi.fn().mockReturnValue({ where: restoreWhereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: restoreSetMock });
+    getDbMock.mockReturnValue({ update: updateMock });
+
+    await expect(restorePatientForNurse("nurse-1", "patient-x")).resolves.toBeNull();
+  });
+
+  it("archivePatientsForNurse soft-deletes the requested ids and returns them", async () => {
+    const returningMock = vi.fn().mockResolvedValue([{ id: "patient-1" }, { id: "patient-2" }]);
+    const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
+    const setMock = vi.fn().mockReturnValue({ where: whereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: setMock });
+    getDbMock.mockReturnValue({ update: updateMock });
+
+    await expect(archivePatientsForNurse("nurse-1", ["patient-1", "patient-2"])).resolves.toEqual([
+      "patient-1",
+      "patient-2",
+    ]);
+    expect(setMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isActive: false,
+        archivedAt: expect.any(Date),
+        updatedAt: expect.any(Date),
+      }),
     );
-    expect(patientUpdateSetMock).toHaveBeenCalledWith(
-      expect.objectContaining({ isActive: false, updatedAt: expect.any(Date) }),
-    );
+  });
+
+  it("archivePatientsForNurse is a no-op for an empty id list", async () => {
+    const updateMock = vi.fn();
+    getDbMock.mockReturnValue({ update: updateMock });
+
+    await expect(archivePatientsForNurse("nurse-1", [])).resolves.toEqual([]);
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("countStaleClientsForNurse counts idle active clients in a single query", async () => {
+    const countWhereMock = vi.fn().mockResolvedValue([{ count: 3 }]);
+    const countFromMock = vi.fn().mockReturnValue({ where: countWhereMock });
+    const selectMock = vi.fn().mockReturnValue({ from: countFromMock });
+    getDbMock.mockReturnValue({ select: selectMock });
+
+    await expect(countStaleClientsForNurse("nurse-1")).resolves.toBe(3);
+    expect(selectMock).toHaveBeenCalledTimes(1);
   });
 
   it("attaches and sorts visit windows by start, end, and createdAt", async () => {
