@@ -170,7 +170,7 @@ function App() {
           }}
         />
         {isAuthenticated && (
-          <div className={responsiveStyles.tabStrip}>
+          <div className={`${responsiveStyles.tabStrip} md:hidden`}>
             <div className="mx-auto w-full max-w-7xl px-4 sm:px-6">
               <AppTabs />
             </div>

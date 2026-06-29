@@ -342,7 +342,12 @@ describe("App routing", () => {
 
     expect(await screen.findByText(/Good (morning|afternoon|evening), Nurse/i)).toBeTruthy();
     expect(screen.getByText(/Add a home address for default start and end points/i)).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Home" }).getAttribute("aria-current")).toBe("page");
+    // Nav renders twice (desktop header + mobile strip); both mark the active route.
+    expect(
+      screen
+        .getAllByRole("link", { name: "Home" })
+        .every((link) => link.getAttribute("aria-current") === "page"),
+    ).toBe(true);
   });
 
   it("shows required legal notice modal and acknowledges it", async () => {
@@ -506,9 +511,12 @@ describe("App routing", () => {
     );
 
     expect(await screen.findByRole("heading", { name: "Smart Route Planner" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Route Planner" }).getAttribute("aria-current")).toBe(
-      "page",
-    );
+    // Nav renders twice (desktop header + mobile strip); both mark the active route.
+    expect(
+      screen
+        .getAllByRole("link", { name: "Route Planner" })
+        .every((link) => link.getAttribute("aria-current") === "page"),
+    ).toBe(true);
   });
 
   it("prefills route planner start and end from saved home address", async () => {

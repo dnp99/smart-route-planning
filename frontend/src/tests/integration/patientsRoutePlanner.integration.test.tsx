@@ -434,7 +434,8 @@ describe("patients and route planner integration", () => {
       expect(screen.getAllByText("John Smith").length).toBeGreaterThan(0);
     });
 
-    fireEvent.click(screen.getByRole("link", { name: "Route Planner" }));
+    // Nav renders twice (desktop header + mobile strip); either link routes the same.
+    fireEvent.click(screen.getAllByRole("link", { name: "Route Planner" })[0]);
     expect(await screen.findByRole("heading", { name: "Smart Route Planner" })).toBeTruthy();
     fireEvent.change(screen.getByLabelText("Ending point"), {
       target: { value: "Airport" },
