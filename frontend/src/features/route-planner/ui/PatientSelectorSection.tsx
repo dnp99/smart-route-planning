@@ -260,7 +260,7 @@ export const PatientSelectorSection = ({
   return (
     <section className={responsiveStyles.panel}>
       <div
-        className={`flex items-center justify-between gap-2 ${
+        className={`flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between ${
           isContentVisible ? "border-b border-slate-200 pb-3 dark:border-slate-800" : ""
         }`}
       >
