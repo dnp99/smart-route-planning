@@ -1,8 +1,13 @@
 # Clients lifecycle states (Active / Idle / Archived) + 7-day archived visibility
 
 ## Status
-PLANNING — no code yet. Supersedes the stale-review **banner** (commits `e463ee8`,
-`da7b237`, `596c321`, `d6b380e`), which this replaces with in-table state tabs.
+IMPLEMENTED — backend (`96a0a45`), frontend (`9a67862`), docs/policy (this commit).
+Superseded the stale-review **banner** (`e463ee8`, `da7b237`, `596c321`, `d6b380e`).
+**Action still required:** run `cd backend && npm run db:migrate` against the target DB to
+apply migration `0019_ambitious_johnny_storm.sql` (adds `patients.archived_at`). Optional
+backfill for pre-existing archived rows:
+`UPDATE patients SET archived_at = updated_at WHERE is_active = false AND archived_at IS NULL;`
+Right-to-erasure / hard delete remains deferred (see decision 4).
 
 ## Goal
 Replace the dismissible "idle clients" banner with a **state-tabbed Clients page**

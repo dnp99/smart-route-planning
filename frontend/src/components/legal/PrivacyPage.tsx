@@ -107,8 +107,11 @@ export default function PrivacyPage({ isModal = false }: LegalPageProps) {
           example, up to 10 years, depending on applicable regulations and user obligations).
         </p>
         <p className="m-0 mt-2">
-          Archived or inactive records may be retained securely and are not actively used. Client
-          deletion in the app is archive-style (inactive), not immediate hard deletion.
+          Client deletion in the app is archive-style (inactive), not immediate hard deletion. When
+          a client is archived it remains visible to the user — and can be restored — for 7 days.
+          After that it is removed from the application interface but retained securely (and not
+          actively used) for operational traceability. Permanent deletion of an individual&apos;s
+          data can be requested and is handled separately.
         </p>
       </section>
 
