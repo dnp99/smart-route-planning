@@ -605,7 +605,7 @@ const PatientsPage = () => {
               i
             </button>
             {showTabInfo && (
-              <div role="tooltip" className={responsiveStyles.clientTabInfoPopover}>
+              <div role="tooltip" className={responsiveStyles.infoPopover}>
                 {TAB_INFO_TEXT[lifecycleState]}
               </div>
             )}
