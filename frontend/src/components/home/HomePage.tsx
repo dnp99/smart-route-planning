@@ -302,16 +302,15 @@ export default function HomePage({
         href: "/clients",
       },
       {
-        label: "Deleted clients",
-        value: String(dashboardSummary.kpis.deletedClientsLast30Days),
-        delta: "Last 30 days",
-        tone:
-          dashboardSummary.kpis.deletedClientsLast30Days > 0 ? "text-amber-600" : "text-slate-500",
+        label: "Unused clients",
+        value: String(dashboardSummary.kpis.staleClientsCount),
+        delta: "Not used in 30+ days",
+        tone: dashboardSummary.kpis.staleClientsCount > 0 ? "text-amber-600" : "text-slate-500",
         trend:
-          dashboardSummary.kpis.deletedClientsLast30Days > 0
-            ? "Roster churn detected"
-            : "No recent client removals",
-        href: "/clients",
+          dashboardSummary.kpis.staleClientsCount > 0
+            ? "Review & archive →"
+            : "All clients recently used",
+        href: dashboardSummary.kpis.staleClientsCount > 0 ? "/clients?review=stale" : "/clients",
       },
       {
         label: "Template coverage",

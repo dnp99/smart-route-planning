@@ -10,6 +10,7 @@ vi.mock("../../db", () => ({
 
 import {
   archivePatientsForNurse,
+  countStaleClientsForNurse,
   createNurseAccount,
   createPatientForNurse,
   deletePatientForNurse,
@@ -303,6 +304,39 @@ describe("patientRepository", () => {
 
     await expect(archivePatientsForNurse("nurse-1", [])).resolves.toEqual([]);
     expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("countStaleClientsForNurse returns the stale count when not snoozed", async () => {
+    const nurseLimitMock = vi
+      .fn()
+      .mockResolvedValue([{ id: "nurse-1", lastDeactivatedClientsAt: null }]);
+    const nurseWhereMock = vi.fn().mockReturnValue({ limit: nurseLimitMock });
+    const nurseFromMock = vi.fn().mockReturnValue({ where: nurseWhereMock });
+
+    const countWhereMock = vi.fn().mockResolvedValue([{ count: 3 }]);
+    const countFromMock = vi.fn().mockReturnValue({ where: countWhereMock });
+
+    const selectMock = vi
+      .fn()
+      .mockReturnValueOnce({ from: nurseFromMock })
+      .mockReturnValueOnce({ from: countFromMock });
+    getDbMock.mockReturnValue({ select: selectMock });
+
+    await expect(countStaleClientsForNurse("nurse-1")).resolves.toBe(3);
+  });
+
+  it("countStaleClientsForNurse returns 0 while snoozed", async () => {
+    const nurseLimitMock = vi
+      .fn()
+      .mockResolvedValue([{ id: "nurse-1", lastDeactivatedClientsAt: new Date() }]);
+    const nurseWhereMock = vi.fn().mockReturnValue({ limit: nurseLimitMock });
+    const nurseFromMock = vi.fn().mockReturnValue({ where: nurseWhereMock });
+    const selectMock = vi.fn().mockReturnValue({ from: nurseFromMock });
+    getDbMock.mockReturnValue({ select: selectMock });
+
+    await expect(countStaleClientsForNurse("nurse-1")).resolves.toBe(0);
+    // Only the nurse lookup runs — no count query while snoozed.
+    expect(selectMock).toHaveBeenCalledTimes(1);
   });
 
   it("attaches and sorts visit windows by start, end, and createdAt", async () => {

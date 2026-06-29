@@ -14,6 +14,7 @@ import {
   routeOptimizationRuns,
   routeOptimizationTasks,
 } from "../../db/schema";
+import { countStaleClientsForNurse } from "../patients/patientRepository";
 import type { VisitInstanceMeta } from "../recurrence/recurrenceRepository";
 import type { OptimizeRouteResultV2 } from "../../app/api/optimize-route/v3/types";
 import type { ValidatedOptimizeRouteV2Request } from "../../app/api/optimize-route/v3/validation";
@@ -664,17 +665,9 @@ export const getDashboardSummaryForNurse = async ({
     templatedActivePatientCount = templatedActivePatientRow?.count ?? 0;
   }
 
-  const [deletedPatientsRow] = await getDb()
-    .select({ count: sql<number>`count(*)::int` })
-    .from(patients)
-    .where(
-      and(
-        eq(patients.nurseId, nurseId),
-        eq(patients.isActive, false),
-        gte(patients.updatedAt, new Date(now.getTime() - 30 * DAY_MS)),
-      ),
-    );
-  const deletedClientsLast30Days = deletedPatientsRow?.count ?? 0;
+  // Clients unused for 30+ days that the user hasn't reviewed yet — same set and
+  // snooze logic as the Clients-page review banner.
+  const staleClientsCount = await countStaleClientsForNurse(nurseId);
 
   return {
     asOf: now.toISOString(),
@@ -684,7 +677,7 @@ export const getDashboardSummaryForNurse = async ({
       visitsScheduledToday: scheduledVisitsToday,
       visitsScheduledLast7Days: scheduledVisits7d,
       onTimeRatePercent7d,
-      deletedClientsLast30Days,
+      staleClientsCount,
       driveHoursLast7Days: roundToOneDecimal(totalDuration7dSeconds / 3600),
       totalDistanceKm7d: roundToOneDecimal(totalDistanceMeters7d / 1000),
       activePatientCount,

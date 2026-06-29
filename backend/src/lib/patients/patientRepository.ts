@@ -1,4 +1,4 @@
-import { and, asc, eq, ilike, inArray, isNull, lt, or } from "drizzle-orm";
+import { and, asc, eq, ilike, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { getDb } from "../../db";
 import { nurses, patientVisitWindows, patients } from "../../db/schema";
 import type {
@@ -439,6 +439,38 @@ export const getStaleClientReviewForNurse = async (nurseId: string): Promise<Sta
     .orderBy(asc(patients.lastScheduledAt), asc(patients.createdAt));
 
   return { snoozedUntil: null, patients: await attachVisitWindows(staleRows) };
+};
+
+// Snooze-aware count of stale clients (mirrors getStaleClientReviewForNurse but
+// returns just the number, no PII) — used by the dashboard nudge so it matches
+// the Clients-page review banner exactly. Returns 0 while snoozed.
+export const countStaleClientsForNurse = async (nurseId: string): Promise<number> => {
+  const now = new Date();
+  const nurse = await findNurseById(nurseId);
+  const lastReviewedAt = nurse?.lastDeactivatedClientsAt ?? null;
+  if (lastReviewedAt && now.getTime() - lastReviewedAt.getTime() < STALE_REVIEW_SNOOZE_MS) {
+    return 0;
+  }
+
+  const inactivityCutoff = new Date(
+    now.getTime() - SCHEDULING_INACTIVITY_WINDOW_DAYS * 24 * 60 * 60 * 1000,
+  );
+
+  const [row] = await getDb()
+    .select({ count: sql<number>`count(*)::int` })
+    .from(patients)
+    .where(
+      and(
+        eq(patients.nurseId, nurseId),
+        eq(patients.isActive, true),
+        or(
+          lt(patients.lastScheduledAt, inactivityCutoff),
+          and(isNull(patients.lastScheduledAt), lt(patients.createdAt, inactivityCutoff)),
+        ),
+      ),
+    );
+
+  return row?.count ?? 0;
 };
 
 // "Keep all" — snooze the stale-client review for STALE_REVIEW_SNOOZE_MS.

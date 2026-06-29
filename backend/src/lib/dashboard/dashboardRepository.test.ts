@@ -62,6 +62,15 @@ const makeSelectWhereChain = (result: unknown[]) => {
   return { select: selectMock };
 };
 
+// select → from → where → limit (e.g. findNurseById)
+const makeSelectWhereLimitChain = (result: unknown[]) => {
+  const limitMock = vi.fn().mockResolvedValue(result);
+  const whereMock = vi.fn().mockReturnValue({ limit: limitMock });
+  const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+  const selectMock = vi.fn().mockReturnValue({ from: fromMock });
+  return { select: selectMock };
+};
+
 // ── Data builders ─────────────────────────────────────────────────────────────
 
 const makeRun = (overrides: Record<string, unknown> = {}) => ({
@@ -355,7 +364,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([])); // busiestDays
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([])); // patientRisks stats
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -384,7 +396,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([])); // patientRisks stats
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 7 }])); // activePatientCount
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 5 }])); // templatedActivePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -409,7 +424,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -445,7 +463,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -466,7 +487,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([])); // busiestDays
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([])); // patientRisks stats
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -504,7 +528,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -540,7 +567,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -573,7 +603,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -606,7 +639,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -624,7 +660,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -641,7 +680,10 @@ describe("dashboardRepository", () => {
       getDbMock.mockReturnValueOnce(makeSelectGroupByOrderByChain([]));
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([]));
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -663,7 +705,10 @@ describe("dashboardRepository", () => {
       ); // busiestDays
       getDbMock.mockReturnValueOnce(makeSelectJoinGroupByHavingLimitChain([])); // patientRisks stats
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -693,7 +738,10 @@ describe("dashboardRepository", () => {
       ); // patient names
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 3 }])); // activePatientCount
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 2 }])); // templatedActivePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",
@@ -721,7 +769,10 @@ describe("dashboardRepository", () => {
       ); // patientRisks stats
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([])); // patient not found
       getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // activePatientCount
-      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // deletedClientsLast30Days
+      getDbMock.mockReturnValueOnce(
+        makeSelectWhereLimitChain([{ id: "nurse-1", lastDeactivatedClientsAt: null }]),
+      ); // findNurseById (stale-review snooze check)
+      getDbMock.mockReturnValueOnce(makeSelectWhereChain([{ count: 0 }])); // staleClientsCount
 
       const result = await getDashboardSummaryForNurse({
         nurseId: "nurse-1",

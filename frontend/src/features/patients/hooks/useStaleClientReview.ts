@@ -10,7 +10,13 @@ import { archiveClients, dismissStaleReview, fetchStaleClients } from "../api/pa
  */
 export const useStaleClientReview = (onArchived: () => void) => {
   const [staleClients, setStaleClients] = useState<Patient[]>([]);
-  const [isExpanded, setIsExpanded] = useState(false);
+  // Arriving from the dashboard nudge (/clients?review=stale) opens the list straight away.
+  const [isExpanded, setIsExpanded] = useState(() => {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    return new URLSearchParams(window.location.search).get("review") === "stale";
+  });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBusy, setIsBusy] = useState(false);
   const [error, setError] = useState("");
