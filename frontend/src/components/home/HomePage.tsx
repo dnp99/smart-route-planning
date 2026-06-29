@@ -306,10 +306,7 @@ export default function HomePage({
         value: String(dashboardSummary.kpis.staleClientsCount),
         delta: "Not used in 30+ days",
         tone: dashboardSummary.kpis.staleClientsCount > 0 ? "text-amber-600" : "text-slate-500",
-        trend:
-          dashboardSummary.kpis.staleClientsCount > 0
-            ? "Tap to review & archive →"
-            : "All clients recently used",
+        trend: dashboardSummary.kpis.staleClientsCount > 0 ? "Tap to review & archive →" : "",
         // Nothing to act on at zero — the card becomes non-clickable (no redirect).
         href: dashboardSummary.kpis.staleClientsCount > 0 ? "/clients?review=stale" : undefined,
       },
@@ -803,9 +800,11 @@ export default function HomePage({
                       />
                     </div>
                   )}
-                  <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
-                    {kpi.trend}
-                  </p>
+                  {kpi.trend && (
+                    <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                      {kpi.trend}
+                    </p>
+                  )}
                 </>
               );
 
