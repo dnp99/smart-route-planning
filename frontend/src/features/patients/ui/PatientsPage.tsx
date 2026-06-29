@@ -44,13 +44,9 @@ import {
   updateRecurringVisitTemplate,
 } from "../api/recurringVisitTemplateService";
 
-// On-demand helper text per lifecycle tab, surfaced via the (i) popover.
-const TAB_INFO_TEXT: Record<PatientLifecycleState, string> = {
-  active:
-    "Clients you’re actively scheduling visits for. Edit anyone’s details, or archive clients you no longer see.",
-  idle: "No visits scheduled in the last 30 days. Select any clients you no longer need and archive them to keep your active list clean.",
-  archived: "Archived clients stay here for 7 days. Restore one to move it back to Active.",
-};
+// Privacy/compliance reminder, surfaced on demand via the (i) popover by the tabs.
+const PRIVACY_REMINDER_TEXT =
+  "Client information entered here should be limited to what is necessary for scheduling and care delivery. Ensure you have appropriate authority to manage this data.";
 
 const PlusIcon = ({ className }: { className?: string }) => (
   <svg
@@ -103,16 +99,17 @@ const PatientsPage = () => {
   const [isBulkArchiving, setIsBulkArchiving] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [counts, setCounts] = useState<PatientCounts | null>(null);
-  const [showTabInfo, setShowTabInfo] = useState(false);
-  const tabInfoRef = useRef<HTMLDivElement | null>(null);
+  const [showPrivacyReminder, setShowPrivacyReminder] = useState(false);
+  const privacyReminderRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    if (!showTabInfo) return;
+    if (!showPrivacyReminder) return;
     const onPointerDown = (event: MouseEvent) => {
-      if (!tabInfoRef.current?.contains(event.target as Node)) setShowTabInfo(false);
+      if (!privacyReminderRef.current?.contains(event.target as Node))
+        setShowPrivacyReminder(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setShowTabInfo(false);
+      if (event.key === "Escape") setShowPrivacyReminder(false);
     };
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
@@ -120,7 +117,7 @@ const PatientsPage = () => {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [showTabInfo]);
+  }, [showPrivacyReminder]);
 
   const changeLifecycleState = (next: PatientLifecycleState) => {
     if (next === lifecycleState) return;
@@ -594,23 +591,100 @@ const PatientsPage = () => {
               </button>
             ))}
           </div>
-          <div className="relative ml-auto flex items-center self-stretch pl-2" ref={tabInfoRef}>
+          <div
+            className="relative ml-auto flex items-center self-stretch pl-2"
+            ref={privacyReminderRef}
+          >
             <button
               type="button"
-              onClick={() => setShowTabInfo((value) => !value)}
-              aria-label={`About the ${lifecycleState} tab`}
-              aria-expanded={showTabInfo}
+              onClick={() => setShowPrivacyReminder((value) => !value)}
+              aria-label="Show privacy reminder"
+              aria-expanded={showPrivacyReminder}
               className={responsiveStyles.clientTabInfoButton}
             >
               i
             </button>
-            {showTabInfo && (
+            {showPrivacyReminder && (
               <div role="tooltip" className={responsiveStyles.infoPopover}>
-                {TAB_INFO_TEXT[lifecycleState]}
+                <p className="m-0 font-semibold text-slate-800 dark:text-slate-200">
+                  Privacy Reminder
+                </p>
+                <p className="m-0 mt-1">{PRIVACY_REMINDER_TEXT}</p>
               </div>
             )}
           </div>
         </div>
+
+        {lifecycleState === "active" && (
+          <div className={responsiveStyles.clientTabHelper}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={responsiveStyles.clientTabHelperIcon}
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+            <span>
+              Clients you’re actively scheduling visits for. Edit anyone’s details, or archive
+              clients you no longer see.
+            </span>
+          </div>
+        )}
+
+        {lifecycleState === "idle" && (
+          <div className={responsiveStyles.clientTabHelper}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={responsiveStyles.clientTabHelperIcon}
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+            <span>
+              No visits scheduled in the last 30 days. Select any clients you no longer need and
+              archive them to keep your active list clean.
+            </span>
+          </div>
+        )}
+
+        {lifecycleState === "archived" && (
+          <div className={responsiveStyles.clientTabHelper}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className={responsiveStyles.clientTabHelperIcon}
+            >
+              <path d="M21 8v13H3V8" />
+              <path d="M1 3h22v5H1z" />
+              <path d="M10 12h4" />
+            </svg>
+            <span>
+              Archived clients stay here for 7 days. Restore one to move it back to Active.
+            </span>
+          </div>
+        )}
 
         {lifecycleState === "active" && (
           <div className={responsiveStyles.clientStatsStrip} data-testid="client-stats">

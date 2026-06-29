@@ -437,7 +437,11 @@ export const responsiveStyles = {
   clientStateTabActive: "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300",
   clientStateTabInactive:
     "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
-  // Info (ⓘ) trigger at the right of the tab row + its on-demand helper popover.
+  // Per-tab helper line (icon + subtitle) under the lifecycle tabs.
+  clientTabHelper:
+    "mb-4 flex items-start gap-2 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400",
+  clientTabHelperIcon: "mt-px h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500",
+  // Info (ⓘ) trigger at the right of the tab row + its privacy-reminder popover.
   clientTabInfoButton:
     "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30",
   infoPopover:
