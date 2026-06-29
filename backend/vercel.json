@@ -1,4 +1,5 @@
 {
+  "buildCommand": "node scripts/migrate-on-deploy.mjs && next build",
   "crons": [
     {
       "path": "/api/internal/session-cleanup",
