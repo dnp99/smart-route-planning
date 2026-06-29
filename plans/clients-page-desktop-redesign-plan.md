@@ -31,9 +31,9 @@ lifecycle ([plans/completed/clients-lifecycle-states-plan.md](completed/clients-
 - **A. Idle per-row actions = Edit only** (no per-row trash; archive via checkbox + bulk bar).
   Mock: `showDelete = tab==='active'`. → Default: follow the mock; Idle archives via selection.
 - **B. Privacy reminder = always visible** at the card bottom (mock) — drop the `i` toggle. → follow mock.
-- **C. Stats row (Total/Fixed/Flexible/Avg) — removed** on desktop. The chosen table design has
-  none; the tab counts + table give the overview. → follow mock (remove). *(Flag: this reverses
-  the recent "stats on Active only" tweak.)*
+- **C. Stats row (Total/Fixed/Flexible/Avg) — KEEP** (Active tab only, as today). The Figma
+  omitted it but it stays. Place it inside the new card, after the tabs/helper and before the
+  controls row.
 - **D. Active per-row = Edit + Archive (trash)** with the restorable confirm — matches current.
 
 ---
@@ -102,7 +102,10 @@ pad 32/34/36). Page bg already `from-slate-50 to-white` (keep).
 ### Controls row
 - Search (flex-1, h-46, rounded-13, icon-left) + window-type segmented (All/Fixed/Flexible,
   hidden on Archived — already) + Add Client (blue, h-46, rounded-13, plus icon). Restyle to mock.
-- Remove the desktop stats row (sub-decision C).
+
+### Stats row (keep — Active tab only)
+- Keep the Total/Fixed/Flexible/Avg cards (sub-decision C) on the Active tab, placed inside the
+  card after the tabs/helper and before the controls. Hidden on Idle/Archived (as today).
 
 ### Table (`PatientsTable.tsx`, desktop)
 Bordered rounded container (`border rounded-2xl overflow-hidden`).
@@ -137,7 +140,7 @@ card. Reuse `visitTypePill*`, `clientAvatar`, existing button tokens where possi
 
 ## Tests
 - `PatientsPage.test.tsx` — tab counts render (mock `fetchPatientCounts`), select-all + header
-  bulk archive, Idle has no per-row trash, stats row removed, privacy always-visible.
+  bulk archive, Idle has no per-row trash, stats row still renders on Active, privacy always-visible.
 - `PatientsTable.test.tsx` (if present) / table-related assertions — new header/columns, select-all.
 - `appRoutes` / nav tests — header now contains the nav; keep `AppTabs` link/`aria-current` tests.
 - Backend — `countPatientsByStateForNurse` + counts route.
