@@ -120,6 +120,7 @@ type DestinationRowProps = {
   destination: SelectedPatientDestination;
   index: number;
   showIndex?: boolean;
+  isMobileViewport?: boolean;
   avatarInitials?: string;
   roundedLarge?: boolean;
   inlineScheduledPill?: boolean;
@@ -149,6 +150,7 @@ export const DestinationRow = ({
   destination,
   index,
   showIndex = true,
+  isMobileViewport = false,
   avatarInitials,
   roundedLarge = false,
   inlineScheduledPill = false,
@@ -194,6 +196,9 @@ export const DestinationRow = ({
       {isCancelledOccurrence ? "Skipped" : "Scheduled"}
     </span>
   );
+  // The green "Scheduled" pill is decluttered on mobile (every included visit is
+  // scheduled by default); the amber "Skipped" status still shows everywhere.
+  const showScheduledPill = isCancelledOccurrence || !isMobileViewport;
 
   return (
     <div
@@ -219,19 +224,19 @@ export const DestinationRow = ({
           >
             {visibleName}
           </button>
-          {(displaySubtitle || inlineScheduledPill) && (
+          {(displaySubtitle || (inlineScheduledPill && showScheduledPill)) && (
             <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
               {displaySubtitle && (
                 <p className="m-0 text-[11px] font-medium uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">
                   {displaySubtitle}
                 </p>
               )}
-              {inlineScheduledPill && scheduledPill}
+              {inlineScheduledPill && showScheduledPill && scheduledPill}
             </div>
           )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
-          {!inlineScheduledPill && <span className="hidden sm:inline-flex">{scheduledPill}</span>}
+          {!inlineScheduledPill && !isMobileViewport && scheduledPill}
           <button
             type="button"
             onClick={onToggleDetails}
@@ -254,8 +259,8 @@ export const DestinationRow = ({
           </button>
         </div>
       </div>
-      {!inlineScheduledPill && (
-        <div className="mt-1 flex items-center gap-1.5 sm:hidden">{scheduledPill}</div>
+      {!inlineScheduledPill && isMobileViewport && isCancelledOccurrence && (
+        <div className="mt-1 flex items-center gap-1.5">{scheduledPill}</div>
       )}
 
       {isExpanded && (
@@ -328,7 +333,7 @@ export const DestinationRow = ({
                   : "Adjust planning window (plan-only unless saved):"}
             </p>
             {!isCancelledOccurrence && isVisitInstance && (
-              <div className="mt-2 grid gap-1">
+              <div className="mt-2 flex flex-col gap-1">
                 <label
                   htmlFor={`${destination.visitKey}-planning-date`}
                   className="text-xs font-semibold text-slate-700 dark:text-slate-300"

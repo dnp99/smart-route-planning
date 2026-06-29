@@ -283,8 +283,8 @@ export function OptimizedRouteResult({
 
   return (
     <section className="mt-6 border-t border-slate-200 pt-6 dark:border-slate-800">
-      <div className="grid gap-2">
-        <div className="grid gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:rounded-[28px] sm:p-4">
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:rounded-[28px] sm:p-4">
           <div className="flex flex-col gap-3">
             <div className={responsiveStyles.resultHeader}>
               <p className="m-0 text-xs font-semibold uppercase tracking-[0.2em] text-blue-700 dark:text-blue-300">
@@ -592,7 +592,7 @@ export function OptimizedRouteResult({
               Route map
             </h3>
             {googleMapsTripUrl && (
-              <div className="mb-3 grid gap-2">
+              <div className="mb-3 flex flex-col gap-2">
                 <a
                   href={googleMapsTripUrl}
                   target="_blank"

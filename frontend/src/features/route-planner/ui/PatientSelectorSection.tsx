@@ -210,7 +210,7 @@ export const PatientSelectorSection = ({
   const defaultObjectiveLabel =
     defaultOptimizationObjective === "distance" ? "Less driving" : "Finish sooner";
   const routePreferenceControl = (
-    <div className="flex items-center gap-2">
+    <div className="flex w-full items-center gap-2 sm:w-auto">
       <span className="hidden whitespace-nowrap text-sm font-medium text-slate-500 dark:text-slate-400 lg:inline">
         Optimize for
       </span>
@@ -278,8 +278,8 @@ export const PatientSelectorSection = ({
             )}
           </div>
         </div>
-        <div className="flex shrink-0 items-center">
-          <div className="flex items-center gap-3">
+        <div className="flex w-full items-center sm:w-auto sm:shrink-0">
+          <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
             {isContentVisible && routePreferenceControl}
             {isCollapsedDesktop && routePreferenceControl}
             {!isMobileViewport && (
