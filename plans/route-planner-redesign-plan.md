@@ -31,7 +31,7 @@ _All work below is on `develop` and **pushed** (through commit `3d4472a`)._
 - **Optimize-control icons — ✅ DONE** (`e006ecd`).
 - **"Your Route" preview + search header — ✅ DONE** (`51eedde`).
 - **Figma-match pass for the Clients / "Your Route" panel — ✅ DONE** (`3d4472a`) — stacked header, blue count badge, greyed collapsed title, borderless lists, gray Your-Route canvas + vertical separator, timeline node restyle (trip-style START/END at numbered-node size, thin ring outline, dark-blue rail), Scheduled pill restored + inline on single cards, pencil-icon edit.
-- **Phase 4 — NEXT** (mobile single-column). Decisions locked in — see below.
+- **Phase 4 — ✅ DONE** (`7f7d3dd`) — mobile single-column: wizard fully removed, `activeMobileStep` dropped from the draft (legacy field ignored), sticky bottom Optimize/Re-optimize bar, trip card collapsible on mobile (bookend, `b4865f5`). All four locked-in decisions met. Subsequent mobile polish (overflow fixes, "Your Route" pills/labels, full-width toggle, sticky-CTA iOS fix) layered on top.
 
 > **Finding from Phase 1:** the `Less driving / Finish sooner` toggle **and** the `Optimize/Re-optimize Route` button already exist in the Clients card header ([PatientSelectorSection.tsx](frontend/src/features/route-planner/ui/PatientSelectorSection.tsx)) and already match the design's labels — so the "relocate optimize controls" work was a no-op. Phase 1 ended up being just the trip-setup bookend.
 
@@ -51,7 +51,7 @@ _All work below is on `develop` and **pushed** (through commit `3d4472a`)._
 - Rework `RouteResultSection` / [OptimizedRouteResult.tsx](frontend/src/features/route-planner/ui/OptimizedRouteResult.tsx) + [OptimizedStopList.tsx](frontend/src/features/route-planner/ui/OptimizedStopList.tsx) into a **vertical numbered timeline**: `START` node → numbered stop nodes on a connecting rail → `END` node. Each stop is a card; multi-window clients are **collapsible** ("N windows"), each window a row with a quiet **"Scheduled"/late** pill (not a full button). Preserve manual reorder + "Recalculate times" behavior under the new visuals.
 - Move **result stats directly under the route**: on-time banner ("All N visits on time · Finishes around …"), **Distance**, **Scheduled stops**, **Leave by**. Reuse existing metrics; restyle into the compact card row + banner.
 
-### Phase 4 — Mobile single-column layout — NEXT
+### Phase 4 — Mobile single-column layout — ✅ DONE
 
 Replace the mobile 3-step wizard (Trip → Clients → Review) with a single scrollable column, keeping each section contained so it isn't an endless scroll.
 
