@@ -640,26 +640,32 @@ const PatientsPage = () => {
         )}
 
         {lifecycleState === "active" && (
-          <div className={responsiveStyles.clientStatsRow} data-testid="client-stats">
-            <div className={responsiveStyles.clientStatCard}>
-              <p className={responsiveStyles.clientStatLabel}>Total Clients</p>
-              <p className={responsiveStyles.clientStatValue}>{clientStats.total}</p>
-            </div>
-            <div className={responsiveStyles.clientStatCard}>
-              <p className={responsiveStyles.clientStatLabel}>Fixed Window</p>
-              <p className={responsiveStyles.clientStatValueFixed}>{clientStats.fixed}</p>
-            </div>
-            <div className={responsiveStyles.clientStatCard}>
-              <p className={responsiveStyles.clientStatLabel}>Flexible</p>
-              <p className={responsiveStyles.clientStatValueFlexible}>{clientStats.flexible}</p>
-            </div>
-            <div className={responsiveStyles.clientStatCard}>
-              <p className={responsiveStyles.clientStatLabel}>Avg Duration</p>
-              <p className={responsiveStyles.clientStatValue}>
-                {clientStats.avgDuration}
-                <span className={responsiveStyles.clientStatValueSuffix}>min</span>
-              </p>
-            </div>
+          <div className={responsiveStyles.clientStatsStrip} data-testid="client-stats">
+            <span>
+              <span className={responsiveStyles.clientStatsStripValue}>{clientStats.total}</span>{" "}
+              client{clientStats.total === 1 ? "" : "s"}
+            </span>
+            <span className={responsiveStyles.clientStatsStripDot} aria-hidden="true" />
+            <span>
+              <span className={responsiveStyles.clientStatsStripValueFixed}>
+                {clientStats.fixed}
+              </span>{" "}
+              fixed
+            </span>
+            <span className={responsiveStyles.clientStatsStripDot} aria-hidden="true" />
+            <span>
+              <span className={responsiveStyles.clientStatsStripValueFlexible}>
+                {clientStats.flexible}
+              </span>{" "}
+              flexible
+            </span>
+            <span className={responsiveStyles.clientStatsStripDot} aria-hidden="true" />
+            <span>
+              <span className={responsiveStyles.clientStatsStripValue}>
+                {clientStats.avgDuration} min
+              </span>{" "}
+              avg visit
+            </span>
           </div>
         )}
 

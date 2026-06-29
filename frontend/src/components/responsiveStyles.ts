@@ -441,18 +441,13 @@ export const responsiveStyles = {
     "mb-4 flex items-start gap-2 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400",
   clientTabHelperIcon: "mt-px h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500",
   // Clients page summary stats row (desktop only — hidden below md)
-  clientStatsRow: "mb-6 hidden grid-cols-4 gap-6 md:grid",
-  clientStatCard:
-    "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-3.5",
-  clientStatLabel:
-    "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
-  clientStatValue:
-    "m-0 mt-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100",
-  clientStatValueFixed:
-    "m-0 mt-1 text-xl font-semibold tracking-tight text-blue-600 dark:text-blue-300",
-  clientStatValueFlexible:
-    "m-0 mt-1 text-xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-300",
-  clientStatValueSuffix: "ml-1 text-sm font-normal text-slate-500 dark:text-slate-400",
+  // Active tab: one-line summary strip (replaces the four stat boxes).
+  clientStatsStrip:
+    "mb-4 hidden flex-wrap items-center gap-x-3.5 gap-y-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-[13px] font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400 md:flex",
+  clientStatsStripDot: "h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600",
+  clientStatsStripValue: "font-bold text-slate-900 dark:text-slate-100",
+  clientStatsStripValueFixed: "font-bold text-blue-800 dark:text-blue-300",
+  clientStatsStripValueFlexible: "font-bold text-emerald-700 dark:text-emerald-300",
   // ── Clients page: title count, window filter, table avatar + repeat ──────────
   clientsTitleCount: "font-semibold text-slate-400 dark:text-slate-500",
   clientFilterToggle:
