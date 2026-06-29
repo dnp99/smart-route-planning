@@ -188,7 +188,7 @@ export const responsiveStyles = {
 
   // ── Mobile step nav ────────────────────────────────────────────────────────
   stickyFooter:
-    "sticky bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 rounded-2xl border border-slate-200 bg-white/95 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 sm:bottom-3 sm:pb-3",
+    "sticky bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-slate-900/95 sm:bottom-3",
 
   // ── Patient selection two-column layout ────────────────────────────────────
   patientSelectionGrid: "grid grid-cols-1 gap-4 md:grid-cols-2 md:items-start",
