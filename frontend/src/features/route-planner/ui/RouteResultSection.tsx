@@ -200,7 +200,12 @@ export const RouteResultSection = ({
           )}
           <button
             type="submit"
-            disabled={isLoading || !canOptimize || (!!result && !hasChangedSinceLastOptimize)}
+            disabled={
+              isLoading ||
+              !canOptimize ||
+              !!mobileOptimizeHint ||
+              (!!result && !hasChangedSinceLastOptimize)
+            }
             className={responsiveStyles.optimizeButtonLarge}
             data-loading={isLoading ? "true" : "false"}
             data-success={showOptimizeSuccess ? "true" : "false"}
