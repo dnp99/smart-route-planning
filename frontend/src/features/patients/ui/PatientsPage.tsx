@@ -78,7 +78,6 @@ const PatientsPage = () => {
   const [formErrors, setFormErrors] = useState<FormFieldErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [showPrivacyReminder, setShowPrivacyReminder] = useState(false);
   const [recurringTemplatesByPatientId, setRecurringTemplatesByPatientId] = useState<
     Map<string, RecurringVisitTemplate[]>
   >(new Map());
@@ -181,6 +180,9 @@ const PatientsPage = () => {
       return next;
     });
   };
+
+  const clearSelection = () => setSelectedIds(new Set());
+  const selectAll = (ids: string[]) => setSelectedIds(new Set(ids));
 
   const handleArchiveSelected = async () => {
     const ids = [...selectedIds];
@@ -509,31 +511,10 @@ const PatientsPage = () => {
               Add
             </button>
           </div>
-          <div className="flex items-center gap-2">
-            <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
-              Manage clients for route planning.
-            </p>
-            <button
-              type="button"
-              aria-label="Show privacy reminder"
-              aria-expanded={showPrivacyReminder}
-              onClick={() => setShowPrivacyReminder((current) => !current)}
-              className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30"
-            >
-              i
-            </button>
-          </div>
+          <p className="m-0 text-sm text-slate-600 dark:text-slate-300">
+            Manage clients for route planning.
+          </p>
         </div>
-
-        {showPrivacyReminder && (
-          <div className="mb-4 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
-            <p className="m-0 font-medium">Privacy Reminder</p>
-            <p className="m-0 mt-1">
-              Client information entered here should be limited to what is necessary for scheduling
-              and care delivery. Ensure you have appropriate authority to manage this data.
-            </p>
-          </div>
-        )}
 
         {hasTemplateFilter && (
           <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
@@ -606,6 +587,13 @@ const PatientsPage = () => {
             </button>
           ))}
         </div>
+
+        {lifecycleState === "idle" && (
+          <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
+            No visits scheduled in the last 30 days. Select any clients you no longer need and
+            archive them to keep your active list clean.
+          </p>
+        )}
 
         {lifecycleState === "archived" && (
           <p className="mb-4 text-xs text-slate-500 dark:text-slate-400">
@@ -749,21 +737,6 @@ const PatientsPage = () => {
             </div>
           )}
 
-          {lifecycleState === "idle" && selectedIds.size > 0 && (
-            <div className="mb-4 flex items-center justify-end gap-3 rounded-xl border border-amber-200 bg-amber-50/70 px-3 py-2 dark:border-amber-900/50 dark:bg-amber-950/30">
-              <button
-                type="button"
-                onClick={() => void handleArchiveSelected()}
-                disabled={isBulkArchiving}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isBulkArchiving
-                  ? "Archiving…"
-                  : `Archive ${selectedIds.size} client${selectedIds.size === 1 ? "" : "s"}`}
-              </button>
-            </div>
-          )}
-
           <PatientsTable
             isLoading={isLoadingPatients}
             isSubmitting={isSubmitting}
@@ -776,10 +749,39 @@ const PatientsPage = () => {
             onEdit={openEditModal}
             selectedIds={selectedIds}
             onToggleSelect={toggleSelect}
+            onSelectAll={selectAll}
+            onClearSelection={clearSelection}
+            onArchiveSelected={() => void handleArchiveSelected()}
+            isBulkArchiving={isBulkArchiving}
             onRestore={(patient) => void handleRestore(patient)}
             restoringId={restoringId}
             recurringTemplatesByPatientId={recurringTemplatesByPatientId}
           />
+
+          <div className={responsiveStyles.clientPrivacyCard}>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.9"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              className="mt-0.5 h-5 w-5 shrink-0 text-blue-400 dark:text-blue-500"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+            <div>
+              <p className={responsiveStyles.clientPrivacyTitle}>Privacy Reminder</p>
+              <p className={responsiveStyles.clientPrivacyText}>
+                Client information entered here should be limited to what is necessary for
+                scheduling and care delivery. Ensure you have appropriate authority to manage this
+                data.
+              </p>
+            </div>
+          </div>
         </div>
 
         {pendingDeleteId && (

@@ -20,6 +20,7 @@ vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({
 }));
 
 import {
+  archiveClients,
   createPatient,
   deletePatient,
   listPatients,
@@ -33,6 +34,7 @@ import {
 } from "../../features/patients/api/recurringVisitTemplateService";
 
 const mockedListPatients = vi.mocked(listPatients);
+const mockedArchiveClients = vi.mocked(archiveClients);
 const mockedCreatePatient = vi.mocked(createPatient);
 const mockedDeletePatient = vi.mocked(deletePatient);
 const mockedUpdatePatient = vi.mocked(updatePatient);
@@ -106,6 +108,8 @@ describe("PatientsPage", () => {
   const fetchMock = vi.fn();
 
   beforeEach(() => {
+    // Reset the URL so a prior test's lifecycle tab (?state=idle) doesn't leak in.
+    window.history.replaceState({}, "", "/");
     mockedListPatients.mockReset();
     mockedCreatePatient.mockReset();
     mockedDeletePatient.mockReset();
@@ -178,6 +182,32 @@ describe("PatientsPage", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Fixed" })[0]);
     expect(screen.queryByText("John Smith")).toBeNull();
     expect(screen.getAllByText("Jane Doe").length).toBeGreaterThan(0);
+  });
+
+  it("bulk-archives idle clients via the in-header select-all toolbar", async () => {
+    mockedListPatients.mockResolvedValue([seedPatient, secondPatient]);
+    mockedArchiveClients.mockResolvedValue(["patient-1", "patient-2"]);
+
+    render(<PatientsPage />);
+
+    // Switch to the Idle tab → the list refetches with state "idle".
+    fireEvent.click(screen.getByRole("tab", { name: /Idle/ }));
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("", "idle");
+    });
+
+    // Idle desktop rows expose Edit but no per-row archive (sub-decision A).
+    expect(await screen.findByRole("button", { name: "Edit Jane Doe" })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Archive Jane Doe" })).toBeNull();
+
+    // Select all → the in-header amber bulk bar appears with the count.
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select all idle clients" }));
+    const archiveButton = await screen.findByRole("button", { name: "Archive 2 clients" });
+    fireEvent.click(archiveButton);
+
+    await waitFor(() => {
+      expect(mockedArchiveClients).toHaveBeenCalledWith(["patient-1", "patient-2"]);
+    });
   });
 
   it("submits create flow and resets to empty create mode", async () => {

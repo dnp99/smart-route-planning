@@ -575,6 +575,24 @@ export const responsiveStyles = {
   tableCard:
     "overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900",
   tableRow: "group transition hover:bg-slate-50 dark:hover:bg-slate-800/40",
+  // Selected row (idle bulk-select) — blue selection surface per design-system §11.
+  tableRowSelected: "bg-blue-50/60 dark:bg-blue-950/30",
+  // Row / select-all checkbox.
+  tableSelectCheckbox:
+    "h-[18px] w-[18px] cursor-pointer rounded accent-blue-600 dark:accent-blue-500",
+  // In-header bulk toolbar (idle, ≥1 selected) — amber selection bar.
+  tableBulkBar: "flex items-center gap-3 bg-amber-50 px-5 py-2.5 dark:bg-amber-950/30",
+  tableBulkLabel: "text-sm font-semibold text-amber-900 dark:text-amber-200",
+  tableBulkDivider: "h-4 w-px bg-amber-300 dark:bg-amber-700",
+  tableBulkClear:
+    "text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200",
+  tableBulkArchiveButton:
+    "inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60",
+  // Always-on privacy/compliance reminder at the foot of the Clients card.
+  clientPrivacyCard:
+    "mt-5 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-3.5 dark:border-blue-900/50 dark:bg-blue-950/20",
+  clientPrivacyTitle: "m-0 text-sm font-semibold text-blue-700 dark:text-blue-300",
+  clientPrivacyText: "m-0 mt-0.5 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400",
   tableEmptyState:
     "rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
   tableIconButton:
