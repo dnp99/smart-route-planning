@@ -95,7 +95,7 @@ const PatientsPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkArchiving, setIsBulkArchiving] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
-  const [counts, setCounts] = useState<PatientCounts>({ active: 0, idle: 0, archived: 0 });
+  const [counts, setCounts] = useState<PatientCounts | null>(null);
 
   const changeLifecycleState = (next: PatientLifecycleState) => {
     if (next === lifecycleState) return;
@@ -573,16 +573,21 @@ const PatientsPage = () => {
                   : responsiveStyles.clientStateTabInactive
               }`}
             >
-              {tab.label}{" "}
-              <span
-                className={
-                  lifecycleState === tab.key
-                    ? "font-semibold text-blue-300 dark:text-blue-400/70"
-                    : "font-semibold text-slate-300 dark:text-slate-600"
-                }
-              >
-                ({counts[tab.key]})
-              </span>
+              {tab.label}
+              {counts && (
+                <>
+                  {" "}
+                  <span
+                    className={
+                      lifecycleState === tab.key
+                        ? "font-semibold text-blue-300 dark:text-blue-400/70"
+                        : "font-semibold text-slate-300 dark:text-slate-600"
+                    }
+                  >
+                    ({counts[tab.key]})
+                  </span>
+                </>
+              )}
             </button>
           ))}
         </div>
