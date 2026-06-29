@@ -101,7 +101,7 @@ export default function AppHeader({
 
         {isAuthenticated && (
           <div className="hidden md:flex">
-            <AppTabs variant="header" />
+            <AppTabs variant="header" scrolled={headerScrolled} />
           </div>
         )}
 
