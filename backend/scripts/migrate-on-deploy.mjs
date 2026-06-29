@@ -22,6 +22,23 @@ if (env !== "production" && env !== "preview") {
   process.exit(0);
 }
 
+// Fail the build loudly rather than silently skipping migrations when the env is
+// misconfigured.
+if (!process.env.DATABASE_URL_UNPOOLED && !process.env.DATABASE_URL) {
+  console.error(
+    `[migrate-on-deploy] No database URL for VERCEL_ENV=${env}. Set DATABASE_URL_UNPOOLED ` +
+      "(preferred) or DATABASE_URL for this Vercel environment, then redeploy. Aborting build.",
+  );
+  process.exit(1);
+}
+
+if (!process.env.DATABASE_URL_UNPOOLED) {
+  console.warn(
+    "[migrate-on-deploy] DATABASE_URL_UNPOOLED is not set — using the pooled DATABASE_URL. " +
+      "Neon's pooler can silently fail to apply DDL; set the direct (unpooled) URL for reliable migrations.",
+  );
+}
+
 console.log(`[migrate-on-deploy] Applying database migrations (${env})…`);
 execSync("drizzle-kit migrate --config=drizzle.config.ts", { stdio: "inherit" });
 console.log("[migrate-on-deploy] Migrations up to date.");
