@@ -159,8 +159,17 @@ function App() {
   }
 
   return (
-    <div className="flex min-h-screen w-full">
-      {isAuthenticated && <AppSidebar />}
+    <div className={`flex min-h-screen w-full ${responsiveStyles.appCanvas}`}>
+      {isAuthenticated && (
+        <AppSidebar
+          authUser={authUser}
+          onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+          onLogout={() => {
+            void logout();
+            clearAuthSession();
+          }}
+        />
+      )}
       <div className={`${responsiveStyles.appShell} min-w-0 flex-1`}>
         <div className={responsiveStyles.stickyHeaderShell}>
         <AppHeader

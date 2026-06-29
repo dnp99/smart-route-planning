@@ -20,18 +20,18 @@ const headerTabClassName = (isActive, scrolled) =>
       : "border-transparent font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200",
   ].join(" ");
 
-// Sidebar variant: vertical menu rows in the desktop left sidebar.
+// Sidebar variant: vertical menu rows with a left accent on the active item.
 const sidebarTabClassName = (isActive) =>
   [
-    "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40",
+    "group flex items-center gap-3 rounded-r-[10px] border-l-[3px] px-3 py-2.5 text-[13.5px] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40",
     isActive
-      ? "bg-white/70 font-semibold text-blue-700 shadow-sm dark:bg-white/10 dark:text-blue-200"
-      : "font-medium text-slate-600 hover:bg-white/50 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-white/10",
+      ? "border-blue-600 bg-blue-50 font-semibold text-blue-700 dark:border-blue-400 dark:bg-blue-950/40 dark:text-blue-200"
+      : "border-transparent font-medium text-slate-600 hover:bg-slate-100/70 hover:text-slate-900 dark:text-slate-300 dark:hover:bg-slate-800/40",
   ].join(" ");
 
 const iconSizeForVariant = (variant, scrolled) =>
   variant === "sidebar"
-    ? "h-5 w-5"
+    ? "h-[18px] w-[18px]"
     : variant === "header"
       ? scrolled
         ? "h-4 w-4"
