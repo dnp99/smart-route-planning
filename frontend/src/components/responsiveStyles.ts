@@ -439,7 +439,7 @@ export const responsiveStyles = {
     "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
   // Info (ⓘ) trigger at the right of the tab row + its on-demand helper popover.
   clientTabInfoButton:
-    "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-200 text-blue-500 transition hover:bg-blue-50 hover:text-blue-600 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40",
+    "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30",
   clientTabInfoPopover:
     "absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
   // Clients page summary stats row (desktop only — hidden below md)
@@ -597,11 +597,6 @@ export const responsiveStyles = {
   // Archived-row Restore button — blue outline + refresh icon per figma.
   restoreButton:
     "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",
-  // Always-on privacy/compliance reminder at the foot of the Clients card.
-  clientPrivacyCard:
-    "mt-5 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-3.5 dark:border-blue-900/50 dark:bg-blue-950/20",
-  clientPrivacyTitle: "m-0 text-sm font-semibold text-blue-700 dark:text-blue-300",
-  clientPrivacyText: "m-0 mt-0.5 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400",
   tableEmptyState:
     "rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
   tableIconButton:

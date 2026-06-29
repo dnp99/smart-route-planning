@@ -602,21 +602,7 @@ const PatientsPage = () => {
               aria-expanded={showTabInfo}
               className={responsiveStyles.clientTabInfoButton}
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                className="h-3.5 w-3.5"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12.01" y2="8" />
-              </svg>
+              i
             </button>
             {showTabInfo && (
               <div role="tooltip" className={responsiveStyles.clientTabInfoPopover}>
@@ -799,31 +785,6 @@ const PatientsPage = () => {
             restoringId={restoringId}
             recurringTemplatesByPatientId={recurringTemplatesByPatientId}
           />
-
-          <div className={responsiveStyles.clientPrivacyCard}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.9"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="mt-0.5 h-5 w-5 shrink-0 text-blue-400 dark:text-blue-500"
-            >
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              <path d="m9 12 2 2 4-4" />
-            </svg>
-            <div>
-              <p className={responsiveStyles.clientPrivacyTitle}>Privacy Reminder</p>
-              <p className={responsiveStyles.clientPrivacyText}>
-                Client information entered here should be limited to what is necessary for
-                scheduling and care delivery. Ensure you have appropriate authority to manage this
-                data.
-              </p>
-            </div>
-          </div>
         </div>
 
         {lifecycleState === "idle" && selectedIds.size > 0 && (
