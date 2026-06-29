@@ -308,9 +308,10 @@ export default function HomePage({
         tone: dashboardSummary.kpis.staleClientsCount > 0 ? "text-amber-600" : "text-slate-500",
         trend:
           dashboardSummary.kpis.staleClientsCount > 0
-            ? "Review & archive →"
+            ? "Tap to review & archive →"
             : "All clients recently used",
-        href: dashboardSummary.kpis.staleClientsCount > 0 ? "/clients?review=stale" : "/clients",
+        // Nothing to act on at zero — the card becomes non-clickable (no redirect).
+        href: dashboardSummary.kpis.staleClientsCount > 0 ? "/clients?review=stale" : undefined,
       },
       {
         label: "Template coverage",
@@ -786,14 +787,8 @@ export default function HomePage({
                 );
               }
 
-              return (
-                <Link
-                  key={kpi.label}
-                  to={to}
-                  className={`${responsiveStyles.dashboardKpiCard} group`}
-                  style={{ animationDelay: `${80 + index * 45}ms` }}
-                  onClick={isCar ? triggerCar : undefined}
-                >
+              const cardBody = (
+                <>
                   <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
                   <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
                   <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
@@ -811,6 +806,31 @@ export default function HomePage({
                   <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
                     {kpi.trend}
                   </p>
+                </>
+              );
+
+              // No destination (e.g. zero inactive clients) → a static, non-clickable card.
+              if (!to) {
+                return (
+                  <div
+                    key={kpi.label}
+                    className={responsiveStyles.dashboardKpiCard}
+                    style={{ animationDelay: `${80 + index * 45}ms` }}
+                  >
+                    {cardBody}
+                  </div>
+                );
+              }
+
+              return (
+                <Link
+                  key={kpi.label}
+                  to={to}
+                  className={`${responsiveStyles.dashboardKpiCard} group`}
+                  style={{ animationDelay: `${80 + index * 45}ms` }}
+                  onClick={isCar ? triggerCar : undefined}
+                >
+                  {cardBody}
                 </Link>
               );
             })}
