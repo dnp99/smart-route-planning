@@ -191,7 +191,12 @@ export const TripSetupSection = ({
   }
 
   return (
-    <section className={responsiveStyles.panel} ref={cardRef}>
+    <section
+      ref={cardRef}
+      className={`${responsiveStyles.panel}${
+        bothPointsSet ? "" : " border-red-300 focus-within:border-slate-200"
+      }`}
+    >
       <div className={responsiveStyles.cardHeader}>
         <div className="flex items-center justify-between gap-2">
           <h2 className={responsiveStyles.cardTitle}>Trip setup</h2>
