@@ -140,7 +140,7 @@ const formatWindowRange = (startTime: string, endTime: string) =>
 const formatLastScheduled = (iso?: string | null): { primary: string; secondary: string } => {
   if (!iso) return { primary: "Never scheduled", secondary: "" };
   const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return { primary: "Never scheduled", secondary: "" };
+  if (isNaN(then)) return { primary: "Never scheduled", secondary: "" };
   const days = Math.floor((Date.now() - then) / 86_400_000);
   const primary = days <= 0 ? "Today" : days === 1 ? "Yesterday" : `${days} days ago`;
   const secondary = new Date(iso).toLocaleDateString(undefined, {
