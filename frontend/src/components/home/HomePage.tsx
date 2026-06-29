@@ -261,9 +261,9 @@ export default function HomePage({
           progressPercent: 0,
         },
         {
-          label: "Deleted clients",
+          label: "Unused clients",
           value: "—",
-          delta: "Last 30 days",
+          delta: "Not used in 30+ days",
           tone: "text-slate-500",
           trend: "No baseline yet",
           href: "/clients",
