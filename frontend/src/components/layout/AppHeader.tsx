@@ -102,23 +102,25 @@ export default function AppHeader({
           "transition-all duration-300",
         ].join(" ")}
       >
-        {isAuthenticated ? (
-          <Link
-            to="/home"
-            aria-label="Routefy home"
-            className="flex min-w-0 items-center gap-3 rounded-xl no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-          >
-            {brandContent}
-          </Link>
-        ) : (
-          <div className="flex min-w-0 items-center gap-3">{brandContent}</div>
-        )}
+        <div className="flex min-w-0 items-center gap-6 lg:gap-10">
+          {isAuthenticated ? (
+            <Link
+              to="/home"
+              aria-label="Routefy home"
+              className="flex min-w-0 items-center gap-3 rounded-xl no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+            >
+              {brandContent}
+            </Link>
+          ) : (
+            <div className="flex min-w-0 items-center gap-3">{brandContent}</div>
+          )}
 
-        {isAuthenticated && (
-          <div className="hidden md:flex">
-            <AppTabs variant="header" scrolled={headerScrolled} />
-          </div>
-        )}
+          {isAuthenticated && (
+            <div className="hidden md:flex">
+              <AppTabs variant="header" scrolled={headerScrolled} />
+            </div>
+          )}
+        </div>
 
         {isAuthenticated && (
           <div className="flex min-w-0 items-center gap-2">
