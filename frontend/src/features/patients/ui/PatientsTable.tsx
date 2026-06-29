@@ -451,38 +451,58 @@ export const PatientsTable = ({
           const patientDisplayName = getPatientDisplayName(patient);
           const { street, cityRegion } = splitAddress(patient.address);
           const isExpanded = expandedPatients.has(patient.id);
+          const isSelected = isIdle && selectedIds.has(patient.id);
 
           return (
-            <article key={patient.id} className={responsiveStyles.mobileClientCard}>
-              <button
-                type="button"
-                onClick={() => toggleExpanded(patient.id)}
-                aria-expanded={isExpanded}
-                aria-label={
-                  isExpanded ? `Collapse ${patientDisplayName}` : `Expand ${patientDisplayName}`
-                }
-                className="flex w-full items-center gap-3 rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-              >
-                <span className={responsiveStyles.clientAvatar} aria-hidden="true">
-                  {getPatientInitials(patient.firstName, patient.lastName)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h3 className="m-0 truncate text-base font-semibold text-slate-900 dark:text-slate-100">
-                    {patientDisplayName}
-                  </h3>
-                  {!isExpanded && (
-                    <div className="mt-1 flex items-center gap-2">
-                      {renderVisitTypePill(visitType)}
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {patient.visitDurationMinutes} min
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <ChevronIcon
-                  className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${isExpanded ? "rotate-90" : "rotate-0"}`}
-                />
-              </button>
+            <article
+              key={patient.id}
+              className={[
+                responsiveStyles.mobileClientCard,
+                isSelected
+                  ? "border-blue-200 bg-blue-50/60 dark:border-blue-900/60 dark:bg-blue-950/30"
+                  : "",
+              ].join(" ")}
+            >
+              <div className="flex items-center gap-3">
+                {isIdle && (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(patient.id)}
+                    onChange={() => onToggleSelect(patient.id)}
+                    aria-label={`Select ${patientDisplayName}`}
+                    className="h-5 w-5 shrink-0 cursor-pointer rounded accent-blue-600 dark:accent-blue-500"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(patient.id)}
+                  aria-expanded={isExpanded}
+                  aria-label={
+                    isExpanded ? `Collapse ${patientDisplayName}` : `Expand ${patientDisplayName}`
+                  }
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                >
+                  <span className={responsiveStyles.clientAvatar} aria-hidden="true">
+                    {getPatientInitials(patient.firstName, patient.lastName)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="m-0 truncate text-base font-semibold text-slate-900 dark:text-slate-100">
+                      {patientDisplayName}
+                    </h3>
+                    {!isExpanded && (
+                      <div className="mt-1 flex items-center gap-2">
+                        {renderVisitTypePill(visitType)}
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {patient.visitDurationMinutes} min
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <ChevronIcon
+                    className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${isExpanded ? "rotate-90" : "rotate-0"}`}
+                  />
+                </button>
+              </div>
 
               {isExpanded && (
                 <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
@@ -546,16 +566,18 @@ export const PatientsTable = ({
                           <EditIcon className="h-4 w-4" />
                           Edit
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => void onDelete(patient.id)}
-                          disabled={isSubmitting}
-                          aria-label={`Archive ${patientDisplayName}`}
-                          title="Archive"
-                          className={responsiveStyles.mobileDeleteButton}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
+                        {lifecycleState === "active" && (
+                          <button
+                            type="button"
+                            onClick={() => void onDelete(patient.id)}
+                            disabled={isSubmitting}
+                            aria-label={`Archive ${patientDisplayName}`}
+                            title="Archive"
+                            className={responsiveStyles.mobileDeleteButton}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
