@@ -133,7 +133,7 @@ export const SelectedDestinationsSection = ({
   };
 
   return (
-    <div className="grid gap-2">
+    <div className="flex min-w-0 flex-col gap-2">
       <div className="flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <p className={responsiveStyles.patientColumnLabel}>Your Route</p>

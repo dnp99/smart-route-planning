@@ -348,7 +348,7 @@ export const PatientSelectorSection = ({
       {isContentVisible && (
         <>
           <div className={responsiveStyles.patientSelectionGrid}>
-            <div className="grid min-w-0 gap-2">
+            <div className="flex min-w-0 flex-col gap-2">
               <p className={responsiveStyles.patientColumnLabel}>
                 Search clients · {destinationSearchResults.length}
               </p>

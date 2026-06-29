@@ -458,6 +458,25 @@ These are **never** acceptable:
 | Shadows stacked: `shadow + shadow-md` | One shadow level per element |
 | Ad-hoc inline Tailwind classes outside documented component specs | Use `responsiveStyles` tokens or documented component exceptions |
 | `bg-slate-50` on a focused input | Inputs are always `bg-white` |
+| Bare `grid gap-*` used only to **stack** elements vertically | Use `flex flex-col gap-*` — see §6a |
+
+### 6a. Mobile horizontal-overflow pitfall (WebKit/iOS) — bare `grid` auto-tracks
+
+**Symptom:** on a real iOS device (Safari **and** Chrome — both are WebKit), a column or a card list is a few-to-tens of px too wide: content clips on the right, buttons get cut off, or cards bleed past their parent's border. **It does not reproduce in desktop Chrome DevTools, responsive mode, or the Chromium preview** — only on native WebKit.
+
+**Cause:** a container that uses a bare `grid` (e.g. `className="grid gap-2"`) with **no** `grid-cols-*` gets a single **`auto`-sized** track. An `auto` track is sized to its content's **min-content**. WebKit computes the min-content of a `truncate` (i.e. `whitespace-nowrap`) text node — like a long client name or address — as its **full, un-wrapped width**, *ignoring* any `min-w-0` on an intermediate wrapper. So the track (and the column/card) blows out to the width of the longest unbroken string. Blink/Chromium clamps this differently, which is why it's invisible on desktop.
+
+Note Tailwind's `grid-cols-1` is **not** the same as bare `grid`: `grid-cols-1` = `minmax(0, 1fr)` (min 0, safe), whereas bare `grid` = `auto` track (min-content, unsafe).
+
+**Rules:**
+
+1. **Never use a bare `grid` (no `grid-cols-*`) just to stack elements vertically.** Use `flex flex-col gap-*` — its `align-items: stretch` sizes children to the container width independent of their content's min-content, so a long truncated name can't widen the column.
+2. If you genuinely need a grid, give it an explicit track: `grid grid-cols-1` (→ `minmax(0,1fr)`), never bare `grid`.
+3. Any flex/grid child that contains `truncate` text must have `min-w-0` (and so must each ancestor between it and the shrinkable boundary).
+4. A `<input>` that should shrink needs `min-w-0` on the input itself — WebKit otherwise floors it at the field's native intrinsic width.
+5. **Verify mobile width on a real WebKit device, not just DevTools.** Sub-container spill (card past panel edge) won't even register as document-level overflow, so a `scrollWidth === clientWidth` check can pass while it's still visibly wrong.
+
+Fixed instances (ref): route-planner search + Your Route columns ([`PatientSelectorSection.tsx`](../frontend/src/features/route-planner/ui/PatientSelectorSection.tsx), [`SelectedDestinationsSection.tsx`](../frontend/src/features/route-planner/ui/SelectedDestinationsSection.tsx)) and the Clients mobile card list ([`PatientsTable.tsx`](../frontend/src/features/patients/ui/PatientsTable.tsx)).
 
 ---
 
