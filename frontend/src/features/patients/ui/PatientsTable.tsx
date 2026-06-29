@@ -296,6 +296,7 @@ export const PatientsTable = ({
 }: PatientsTableProps) => {
   const isArchived = lifecycleState === "archived";
   const isIdle = lifecycleState === "idle";
+  const showRepeat = lifecycleState === "active";
   const [openWindowsPopoverKey, setOpenWindowsPopoverKey] = useState<string | null>(null);
   const windowsPopoverRef = useRef<HTMLDivElement | null>(null);
   const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
@@ -465,6 +466,8 @@ export const PatientsTable = ({
   const allSelected = visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
   const showBulkBar = isIdle && selectedIds.size > 0;
   const bulkCount = selectedIds.size;
+  // Name, Address, Window, Duration/Last-scheduled, Actions + optional checkbox + optional Repeat.
+  const columnCount = 5 + (isIdle ? 1 : 0) + (showRepeat ? 1 : 0);
   const handleToggleSelectAll = () => {
     if (allSelected) {
       onClearSelection();
@@ -634,13 +637,13 @@ export const PatientsTable = ({
               <col className="w-[34%]" />
               <col className="w-[18%]" />
               <col className="w-24" />
-              <col className="w-20" />
+              {showRepeat && <col className="w-20" />}
               <col className="w-20" />
             </colgroup>
             <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/80">
               {showBulkBar ? (
                 <tr>
-                  <th colSpan={7} className="p-0 font-normal">
+                  <th colSpan={columnCount} className="p-0 font-normal">
                     <div className={responsiveStyles.tableBulkBar}>
                       <input
                         type="checkbox"
@@ -752,9 +755,11 @@ export const PatientsTable = ({
                       />
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
-                    Repeat
-                  </th>
+                  {showRepeat && (
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
+                      Repeat
+                    </th>
+                  )}
                   <th className="px-4 py-3" aria-label="Actions" />
                 </tr>
               )}
@@ -763,7 +768,7 @@ export const PatientsTable = ({
               {sortedFilteredPatients.length === 0 && (
                 <tr>
                   <td
-                    colSpan={isIdle ? 7 : 6}
+                    colSpan={columnCount}
                     className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
                   >
                     No clients match the current filter.
@@ -902,31 +907,33 @@ export const PatientsTable = ({
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-5">
-                      <div className="flex items-center justify-center">
-                        {activeRecurringCount > 0 ? (
-                          <span
-                            className="relative inline-flex"
-                            aria-label={`${activeRecurringCount} active recurring ${
-                              activeRecurringCount === 1 ? "template" : "templates"
-                            }`}
-                            title={`${activeRecurringCount} active recurring ${
-                              activeRecurringCount === 1 ? "template" : "templates"
-                            }`}
-                          >
-                            <CalendarIcon className={responsiveStyles.repeatIconActive} />
-                            <span className={responsiveStyles.repeatCountBadge}>
-                              {activeRecurringCount}
+                    {showRepeat && (
+                      <td className="px-4 py-5">
+                        <div className="flex items-center justify-center">
+                          {activeRecurringCount > 0 ? (
+                            <span
+                              className="relative inline-flex"
+                              aria-label={`${activeRecurringCount} active recurring ${
+                                activeRecurringCount === 1 ? "template" : "templates"
+                              }`}
+                              title={`${activeRecurringCount} active recurring ${
+                                activeRecurringCount === 1 ? "template" : "templates"
+                              }`}
+                            >
+                              <CalendarIcon className={responsiveStyles.repeatIconActive} />
+                              <span className={responsiveStyles.repeatCountBadge}>
+                                {activeRecurringCount}
+                              </span>
                             </span>
-                          </span>
-                        ) : (
-                          <CalendarIcon
-                            className={responsiveStyles.repeatIconMuted}
-                            aria-label="No recurring templates"
-                          />
-                        )}
-                      </div>
-                    </td>
+                          ) : (
+                            <CalendarIcon
+                              className={responsiveStyles.repeatIconMuted}
+                              aria-label="No recurring templates"
+                            />
+                          )}
+                        </div>
+                      </td>
+                    )}
                     <td className="px-4 py-5 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {isArchived ? (
