@@ -10,6 +10,7 @@ vi.mock("../../db", () => ({
 
 import {
   archivePatientsForNurse,
+  countPatientsByStateForNurse,
   countStaleClientsForNurse,
   createNurseAccount,
   createPatientForNurse,
@@ -306,6 +307,27 @@ describe("patientRepository", () => {
 
     await expect(countStaleClientsForNurse("nurse-1")).resolves.toBe(3);
     expect(selectMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("countPatientsByStateForNurse returns active/idle/archived counts", async () => {
+    const countChain = (n: number) => {
+      const whereMock = vi.fn().mockResolvedValue([{ count: n }]);
+      const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+      return { from: fromMock };
+    };
+    const selectMock = vi
+      .fn()
+      .mockReturnValueOnce(countChain(5))
+      .mockReturnValueOnce(countChain(3))
+      .mockReturnValueOnce(countChain(2));
+    getDbMock.mockReturnValue({ select: selectMock });
+
+    await expect(countPatientsByStateForNurse("nurse-1")).resolves.toEqual({
+      active: 5,
+      idle: 3,
+      archived: 2,
+    });
+    expect(selectMock).toHaveBeenCalledTimes(3);
   });
 
   it("attaches and sorts visit windows by start, end, and createdAt", async () => {

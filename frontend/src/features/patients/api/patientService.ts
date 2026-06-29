@@ -33,6 +33,20 @@ export const listPatients = async (
   return parseListPatientsResponse(payload).patients;
 };
 
+export type PatientCounts = { active: number; idle: number; archived: number };
+
+export const fetchPatientCounts = async (): Promise<PatientCounts> => {
+  const payload = await requestJson(
+    "/api/patients/counts",
+    { method: "GET" },
+    "Unable to load client counts.",
+  );
+  const source =
+    typeof payload === "object" && payload !== null ? (payload as Record<string, unknown>) : {};
+  const num = (value: unknown) => (typeof value === "number" ? value : 0);
+  return { active: num(source.active), idle: num(source.idle), archived: num(source.archived) };
+};
+
 export const restoreClient = async (patientId: string): Promise<Patient> => {
   const payload = await requestJson(
     `/api/patients/${encodeURIComponent(patientId)}/restore`,

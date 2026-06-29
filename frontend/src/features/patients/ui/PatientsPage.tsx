@@ -30,9 +30,11 @@ import {
   archiveClients,
   createPatient,
   deletePatient,
+  fetchPatientCounts,
   listPatients,
   restoreClient,
   updatePatient,
+  type PatientCounts,
   type PatientLifecycleState,
 } from "../api/patientService";
 import {
@@ -94,6 +96,7 @@ const PatientsPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkArchiving, setIsBulkArchiving] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [counts, setCounts] = useState<PatientCounts>({ active: 0, idle: 0, archived: 0 });
 
   const changeLifecycleState = (next: PatientLifecycleState) => {
     if (next === lifecycleState) return;
@@ -122,10 +125,12 @@ const PatientsPage = () => {
     setPageError("");
 
     try {
-      const [nextPatients, recurringTemplates] = await Promise.all([
+      const [nextPatients, recurringTemplates, nextCounts] = await Promise.all([
         listPatients(query, lifecycleState),
         listRecurringVisitTemplates(),
+        fetchPatientCounts().catch(() => ({ active: 0, idle: 0, archived: 0 })),
       ]);
+      setCounts(nextCounts);
       const nextRecurringTemplatesByPatientId = new Map<string, RecurringVisitTemplate[]>();
       recurringTemplates.forEach((template) => {
         const current = nextRecurringTemplatesByPatientId.get(template.patientId) ?? [];
@@ -588,7 +593,16 @@ const PatientsPage = () => {
                   : responsiveStyles.clientStateTabInactive
               }`}
             >
-              {tab.label}
+              {tab.label}{" "}
+              <span
+                className={
+                  lifecycleState === tab.key
+                    ? "font-semibold text-blue-300 dark:text-blue-400/70"
+                    : "font-semibold text-slate-300 dark:text-slate-600"
+                }
+              >
+                ({counts[tab.key]})
+              </span>
             </button>
           ))}
         </div>

@@ -240,6 +240,7 @@ vi.mock("../../features/patients/api/patientService", () => ({
   deletePatient: (patientId: string) => deletePatientMock(patientId),
   archiveClients: () => Promise.resolve([]),
   restoreClient: () => Promise.resolve({}),
+  fetchPatientCounts: () => Promise.resolve({ active: 0, idle: 0, archived: 0 }),
 }));
 
 vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({
