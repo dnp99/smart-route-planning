@@ -13,15 +13,15 @@ const stripTabClassName = (isActive) =>
 // Header variant: inline nav inside the merged desktop header bar.
 const headerTabClassName = (isActive) =>
   [
-    "group flex items-center gap-2 border-b-2 pb-1 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40",
+    "group flex items-center gap-2 border-b-2 pb-1 text-base transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40",
     isActive
       ? "border-blue-600 font-semibold text-blue-600 dark:border-blue-400 dark:text-blue-300"
       : "border-transparent font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200",
   ].join(" ");
 
-const iconClassName = (isActive) =>
+const iconClassName = (isActive, isHeader) =>
   [
-    "h-4 w-4 shrink-0",
+    isHeader ? "h-[18px] w-[18px] shrink-0" : "h-4 w-4 shrink-0",
     isActive
       ? "text-blue-600 dark:text-blue-400"
       : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500",
@@ -46,7 +46,7 @@ export default function AppTabs({ variant = "strip" }) {
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
-              className={iconClassName(isActive)}
+              className={iconClassName(isActive, isHeader)}
             >
               <path d="M3 11.5 12 4l9 7.5" />
               <path d="M5.5 10.5V20h13V10.5" />
@@ -68,7 +68,7 @@ export default function AppTabs({ variant = "strip" }) {
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
-              className={iconClassName(isActive)}
+              className={iconClassName(isActive, isHeader)}
             >
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
               <circle cx="9" cy="7" r="4" />
@@ -91,7 +91,7 @@ export default function AppTabs({ variant = "strip" }) {
               strokeLinecap="round"
               strokeLinejoin="round"
               aria-hidden="true"
-              className={iconClassName(isActive)}
+              className={iconClassName(isActive, isHeader)}
             >
               <circle cx="3" cy="6" r="2" />
               <circle cx="21" cy="6" r="2" />
