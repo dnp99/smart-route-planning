@@ -147,10 +147,10 @@ card. Reuse `visitTypePill*`, `clientAvatar`, existing button tokens where possi
 - No DB migration.
 
 ## Phasing (commit per phase)
-1. **Backend counts** + `fetchPatientCounts` + tab counts wired into the current tabs.
-2. **Nav bar merge** (header + tabs into one bar).
-3. **Desktop table restyle** + single-card wrap + header bulk toolbar + select-all + window
-   "+N more" + helper text + privacy card + remove stats row.
+1. ✅ **Backend counts** + `fetchPatientCounts` + tab counts wired into the tabs. (ea630b8)
+2. ✅ **Nav bar merge** (header + tabs into one bar on desktop; mobile strip kept). (8d719fd)
+3. ✅ **Desktop table restyle** — in-header amber bulk toolbar + select-all, Idle Edit-only,
+   selected-row highlight, Idle helper, always-on privacy card. Stats row KEPT. (adc24cb)
 4. **(later)** Mobile — when the mobile Figma lands.
 
 ## Verification per phase
