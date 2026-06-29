@@ -592,6 +592,11 @@ export const responsiveStyles = {
     "text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200",
   tableBulkArchiveButton:
     "inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60",
+  // Mobile sticky bulk-archive bar (Idle + selection).
+  mobileBulkBar:
+    "fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-amber-300 bg-amber-50 px-4 py-3 md:hidden dark:border-amber-700 dark:bg-amber-950/40",
+  mobileBulkClearButton:
+    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-300 bg-white text-amber-800 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-300",
   // Archived-row Restore button — blue outline + refresh icon per figma.
   restoreButton:
     "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",

@@ -364,7 +364,7 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^Clients \d+( of \d+)?$/ })).toBeTruthy();
+    expect(await screen.findByPlaceholderText("Search clients by name or address")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
     fireEvent.change(screen.getByLabelText("First name"), {
@@ -416,7 +416,7 @@ describe("patients and route planner integration", () => {
       </MemoryRouter>,
     );
 
-    expect(await screen.findByRole("heading", { name: /^Clients \d+( of \d+)?$/ })).toBeTruthy();
+    expect(await screen.findByPlaceholderText("Search clients by name or address")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
     fireEvent.change(screen.getByLabelText("First name"), {

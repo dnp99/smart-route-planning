@@ -160,7 +160,7 @@ const seedAuthenticatedSession = (displayName = "Nurse One", homeAddress: string
 };
 
 const waitForPatientsPage = async () => {
-  await screen.findByRole("heading", { name: /^Clients \d+( of \d+)?$/ });
+  await screen.findByPlaceholderText("Search clients by name or address");
 };
 
 describe("Footer", () => {

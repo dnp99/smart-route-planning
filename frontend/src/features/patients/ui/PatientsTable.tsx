@@ -6,7 +6,7 @@ import { resolveVisitTypeLabel, type WindowFilter } from "../domain/visitType";
 import { countActiveRecurringTemplates } from "../domain/recurringTemplate";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 
-type SortField = "name" | "duration" | null;
+type SortField = "name" | "duration" | "lastScheduled" | null;
 type SortDir = "asc" | "desc";
 
 type PatientsTableProps = {
@@ -136,6 +136,21 @@ const formatTime12h = (time: string) => {
 const formatWindowRange = (startTime: string, endTime: string) =>
   `${formatTime12h(toTimeInput(startTime))}\u00A0-\u00A0${formatTime12h(toTimeInput(endTime))}`;
 
+// Idle tab: relative age + date for the last time a client was put on a route.
+const formatLastScheduled = (iso?: string | null): { primary: string; secondary: string } => {
+  if (!iso) return { primary: "Never scheduled", secondary: "" };
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return { primary: "Never scheduled", secondary: "" };
+  const days = Math.floor((Date.now() - then) / 86_400_000);
+  const primary = days <= 0 ? "Today" : days === 1 ? "Yesterday" : `${days} days ago`;
+  const secondary = new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return { primary, secondary };
+};
+
 const splitAddress = (addr: string) => {
   const idx = addr.indexOf(", ");
   if (idx === -1) return { street: addr, cityRegion: "" };
@@ -204,7 +219,7 @@ const SortIcon = ({
   sortField,
   sortDir,
 }: {
-  field: "name" | "duration";
+  field: "name" | "duration" | "lastScheduled";
   sortField: SortField;
   sortDir: SortDir;
 }) => {
@@ -281,13 +296,26 @@ export const PatientsTable = ({
 }: PatientsTableProps) => {
   const isArchived = lifecycleState === "archived";
   const isIdle = lifecycleState === "idle";
+  const showRepeat = lifecycleState === "active";
   const [openWindowsPopoverKey, setOpenWindowsPopoverKey] = useState<string | null>(null);
   const windowsPopoverRef = useRef<HTMLDivElement | null>(null);
   const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
-  const handleSortClick = (field: "name" | "duration") => {
+  // Each tab has a sensible default sort: Idle leads with the most stale (oldest
+  // last-scheduled) at the top; the others sort by name.
+  useEffect(() => {
+    if (isIdle) {
+      setSortField("lastScheduled");
+      setSortDir("asc");
+    } else {
+      setSortField("name");
+      setSortDir("asc");
+    }
+  }, [isIdle]);
+
+  const handleSortClick = (field: "name" | "duration" | "lastScheduled") => {
     if (sortField === field) {
       setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     } else {
@@ -321,6 +349,10 @@ export const PatientsTable = ({
           ? a.visitDurationMinutes - b.visitDurationMinutes
           : b.visitDurationMinutes - a.visitDurationMinutes,
       );
+    } else if (sortField === "lastScheduled") {
+      // Never-scheduled (null) sorts as oldest (epoch) → most stale at the top in asc.
+      const ts = (p: Patient) => (p.lastScheduledAt ? new Date(p.lastScheduledAt).getTime() : 0);
+      result = [...result].sort((a, b) => (sortDir === "asc" ? ts(a) - ts(b) : ts(b) - ts(a)));
     }
 
     return result;
@@ -434,6 +466,8 @@ export const PatientsTable = ({
   const allSelected = visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
   const showBulkBar = isIdle && selectedIds.size > 0;
   const bulkCount = selectedIds.size;
+  // Name, Address, Window, Duration/Last-scheduled, Actions + optional checkbox + optional Repeat.
+  const columnCount = 5 + (isIdle ? 1 : 0) + (showRepeat ? 1 : 0);
   const handleToggleSelectAll = () => {
     if (allSelected) {
       onClearSelection();
@@ -451,38 +485,60 @@ export const PatientsTable = ({
           const patientDisplayName = getPatientDisplayName(patient);
           const { street, cityRegion } = splitAddress(patient.address);
           const isExpanded = expandedPatients.has(patient.id);
+          const isSelected = isIdle && selectedIds.has(patient.id);
 
           return (
-            <article key={patient.id} className={responsiveStyles.mobileClientCard}>
-              <button
-                type="button"
-                onClick={() => toggleExpanded(patient.id)}
-                aria-expanded={isExpanded}
-                aria-label={
-                  isExpanded ? `Collapse ${patientDisplayName}` : `Expand ${patientDisplayName}`
-                }
-                className="flex w-full items-center gap-3 rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
-              >
-                <span className={responsiveStyles.clientAvatar} aria-hidden="true">
-                  {getPatientInitials(patient.firstName, patient.lastName)}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <h3 className="m-0 truncate text-base font-semibold text-slate-900 dark:text-slate-100">
-                    {patientDisplayName}
-                  </h3>
-                  {!isExpanded && (
-                    <div className="mt-1 flex items-center gap-2">
-                      {renderVisitTypePill(visitType)}
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {patient.visitDurationMinutes} min
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <ChevronIcon
-                  className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${isExpanded ? "rotate-90" : "rotate-0"}`}
-                />
-              </button>
+            <article
+              key={patient.id}
+              className={[
+                responsiveStyles.mobileClientCard,
+                isSelected
+                  ? "border-blue-200 bg-blue-50/60 dark:border-blue-900/60 dark:bg-blue-950/30"
+                  : "",
+              ].join(" ")}
+            >
+              <div className="flex items-center gap-3">
+                {isIdle && (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(patient.id)}
+                    onChange={() => onToggleSelect(patient.id)}
+                    aria-label={`Select ${patientDisplayName}`}
+                    className="h-5 w-5 shrink-0 cursor-pointer rounded accent-blue-600 dark:accent-blue-500"
+                  />
+                )}
+                <button
+                  type="button"
+                  onClick={() => toggleExpanded(patient.id)}
+                  aria-expanded={isExpanded}
+                  aria-label={
+                    isExpanded ? `Collapse ${patientDisplayName}` : `Expand ${patientDisplayName}`
+                  }
+                  className="flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40"
+                >
+                  <span className={responsiveStyles.clientAvatar} aria-hidden="true">
+                    {getPatientInitials(patient.firstName, patient.lastName)}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <h3 className="m-0 truncate text-base font-semibold text-slate-900 dark:text-slate-100">
+                      {patientDisplayName}
+                    </h3>
+                    {!isExpanded && (
+                      <div className="mt-1 flex items-center gap-2">
+                        {renderVisitTypePill(visitType)}
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {isIdle
+                            ? formatLastScheduled(patient.lastScheduledAt).primary
+                            : `${patient.visitDurationMinutes} min`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                  <ChevronIcon
+                    className={`h-4 w-4 shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${isExpanded ? "rotate-90" : "rotate-0"}`}
+                  />
+                </button>
+              </div>
 
               {isExpanded && (
                 <div className="mt-3 flex flex-col gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
@@ -517,9 +573,13 @@ export const PatientsTable = ({
                       </div>
                     </div>
                     <div className="min-w-0">
-                      <p className={responsiveStyles.formGroupEyebrow}>Duration</p>
+                      <p className={responsiveStyles.formGroupEyebrow}>
+                        {isIdle ? "Last scheduled" : "Duration"}
+                      </p>
                       <p className="m-0 mt-1 text-sm text-slate-700 dark:text-slate-300">
-                        {patient.visitDurationMinutes} min
+                        {isIdle
+                          ? formatLastScheduled(patient.lastScheduledAt).primary
+                          : `${patient.visitDurationMinutes} min`}
                       </p>
                     </div>
                   </div>
@@ -546,16 +606,18 @@ export const PatientsTable = ({
                           <EditIcon className="h-4 w-4" />
                           Edit
                         </button>
-                        <button
-                          type="button"
-                          onClick={() => void onDelete(patient.id)}
-                          disabled={isSubmitting}
-                          aria-label={`Archive ${patientDisplayName}`}
-                          title="Archive"
-                          className={responsiveStyles.mobileDeleteButton}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </button>
+                        {lifecycleState === "active" && (
+                          <button
+                            type="button"
+                            onClick={() => void onDelete(patient.id)}
+                            disabled={isSubmitting}
+                            aria-label={`Archive ${patientDisplayName}`}
+                            title="Archive"
+                            className={responsiveStyles.mobileDeleteButton}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </button>
+                        )}
                       </>
                     )}
                   </div>
@@ -575,13 +637,13 @@ export const PatientsTable = ({
               <col className="w-[34%]" />
               <col className="w-[18%]" />
               <col className="w-24" />
-              <col className="w-20" />
+              {showRepeat && <col className="w-20" />}
               <col className="w-20" />
             </colgroup>
             <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/80">
               {showBulkBar ? (
                 <tr>
-                  <th colSpan={7} className="p-0 font-normal">
+                  <th colSpan={columnCount} className="p-0 font-normal">
                     <div className={responsiveStyles.tableBulkBar}>
                       <input
                         type="checkbox"
@@ -677,21 +739,27 @@ export const PatientsTable = ({
                   <th className="px-4 py-3 text-left">
                     <button
                       type="button"
-                      onClick={() => handleSortClick("duration")}
+                      onClick={() => handleSortClick(isIdle ? "lastScheduled" : "duration")}
                       className={[
                         responsiveStyles.tableSortButtonBase,
-                        sortField === "duration"
+                        sortField === (isIdle ? "lastScheduled" : "duration")
                           ? responsiveStyles.tableSortButtonActive
                           : responsiveStyles.tableSortButtonInactive,
                       ].join(" ")}
                     >
-                      Duration
-                      <SortIcon field="duration" sortField={sortField} sortDir={sortDir} />
+                      {isIdle ? "Last scheduled" : "Duration"}
+                      <SortIcon
+                        field={isIdle ? "lastScheduled" : "duration"}
+                        sortField={sortField}
+                        sortDir={sortDir}
+                      />
                     </button>
                   </th>
-                  <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
-                    Repeat
-                  </th>
+                  {showRepeat && (
+                    <th className="px-4 py-3 text-center text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
+                      Repeat
+                    </th>
+                  )}
                   <th className="px-4 py-3" aria-label="Actions" />
                 </tr>
               )}
@@ -700,7 +768,7 @@ export const PatientsTable = ({
               {sortedFilteredPatients.length === 0 && (
                 <tr>
                   <td
-                    colSpan={isIdle ? 7 : 6}
+                    colSpan={columnCount}
                     className="px-6 py-10 text-center text-sm text-slate-500 dark:text-slate-400"
                   >
                     No clients match the current filter.
@@ -801,49 +869,71 @@ export const PatientsTable = ({
                       )}
                     </td>
                     <td className="whitespace-nowrap px-4 py-5 text-left text-sm text-slate-600 dark:text-slate-300">
-                      <span className="inline-flex items-center gap-1">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden="true"
-                          className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <polyline points="12 6 12 12 16 14" />
-                        </svg>
-                        {patient.visitDurationMinutes} min
-                      </span>
-                    </td>
-                    <td className="px-4 py-5">
-                      <div className="flex items-center justify-center">
-                        {activeRecurringCount > 0 ? (
-                          <span
-                            className="relative inline-flex"
-                            aria-label={`${activeRecurringCount} active recurring ${
-                              activeRecurringCount === 1 ? "template" : "templates"
-                            }`}
-                            title={`${activeRecurringCount} active recurring ${
-                              activeRecurringCount === 1 ? "template" : "templates"
-                            }`}
+                      {isIdle ? (
+                        (() => {
+                          const { primary, secondary } = formatLastScheduled(
+                            patient.lastScheduledAt,
+                          );
+                          return (
+                            <div className="min-w-0">
+                              <p className="m-0 text-sm text-slate-700 dark:text-slate-300">
+                                {primary}
+                              </p>
+                              {secondary && (
+                                <p className="m-0 text-xs text-slate-400 dark:text-slate-500">
+                                  {secondary}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })()
+                      ) : (
+                        <span className="inline-flex items-center gap-1">
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            aria-hidden="true"
+                            className="h-3.5 w-3.5 shrink-0 text-slate-400 dark:text-slate-500"
                           >
-                            <CalendarIcon className={responsiveStyles.repeatIconActive} />
-                            <span className={responsiveStyles.repeatCountBadge}>
-                              {activeRecurringCount}
-                            </span>
-                          </span>
-                        ) : (
-                          <CalendarIcon
-                            className={responsiveStyles.repeatIconMuted}
-                            aria-label="No recurring templates"
-                          />
-                        )}
-                      </div>
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                          </svg>
+                          {patient.visitDurationMinutes} min
+                        </span>
+                      )}
                     </td>
+                    {showRepeat && (
+                      <td className="px-4 py-5">
+                        <div className="flex items-center justify-center">
+                          {activeRecurringCount > 0 ? (
+                            <span
+                              className="relative inline-flex"
+                              aria-label={`${activeRecurringCount} active recurring ${
+                                activeRecurringCount === 1 ? "template" : "templates"
+                              }`}
+                              title={`${activeRecurringCount} active recurring ${
+                                activeRecurringCount === 1 ? "template" : "templates"
+                              }`}
+                            >
+                              <CalendarIcon className={responsiveStyles.repeatIconActive} />
+                              <span className={responsiveStyles.repeatCountBadge}>
+                                {activeRecurringCount}
+                              </span>
+                            </span>
+                          ) : (
+                            <CalendarIcon
+                              className={responsiveStyles.repeatIconMuted}
+                              aria-label="No recurring templates"
+                            />
+                          )}
+                        </div>
+                      </td>
+                    )}
                     <td className="px-4 py-5 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {isArchived ? (

@@ -65,7 +65,6 @@ const PatientsPage = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
   const clientStats = useClientStats(patients);
   const [windowFilter, setWindowFilter] = useState<WindowFilter>("all");
-  const [totalPatientCount, setTotalPatientCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [isLoadingPatients, setIsLoadingPatients] = useState(true);
   const [pageError, setPageError] = useState("");
@@ -153,7 +152,6 @@ const PatientsPage = () => {
       });
       setPatients(patientsFilteredByTemplate);
       setRecurringTemplatesByPatientId(nextRecurringTemplatesByPatientId);
-      if (!query) setTotalPatientCount(nextPatients.length);
 
       if (selectedPatientId && !nextPatients.some((patient) => patient.id === selectedPatientId)) {
         setSelectedPatientId(null);
@@ -492,29 +490,7 @@ const PatientsPage = () => {
   return (
     <main className={responsiveStyles.page}>
       <section className={responsiveStyles.section}>
-        {/* Desktop figma has no page title (nav "Clients" + tab counts serve as it);
-            mobile figma keeps the heading, so this block is mobile-only. */}
-        <div className={`${responsiveStyles.sectionHeader} md:hidden`}>
-          <div className="flex items-start justify-between gap-3">
-            <h1 className="m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100">
-              Clients{" "}
-              <span className={responsiveStyles.clientsTitleCount}>
-                {searchQuery.trim() || hasTemplateFilter
-                  ? `${patients.length} of ${totalPatientCount}`
-                  : patients.length}
-              </span>
-            </h1>
-            <button
-              type="button"
-              onClick={openCreateModal}
-              className={`${responsiveStyles.addClientMobileButton} sm:hidden`}
-            >
-              <PlusIcon className="h-4 w-4" />
-              Add
-            </button>
-          </div>
-        </div>
-
+        {/* No page title on either figma — the nav "Clients" + tab counts serve as it. */}
         {hasTemplateFilter && (
           <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-sm text-blue-900 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
             <span className="font-medium">
@@ -693,52 +669,63 @@ const PatientsPage = () => {
               Search clients
             </label>
 
-            <div className="relative min-w-0 flex-1">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.35-4.35" />
-              </svg>
-              <input
-                id="patient-search"
-                type="search"
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Search clients by name or address"
-                className={`${responsiveStyles.searchInput} pl-9 sm:pl-10 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden ${searchQuery ? "pr-8" : ""}`}
-              />
-              {searchQuery && (
-                <button
-                  type="button"
-                  aria-label="Clear search"
-                  onClick={() => setSearchQuery("")}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
+            <div className="flex min-w-0 flex-1 items-center gap-2.5">
+              <div className="relative min-w-0 flex-1">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 14 14"
-                    fill="none"
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5"
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.35-4.35" />
+                </svg>
+                <input
+                  id="patient-search"
+                  type="search"
+                  value={searchQuery}
+                  onChange={(event) => setSearchQuery(event.target.value)}
+                  placeholder="Search clients by name or address"
+                  className={`${responsiveStyles.searchInput} pl-9 sm:pl-10 [&::-webkit-search-cancel-button]:hidden [&::-webkit-search-decoration]:hidden ${searchQuery ? "pr-8" : ""}`}
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    aria-label="Clear search"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 transition hover:text-slate-700 dark:hover:text-slate-200"
                   >
-                    <path
-                      d="M2 2l10 10M12 2L2 12"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                </button>
-              )}
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 14 14"
+                      fill="none"
+                      aria-hidden="true"
+                      className="h-3.5 w-3.5"
+                    >
+                      <path
+                        d="M2 2l10 10M12 2L2 12"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={openCreateModal}
+                aria-label="Add client"
+                className={`${responsiveStyles.addClientMobileButton} sm:hidden`}
+              >
+                <PlusIcon className="h-4 w-4" />
+                Add
+              </button>
             </div>
 
             {lifecycleState !== "archived" && (
@@ -845,6 +832,57 @@ const PatientsPage = () => {
             </div>
           </div>
         </div>
+
+        {lifecycleState === "idle" && selectedIds.size > 0 && (
+          <div className={responsiveStyles.mobileBulkBar}>
+            <button
+              type="button"
+              onClick={clearSelection}
+              aria-label="Clear selection"
+              className={responsiveStyles.mobileBulkClearButton}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4"
+              >
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
+            <span className={responsiveStyles.tableBulkLabel}>{selectedIds.size} selected</span>
+            <div className="flex-1" />
+            <button
+              type="button"
+              onClick={() => void handleArchiveSelected()}
+              disabled={isBulkArchiving}
+              className={responsiveStyles.tableBulkArchiveButton}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-4 w-4"
+              >
+                <path d="M21 8v13H3V8" />
+                <path d="M1 3h22v5H1z" />
+                <path d="M10 12h4" />
+              </svg>
+              {isBulkArchiving ? "Archiving…" : `Archive ${selectedIds.size}`}
+            </button>
+          </div>
+        )}
 
         {pendingDeleteId && (
           <ConfirmDialog

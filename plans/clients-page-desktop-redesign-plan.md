@@ -151,7 +151,9 @@ card. Reuse `visitTypePill*`, `clientAvatar`, existing button tokens where possi
 2. ✅ **Nav bar merge** (header + tabs into one bar on desktop; mobile strip kept). (8d719fd)
 3. ✅ **Desktop table restyle** — in-header amber bulk toolbar + select-all, Idle Edit-only,
    selected-row highlight, Idle helper, always-on privacy card. Stats row KEPT. (adc24cb)
-4. **(later)** Mobile — when the mobile Figma lands.
+4. ✅ **Mobile** (figma: `Clients Tabs & Bulk Archive - Mobile.dc.html`) — dropped the mobile
+   title, Add moved beside search, idle card checkboxes + selected highlight, sticky bottom
+   bulk-archive bar, idle cards Edit-only. Mobile nav strip kept; cards still expand in place.
 
 ## Verification per phase
 - `npm run lint` + `npm run test` (frontend) green; backend `vitest run` green.
