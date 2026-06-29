@@ -140,7 +140,7 @@ const formatWindowRange = (startTime: string, endTime: string) =>
 const formatLastScheduled = (iso?: string | null): { primary: string; secondary: string } => {
   if (!iso) return { primary: "Never scheduled", secondary: "" };
   const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return { primary: "Never scheduled", secondary: "" };
+  if (isNaN(then)) return { primary: "Never scheduled", secondary: "" };
   const days = Math.floor((Date.now() - then) / 86_400_000);
   const primary = days <= 0 ? "Today" : days === 1 ? "Yesterday" : `${days} days ago`;
   const secondary = new Date(iso).toLocaleDateString(undefined, {
@@ -412,12 +412,12 @@ export const PatientsTable = ({
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
               <colgroup>
-                <col className="w-[28%]" />
-                <col className="w-[34%]" />
-                <col className="w-[18%]" />
-                <col className="w-24" />
+                <col className="w-[23%]" />
+                <col className="w-[23%]" />
+                <col className="w-[26%]" />
+                <col className="w-28" />
                 <col className="w-20" />
-                <col className="w-20" />
+                <col className="w-28" />
               </colgroup>
               <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -633,12 +633,12 @@ export const PatientsTable = ({
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <colgroup>
               {isIdle && <col className="w-12" />}
-              <col className="w-[28%]" />
-              <col className="w-[34%]" />
-              <col className="w-[18%]" />
-              <col className="w-24" />
+              <col className="w-[23%]" />
+              <col className="w-[23%]" />
+              <col className="w-[26%]" />
+              <col className="w-28" />
               {showRepeat && <col className="w-20" />}
-              <col className="w-20" />
+              <col className="w-28" />
             </colgroup>
             <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/80">
               {showBulkBar ? (
@@ -760,7 +760,9 @@ export const PatientsTable = ({
                       Repeat
                     </th>
                   )}
-                  <th className="px-4 py-3" aria-label="Actions" />
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
+                    Actions
+                  </th>
                 </tr>
               )}
             </thead>

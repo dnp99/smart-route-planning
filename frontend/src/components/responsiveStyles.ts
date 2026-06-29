@@ -429,8 +429,9 @@ export const responsiveStyles = {
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
   // Clients page lifecycle tabs (Active / Idle / Archived)
-  clientStateTabBar:
-    "mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800",
+  // Row holding the lifecycle tabs (left) + the info popover trigger (right).
+  clientTabsRow: "relative mb-4 flex border-b border-slate-200 dark:border-slate-800",
+  clientStateTabBar: "flex gap-1 overflow-x-auto",
   clientStateTab:
     "-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition",
   clientStateTabActive: "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300",
@@ -440,19 +441,19 @@ export const responsiveStyles = {
   clientTabHelper:
     "mb-4 flex items-start gap-2 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400",
   clientTabHelperIcon: "mt-px h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500",
+  // Info (ⓘ) trigger at the right of the tab row + its privacy-reminder popover.
+  clientTabInfoButton:
+    "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30",
+  infoPopover:
+    "absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
   // Clients page summary stats row (desktop only — hidden below md)
-  clientStatsRow: "mb-6 hidden grid-cols-4 gap-6 md:grid",
-  clientStatCard:
-    "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-3.5",
-  clientStatLabel:
-    "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
-  clientStatValue:
-    "m-0 mt-1 text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100",
-  clientStatValueFixed:
-    "m-0 mt-1 text-xl font-semibold tracking-tight text-blue-600 dark:text-blue-300",
-  clientStatValueFlexible:
-    "m-0 mt-1 text-xl font-semibold tracking-tight text-emerald-600 dark:text-emerald-300",
-  clientStatValueSuffix: "ml-1 text-sm font-normal text-slate-500 dark:text-slate-400",
+  // Active tab: one-line summary strip (replaces the four stat boxes).
+  clientStatsStrip:
+    "mb-4 hidden flex-wrap items-center gap-x-3.5 gap-y-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-[13px] font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400 md:flex",
+  clientStatsStripDot: "h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600",
+  clientStatsStripValue: "font-bold text-slate-900 dark:text-slate-100",
+  clientStatsStripValueFixed: "font-bold text-blue-800 dark:text-blue-300",
+  clientStatsStripValueFlexible: "font-bold text-emerald-700 dark:text-emerald-300",
   // ── Clients page: title count, window filter, table avatar + repeat ──────────
   clientsTitleCount: "font-semibold text-slate-400 dark:text-slate-500",
   clientFilterToggle:
@@ -600,11 +601,6 @@ export const responsiveStyles = {
   // Archived-row Restore button — blue outline + refresh icon per figma.
   restoreButton:
     "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",
-  // Always-on privacy/compliance reminder at the foot of the Clients card.
-  clientPrivacyCard:
-    "mt-5 flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50/40 px-4 py-3.5 dark:border-blue-900/50 dark:bg-blue-950/20",
-  clientPrivacyTitle: "m-0 text-sm font-semibold text-blue-700 dark:text-blue-300",
-  clientPrivacyText: "m-0 mt-0.5 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400",
   tableEmptyState:
     "rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
   tableIconButton:

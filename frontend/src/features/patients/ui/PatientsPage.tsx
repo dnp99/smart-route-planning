@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import { responsiveStyles } from "../../../components/responsiveStyles";
@@ -43,6 +43,10 @@ import {
   listRecurringVisitTemplates,
   updateRecurringVisitTemplate,
 } from "../api/recurringVisitTemplateService";
+
+// Privacy/compliance reminder, surfaced on demand via the (i) popover by the tabs.
+const PRIVACY_REMINDER_TEXT =
+  "Client information entered here should be limited to what is necessary for scheduling and care delivery. Ensure you have appropriate authority to manage this data.";
 
 const PlusIcon = ({ className }: { className?: string }) => (
   <svg
@@ -95,6 +99,25 @@ const PatientsPage = () => {
   const [isBulkArchiving, setIsBulkArchiving] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [counts, setCounts] = useState<PatientCounts | null>(null);
+  const [showPrivacyReminder, setShowPrivacyReminder] = useState(false);
+  const privacyReminderRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showPrivacyReminder) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!privacyReminderRef.current?.contains(event.target as Node))
+        setShowPrivacyReminder(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowPrivacyReminder(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [showPrivacyReminder]);
 
   const changeLifecycleState = (next: PatientLifecycleState) => {
     if (next === lifecycleState) return;
@@ -525,47 +548,71 @@ const PatientsPage = () => {
           </p>
         )}
 
-        <div
-          className={responsiveStyles.clientStateTabBar}
-          role="tablist"
-          aria-label="Client status"
-        >
-          {(
-            [
-              { key: "active", label: "Active" },
-              { key: "idle", label: "Idle" },
-              { key: "archived", label: "Archived" },
-            ] as const
-          ).map((tab) => (
+        <div className={responsiveStyles.clientTabsRow}>
+          <div
+            className={responsiveStyles.clientStateTabBar}
+            role="tablist"
+            aria-label="Client status"
+          >
+            {(
+              [
+                { key: "active", label: "Active" },
+                { key: "idle", label: "Idle" },
+                { key: "archived", label: "Archived" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={lifecycleState === tab.key}
+                onClick={() => changeLifecycleState(tab.key)}
+                className={`${responsiveStyles.clientStateTab} ${
+                  lifecycleState === tab.key
+                    ? responsiveStyles.clientStateTabActive
+                    : responsiveStyles.clientStateTabInactive
+                }`}
+              >
+                {tab.label}
+                {counts && (
+                  <>
+                    {" "}
+                    <span
+                      className={
+                        lifecycleState === tab.key
+                          ? "font-semibold text-blue-300 dark:text-blue-400/70"
+                          : "font-semibold text-slate-300 dark:text-slate-600"
+                      }
+                    >
+                      ({counts[tab.key]})
+                    </span>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+          <div
+            className="relative ml-auto flex items-center self-stretch pl-2"
+            ref={privacyReminderRef}
+          >
             <button
-              key={tab.key}
               type="button"
-              role="tab"
-              aria-selected={lifecycleState === tab.key}
-              onClick={() => changeLifecycleState(tab.key)}
-              className={`${responsiveStyles.clientStateTab} ${
-                lifecycleState === tab.key
-                  ? responsiveStyles.clientStateTabActive
-                  : responsiveStyles.clientStateTabInactive
-              }`}
+              onClick={() => setShowPrivacyReminder((value) => !value)}
+              aria-label="Show privacy reminder"
+              aria-expanded={showPrivacyReminder}
+              className={responsiveStyles.clientTabInfoButton}
             >
-              {tab.label}
-              {counts && (
-                <>
-                  {" "}
-                  <span
-                    className={
-                      lifecycleState === tab.key
-                        ? "font-semibold text-blue-300 dark:text-blue-400/70"
-                        : "font-semibold text-slate-300 dark:text-slate-600"
-                    }
-                  >
-                    ({counts[tab.key]})
-                  </span>
-                </>
-              )}
+              i
             </button>
-          ))}
+            {showPrivacyReminder && (
+              <div role="tooltip" className={responsiveStyles.infoPopover}>
+                <p className="m-0 font-semibold text-slate-800 dark:text-slate-200">
+                  Privacy Reminder
+                </p>
+                <p className="m-0 mt-1">{PRIVACY_REMINDER_TEXT}</p>
+              </div>
+            )}
+          </div>
         </div>
 
         {lifecycleState === "active" && (
@@ -640,26 +687,32 @@ const PatientsPage = () => {
         )}
 
         {lifecycleState === "active" && (
-          <div className={responsiveStyles.clientStatsRow} data-testid="client-stats">
-            <div className={responsiveStyles.clientStatCard}>
-              <p className={responsiveStyles.clientStatLabel}>Total Clients</p>
-              <p className={responsiveStyles.clientStatValue}>{clientStats.total}</p>
-            </div>
-            <div className={responsiveStyles.clientStatCard}>
-              <p className={responsiveStyles.clientStatLabel}>Fixed Window</p>
-              <p className={responsiveStyles.clientStatValueFixed}>{clientStats.fixed}</p>
-            </div>
-            <div className={responsiveStyles.clientStatCard}>
-              <p className={responsiveStyles.clientStatLabel}>Flexible</p>
-              <p className={responsiveStyles.clientStatValueFlexible}>{clientStats.flexible}</p>
-            </div>
-            <div className={responsiveStyles.clientStatCard}>
-              <p className={responsiveStyles.clientStatLabel}>Avg Duration</p>
-              <p className={responsiveStyles.clientStatValue}>
-                {clientStats.avgDuration}
-                <span className={responsiveStyles.clientStatValueSuffix}>min</span>
-              </p>
-            </div>
+          <div className={responsiveStyles.clientStatsStrip} data-testid="client-stats">
+            <span>
+              <span className={responsiveStyles.clientStatsStripValue}>{clientStats.total}</span>{" "}
+              client{clientStats.total === 1 ? "" : "s"}
+            </span>
+            <span className={responsiveStyles.clientStatsStripDot} aria-hidden="true" />
+            <span>
+              <span className={responsiveStyles.clientStatsStripValueFixed}>
+                {clientStats.fixed}
+              </span>{" "}
+              fixed
+            </span>
+            <span className={responsiveStyles.clientStatsStripDot} aria-hidden="true" />
+            <span>
+              <span className={responsiveStyles.clientStatsStripValueFlexible}>
+                {clientStats.flexible}
+              </span>{" "}
+              flexible
+            </span>
+            <span className={responsiveStyles.clientStatsStripDot} aria-hidden="true" />
+            <span>
+              <span className={responsiveStyles.clientStatsStripValue}>
+                {clientStats.avgDuration} min
+              </span>{" "}
+              avg visit
+            </span>
           </div>
         )}
 
@@ -806,31 +859,6 @@ const PatientsPage = () => {
             restoringId={restoringId}
             recurringTemplatesByPatientId={recurringTemplatesByPatientId}
           />
-
-          <div className={responsiveStyles.clientPrivacyCard}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.9"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className="mt-0.5 h-5 w-5 shrink-0 text-blue-400 dark:text-blue-500"
-            >
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              <path d="m9 12 2 2 4-4" />
-            </svg>
-            <div>
-              <p className={responsiveStyles.clientPrivacyTitle}>Privacy Reminder</p>
-              <p className={responsiveStyles.clientPrivacyText}>
-                Client information entered here should be limited to what is necessary for
-                scheduling and care delivery. Ensure you have appropriate authority to manage this
-                data.
-              </p>
-            </div>
-          </div>
         </div>
 
         {lifecycleState === "idle" && selectedIds.size > 0 && (
