@@ -100,6 +100,17 @@ export default function AppHeader({
                 </svg>
                 <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900" />
               </button>
+              {/* Desktop: quick logout (account settings live in the sidebar). */}
+              <AccountMenu
+                authUser={authUser}
+                isAuthenticated={isAuthenticated}
+                onOpenAccountSettings={onOpenAccountSettings}
+                onLogout={onLogout}
+                variant="avatar"
+                items="logoutOnly"
+                className="hidden md:block"
+              />
+              {/* Mobile: full menu (no sidebar to hold account settings). */}
               <AccountMenu
                 authUser={authUser}
                 isAuthenticated={isAuthenticated}

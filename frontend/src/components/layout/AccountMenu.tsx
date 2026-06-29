@@ -10,8 +10,10 @@ interface AccountMenuProps {
   isAuthenticated: boolean;
   onOpenAccountSettings: () => void;
   onLogout: () => void;
-  /** "avatar" = circular initials button (top bar); "card" = name + email row (sidebar). */
+  /** "avatar" = circular initials button (top bar); "card" = name row (sidebar). */
   variant?: "avatar" | "card";
+  /** "full" = Account settings + Logout; "logoutOnly" = just Logout. */
+  items?: "full" | "logoutOnly";
   className?: string;
 }
 
@@ -83,6 +85,7 @@ export default function AccountMenu({
   onOpenAccountSettings,
   onLogout,
   variant = "avatar",
+  items = "full",
   className,
 }: AccountMenuProps) {
   const [isOpen, setIsOpen, menuRef] = useClickOutside<HTMLDivElement>();
@@ -93,7 +96,6 @@ export default function AccountMenu({
 
   const initials = resolveAccountInitials(authUser?.displayName, authUser?.email);
   const name = formatNameWords(authUser?.displayName ?? "") || (authUser?.email ?? "Account");
-  const email = authUser?.email ?? "";
 
   const dropdown = isOpen && (
     <div
@@ -105,19 +107,23 @@ export default function AccountMenu({
           : responsiveStyles.accountMenuDropdown
       }
     >
-      <button
-        type="button"
-        role="menuitem"
-        onClick={() => {
-          setIsOpen(false);
-          onOpenAccountSettings();
-        }}
-        className={responsiveStyles.accountMenuItem}
-      >
-        <SettingsIcon />
-        Account settings
-      </button>
-      <hr className="my-1 border-slate-200 dark:border-slate-700" />
+      {items === "full" && (
+        <>
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setIsOpen(false);
+              onOpenAccountSettings();
+            }}
+            className={responsiveStyles.accountMenuItem}
+          >
+            <SettingsIcon />
+            Account settings
+          </button>
+          <hr className="my-1 border-slate-200 dark:border-slate-700" />
+        </>
+      )}
       <button
         type="button"
         role="menuitem"
@@ -146,15 +152,8 @@ export default function AccountMenu({
           <span className={responsiveStyles.sidebarAccountAvatar} aria-hidden="true">
             {initials}
           </span>
-          <span className="min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">
-              {name}
-            </span>
-            {email && (
-              <span className="block truncate text-[11px] font-medium text-slate-400 dark:text-slate-500">
-                {email}
-              </span>
-            )}
+          <span className="block min-w-0 flex-1 truncate text-[13px] font-semibold text-slate-900 dark:text-slate-100">
+            {name}
           </span>
           <svg
             xmlns="http://www.w3.org/2000/svg"
