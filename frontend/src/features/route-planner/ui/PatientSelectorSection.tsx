@@ -410,7 +410,7 @@ export const PatientSelectorSection = ({
                       );
                       const isInRoute = inRoutePatientIds.has(patient.id);
                       return (
-                        <li key={patient.id} className="pr-2">
+                        <li key={patient.id}>
                           <div
                             className={`${responsiveStyles.routeClientCard} ${
                               isInRoute ? responsiveStyles.routeClientCardSelected : ""

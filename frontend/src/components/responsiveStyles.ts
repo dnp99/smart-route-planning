@@ -203,7 +203,7 @@ export const responsiveStyles = {
     "inline-flex shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200 dark:hover:bg-slate-900 sm:py-1.5",
 
   // ── Selectable list (patient search results) ───────────────────────────────
-  selectableList: "m-0 min-h-0 flex-1 list-none space-y-2 overflow-y-auto p-0 pr-2",
+  selectableList: "m-0 min-h-0 flex-1 list-none space-y-2 overflow-y-auto p-0",
   selectableItemButton:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-sm transition hover:bg-slate-50 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-950 dark:hover:bg-slate-900",
 
