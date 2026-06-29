@@ -500,6 +500,8 @@ export const responsiveStyles = {
     "absolute -left-[33px] top-0 flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 ring-4 ring-white dark:bg-emerald-950/50 dark:ring-slate-900",
   routeTimelineStartLabel:
     "m-0 text-[11px] font-semibold uppercase tracking-[0.08em] text-emerald-600 dark:text-emerald-400",
+  routeWindowPill:
+    "inline-flex shrink-0 items-center rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300",
   routeTimelineEndNode:
     "absolute -left-[34px] top-1 flex h-5 w-5 items-center justify-center rounded-full bg-slate-100 text-slate-500 ring-4 ring-white dark:bg-slate-800 dark:text-slate-400 dark:ring-slate-900",
   // 'Your route' selection preview: blue rail line (no top margin — aligns START with the search input)

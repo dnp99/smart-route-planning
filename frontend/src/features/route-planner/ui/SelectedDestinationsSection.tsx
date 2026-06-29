@@ -123,6 +123,14 @@ export const SelectedDestinationsSection = ({
     return `${destination.windowStart ? toDisplayTime(destination.windowStart) : "—"} - ${destination.windowEnd ? toDisplayTime(destination.windowEnd) : "—"}`;
   };
   const formatWindowSubtitle = (index: number) => `Window ${index + 1}`;
+  const formatWindowChip = (destination: SelectedPatientDestination) => {
+    if (!destination.windowStart && !destination.windowEnd) {
+      return "No window";
+    }
+    return `${destination.windowStart ? toDisplayTime(destination.windowStart) : "—"} – ${
+      destination.windowEnd ? toDisplayTime(destination.windowEnd) : "—"
+    }`;
+  };
   const isPatientGroupCollapsed = (patientId: string, defaultCollapsed: boolean) =>
     collapsedPatientGroups[patientId] ?? defaultCollapsed;
   const togglePatientGroupCollapsed = (patientId: string, defaultCollapsed: boolean) => {
@@ -220,15 +228,20 @@ export const SelectedDestinationsSection = ({
                         <circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none" />
                       </svg>
                     </span>
-                    <p className={responsiveStyles.routeTimelineStartLabel}>Start</p>
-                    <p className="m-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
-                      {start.primary}
+                    <p className="m-0 flex items-baseline gap-1.5">
+                      <span className={`${responsiveStyles.routeTimelineStartLabel} shrink-0`}>
+                        Start
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 text-slate-300 dark:text-slate-600"
+                      >
+                        ·
+                      </span>
+                      <span className="min-w-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                        {start.primary}
+                      </span>
                     </p>
-                    {start.secondary && (
-                      <p className="m-0 truncate text-xs text-slate-400 dark:text-slate-500">
-                        {start.secondary}
-                      </p>
-                    )}
                   </div>
                 );
               })()}
@@ -247,6 +260,7 @@ export const SelectedDestinationsSection = ({
                         destination={group.destinations[0]}
                         index={groupIndex}
                         showIndex={false}
+                        isMobileViewport={isMobileViewport}
                         avatarInitials={initials}
                         roundedLarge
                         inlineScheduledPill
@@ -296,9 +310,16 @@ export const SelectedDestinationsSection = ({
                             <p className="m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">
                               {group.patientName}
                             </p>
-                            <p className="m-0 text-xs text-slate-500 dark:text-slate-400">
-                              {group.destinations.length} visit windows
-                            </p>
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                              {group.destinations.map((destination) => (
+                                <span
+                                  key={destination.visitKey}
+                                  className={responsiveStyles.routeWindowPill}
+                                >
+                                  {formatWindowChip(destination)}
+                                </span>
+                              ))}
+                            </div>
                           </div>
                           <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                             {group.destinations.length} windows
@@ -329,6 +350,7 @@ export const SelectedDestinationsSection = ({
                                 destination={destination}
                                 index={windowIndex}
                                 showIndex={false}
+                                isMobileViewport={isMobileViewport}
                                 compact
                                 displayName={formatWindowLabel(destination, windowIndex)}
                                 displaySubtitle={formatWindowSubtitle(windowIndex)}
@@ -390,23 +412,24 @@ export const SelectedDestinationsSection = ({
                       <line x1="4" y1="22" x2="4" y2="15" />
                     </svg>
                   </span>
-                  <p className={responsiveStyles.tripEndLabel}>End</p>
-                  {end ? (
-                    <>
-                      <p className="m-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
+                  <p className="m-0 flex items-baseline gap-1.5">
+                    <span className={`${responsiveStyles.tripEndLabel} shrink-0`}>End</span>
+                    <span
+                      aria-hidden="true"
+                      className="shrink-0 text-slate-300 dark:text-slate-600"
+                    >
+                      ·
+                    </span>
+                    {end ? (
+                      <span className="min-w-0 truncate text-sm font-medium text-slate-700 dark:text-slate-300">
                         {end.primary}
-                      </p>
-                      {end.secondary && (
-                        <p className="m-0 truncate text-xs text-slate-400 dark:text-slate-500">
-                          {end.secondary}
-                        </p>
-                      )}
-                    </>
-                  ) : (
-                    <p className="m-0 text-sm italic text-slate-400 dark:text-slate-500">
-                      Set an ending point
-                    </p>
-                  )}
+                      </span>
+                    ) : (
+                      <span className="min-w-0 truncate text-sm italic text-slate-400 dark:text-slate-500">
+                        Set an ending point
+                      </span>
+                    )}
+                  </p>
                 </div>
               );
             })()}
