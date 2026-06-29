@@ -261,7 +261,7 @@ export default function HomePage({
           progressPercent: 0,
         },
         {
-          label: "Unused clients",
+          label: "Inactive clients",
           value: "—",
           delta: "Not used in 30+ days",
           tone: "text-slate-500",
@@ -302,7 +302,7 @@ export default function HomePage({
         href: "/clients",
       },
       {
-        label: "Unused clients",
+        label: "Inactive clients",
         value: String(dashboardSummary.kpis.staleClientsCount),
         delta: "Not used in 30+ days",
         tone: dashboardSummary.kpis.staleClientsCount > 0 ? "text-amber-600" : "text-slate-500",
