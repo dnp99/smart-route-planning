@@ -225,6 +225,23 @@ describe("PatientsPage", () => {
     expect(screen.getAllByText("Never scheduled").length).toBeGreaterThan(0);
   });
 
+  it("reveals tab helper text on demand via the info button", async () => {
+    mockedListPatients.mockResolvedValue([seedPatient]);
+
+    render(<PatientsPage />);
+
+    const infoButton = await screen.findByRole("button", { name: /about the active tab/i });
+    // Helper text is hidden until the info button is pressed.
+    expect(screen.queryByRole("tooltip")).toBeNull();
+
+    fireEvent.click(infoButton);
+    expect(screen.getByRole("tooltip").textContent).toMatch(/actively scheduling/i);
+
+    // Pressing again closes it.
+    fireEvent.click(infoButton);
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
   it("submits create flow and resets to empty create mode", async () => {
     mockedListPatients.mockResolvedValue([]);
     mockedCreatePatient.mockResolvedValue(seedPatient);

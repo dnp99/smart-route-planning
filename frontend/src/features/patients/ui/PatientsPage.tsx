@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import { responsiveStyles } from "../../../components/responsiveStyles";
@@ -43,6 +43,14 @@ import {
   listRecurringVisitTemplates,
   updateRecurringVisitTemplate,
 } from "../api/recurringVisitTemplateService";
+
+// On-demand helper text per lifecycle tab, surfaced via the (i) popover.
+const TAB_INFO_TEXT: Record<PatientLifecycleState, string> = {
+  active:
+    "Clients you’re actively scheduling visits for. Edit anyone’s details, or archive clients you no longer see.",
+  idle: "No visits scheduled in the last 30 days. Select any clients you no longer need and archive them to keep your active list clean.",
+  archived: "Archived clients stay here for 7 days. Restore one to move it back to Active.",
+};
 
 const PlusIcon = ({ className }: { className?: string }) => (
   <svg
@@ -95,6 +103,24 @@ const PatientsPage = () => {
   const [isBulkArchiving, setIsBulkArchiving] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [counts, setCounts] = useState<PatientCounts | null>(null);
+  const [showTabInfo, setShowTabInfo] = useState(false);
+  const tabInfoRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!showTabInfo) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!tabInfoRef.current?.contains(event.target as Node)) setShowTabInfo(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setShowTabInfo(false);
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [showTabInfo]);
 
   const changeLifecycleState = (next: PatientLifecycleState) => {
     if (next === lifecycleState) return;
@@ -525,119 +551,80 @@ const PatientsPage = () => {
           </p>
         )}
 
-        <div
-          className={responsiveStyles.clientStateTabBar}
-          role="tablist"
-          aria-label="Client status"
-        >
-          {(
-            [
-              { key: "active", label: "Active" },
-              { key: "idle", label: "Idle" },
-              { key: "archived", label: "Archived" },
-            ] as const
-          ).map((tab) => (
+        <div className={responsiveStyles.clientTabsRow}>
+          <div
+            className={responsiveStyles.clientStateTabBar}
+            role="tablist"
+            aria-label="Client status"
+          >
+            {(
+              [
+                { key: "active", label: "Active" },
+                { key: "idle", label: "Idle" },
+                { key: "archived", label: "Archived" },
+              ] as const
+            ).map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={lifecycleState === tab.key}
+                onClick={() => changeLifecycleState(tab.key)}
+                className={`${responsiveStyles.clientStateTab} ${
+                  lifecycleState === tab.key
+                    ? responsiveStyles.clientStateTabActive
+                    : responsiveStyles.clientStateTabInactive
+                }`}
+              >
+                {tab.label}
+                {counts && (
+                  <>
+                    {" "}
+                    <span
+                      className={
+                        lifecycleState === tab.key
+                          ? "font-semibold text-blue-300 dark:text-blue-400/70"
+                          : "font-semibold text-slate-300 dark:text-slate-600"
+                      }
+                    >
+                      ({counts[tab.key]})
+                    </span>
+                  </>
+                )}
+              </button>
+            ))}
+          </div>
+          <div className="relative ml-auto flex items-center self-stretch pl-2" ref={tabInfoRef}>
             <button
-              key={tab.key}
               type="button"
-              role="tab"
-              aria-selected={lifecycleState === tab.key}
-              onClick={() => changeLifecycleState(tab.key)}
-              className={`${responsiveStyles.clientStateTab} ${
-                lifecycleState === tab.key
-                  ? responsiveStyles.clientStateTabActive
-                  : responsiveStyles.clientStateTabInactive
-              }`}
+              onClick={() => setShowTabInfo((value) => !value)}
+              aria-label={`About the ${lifecycleState} tab`}
+              aria-expanded={showTabInfo}
+              className={responsiveStyles.clientTabInfoButton}
             >
-              {tab.label}
-              {counts && (
-                <>
-                  {" "}
-                  <span
-                    className={
-                      lifecycleState === tab.key
-                        ? "font-semibold text-blue-300 dark:text-blue-400/70"
-                        : "font-semibold text-slate-300 dark:text-slate-600"
-                    }
-                  >
-                    ({counts[tab.key]})
-                  </span>
-                </>
-              )}
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+                className="h-3.5 w-3.5"
+              >
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="16" x2="12" y2="12" />
+                <line x1="12" y1="8" x2="12.01" y2="8" />
+              </svg>
             </button>
-          ))}
+            {showTabInfo && (
+              <div role="tooltip" className={responsiveStyles.clientTabInfoPopover}>
+                {TAB_INFO_TEXT[lifecycleState]}
+              </div>
+            )}
+          </div>
         </div>
-
-        {lifecycleState === "active" && (
-          <div className={responsiveStyles.clientTabHelper}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className={responsiveStyles.clientTabHelperIcon}
-            >
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-              <circle cx="9" cy="7" r="4" />
-              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-            </svg>
-            <span>
-              Clients you’re actively scheduling visits for. Edit anyone’s details, or archive
-              clients you no longer see.
-            </span>
-          </div>
-        )}
-
-        {lifecycleState === "idle" && (
-          <div className={responsiveStyles.clientTabHelper}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className={responsiveStyles.clientTabHelperIcon}
-            >
-              <circle cx="12" cy="12" r="10" />
-              <polyline points="12 6 12 12 16 14" />
-            </svg>
-            <span>
-              No visits scheduled in the last 30 days. Select any clients you no longer need and
-              archive them to keep your active list clean.
-            </span>
-          </div>
-        )}
-
-        {lifecycleState === "archived" && (
-          <div className={responsiveStyles.clientTabHelper}>
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
-              className={responsiveStyles.clientTabHelperIcon}
-            >
-              <path d="M21 8v13H3V8" />
-              <path d="M1 3h22v5H1z" />
-              <path d="M10 12h4" />
-            </svg>
-            <span>
-              Archived clients stay here for 7 days. Restore one to move it back to Active.
-            </span>
-          </div>
-        )}
 
         {lifecycleState === "active" && (
           <div className={responsiveStyles.clientStatsStrip} data-testid="client-stats">

@@ -429,17 +429,19 @@ export const responsiveStyles = {
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
   // Clients page lifecycle tabs (Active / Idle / Archived)
-  clientStateTabBar:
-    "mb-4 flex gap-1 overflow-x-auto border-b border-slate-200 dark:border-slate-800",
+  // Row holding the lifecycle tabs (left) + the info popover trigger (right).
+  clientTabsRow: "relative mb-4 flex border-b border-slate-200 dark:border-slate-800",
+  clientStateTabBar: "flex gap-1 overflow-x-auto",
   clientStateTab:
     "-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition",
   clientStateTabActive: "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300",
   clientStateTabInactive:
     "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200",
-  // Per-tab helper line (icon + subtitle) under the lifecycle tabs.
-  clientTabHelper:
-    "mb-4 flex items-start gap-2 text-[13px] leading-relaxed text-slate-500 dark:text-slate-400",
-  clientTabHelperIcon: "mt-px h-4 w-4 shrink-0 text-slate-400 dark:text-slate-500",
+  // Info (ⓘ) trigger at the right of the tab row + its on-demand helper popover.
+  clientTabInfoButton:
+    "inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-blue-200 text-blue-500 transition hover:bg-blue-50 hover:text-blue-600 dark:border-blue-900/60 dark:text-blue-300 dark:hover:bg-blue-950/40",
+  clientTabInfoPopover:
+    "absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
   // Clients page summary stats row (desktop only — hidden below md)
   // Active tab: one-line summary strip (replaces the four stat boxes).
   clientStatsStrip:
