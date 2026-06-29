@@ -72,9 +72,7 @@ export const responsiveStyles = {
     "flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-xs font-bold text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200",
   accountMenuDropdownUp:
     "absolute bottom-full left-0 z-50 mb-2 w-full min-w-[12rem] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900",
-  // ── Top bar (design 2a): transparent, page title left + date/bell/avatar right ─
-  topBarTitle: "text-[15px] font-semibold leading-tight text-slate-900 dark:text-slate-100",
-  topBarSubtitle: "mt-0.5 text-[11px] font-medium text-slate-400 dark:text-slate-500",
+  // ── Top bar (design 2a): transparent, date pill + bell (desktop), avatar (mobile) ─
   topBarDatePill:
     "hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 sm:inline-flex",
   topBarIconButton:

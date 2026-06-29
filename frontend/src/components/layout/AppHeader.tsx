@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { responsiveStyles } from "../responsiveStyles";
 import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
 import AccountMenu from "./AccountMenu";
@@ -16,28 +16,12 @@ interface AppHeaderProps {
   onLogout: () => void;
 }
 
-// Per-route title + subtitle shown on the left of the top bar (design 2a).
-const PAGE_META: Record<string, { title: string; subtitle: string }> = {
-  "/home": { title: "Home", subtitle: "Mission Control" },
-  "/clients": { title: "Clients", subtitle: "Roster & scheduling" },
-  "/route-planner": { title: "Route Planner", subtitle: "Plan & optimize" },
-};
-
-const resolvePageMeta = (pathname: string) => {
-  const key = Object.keys(PAGE_META).find(
-    (path) => pathname === path || pathname.startsWith(`${path}/`),
-  );
-  return key ? PAGE_META[key] : null;
-};
-
 export default function AppHeader({
   isAuthenticated,
   authUser,
   onOpenAccountSettings,
   onLogout,
 }: AppHeaderProps) {
-  const { pathname } = useLocation();
-  const pageMeta = resolvePageMeta(pathname);
   const dateLabel = new Date().toLocaleDateString("en-US", {
     weekday: "short",
     month: "short",
@@ -66,6 +50,7 @@ export default function AppHeader({
         {isAuthenticated ? (
           <>
             {/* Brand shows on mobile (no sidebar there); page title takes over on desktop. */}
+            {/* Brand shows on mobile only (no sidebar there); page owns its own title. */}
             <Link
               to="/home"
               aria-label="Routefy home"
@@ -73,12 +58,6 @@ export default function AppHeader({
             >
               {brand}
             </Link>
-            {pageMeta && (
-              <div className="hidden min-w-0 md:block">
-                <div className={responsiveStyles.topBarTitle}>{pageMeta.title}</div>
-                <div className={responsiveStyles.topBarSubtitle}>{pageMeta.subtitle}</div>
-              </div>
-            )}
 
             <div className="flex-1" />
 
