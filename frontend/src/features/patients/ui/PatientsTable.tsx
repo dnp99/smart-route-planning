@@ -760,7 +760,9 @@ export const PatientsTable = ({
                       Repeat
                     </th>
                   )}
-                  <th className="px-4 py-3" aria-label="Actions" />
+                  <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-normal text-slate-500 dark:text-slate-400">
+                    Actions
+                  </th>
                 </tr>
               )}
             </thead>
