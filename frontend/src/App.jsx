@@ -25,6 +25,7 @@ import ScrollToTopButton from "./components/layout/ScrollToTopButton";
 import AppRoutes from "./components/navigation/AppRoutes";
 import AppTabs from "./components/navigation/AppTabs";
 import AuthBootstrapLoader from "./components/shared/AuthBootstrapLoader";
+import OverflowDebug from "./components/shared/OverflowDebug";
 
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 
@@ -205,6 +206,7 @@ function App() {
         onAgree={handleLegalNoticeAgree}
       />
       <ScrollToTopButton />
+      <OverflowDebug />
     </div>
   );
 }
