@@ -412,12 +412,12 @@ export const PatientsTable = ({
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
               <colgroup>
-                <col className="w-[28%]" />
-                <col className="w-[34%]" />
-                <col className="w-[18%]" />
-                <col className="w-24" />
+                <col className="w-[23%]" />
+                <col className="w-[23%]" />
+                <col className="w-[26%]" />
+                <col className="w-28" />
                 <col className="w-20" />
-                <col className="w-20" />
+                <col className="w-28" />
               </colgroup>
               <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -633,12 +633,12 @@ export const PatientsTable = ({
           <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
             <colgroup>
               {isIdle && <col className="w-12" />}
-              <col className="w-[28%]" />
-              <col className="w-[34%]" />
-              <col className="w-[18%]" />
-              <col className="w-24" />
+              <col className="w-[23%]" />
+              <col className="w-[23%]" />
+              <col className="w-[26%]" />
+              <col className="w-28" />
               {showRepeat && <col className="w-20" />}
-              <col className="w-20" />
+              <col className="w-28" />
             </colgroup>
             <thead className="border-b border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/80">
               {showBulkBar ? (
