@@ -25,8 +25,10 @@ import {
   validateForm,
 } from "../domain/patientForm";
 import { useClientStats } from "../hooks/useClientStats";
+import { useStaleClientReview } from "../hooks/useStaleClientReview";
 import type { WindowFilter } from "../domain/visitType";
 import { createPatient, deletePatient, listPatients, updatePatient } from "../api/patientService";
+import { StaleClientReviewBanner } from "./StaleClientReviewBanner";
 import {
   createRecurringVisitTemplate,
   deleteRecurringVisitTemplate,
@@ -131,6 +133,10 @@ const PatientsPage = () => {
   useEffect(() => {
     void fetchPatients(searchQuery);
   }, [hasTemplateFilter, searchQuery, templateFilterMode]);
+
+  const staleReview = useStaleClientReview(() => {
+    void fetchPatients(searchQuery);
+  });
 
   const isDirty = useMemo(
     () => JSON.stringify(formValues) !== JSON.stringify(initialFormValues),
@@ -488,6 +494,20 @@ const PatientsPage = () => {
           <p className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-900/70 dark:bg-red-950/40 dark:text-red-300">
             {pageError}
           </p>
+        )}
+
+        {staleReview.isVisible && (
+          <StaleClientReviewBanner
+            staleClients={staleReview.staleClients}
+            isExpanded={staleReview.isExpanded}
+            onSetExpanded={staleReview.setExpanded}
+            selectedIds={staleReview.selectedIds}
+            onToggleSelect={staleReview.toggleSelect}
+            onArchiveSelected={() => void staleReview.archiveSelected()}
+            onDismiss={() => void staleReview.dismiss()}
+            isBusy={staleReview.isBusy}
+            error={staleReview.error}
+          />
         )}
 
         <div className={responsiveStyles.clientStatsRow} data-testid="client-stats">

@@ -25,6 +25,60 @@ export const listPatients = async (query: string): Promise<Patient[]> => {
   return parseListPatientsResponse(payload).patients;
 };
 
+export type StaleClientReview = {
+  snoozedUntil: string | null;
+  patients: Patient[];
+};
+
+export const fetchStaleClients = async (): Promise<StaleClientReview> => {
+  const payload = await requestJson(
+    "/api/patients/stale",
+    { method: "GET" },
+    "Unable to load unused clients.",
+  );
+
+  const rawPatients =
+    typeof payload === "object" &&
+    payload !== null &&
+    Array.isArray((payload as { patients?: unknown }).patients)
+      ? (payload as { patients: unknown[] }).patients
+      : [];
+  const snoozedUntil =
+    typeof payload === "object" &&
+    payload !== null &&
+    typeof (payload as { snoozedUntil?: unknown }).snoozedUntil === "string"
+      ? (payload as { snoozedUntil: string }).snoozedUntil
+      : null;
+
+  return { snoozedUntil, patients: rawPatients.filter(isPatient) };
+};
+
+export const dismissStaleReview = async (): Promise<void> => {
+  await requestJson("/api/patients/stale", { method: "POST" }, "Unable to dismiss the review.");
+};
+
+export const archiveClients = async (patientIds: string[]): Promise<string[]> => {
+  const payload = await requestJson(
+    "/api/patients/archive",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patientIds }),
+    },
+    "Unable to archive clients.",
+  );
+
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !Array.isArray((payload as { archivedIds?: unknown }).archivedIds)
+  ) {
+    throw new Error("Unexpected archive response format.");
+  }
+
+  return (payload as { archivedIds: string[] }).archivedIds;
+};
+
 export const createPatient = async (request: CreatePatientRequest): Promise<Patient> => {
   const payload = await requestJson(
     "/api/patients",

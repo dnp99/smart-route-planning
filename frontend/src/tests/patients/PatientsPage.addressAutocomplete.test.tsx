@@ -6,6 +6,9 @@ vi.mock("../../features/patients/api/patientService", () => ({
   createPatient: vi.fn(),
   updatePatient: vi.fn(),
   deletePatient: vi.fn(),
+  fetchStaleClients: vi.fn().mockResolvedValue({ snoozedUntil: null, patients: [] }),
+  archiveClients: vi.fn().mockResolvedValue([]),
+  dismissStaleReview: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({

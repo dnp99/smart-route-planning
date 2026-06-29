@@ -238,6 +238,9 @@ vi.mock("../../features/patients/api/patientService", () => ({
   updatePatient: (patientId: string, request: Parameters<typeof updatePatientMock>[1]) =>
     updatePatientMock(patientId, request),
   deletePatient: (patientId: string) => deletePatientMock(patientId),
+  fetchStaleClients: () => Promise.resolve({ snoozedUntil: null, patients: [] }),
+  archiveClients: () => Promise.resolve([]),
+  dismissStaleReview: () => Promise.resolve(),
 }));
 
 vi.mock("../../features/patients/api/recurringVisitTemplateService", () => ({

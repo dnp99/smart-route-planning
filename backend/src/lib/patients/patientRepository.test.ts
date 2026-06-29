@@ -9,12 +9,15 @@ vi.mock("../../db", () => ({
 }));
 
 import {
+  archivePatientsForNurse,
   createNurseAccount,
   createPatientForNurse,
   deletePatientForNurse,
+  dismissStaleClientReviewForNurse,
   findNurseByEmail,
   findNurseById,
   findPatientByIdForNurse,
+  getStaleClientReviewForNurse,
   listPatientsByNurse,
   NurseEmailConflictError,
   updateNurseDisplayName,
@@ -205,40 +208,101 @@ describe("patientRepository", () => {
     ]);
   });
 
-  it("deactivates stale inactive-by-scheduling patients before listing", async () => {
-    // First update: nurses.lastDeactivatedClientsAt claim — returns a row to signal the
-    // deactivation window is open (null or older than 24h).
-    const nurseClaimReturningMock = vi.fn().mockResolvedValue([{ id: "nurse-1" }]);
-    const nurseClaimWhereMock = vi.fn().mockReturnValue({ returning: nurseClaimReturningMock });
-    const nurseClaimSetMock = vi.fn().mockReturnValue({ where: nurseClaimWhereMock });
-
-    // Second update: patients isActive=false
-    const patientUpdateWhereMock = vi.fn().mockResolvedValue(undefined);
-    const patientUpdateSetMock = vi.fn().mockReturnValue({ where: patientUpdateWhereMock });
-
-    const updateMock = vi
-      .fn()
-      .mockReturnValueOnce({ set: nurseClaimSetMock })
-      .mockReturnValueOnce({ set: patientUpdateSetMock });
-
-    const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-2" }]);
+  it("does not deactivate any patients while listing (auto-archive removed)", async () => {
+    const updateMock = vi.fn();
+    const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-1" }]);
     const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
     const fromMock = vi.fn().mockReturnValue({ where: whereMock });
     const selectMock = vi.fn().mockReturnValue({ from: fromMock });
-
     getDbMock.mockReturnValue({ update: updateMock, select: selectMock });
 
-    await expect(listPatientsByNurse("nurse-1")).resolves.toEqual([
-      { id: "patient-2", visitWindows: [] },
-    ]);
+    await listPatientsByNurse("nurse-1");
 
-    expect(updateMock).toHaveBeenCalledTimes(2);
-    expect(nurseClaimSetMock).toHaveBeenCalledWith(
+    expect(updateMock).not.toHaveBeenCalled();
+  });
+
+  it("getStaleClientReviewForNurse returns the stale clients when not snoozed", async () => {
+    // findNurseById — no prior review (lastDeactivatedClientsAt null) => not snoozed.
+    const nurseLimitMock = vi
+      .fn()
+      .mockResolvedValue([{ id: "nurse-1", lastDeactivatedClientsAt: null }]);
+    const nurseWhereMock = vi.fn().mockReturnValue({ limit: nurseLimitMock });
+    const nurseFromMock = vi.fn().mockReturnValue({ where: nurseWhereMock });
+
+    // stale patients query
+    const patientOrderByMock = vi.fn().mockResolvedValue([{ id: "patient-1" }]);
+    const patientWhereMock = vi.fn().mockReturnValue({ orderBy: patientOrderByMock });
+    const patientFromMock = vi.fn().mockReturnValue({ where: patientWhereMock });
+
+    // attachVisitWindows query
+    const windowsWhereMock = vi.fn().mockResolvedValue([]);
+    const windowsFromMock = vi.fn().mockReturnValue({ where: windowsWhereMock });
+
+    const selectMock = vi
+      .fn()
+      .mockReturnValueOnce({ from: nurseFromMock })
+      .mockReturnValueOnce({ from: patientFromMock })
+      .mockReturnValueOnce({ from: windowsFromMock });
+    getDbMock.mockReturnValue({ select: selectMock });
+
+    await expect(getStaleClientReviewForNurse("nurse-1")).resolves.toEqual({
+      snoozedUntil: null,
+      patients: [{ id: "patient-1", visitWindows: [] }],
+    });
+  });
+
+  it("getStaleClientReviewForNurse suppresses the review during the snooze window", async () => {
+    const nurseLimitMock = vi
+      .fn()
+      .mockResolvedValue([{ id: "nurse-1", lastDeactivatedClientsAt: new Date() }]);
+    const nurseWhereMock = vi.fn().mockReturnValue({ limit: nurseLimitMock });
+    const nurseFromMock = vi.fn().mockReturnValue({ where: nurseWhereMock });
+    const selectMock = vi.fn().mockReturnValue({ from: nurseFromMock });
+    getDbMock.mockReturnValue({ select: selectMock });
+
+    const result = await getStaleClientReviewForNurse("nurse-1");
+
+    expect(result.patients).toEqual([]);
+    expect(typeof result.snoozedUntil).toBe("string");
+    // Only the nurse lookup runs — no patient query while snoozed.
+    expect(selectMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("dismissStaleClientReviewForNurse stamps the last-reviewed timestamp", async () => {
+    const whereMock = vi.fn().mockResolvedValue(undefined);
+    const setMock = vi.fn().mockReturnValue({ where: whereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: setMock });
+    getDbMock.mockReturnValue({ update: updateMock });
+
+    await dismissStaleClientReviewForNurse("nurse-1");
+
+    expect(setMock).toHaveBeenCalledWith(
       expect.objectContaining({ lastDeactivatedClientsAt: expect.any(Date) }),
     );
-    expect(patientUpdateSetMock).toHaveBeenCalledWith(
+  });
+
+  it("archivePatientsForNurse soft-deletes the requested ids and returns them", async () => {
+    const returningMock = vi.fn().mockResolvedValue([{ id: "patient-1" }, { id: "patient-2" }]);
+    const whereMock = vi.fn().mockReturnValue({ returning: returningMock });
+    const setMock = vi.fn().mockReturnValue({ where: whereMock });
+    const updateMock = vi.fn().mockReturnValue({ set: setMock });
+    getDbMock.mockReturnValue({ update: updateMock });
+
+    await expect(archivePatientsForNurse("nurse-1", ["patient-1", "patient-2"])).resolves.toEqual([
+      "patient-1",
+      "patient-2",
+    ]);
+    expect(setMock).toHaveBeenCalledWith(
       expect.objectContaining({ isActive: false, updatedAt: expect.any(Date) }),
     );
+  });
+
+  it("archivePatientsForNurse is a no-op for an empty id list", async () => {
+    const updateMock = vi.fn();
+    getDbMock.mockReturnValue({ update: updateMock });
+
+    await expect(archivePatientsForNurse("nurse-1", [])).resolves.toEqual([]);
+    expect(updateMock).not.toHaveBeenCalled();
   });
 
   it("attaches and sorts visit windows by start, end, and createdAt", async () => {
