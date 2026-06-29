@@ -348,7 +348,7 @@ export const PatientSelectorSection = ({
       {isContentVisible && (
         <>
           <div className={responsiveStyles.patientSelectionGrid}>
-            <div className="grid gap-2">
+            <div className="grid min-w-0 gap-2">
               <p className={responsiveStyles.patientColumnLabel}>
                 Search clients · {destinationSearchResults.length}
               </p>
@@ -357,7 +357,7 @@ export const PatientSelectorSection = ({
                   <p className={responsiveStyles.inlineErrorBanner}>{createPatientError}</p>
                 )}
                 <div className="flex items-center gap-2">
-                  <div className="relative flex-1">
+                  <div className="relative min-w-0 flex-1">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       viewBox="0 0 24 24"

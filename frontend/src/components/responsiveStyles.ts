@@ -215,7 +215,7 @@ export const responsiveStyles = {
   destinationList: "overflow-y-auto pb-1 pl-4 pr-1 pt-2 md:h-[26rem]",
   // 'Your route' column (desktop): subtle gray canvas + vertical separator from the search column
   selectedRouteColumn:
-    "md:border-l md:border-slate-200 md:bg-slate-50/60 md:pl-4 dark:md:border-slate-800 dark:md:bg-slate-900/30",
+    "min-w-0 md:border-l md:border-slate-200 md:bg-slate-50/60 md:pl-4 dark:md:border-slate-800 dark:md:bg-slate-900/30",
   selectedListClearButton:
     "inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-lg bg-slate-100 px-2.5 text-xs font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-400",
   destinationItem:
