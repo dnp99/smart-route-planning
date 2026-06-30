@@ -154,14 +154,18 @@ describe("PatientsPage", () => {
     render(<PatientsPage />);
 
     const statsRow = await screen.findByTestId("client-stats");
-    const text = statsRow.textContent ?? "";
 
-    expect(text).toMatch(/2\s*clients/);
-    expect(text).toMatch(/1\s*fixed/);
-    expect(text).toMatch(/1\s*flexible/);
-    // round((30 + 45) / 2) = 38
-    expect(text).toMatch(/38\s*min/);
-    expect(text).toContain("avg visit");
+    // The strip mounts with zeroed counts and fills in once listPatients
+    // resolves; assert inside waitFor so we don't race the async populate.
+    await waitFor(() => {
+      const text = statsRow.textContent ?? "";
+      expect(text).toMatch(/2\s*clients/);
+      expect(text).toMatch(/1\s*fixed/);
+      expect(text).toMatch(/1\s*flexible/);
+      // round((30 + 45) / 2) = 38
+      expect(text).toMatch(/38\s*min/);
+      expect(text).toContain("avg visit");
+    });
   });
 
   it("filters via the All/Fixed/Flexible toggle and shows the repeat badge", async () => {
