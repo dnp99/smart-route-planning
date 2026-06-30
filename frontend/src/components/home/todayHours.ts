@@ -1,19 +1,17 @@
 import type { WeeklyWorkingHours } from "../../../../shared/contracts";
+import { getDayWorkingStatus } from "./workingHoursStatus";
 
-// Today's working-hours display label (e.g. "08:00 - 15:00", "Off today", "—").
+// Today's working-hours display label. "Off today" is reserved for a real day
+// off (the user has a schedule but this day is disabled); an unconfigured
+// schedule shows "Not set" so we don't imply the user chose to be off.
 export const resolveTodayHoursDisplay = (workingHours?: WeeklyWorkingHours | null) => {
-  if (!workingHours) {
-    return "—";
-  }
-
   const dayKey = new Date()
     .toLocaleDateString("en-US", { weekday: "long" })
     .toLowerCase() as keyof WeeklyWorkingHours;
-  const daySchedule = workingHours[dayKey];
+  const status = getDayWorkingStatus(workingHours, dayKey);
 
-  if (!daySchedule?.enabled) {
-    return "Off today";
+  if (status.status === "scheduled") {
+    return `${status.start} - ${status.end}`;
   }
-
-  return `${daySchedule.start} - ${daySchedule.end}`;
+  return status.status === "off" ? "Off today" : "Not set";
 };

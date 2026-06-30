@@ -11,6 +11,7 @@ import {
   type WeeklyWorkingHours,
 } from "../../../../../shared/contracts";
 import { requestAuthedJson } from "../../../components/auth/authFetch";
+import { hasConfiguredSchedule } from "../../../components/home/workingHoursStatus";
 import { resolveOptimizeRoutePath } from "./optimizeRouteEndpoint";
 import type { OptimizeRouteResponse } from "../types";
 
@@ -143,7 +144,7 @@ export const resolveWorkingHoursForDate = (
   timezone: string,
 ):
   | { constraint: NurseWorkingHoursConstraint; dayDisabled: false }
-  | { dayDisabled: true }
+  | { dayDisabled: true; reason: "off" | "unconfigured" }
   | null => {
   if (!workingHours) return null;
 
@@ -159,7 +160,14 @@ export const resolveWorkingHoursForDate = (
   const daySchedule = workingHours[dayKey];
   if (!daySchedule) return null;
 
-  if (!daySchedule.enabled) return { dayDisabled: true };
+  if (!daySchedule.enabled) {
+    // A disabled day is a real day off only when the user has a configured
+    // schedule; otherwise the schedule simply isn't set up yet.
+    return {
+      dayDisabled: true,
+      reason: hasConfiguredSchedule(workingHours) ? "off" : "unconfigured",
+    };
+  }
 
   const constraint: NurseWorkingHoursConstraint = {
     workStart: daySchedule.start,
@@ -415,7 +423,9 @@ export const requestOptimizedRoute = async ({
   );
   if (workingHoursResult?.dayDisabled) {
     throw new Error(
-      "Your working hours are not configured for this day. Update your schedule in Account settings.",
+      workingHoursResult.reason === "off"
+        ? "This day is marked as off in your working hours. Enable it in Account settings to plan a route."
+        : "Your working hours are not configured for this day. Update your schedule in Account settings.",
     );
   }
   const nurseWorkingHours =
