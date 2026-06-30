@@ -58,7 +58,9 @@ export default function AppHeader({
     <header className={responsiveStyles.appHeader}>
       <div
         className={[
-          "mx-auto flex h-14 w-full max-w-7xl items-center gap-3 px-4 sm:px-6",
+          // Keep horizontal insets in sync with responsiveStyles.contentWrapper
+          // so the breadcrumb aligns with the page H1 below it.
+          "mx-auto flex h-14 w-full max-w-7xl items-center gap-3 px-4 sm:px-6 md:pl-3 md:pr-8",
           isAuthenticated ? "" : "justify-center",
         ].join(" ")}
       >
