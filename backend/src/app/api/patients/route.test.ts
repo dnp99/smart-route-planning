@@ -127,6 +127,39 @@ describe("/api/patients route", () => {
     });
   });
 
+  it("passes through the schedulable state (active + idle) for the route planner", async () => {
+    listPatientsByNurseMock.mockResolvedValue([]);
+
+    const response = await GET(
+      new Request("http://localhost:3000/api/patients?state=schedulable", {
+        method: "GET",
+        headers: { origin: "http://localhost:5173" },
+      }),
+    );
+
+    expect(response.status).toBe(200);
+    expect(listPatientsByNurseMock).toHaveBeenCalledWith("nurse-1", {
+      query: "",
+      state: "schedulable",
+    });
+  });
+
+  it("falls back to active for an unknown state parameter", async () => {
+    listPatientsByNurseMock.mockResolvedValue([]);
+
+    await GET(
+      new Request("http://localhost:3000/api/patients?state=bogus", {
+        method: "GET",
+        headers: { origin: "http://localhost:5173" },
+      }),
+    );
+
+    expect(listPatientsByNurseMock).toHaveBeenCalledWith("nurse-1", {
+      query: "",
+      state: "active",
+    });
+  });
+
   it("maps GET errors via toErrorResponse", async () => {
     requireAuthMock.mockRejectedValue(new HttpError(500, "boom"));
 

@@ -149,6 +149,23 @@ Notes:
 - `"distance"` prioritizes less driving with bounded idle-gap tradeoffs.
 - `"time"` prioritizes finishing sooner (combined wait + travel), with safeguards so it does not lose to an earlier equally-safe alternative when one exists.
 
+## Planning response shape
+
+All times in the response (`start.departureTime`, each stop's `arrivalTime` /
+`departureTime`, each task's `serviceStartTime` / `serviceEndTime`, …) are
+**UTC instants** (ISO-8601, `…Z`). The response also echoes:
+
+- `timezone` (the IANA zone the schedule was planned in, example `America/Toronto`)
+
+**Clients MUST format every time in `response.timezone`, not the device's
+zone.** Because the times carry no offset, formatting them in the device zone
+(e.g. `Intl.DateTimeFormat` without an explicit `timeZone`, or
+`Date.getHours()`) shows the wrong wall-clock whenever the device is in a
+different zone than the route — the entire timeline shifts by the offset. The
+same rule applies to any logic that compares times against working-hours /
+lunch `HH:mm` values. `timezone` is optional for backward compatibility; when
+absent, fall back to the device zone (legacy behavior).
+
 ## Optimizer endpoint
 
 The route optimizer endpoint is `POST /api/optimize-route/v3` (ILS-seeded). The

@@ -846,13 +846,25 @@ describe("resolveWorkingHoursForDate", () => {
     expect(result).toBeNull();
   });
 
-  it("returns { dayDisabled: true } when the day is marked disabled", () => {
+  it("flags a disabled day as 'unconfigured' when no day is enabled", () => {
     const result = resolveWorkingHoursForDate(
       { friday: { enabled: false, start: "08:00", end: "17:00" } },
       FRIDAY_DATE,
       TIMEZONE,
     );
-    expect(result).toEqual({ dayDisabled: true });
+    expect(result).toEqual({ dayDisabled: true, reason: "unconfigured" });
+  });
+
+  it("flags a disabled day as 'off' when the user has a configured schedule", () => {
+    const result = resolveWorkingHoursForDate(
+      {
+        monday: enabledFriday,
+        friday: { enabled: false, start: "08:00", end: "17:00" },
+      },
+      FRIDAY_DATE,
+      TIMEZONE,
+    );
+    expect(result).toEqual({ dayDisabled: true, reason: "off" });
   });
 
   it("returns constraint without lunch when lunchBreak is absent", () => {

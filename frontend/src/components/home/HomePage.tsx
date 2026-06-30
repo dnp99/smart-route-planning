@@ -8,9 +8,9 @@ import type {
   DashboardSummaryResponse,
   DashboardTrendPoint,
   DashboardUpcomingStop,
-  WeeklyWorkingHours,
 } from "../../../../shared/contracts";
 import { fetchDashboardSummary, fetchRouteRunsForPlanningDate } from "./homeDashboardService";
+import { resolveTodayHoursDisplay } from "./todayHours";
 import {
   clearRoutePlannerDraft,
   readRoutePlannerDraft,
@@ -59,23 +59,6 @@ const resolveGreetingName = (displayName?: string | null) => {
 
   const [firstToken] = trimmed.split(/\s+/);
   return firstToken || "there";
-};
-
-const resolveTodayHoursDisplay = (workingHours?: WeeklyWorkingHours | null) => {
-  if (!workingHours) {
-    return "—";
-  }
-
-  const dayKey = new Date()
-    .toLocaleDateString("en-US", { weekday: "long" })
-    .toLowerCase() as keyof WeeklyWorkingHours;
-  const daySchedule = workingHours[dayKey];
-
-  if (!daySchedule?.enabled) {
-    return "Off today";
-  }
-
-  return `${daySchedule.start} - ${daySchedule.end}`;
 };
 
 const resolveDraftDateLabel = (planningDate?: string) => {
