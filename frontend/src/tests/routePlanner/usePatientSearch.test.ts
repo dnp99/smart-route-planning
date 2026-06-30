@@ -67,7 +67,7 @@ describe("usePatientSearch", () => {
     );
 
     await waitFor(() => {
-      expect(mockedListPatients).toHaveBeenCalledWith("j");
+      expect(mockedListPatients).toHaveBeenCalledWith("j", "schedulable");
       expect(result.current.patients).toEqual([mockPatient]);
       expect(result.current.isLoading).toBe(false);
       expect(result.current.error).toBe("");

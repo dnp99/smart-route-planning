@@ -12,7 +12,10 @@ const requestJson = async (path: string, init: RequestInit, fallbackMessage: str
   return requestAuthedJson(path, init, fallbackMessage);
 };
 
-export type PatientLifecycleState = "active" | "idle" | "archived";
+// "active" / "idle" / "archived" back the Clients-page tabs. "schedulable" is a
+// query-only union (active + idle, everything except archived) used by the Route
+// Planner so idle clients remain selectable for scheduling.
+export type PatientLifecycleState = "active" | "idle" | "archived" | "schedulable";
 
 export const listPatients = async (
   query: string,

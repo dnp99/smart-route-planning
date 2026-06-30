@@ -25,7 +25,10 @@ const SCHEDULING_INACTIVITY_WINDOW_DAYS = 30;
 // surface (still retained in the DB — see plans/clients-lifecycle-states-plan.md).
 const ARCHIVED_VISIBILITY_DAYS = 7;
 
-export type PatientLifecycleState = "active" | "idle" | "archived";
+// "active" / "idle" / "archived" back the Clients-page tabs. "schedulable" is a
+// query-only union (active + idle, i.e. everything except archived) used by the
+// Route Planner so a client that has merely gone idle can still be scheduled.
+export type PatientLifecycleState = "active" | "idle" | "archived" | "schedulable";
 
 // "active" (not idle): scheduled within the window, or never scheduled but created
 // within it. Written as the explicit complement of idleCondition so a NULL
@@ -256,6 +259,11 @@ export const listPatientsByNurse = async (
     filters.push(eq(patients.isActive, false), gte(patients.archivedAt, archivedCutoff));
   } else if (state === "idle") {
     filters.push(eq(patients.isActive, true), idleCondition(inactivityCutoff)!);
+  } else if (state === "schedulable") {
+    // Active + idle (everything except archived). The Route Planner uses this so
+    // an idle client (>30d unscheduled) is still selectable; scheduling them
+    // re-activates them. No recency condition — only archived rows are excluded.
+    filters.push(eq(patients.isActive, true));
   } else {
     filters.push(eq(patients.isActive, true), activeCondition(inactivityCutoff)!);
   }

@@ -44,7 +44,10 @@ export async function GET(request: Request) {
     const requestUrl = new URL(request.url);
     const query = requestUrl.searchParams.get("query") ?? "";
     const stateParam = requestUrl.searchParams.get("state");
-    const state = stateParam === "idle" || stateParam === "archived" ? stateParam : "active";
+    const state =
+      stateParam === "idle" || stateParam === "archived" || stateParam === "schedulable"
+        ? stateParam
+        : "active";
 
     const patients = await listPatientsByNurse(auth.nurseId, { query, state });
     void logAuditEvent({

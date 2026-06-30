@@ -28,7 +28,9 @@ export const usePatientSearch = ({ query, enabled }: UsePatientSearchOptions) =>
       setError("");
 
       try {
-        const nextPatients = await listPatients(query);
+        // Include idle clients (active + idle) so an idle client can still be
+        // added to a route; scheduling them re-activates them. Archived excluded.
+        const nextPatients = await listPatients(query, "schedulable");
         if (isSubscribed) {
           setPatients(nextPatients);
         }

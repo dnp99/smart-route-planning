@@ -239,6 +239,25 @@ describe("patientRepository", () => {
     ]);
   });
 
+  it("lists active + idle clients for state=schedulable", async () => {
+    const orderByMock = vi.fn().mockResolvedValue([{ id: "patient-7" }]);
+    const whereMock = vi.fn().mockReturnValue({ orderBy: orderByMock });
+    const fromMock = vi.fn().mockReturnValue({ where: whereMock });
+    const windowsWhereMock = vi.fn().mockResolvedValue([]);
+    const windowsFromMock = vi.fn().mockReturnValue({ where: windowsWhereMock });
+    const selectMock = vi
+      .fn()
+      .mockReturnValueOnce({ from: fromMock })
+      .mockReturnValueOnce({ from: windowsFromMock });
+    getDbMock.mockReturnValue({ select: selectMock });
+
+    await expect(listPatientsByNurse("nurse-1", { state: "schedulable" })).resolves.toEqual([
+      { id: "patient-7", visitWindows: [] },
+    ]);
+    // Name ordering (not the archived-only desc(archivedAt) path).
+    expect(orderByMock).toHaveBeenCalled();
+  });
+
   it("restorePatientForNurse reactivates a client and clears archived_at", async () => {
     const returningMock = vi.fn().mockResolvedValue([{ id: "patient-1", isActive: true }]);
     const restoreWhereMock = vi.fn().mockReturnValue({ returning: returningMock });
