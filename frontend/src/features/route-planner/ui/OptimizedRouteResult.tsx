@@ -4,7 +4,11 @@ import { exportRouteImage } from "./routeImageExport";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import RouteMap from "../RouteMap";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlannerUtils";
-import { expectedStartTimeFormatter, formatVisitDurationMinutes } from "./routePlannerResultUtils";
+import {
+  createRouteTimeFormatter,
+  formatVisitDurationMinutes,
+  getZonedMinutesOfDay,
+} from "./routePlannerResultUtils";
 import { formatNameWords } from "../../patients/domain/patientName";
 import { OptimizedStopList } from "./OptimizedStopList";
 
@@ -115,6 +119,8 @@ export function OptimizedRouteResult({
   };
   const displayedOrderedStops = orderedStops ?? result.orderedStops;
   const displayedRouteLegs = routeLegs ?? result.routeLegs;
+  // Format every route time in the route's own zone, not the device's.
+  const timeFormatter = useMemo(() => createRouteTimeFormatter(result.timezone), [result.timezone]);
   const googleMapsTripUrl = useMemo(
     () =>
       buildGoogleMapsTripUrl({
@@ -187,12 +193,8 @@ export function OptimizedRouteResult({
     let firstAffected: string | null = null;
     displayedOrderedStops.forEach((stop) => {
       stop.tasks.forEach((task) => {
-        const startMin =
-          new Date(task.serviceStartTime).getHours() * 60 +
-          new Date(task.serviceStartTime).getMinutes();
-        const endMin =
-          new Date(task.serviceEndTime).getHours() * 60 +
-          new Date(task.serviceEndTime).getMinutes();
+        const startMin = getZonedMinutesOfDay(new Date(task.serviceStartTime), result.timezone);
+        const endMin = getZonedMinutesOfDay(new Date(task.serviceEndTime), result.timezone);
         if (startMin < workStartMin) {
           early += 1;
           firstAffected ??= task.visitId;
@@ -325,7 +327,7 @@ export function OptimizedRouteResult({
                 <p className="m-0 mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">
                   All {scheduledStopCount} {scheduledStopCount === 1 ? "visit" : "visits"} on time
                   {estimatedFinishTime
-                    ? ` · Finishes around ${expectedStartTimeFormatter.format(estimatedFinishTime)}`
+                    ? ` · Finishes around ${timeFormatter.format(estimatedFinishTime)}`
                     : ""}
                 </p>
               </div>
@@ -471,7 +473,7 @@ export function OptimizedRouteResult({
                 </span>
               </p>
               <p className="mt-0.5 text-[0.95rem] font-semibold tracking-tight text-amber-600 dark:text-amber-400 sm:text-lg">
-                {expectedStartTimeFormatter.format(new Date(result.start.departureTime))}
+                {timeFormatter.format(new Date(result.start.departureTime))}
               </p>
               <p className={`${responsiveStyles.resultStatMeta} hidden sm:block`}>
                 Excludes traffic — may vary
@@ -557,6 +559,7 @@ export function OptimizedRouteResult({
               <>
                 <OptimizedStopList
                   orderedStops={displayedOrderedStops}
+                  timeZone={result.timezone}
                   startAddress={result.start.address}
                   isStale={isManualOrderStale}
                   onMoveStop={onMoveStop}

@@ -2950,6 +2950,7 @@ export const optimizeRouteV3 = async (
   }
 
   return {
+    timezone: request.timezone,
     start: {
       address: request.start.address,
       coords: startCoords,

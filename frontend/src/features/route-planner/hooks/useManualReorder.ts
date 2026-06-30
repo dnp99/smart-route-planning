@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { OrderedStop, OptimizeRouteResponse } from "../types";
+import { resolveZoneUtcOffset } from "../utils/routePlannerResultUtils";
 
 type MoveDirection = "up" | "down";
 
@@ -116,6 +117,7 @@ const applyManualOrder = (orderedStops: OrderedStop[], manualOrder: string[] | n
 const estimateStops = (
   orderedStops: OrderedStop[],
   resultStart: OptimizeRouteResponse["start"],
+  timeZone?: string,
 ) => {
   const departureMs = new Date(resultStart.departureTime).getTime();
   const startCoords =
@@ -126,7 +128,11 @@ const estimateStops = (
     return orderedStops;
   }
 
-  const utcOffset = extractUtcOffset(resultStart.departureTime);
+  // Prefer the route's IANA zone; the response times are UTC instants whose ISO
+  // strings carry no usable offset, so extractUtcOffset would yield +00:00.
+  const utcOffset = timeZone
+    ? resolveZoneUtcOffset(departureMs, timeZone)
+    : extractUtcOffset(resultStart.departureTime);
   let cursorMs = departureMs;
   let previousCoords: Coords = startCoords;
 
@@ -219,7 +225,7 @@ export const useManualReorder = (result: OptimizeRouteResponse | null) => {
       return ordered;
     }
 
-    return estimateStops(ordered, result.start);
+    return estimateStops(ordered, result.start, result.timezone);
   }, [isStale, manualOrder, result]);
 
   const moveStop = (stopId: string, direction: MoveDirection) => {

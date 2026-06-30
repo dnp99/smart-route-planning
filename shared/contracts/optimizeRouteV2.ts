@@ -121,6 +121,12 @@ export type OptimizeRouteV2RouteLeg = {
 };
 
 export type OptimizeRouteV2Response = {
+  // IANA timezone (e.g. "America/Toronto") the schedule was planned in. Clients
+  // MUST format all times (departureTime, arrivalTime, serviceStartTime, …) in
+  // this zone — the time strings are UTC instants, so formatting them in the
+  // device's local zone shows the wrong wall-clock whenever the device is in a
+  // different zone than the route. Echoed from the request timezone.
+  timezone?: string;
   start: {
     address: string;
     coords: OptimizeRouteV2LatLng;
@@ -411,6 +417,12 @@ export const parseOptimizeRouteV2Response = (payload: unknown): OptimizeRouteV2R
     (!Array.isArray(payload.warnings) ||
       payload.warnings.some((warning) => !isScheduleWarning(warning)))
   ) {
+    return null;
+  }
+
+  // Tolerant: older/persisted responses may predate the timezone echo. When
+  // absent, clients fall back to the device timezone (legacy behavior).
+  if (payload.timezone !== undefined && typeof payload.timezone !== "string") {
     return null;
   }
 

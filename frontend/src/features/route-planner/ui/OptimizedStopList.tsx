@@ -3,14 +3,16 @@ import type { OrderedStop } from "../types";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { OptimizedStopCard, EndingStopCard } from "./OptimizedStopCard";
 import {
-  expectedStartTimeFormatter,
+  createRouteTimeFormatter,
   formatBreakGap,
   addressesMatch,
+  getZonedMinutesOfDay,
 } from "./routePlannerResultUtils";
 import { formatDuration } from "./routePlannerUtils";
 
 type OptimizedStopListProps = {
   orderedStops: OrderedStop[];
+  timeZone?: string;
   startAddress?: string;
   isStale?: boolean;
   onMoveStop?: (stopId: string, direction: "up" | "down") => void;
@@ -32,6 +34,7 @@ function isLunchBreak(
   breakDurationMinutes: number,
   lunchStartTime?: string,
   lunchDurationMinutes?: number,
+  timeZone?: string,
 ): boolean {
   if (!lunchStartTime || !lunchDurationMinutes) return false;
   // Duration must match configured lunch (±1 min tolerance)
@@ -39,13 +42,13 @@ function isLunchBreak(
   // Break must start within ±90 minutes of configured lunch start
   const [lh, lm] = lunchStartTime.split(":").map(Number);
   const lunchStartMin = lh * 60 + lm;
-  const d = new Date(breakStartMs);
-  const breakMin = d.getHours() * 60 + d.getMinutes();
+  const breakMin = getZonedMinutesOfDay(new Date(breakStartMs), timeZone);
   return Math.abs(breakMin - lunchStartMin) <= 90;
 }
 
 export function OptimizedStopList({
   orderedStops,
+  timeZone,
   startAddress,
   isStale = false,
   onMoveStop,
@@ -61,6 +64,7 @@ export function OptimizedStopList({
   lunchStartTime,
   lunchDurationMinutes,
 }: OptimizedStopListProps) {
+  const timeFormatter = createRouteTimeFormatter(timeZone);
   const effectiveBreakGapThreshold = breakGapThresholdMinutes ?? null;
   // Pre-compute a sequential label per task (1, 2, 3…) across all stops,
   // so multi-task stops don't repeat the same stop number.
@@ -102,7 +106,13 @@ export function OptimizedStopList({
             effectiveBreakGapThreshold !== null && idleGapMinutes >= effectiveBreakGapThreshold;
           const isLunch =
             showBreakCard &&
-            isLunchBreak(breakStartMs, idleGapMinutes, lunchStartTime, lunchDurationMinutes);
+            isLunchBreak(
+              breakStartMs,
+              idleGapMinutes,
+              lunchStartTime,
+              lunchDurationMinutes,
+              timeZone,
+            );
 
           return (
             <Fragment key={stop.stopId}>
@@ -152,8 +162,8 @@ export function OptimizedStopList({
                       </span>
                       <span className="text-xs text-blue-700/90 dark:text-blue-300/90">
                         {isStale ? "~ " : ""}
-                        {expectedStartTimeFormatter.format(new Date(breakStartMs))} –{" "}
-                        {expectedStartTimeFormatter.format(new Date(breakEndMs))}
+                        {timeFormatter.format(new Date(breakStartMs))} –{" "}
+                        {timeFormatter.format(new Date(breakEndMs))}
                       </span>
                     </div>
                   </div>
@@ -185,6 +195,7 @@ export function OptimizedStopList({
                           interTaskBreakMinutes,
                           lunchStartTime,
                           lunchDurationMinutes,
+                          timeZone,
                         );
 
                       return (
@@ -236,13 +247,8 @@ export function OptimizedStopList({
                                   </span>
                                   <span className="text-xs text-blue-700/90 dark:text-blue-300/90">
                                     {isStale ? "~ " : ""}
-                                    {expectedStartTimeFormatter.format(
-                                      new Date(interTaskBreakStartMs),
-                                    )}{" "}
-                                    –{" "}
-                                    {expectedStartTimeFormatter.format(
-                                      new Date(interTaskBreakEndMs),
-                                    )}
+                                    {timeFormatter.format(new Date(interTaskBreakStartMs))} –{" "}
+                                    {timeFormatter.format(new Date(interTaskBreakEndMs))}
                                   </span>
                                 </div>
                               </div>
@@ -255,6 +261,7 @@ export function OptimizedStopList({
                             <OptimizedStopCard
                               task={task}
                               stop={stop}
+                              timeZone={timeZone}
                               stopLabel={String(taskLabels.get(task.visitId) ?? stopIndex + 1)}
                               isStale={isStale}
                               showMoveControls={taskIndex === 0}
@@ -310,6 +317,7 @@ export function OptimizedStopList({
                             <EndingStopCard
                               stop={stop}
                               stopLabel="E"
+                              timeZone={timeZone}
                               isStale={isStale}
                               isExpanded={Boolean(expandedResultEndingStopIds[endingDetailsKey])}
                               onToggle={() => onToggleResultEndingStop(endingDetailsKey)}
