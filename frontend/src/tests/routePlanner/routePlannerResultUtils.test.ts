@@ -5,6 +5,8 @@ import {
   formatBreakGap,
   formatExpectedStartTimeText,
   formatVisitDurationMinutes,
+  getZonedMinutesOfDay,
+  resolveZoneUtcOffset,
   timeToMinutes,
 } from "../../features/route-planner/utils/routePlannerResultUtils";
 
@@ -20,6 +22,27 @@ describe("routePlannerResultUtils", () => {
     const formatter = createRouteTimeFormatter("America/Toronto");
     const label = formatExpectedStartTimeText("2026-06-30T12:14:00Z", formatter);
     expect(label).toBe("Expected start time 08:14 AM");
+  });
+
+  it("reads minutes-of-day in the route timezone, not the device timezone", () => {
+    // 12:14 UTC → 08:14 in Toronto (EDT) = 494 min; 23:30 in Tokyo (next day in
+    // UTC) stays same-day in zone.
+    expect(getZonedMinutesOfDay(new Date("2026-06-30T12:14:00Z"), "America/Toronto")).toBe(
+      8 * 60 + 14,
+    );
+    expect(getZonedMinutesOfDay(new Date("2026-06-30T12:14:00Z"), "Asia/Tokyo")).toBe(21 * 60 + 14);
+  });
+
+  it("resolves a zone's UTC offset as a ±HH:MM string", () => {
+    // Toronto observes EDT (UTC-4) on this summer date.
+    expect(resolveZoneUtcOffset(Date.parse("2026-06-30T12:00:00Z"), "America/Toronto")).toBe(
+      "-04:00",
+    );
+    // …and EST (UTC-5) in winter.
+    expect(resolveZoneUtcOffset(Date.parse("2026-01-15T12:00:00Z"), "America/Toronto")).toBe(
+      "-05:00",
+    );
+    expect(resolveZoneUtcOffset(Date.parse("2026-06-30T12:00:00Z"), "Asia/Kolkata")).toBe("+05:30");
   });
 
   it("formats break gaps across minutes, exact hours, and mixed durations", () => {

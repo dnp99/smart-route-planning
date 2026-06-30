@@ -1,5 +1,9 @@
 import type { OptimizeRouteResponse } from "../types";
-import { createRouteTimeFormatter, formatBreakGap } from "./routePlannerResultUtils";
+import {
+  createRouteTimeFormatter,
+  formatBreakGap,
+  getZonedMinutesOfDay,
+} from "./routePlannerResultUtils";
 import { formatDuration } from "./routePlannerUtils";
 import { formatNameWords } from "../../patients/domain/patientName";
 
@@ -51,13 +55,13 @@ function isLunchBreak(
   breakDurationMinutes: number,
   lunchStartTime?: string,
   lunchDurationMinutes?: number,
+  timeZone?: string,
 ): boolean {
   if (!lunchStartTime || !lunchDurationMinutes) return false;
   if (Math.abs(breakDurationMinutes - lunchDurationMinutes) > 1) return false;
   const [lh, lm] = lunchStartTime.split(":").map(Number);
   const lunchStartMin = lh * 60 + lm;
-  const d = new Date(breakStartMs);
-  const breakMin = d.getHours() * 60 + d.getMinutes();
+  const breakMin = getZonedMinutesOfDay(new Date(breakStartMs), timeZone);
   return Math.abs(breakMin - lunchStartMin) <= 90;
 }
 
@@ -145,6 +149,7 @@ export async function exportRouteImage(
               idleGapMinutes,
               lunchStartTime,
               lunchDurationMinutes,
+              result.timezone,
             ),
             durationMinutes: idleGapMinutes,
             startMs: breakStartMs,

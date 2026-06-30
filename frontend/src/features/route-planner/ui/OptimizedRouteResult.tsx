@@ -4,7 +4,11 @@ import { exportRouteImage } from "./routeImageExport";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import RouteMap from "../RouteMap";
 import { formatDuration, buildGoogleMapsTripUrl } from "./routePlannerUtils";
-import { createRouteTimeFormatter, formatVisitDurationMinutes } from "./routePlannerResultUtils";
+import {
+  createRouteTimeFormatter,
+  formatVisitDurationMinutes,
+  getZonedMinutesOfDay,
+} from "./routePlannerResultUtils";
 import { formatNameWords } from "../../patients/domain/patientName";
 import { OptimizedStopList } from "./OptimizedStopList";
 
@@ -189,12 +193,8 @@ export function OptimizedRouteResult({
     let firstAffected: string | null = null;
     displayedOrderedStops.forEach((stop) => {
       stop.tasks.forEach((task) => {
-        const startMin =
-          new Date(task.serviceStartTime).getHours() * 60 +
-          new Date(task.serviceStartTime).getMinutes();
-        const endMin =
-          new Date(task.serviceEndTime).getHours() * 60 +
-          new Date(task.serviceEndTime).getMinutes();
+        const startMin = getZonedMinutesOfDay(new Date(task.serviceStartTime), result.timezone);
+        const endMin = getZonedMinutesOfDay(new Date(task.serviceEndTime), result.timezone);
         if (startMin < workStartMin) {
           early += 1;
           firstAffected ??= task.visitId;

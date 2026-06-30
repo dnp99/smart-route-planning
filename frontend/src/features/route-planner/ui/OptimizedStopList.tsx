@@ -6,6 +6,7 @@ import {
   createRouteTimeFormatter,
   formatBreakGap,
   addressesMatch,
+  getZonedMinutesOfDay,
 } from "./routePlannerResultUtils";
 import { formatDuration } from "./routePlannerUtils";
 
@@ -33,6 +34,7 @@ function isLunchBreak(
   breakDurationMinutes: number,
   lunchStartTime?: string,
   lunchDurationMinutes?: number,
+  timeZone?: string,
 ): boolean {
   if (!lunchStartTime || !lunchDurationMinutes) return false;
   // Duration must match configured lunch (±1 min tolerance)
@@ -40,8 +42,7 @@ function isLunchBreak(
   // Break must start within ±90 minutes of configured lunch start
   const [lh, lm] = lunchStartTime.split(":").map(Number);
   const lunchStartMin = lh * 60 + lm;
-  const d = new Date(breakStartMs);
-  const breakMin = d.getHours() * 60 + d.getMinutes();
+  const breakMin = getZonedMinutesOfDay(new Date(breakStartMs), timeZone);
   return Math.abs(breakMin - lunchStartMin) <= 90;
 }
 
@@ -105,7 +106,13 @@ export function OptimizedStopList({
             effectiveBreakGapThreshold !== null && idleGapMinutes >= effectiveBreakGapThreshold;
           const isLunch =
             showBreakCard &&
-            isLunchBreak(breakStartMs, idleGapMinutes, lunchStartTime, lunchDurationMinutes);
+            isLunchBreak(
+              breakStartMs,
+              idleGapMinutes,
+              lunchStartTime,
+              lunchDurationMinutes,
+              timeZone,
+            );
 
           return (
             <Fragment key={stop.stopId}>
@@ -188,6 +195,7 @@ export function OptimizedStopList({
                           interTaskBreakMinutes,
                           lunchStartTime,
                           lunchDurationMinutes,
+                          timeZone,
                         );
 
                       return (

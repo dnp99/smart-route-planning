@@ -4,6 +4,7 @@ import {
   createRouteTimeFormatter,
   formatExpectedStartTimeText,
   formatVisitDurationMinutes,
+  getZonedMinutesOfDay,
 } from "./routePlannerResultUtils";
 import { formatNameWords } from "../../patients/domain/patientName";
 
@@ -83,10 +84,8 @@ export function OptimizedStopCard({
     const [weH, weM] = workEnd.split(":").map(Number);
     const workStartMin = wsH * 60 + wsM;
     const workEndMin = weH * 60 + weM;
-    const start = new Date(task.serviceStartTime);
-    const end = new Date(task.serviceEndTime);
-    const startMin = start.getHours() * 60 + start.getMinutes();
-    const endMin = end.getHours() * 60 + end.getMinutes();
+    const startMin = getZonedMinutesOfDay(new Date(task.serviceStartTime), timeZone);
+    const endMin = getZonedMinutesOfDay(new Date(task.serviceEndTime), timeZone);
     return {
       isBeforeHours: startMin < workStartMin,
       isAfterHours: endMin > workEndMin,
