@@ -36,12 +36,12 @@ export const responsiveStyles = {
   appFooter:
     "w-full bg-[linear-gradient(90deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] dark:bg-[linear-gradient(90deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
   appFooterInner:
-    "mx-auto flex w-full max-w-7xl flex-col items-center gap-3 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:pb-4 md:pl-1 md:pr-10",
+    "mx-auto flex w-full max-w-7xl flex-col items-center gap-3 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:pb-4 md:pl-1 md:pr-[60px]",
   // Horizontal insets are symmetric on mobile (no sidebar); at md+ the left
   // inset tightens toward the rail and the right inset widens so the content
   // doesn't read as pushed against the right edge. Keep this in sync with the
   // header inner row in AppHeader so the breadcrumb and page H1 stay aligned.
-  contentWrapper: "mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6 md:pl-1 md:pr-10",
+  contentWrapper: "mx-auto w-full max-w-7xl flex-1 px-4 pb-6 sm:px-6 md:pl-1 md:pr-[60px]",
   tabNav: "flex gap-6 border-b border-slate-200/50 dark:border-slate-800/50",
   // Inline primary nav inside the desktop header bar (merged header+tabs).
   navBarNav: "flex items-center gap-6 lg:gap-8",
