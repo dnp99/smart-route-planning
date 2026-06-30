@@ -2,14 +2,22 @@
 // Later this can be replaced by a nurse-configured preference.
 export const BREAK_GAP_THRESHOLD_MINUTES = 30;
 
-export const expectedStartTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  hour: "2-digit",
-  minute: "2-digit",
-  hour12: true,
-});
+// Builds the route time formatter for a specific route. `timeZone` MUST be the
+// route's IANA zone (from the optimize response) — times are UTC instants, so
+// without an explicit zone Intl formats in the device's zone and shows the wrong
+// wall-clock whenever the device differs from the route. Falls back to the
+// device zone only when the zone is unknown (legacy responses).
+export const createRouteTimeFormatter = (timeZone?: string): Intl.DateTimeFormat =>
+  new Intl.DateTimeFormat(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+    ...(timeZone ? { timeZone } : {}),
+  });
 
 export const formatExpectedStartTimeText = (
   serviceStartTime: string,
+  formatter: Intl.DateTimeFormat,
   approximate = false,
 ): string => {
   const parsedDate = new Date(serviceStartTime);
@@ -18,7 +26,7 @@ export const formatExpectedStartTimeText = (
     return "";
   }
 
-  return `Expected start time ${approximate ? "~ " : ""}${expectedStartTimeFormatter.format(parsedDate)}`;
+  return `Expected start time ${approximate ? "~ " : ""}${formatter.format(parsedDate)}`;
 };
 
 export const formatBreakGap = (minutes: number): string => {

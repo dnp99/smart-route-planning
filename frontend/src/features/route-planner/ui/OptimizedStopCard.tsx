@@ -1,7 +1,7 @@
 import type { OrderedStop } from "../types";
 import { formatDuration } from "./routePlannerUtils";
 import {
-  expectedStartTimeFormatter,
+  createRouteTimeFormatter,
   formatExpectedStartTimeText,
   formatVisitDurationMinutes,
 } from "./routePlannerResultUtils";
@@ -12,6 +12,7 @@ type TaskResult = OrderedStop["tasks"][number];
 type OptimizedStopCardProps = {
   task: TaskResult;
   stop: OrderedStop;
+  timeZone?: string;
   stopLabel: string;
   isExpanded: boolean;
   onToggle: () => void;
@@ -34,6 +35,7 @@ type OptimizedStopCardProps = {
 export function OptimizedStopCard({
   task,
   stop,
+  timeZone,
   stopLabel,
   isExpanded,
   onToggle,
@@ -46,8 +48,13 @@ export function OptimizedStopCard({
   workStart,
   workEnd,
 }: OptimizedStopCardProps) {
+  const timeFormatter = createRouteTimeFormatter(timeZone);
   const formattedPatientName = formatNameWords(task.patientName);
-  const expectedStartLabel = formatExpectedStartTimeText(task.serviceStartTime, isStale);
+  const expectedStartLabel = formatExpectedStartTimeText(
+    task.serviceStartTime,
+    timeFormatter,
+    isStale,
+  );
   const expectedStartTimeValue = expectedStartLabel
     .replace("Expected start time ", "")
     .replace(/^~\s+/, "");
@@ -302,6 +309,7 @@ export function OptimizedStopCard({
 type EndingStopCardProps = {
   stop: OrderedStop;
   stopLabel: string;
+  timeZone?: string;
   isExpanded: boolean;
   onToggle: () => void;
   isHomeEndingPoint: boolean;
@@ -311,11 +319,13 @@ type EndingStopCardProps = {
 export function EndingStopCard({
   stop,
   stopLabel: _stopLabel,
+  timeZone,
   isExpanded,
   onToggle,
   isHomeEndingPoint,
   isStale = false,
 }: EndingStopCardProps) {
+  const timeFormatter = createRouteTimeFormatter(timeZone);
   return (
     // Visually differentiated from patient stops: dashed border + slate-50 bg
     <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 px-3 py-2.5 dark:border-slate-700 dark:bg-slate-950/40">
@@ -348,8 +358,7 @@ export function EndingStopCard({
           if (arrivalDate.getTime() !== arrivalDate.getTime()) return null;
           return (
             <p className="mt-1 text-sm font-semibold leading-6 text-emerald-700 dark:text-emerald-300">
-              {isStale ? "~\u00A0" : ""}You should be home by{" "}
-              {expectedStartTimeFormatter.format(arrivalDate)}
+              {isStale ? "~\u00A0" : ""}You should be home by {timeFormatter.format(arrivalDate)}
             </p>
           );
         })()}

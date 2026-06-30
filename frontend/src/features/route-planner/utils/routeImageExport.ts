@@ -1,5 +1,5 @@
 import type { OptimizeRouteResponse } from "../types";
-import { expectedStartTimeFormatter, formatBreakGap } from "./routePlannerResultUtils";
+import { createRouteTimeFormatter, formatBreakGap } from "./routePlannerResultUtils";
 import { formatDuration } from "./routePlannerUtils";
 import { formatNameWords } from "../../patients/domain/patientName";
 
@@ -121,6 +121,7 @@ export async function exportRouteImage(
 ): Promise<void> {
   const { breakGapThresholdMinutes, lunchStartTime, lunchDurationMinutes } = options;
   const effectiveBreakGap = breakGapThresholdMinutes ?? null;
+  const timeFormatter = createRouteTimeFormatter(result.timezone);
 
   const scheduledStops = result.orderedStops.filter((s) => !s.isEndingPoint && s.tasks.length > 0);
 
@@ -194,7 +195,7 @@ export async function exportRouteImage(
   ctx.font = "14px system-ui, -apple-system, sans-serif";
   ctx.fillText(formatDateLabel(planningDate), PAD_X, 46);
 
-  const leaveBy = expectedStartTimeFormatter.format(new Date(result.start.departureTime));
+  const leaveBy = timeFormatter.format(new Date(result.start.departureTime));
   const leaveByText = `Suggested leave-by ~ ${leaveBy}`;
   ctx.font = "bold 13px system-ui, -apple-system, sans-serif";
   ctx.fillStyle = "#fbbf24";
@@ -285,7 +286,7 @@ export async function exportRouteImage(
       ctx.fillText(pillText, pillX + pillWidth / 2, pillY + pillH / 2);
 
       // Time range
-      const timeRange = `${expectedStartTimeFormatter.format(new Date(info.startMs))} – ${expectedStartTimeFormatter.format(new Date(info.endMs))}`;
+      const timeRange = `${timeFormatter.format(new Date(info.startMs))} – ${timeFormatter.format(new Date(info.endMs))}`;
       ctx.fillStyle = COLOR_BREAK_SUB;
       ctx.font = "12px system-ui, -apple-system, sans-serif";
       ctx.textAlign = "left";
@@ -308,9 +309,7 @@ export async function exportRouteImage(
       ctx.stroke();
 
       const task = stop.tasks[0];
-      const timeText = task
-        ? expectedStartTimeFormatter.format(new Date(task.serviceStartTime))
-        : "";
+      const timeText = task ? timeFormatter.format(new Date(task.serviceStartTime)) : "";
       const isOnTime = task ? task.onTime : true;
       const patientName = task?.patientName ? formatNameWords(task.patientName) : stop.address;
       const addressText = task?.address ?? stop.address;

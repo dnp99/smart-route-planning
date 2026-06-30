@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addressesMatch,
+  createRouteTimeFormatter,
   formatBreakGap,
   formatExpectedStartTimeText,
   formatVisitDurationMinutes,
@@ -9,7 +10,16 @@ import {
 
 describe("routePlannerResultUtils", () => {
   it("returns empty expected start text for invalid timestamps", () => {
-    expect(formatExpectedStartTimeText("not-a-date")).toBe("");
+    const formatter = createRouteTimeFormatter("America/Toronto");
+    expect(formatExpectedStartTimeText("not-a-date", formatter)).toBe("");
+  });
+
+  it("formats route times in the route timezone, not the device timezone", () => {
+    // 12:14 UTC is 08:14 in Toronto (EDT, UTC-4). The formatter must render in
+    // the route zone regardless of where the device running the test sits.
+    const formatter = createRouteTimeFormatter("America/Toronto");
+    const label = formatExpectedStartTimeText("2026-06-30T12:14:00Z", formatter);
+    expect(label).toBe("Expected start time 08:14 AM");
   });
 
   it("formats break gaps across minutes, exact hours, and mixed durations", () => {
