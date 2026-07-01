@@ -1,4 +1,24 @@
-# Route Advisor (Claude Haiku) — plan
+# Route Advisor (Claude Haiku) — SHIPPED
+
+## Status — implemented (local commits, `develop`)
+
+Built end-to-end and committed locally (never pushed):
+
+- **Backend:** `@anthropic-ai/sdk`; `lib/ai/claude.ts` (lazy singleton, `hasAnthropicKey`, `ROUTE_ADVISOR_MODEL = claude-haiku-4-5`); `lib/ai/routeAdvisor.ts` (translate-don't-optimize system prompt, forced tool call for a guaranteed `{ brief, suggestions }`, caps to 3); `lib/rateLimit/routeAdvisorRateLimit.ts` (best-effort per-nurse, 429 + Retry-After); `api/route-planner/advisor/route.ts` (OPTIONS + POST; auth, rate limit, 503 when unconfigured, 400 bad body/context, 502 on AI failure; audits aggregates only — never advice text or PHI).
+- **Shared:** `shared/contracts/routeAdvisor.ts` — PHI-free `DeidentifiedRouteContext` + `RouteAdvisorResponse`, strict server-side guard + client parser.
+- **Frontend:** `domain/buildRouteAdvisorContext.ts` (the single PHI boundary — aggregates + "Stop N" only, tested for no name/address/id leakage); `api/routePlannerService.ts` `requestRouteAdvice` + `RouteAdvisorUnavailableError` (503 → hidden); `hooks/useRouteAdvisor.ts` (request + cache-by-context, resets on route change); `ui/RouteAdvisorPanel.tsx` + tokens; wired controller → `RouteResultSection` → `OptimizedRouteResult` under the schedule summary.
+- **Env/docs:** `ANTHROPIC_API_KEY` documented in `backend/README.md`, root `README.md`, `.env.local.example`. Absent key → 503 → panel hidden.
+
+### Post-launch refinements (from live testing)
+- Prompt: use the exact `windowType` from the data (no "fixed" vs "flexible/preferred" slips); cite only numbers present verbatim; no per-leg travel figures / routing-efficiency commentary (there is no per-leg data — it was hallucinating "168 km between Stop 2 and 3").
+- Summary banner now counts any late visit (`lateBySeconds > 0`), matching the stop badges + advisor, instead of the coarse 15/60-min warning thresholds.
+- Stop-card late label matches the window type ("Outside fixed/preferred window").
+- **Advisor visibility gated to routes with issues** (`issueCount > 0`, or once advice is in flight/loaded) — on a clean route it just restated the green banner, so it's hidden there.
+
+### Phase 2 (still out of scope)
+"Suggest a reorder" — Haiku proposes an order, user Applies via the existing manual-reorder (`onMoveStop`) + Recalculate.
+
+---
 
 ## Context
 
