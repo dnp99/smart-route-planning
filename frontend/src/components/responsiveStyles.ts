@@ -62,6 +62,10 @@ export const responsiveStyles = {
   // Static (non-route) sidebar row, e.g. the Settings button — inactive item look.
   sidebarNavButton:
     "group flex w-full items-center gap-3 rounded-r-[10px] border-l-[3px] border-transparent px-3 py-2.5 text-left text-[13.5px] font-medium text-slate-600 transition hover:bg-slate-100/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:text-slate-300 dark:hover:bg-slate-800/40",
+  // Active look for the same row (Settings while its modal is open) — mirrors the
+  // sidebar nav-link active state in AppTabs so it reads identically.
+  sidebarNavButtonActive:
+    "group flex w-full items-center gap-3 rounded-r-[10px] border-l-[3px] border-blue-600 bg-blue-50 px-3 py-2.5 text-left text-[13.5px] font-semibold text-blue-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-blue-400 dark:bg-blue-950/40 dark:text-blue-200",
   // Sidebar "Today" mini-card + account card at the foot of the rail.
   sidebarTodayCard:
     "mt-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/80",

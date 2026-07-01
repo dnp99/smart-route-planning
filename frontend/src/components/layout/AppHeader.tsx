@@ -146,18 +146,9 @@ export default function AppHeader({
                 </svg>
                 <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900" />
               </button>
-              <span className={responsiveStyles.topBarDivider} aria-hidden="true" />
-              {/* Desktop: quick logout (account settings live in the sidebar). */}
-              <AccountMenu
-                authUser={authUser}
-                isAuthenticated={isAuthenticated}
-                onOpenAccountSettings={onOpenAccountSettings}
-                onLogout={onLogout}
-                variant="avatar"
-                items="logoutOnly"
-                className="hidden md:block"
-              />
-              {/* Mobile: full menu (no sidebar to hold account settings). */}
+              {/* Desktop account/settings live entirely in the sidebar (identity
+                  card + Settings row), so the top bar has no avatar there. Mobile
+                  has no sidebar, so it keeps the full avatar menu below. */}
               <AccountMenu
                 authUser={authUser}
                 isAuthenticated={isAuthenticated}
