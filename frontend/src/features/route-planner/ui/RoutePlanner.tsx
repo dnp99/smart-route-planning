@@ -55,6 +55,7 @@ function RoutePlanner({
   const {
     handleSubmit,
     isMobileViewport,
+    isOptimizing,
     tripSetupSectionProps,
     patientSelectorSectionProps,
     routeResultSectionProps,
@@ -109,7 +110,15 @@ function RoutePlanner({
         </div>
 
         <form className={responsiveStyles.form} onSubmit={handleSubmit}>
-          <TripSetupSection {...tripSetupSectionProps} />
+          {/* Lock start/end/planning-date while an optimize is in flight so trip
+              inputs can't drift out of sync with the request already sent. */}
+          <fieldset
+            disabled={isOptimizing}
+            data-testid="trip-setup-fieldset"
+            className="m-0 min-w-0 border-0 p-0 transition-opacity disabled:opacity-60"
+          >
+            <TripSetupSection {...tripSetupSectionProps} />
+          </fieldset>
 
           <div className="mt-2">
             <PatientSelectorSection {...patientSelectorSectionProps} />

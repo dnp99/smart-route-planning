@@ -366,27 +366,28 @@ describe("RoutePlanner patient selection integration", () => {
     cleanup();
   });
 
-  it("locks the client selection area while an optimize is in flight", () => {
-    // Guards the Option A fix: mid-optimize edits would land in the client list
-    // but be absent from the in-flight result, so the whole selection area is
-    // disabled while optimizing.
+  it("locks the client selection and trip setup areas while an optimize is in flight", () => {
+    // Guards the Option A fix: mid-optimize edits would land in the inputs but be
+    // absent from the in-flight result, so trip setup and the whole selection
+    // area are disabled while optimizing.
+    const lockIds = ["client-selection-fieldset", "trip-setup-fieldset"];
+
     routeOptimizationState.isLoading = true;
     const { container, unmount } = render(<RoutePlanner />);
-    expect(
-      (container.querySelector('[data-testid="client-selection-fieldset"]') as HTMLFieldSetElement)
-        ?.disabled,
-    ).toBe(true);
+    lockIds.forEach((id) => {
+      expect(
+        (container.querySelector(`[data-testid="${id}"]`) as HTMLFieldSetElement)?.disabled,
+      ).toBe(true);
+    });
     unmount();
 
     routeOptimizationState.isLoading = false;
     const { container: notOptimizing } = render(<RoutePlanner />);
-    expect(
-      (
-        notOptimizing.querySelector(
-          '[data-testid="client-selection-fieldset"]',
-        ) as HTMLFieldSetElement
-      )?.disabled,
-    ).toBe(false);
+    lockIds.forEach((id) => {
+      expect(
+        (notOptimizing.querySelector(`[data-testid="${id}"]`) as HTMLFieldSetElement)?.disabled,
+      ).toBe(false);
+    });
   });
 
   it("prefills start and end addresses from nurse home address", () => {
