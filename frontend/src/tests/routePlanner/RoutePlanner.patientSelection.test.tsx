@@ -366,6 +366,30 @@ describe("RoutePlanner patient selection integration", () => {
     cleanup();
   });
 
+  it("locks the client selection and trip setup areas while an optimize is in flight", () => {
+    // Guards the Option A fix: mid-optimize edits would land in the inputs but be
+    // absent from the in-flight result, so trip setup and the whole selection
+    // area are disabled while optimizing.
+    const lockIds = ["client-selection-fieldset", "trip-setup-fieldset"];
+
+    routeOptimizationState.isLoading = true;
+    const { container, unmount } = render(<RoutePlanner />);
+    lockIds.forEach((id) => {
+      expect(
+        (container.querySelector(`[data-testid="${id}"]`) as HTMLFieldSetElement)?.disabled,
+      ).toBe(true);
+    });
+    unmount();
+
+    routeOptimizationState.isLoading = false;
+    const { container: notOptimizing } = render(<RoutePlanner />);
+    lockIds.forEach((id) => {
+      expect(
+        (notOptimizing.querySelector(`[data-testid="${id}"]`) as HTMLFieldSetElement)?.disabled,
+      ).toBe(false);
+    });
+  });
+
   it("prefills start and end addresses from nurse home address", () => {
     render(<RoutePlanner nurseHomeAddress="1 Home Way, Mississauga, ON" />);
 
@@ -1212,7 +1236,7 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByText(/^Expected start$/i).parentElement?.textContent).toContain(
       expectedStartTimeLabel,
     );
-    expect(screen.getByText(/Outside preferred window by 20 min/i)).toBeTruthy();
+    expect(screen.getByText(/Outside fixed window by 20 min/i)).toBeTruthy();
   });
 
   it("shows no preferred window label and suppresses late warning when route task has no preferred window", () => {
@@ -1276,7 +1300,7 @@ describe("RoutePlanner patient selection integration", () => {
         name: /Toggle details for Flex Patient/i,
       }),
     );
-    expect(screen.queryByText(/Outside preferred window by/i)).toBeNull();
+    expect(screen.queryByText(/Outside (fixed|preferred) window by/i)).toBeNull();
   });
 
   it("removes selected destination patient from planner state", () => {

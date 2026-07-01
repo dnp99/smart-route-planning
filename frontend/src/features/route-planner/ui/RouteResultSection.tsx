@@ -1,6 +1,17 @@
+import { useEffect, useState } from "react";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { OptimizedRouteResult } from "./OptimizedRouteResult";
 import type { OptimizeRouteResponse, OrderedStop } from "../types";
+import type { RouteAdvisorResponse } from "../../../../../shared/contracts";
+
+// Honest, generic phases for the v3 optimize (geocode → distance matrix →
+// ordering). Kept vague enough not to imply real determinate progress.
+const OPTIMIZE_STATUS_MESSAGES = [
+  "Calculating distances between stops…",
+  "Ordering stops to hit time windows…",
+  "Trimming total driving time…",
+  "Finalizing your route…",
+];
 
 const SyncIcon = () => (
   <svg
@@ -60,45 +71,110 @@ type RouteResultSectionProps = {
   lunchStartTime?: string;
   lunchDurationMinutes?: number;
   planningDate: string;
+  advice?: RouteAdvisorResponse | null;
+  isLoadingAdvice?: boolean;
+  adviceError?: string;
+  adviceUnavailable?: boolean;
+  onRequestAdvice?: () => void;
 };
 
-const OptimizedRouteSkeleton = () => (
-  <section
-    className={responsiveStyles.routeSkeletonSection}
-    aria-label="Optimizing route"
-    data-testid="optimized-route-skeleton"
-  >
-    <div className={responsiveStyles.routeSkeletonDispatch}>
-      <div className={responsiveStyles.routeSkeletonHeader}>
-        <div
-          className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTitle}`}
-        />
-        <div
-          className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonHeading}`}
-        />
-        <div
-          className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonBody}`}
-        />
-        <div
-          className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonBodyShort}`}
-        />
-      </div>
-      <div
-        className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonWarning}`}
-      />
-      <div className={responsiveStyles.routeSkeletonStatsGrid}>
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            key={`route-stat-skeleton-${index}`}
-            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonStat}`}
-          />
-        ))}
-      </div>
-    </div>
+const OptimizedRouteSkeleton = () => {
+  // Indeterminate "trickle" that eases toward ~90%: the real request resolves
+  // and unmounts this before it completes, so it always reads as in-progress.
+  const [progress, setProgress] = useState(8);
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      setProgress((current) => (current >= 90 ? 90 : current + Math.max(1, (90 - current) * 0.12)));
+    }, 400);
+    return () => window.clearInterval(id);
+  }, []);
 
-    <div className={responsiveStyles.routeSkeletonTimelineMap}>
-      <section className={responsiveStyles.routeSkeletonCard}>
-        <div className={responsiveStyles.routeSkeletonSplitHeader}>
+  const message =
+    progress < 30
+      ? OPTIMIZE_STATUS_MESSAGES[0]
+      : progress < 55
+        ? OPTIMIZE_STATUS_MESSAGES[1]
+        : progress < 80
+          ? OPTIMIZE_STATUS_MESSAGES[2]
+          : OPTIMIZE_STATUS_MESSAGES[3];
+
+  return (
+    <section
+      className={responsiveStyles.routeSkeletonSection}
+      aria-label="Optimizing route"
+      aria-busy="true"
+      data-testid="optimized-route-skeleton"
+    >
+      <div className={responsiveStyles.routeSkeletonDispatch}>
+        <div>
+          <div className={responsiveStyles.routeSkeletonStatusRow}>
+            <span className={responsiveStyles.routeSkeletonSpinner}>
+              <SyncIcon />
+            </span>
+            <span className={responsiveStyles.routeSkeletonStatusText} aria-live="polite">
+              {message}
+            </span>
+          </div>
+          <div className={responsiveStyles.routeSkeletonProgressTrack}>
+            <div
+              className={responsiveStyles.routeSkeletonProgressBar}
+              style={{ width: `${Math.round(progress)}%` }}
+            />
+          </div>
+        </div>
+        <div className={responsiveStyles.routeSkeletonHeader}>
+          <div
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTitle}`}
+          />
+          <div
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonHeading}`}
+          />
+          <div
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonBody}`}
+          />
+          <div
+            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonBodyShort}`}
+          />
+        </div>
+        <div
+          className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonWarning}`}
+        />
+        <div className={responsiveStyles.routeSkeletonStatsGrid}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div
+              key={`route-stat-skeleton-${index}`}
+              className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonStat}`}
+            />
+          ))}
+        </div>
+      </div>
+
+      <div className={responsiveStyles.routeSkeletonTimelineMap}>
+        <section className={responsiveStyles.routeSkeletonCard}>
+          <div className={responsiveStyles.routeSkeletonSplitHeader}>
+            <div className={responsiveStyles.routeSkeletonCardHeader}>
+              <div
+                className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTitle}`}
+              />
+              <div
+                className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineHeader}`}
+              />
+            </div>
+            <div
+              className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineAction}`}
+            />
+          </div>
+          <div className={responsiveStyles.routeSkeletonTimelineList}>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div
+                key={`route-timeline-skeleton-${index}`}
+                className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineItem}`}
+              />
+            ))}
+          </div>
+        </section>
+
+        <section className={responsiveStyles.routeSkeletonCard}>
           <div className={responsiveStyles.routeSkeletonCardHeader}>
             <div
               className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTitle}`}
@@ -107,44 +183,22 @@ const OptimizedRouteSkeleton = () => (
               className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineHeader}`}
             />
           </div>
-          <div
-            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineAction}`}
-          />
-        </div>
-        <div className={responsiveStyles.routeSkeletonTimelineList}>
-          {Array.from({ length: 4 }).map((_, index) => (
+          <div className={responsiveStyles.routeSkeletonMapStack}>
             <div
-              key={`route-timeline-skeleton-${index}`}
-              className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineItem}`}
+              className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonMapAction}`}
             />
-          ))}
-        </div>
-      </section>
-
-      <section className={responsiveStyles.routeSkeletonCard}>
-        <div className={responsiveStyles.routeSkeletonCardHeader}>
-          <div
-            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTitle}`}
-          />
-          <div
-            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonTimelineHeader}`}
-          />
-        </div>
-        <div className={responsiveStyles.routeSkeletonMapStack}>
-          <div
-            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonMapAction}`}
-          />
-          <div
-            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonMapNote}`}
-          />
-          <div
-            className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonMapCanvas}`}
-          />
-        </div>
-      </section>
-    </div>
-  </section>
-);
+            <div
+              className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonMapNote}`}
+            />
+            <div
+              className={`${responsiveStyles.routeSkeletonPulse} ${responsiveStyles.routeSkeletonMapCanvas}`}
+            />
+          </div>
+        </section>
+      </div>
+    </section>
+  );
+};
 
 export const RouteResultSection = ({
   isMobileViewport,
@@ -183,6 +237,11 @@ export const RouteResultSection = ({
   lunchStartTime,
   lunchDurationMinutes,
   planningDate,
+  advice,
+  isLoadingAdvice,
+  adviceError,
+  adviceUnavailable,
+  onRequestAdvice,
 }: RouteResultSectionProps) => {
   // Mobile single-column: one persistent sticky Optimize bar (no step-wizard).
   const mobileOptimizeHint = !hasValidTripAddresses
@@ -230,37 +289,58 @@ export const RouteResultSection = ({
 
       {optimizeError && <p className={responsiveStyles.formErrorBanner}>{optimizeError}</p>}
 
-      {isLoading && <OptimizedRouteSkeleton />}
+      {/* First optimize (no prior result) → skeleton. Re-optimize → keep the
+          existing route visible but dimmed so context isn't lost mid-request. */}
+      {isLoading && !result && <OptimizedRouteSkeleton />}
 
-      {result && !isLoading && (
-        <OptimizedRouteResult
-          result={result}
-          orderedStops={orderedStops}
-          routeLegs={routeLegs}
-          isManualOrderStale={isManualOrderStale}
-          unscheduledResubmitCount={unscheduledResubmitCount}
-          onMoveStop={onMoveStop}
-          canMoveStop={canMoveStop}
-          onResetManualOrder={onResetManualOrder}
-          onRecalculateManualOrder={onRecalculateManualOrder}
-          isRecalculatingManualOrder={isRecalculatingManualOrder}
-          conflictWarningsDismissed={conflictWarningsDismissed}
-          onDismissConflictWarnings={onDismissConflictWarnings}
-          latenessWarningsDismissed={latenessWarningsDismissed}
-          onDismissLatenessWarnings={onDismissLatenessWarnings}
-          expandedResultTaskIds={expandedResultTaskIds}
-          onToggleResultTask={onToggleResultTask}
-          expandedResultEndingStopIds={expandedResultEndingStopIds}
-          onToggleResultEndingStop={onToggleResultEndingStop}
-          normalizedHomeAddress={normalizedHomeAddress}
-          breakGapThresholdMinutes={breakGapThresholdMinutes}
-          workStart={workStart}
-          workEnd={workEnd}
-          lunchStartTime={lunchStartTime}
-          lunchDurationMinutes={lunchDurationMinutes}
-          planningDate={planningDate}
-          showOptimizeFlash={showOptimizeFlash}
-        />
+      {result && (
+        <div className={responsiveStyles.routeReoptimizeWrap} aria-busy={isLoading}>
+          {isLoading && (
+            <div className={responsiveStyles.routeReoptimizeOverlay}>
+              <span className={responsiveStyles.routeReoptimizeBadge}>
+                <span className={responsiveStyles.routeSkeletonSpinner}>
+                  <SyncIcon />
+                </span>
+                Re-optimizing…
+              </span>
+            </div>
+          )}
+          <div className={isLoading ? responsiveStyles.routeReoptimizeDimmed : undefined}>
+            <OptimizedRouteResult
+              result={result}
+              orderedStops={orderedStops}
+              routeLegs={routeLegs}
+              isManualOrderStale={isManualOrderStale}
+              unscheduledResubmitCount={unscheduledResubmitCount}
+              onMoveStop={onMoveStop}
+              canMoveStop={canMoveStop}
+              onResetManualOrder={onResetManualOrder}
+              onRecalculateManualOrder={onRecalculateManualOrder}
+              isRecalculatingManualOrder={isRecalculatingManualOrder}
+              conflictWarningsDismissed={conflictWarningsDismissed}
+              onDismissConflictWarnings={onDismissConflictWarnings}
+              latenessWarningsDismissed={latenessWarningsDismissed}
+              onDismissLatenessWarnings={onDismissLatenessWarnings}
+              expandedResultTaskIds={expandedResultTaskIds}
+              onToggleResultTask={onToggleResultTask}
+              expandedResultEndingStopIds={expandedResultEndingStopIds}
+              onToggleResultEndingStop={onToggleResultEndingStop}
+              normalizedHomeAddress={normalizedHomeAddress}
+              breakGapThresholdMinutes={breakGapThresholdMinutes}
+              workStart={workStart}
+              workEnd={workEnd}
+              lunchStartTime={lunchStartTime}
+              lunchDurationMinutes={lunchDurationMinutes}
+              planningDate={planningDate}
+              showOptimizeFlash={showOptimizeFlash}
+              advice={advice}
+              isLoadingAdvice={isLoadingAdvice}
+              adviceError={adviceError}
+              adviceUnavailable={adviceUnavailable}
+              onRequestAdvice={onRequestAdvice}
+            />
+          </div>
+        </div>
       )}
     </>
   );

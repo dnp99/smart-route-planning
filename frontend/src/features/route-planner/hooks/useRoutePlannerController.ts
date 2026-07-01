@@ -19,6 +19,7 @@ import { parseOptimizeRouteV2Response } from "../../../../../shared/contracts";
 import { fetchRouteRunById } from "../../../components/home/homeDashboardService";
 import { usePatientSearch } from "./usePatientSearch";
 import { useRouteOptimization } from "./useRouteOptimization";
+import { useRouteAdvisor } from "./useRouteAdvisor";
 import {
   requestExpandVisitInstances,
   requestRecurringVisitTemplates,
@@ -701,6 +702,9 @@ export function useRoutePlannerController({
     toggleResultEndingStop,
   } = useRoutePlannerWarningsState({ result });
 
+  const { advice, isLoadingAdvice, adviceError, adviceUnavailable, requestAdvice } =
+    useRouteAdvisor(result);
+
   const isHomeAddressMissing = normalizedHomeAddress.length === 0;
 
   const activeWorkingHoursConstraint = useMemo(() => {
@@ -821,6 +825,11 @@ export function useRoutePlannerController({
     lunchStartTime: activeWorkingHoursConstraint?.lunchStartTime,
     lunchDurationMinutes: activeWorkingHoursConstraint?.lunchDurationMinutes,
     planningDate,
+    advice,
+    isLoadingAdvice,
+    adviceError,
+    adviceUnavailable,
+    onRequestAdvice: result ? () => requestAdvice(result, planningDate) : undefined,
   };
 
   const patientFormModalProps = {
@@ -848,6 +857,9 @@ export function useRoutePlannerController({
   return {
     handleSubmit,
     isMobileViewport,
+    // True while a v3 optimize is in flight — used to lock trip-setup inputs so
+    // they can't drift out of sync with the request that's already been sent.
+    isOptimizing: isLoading,
     tripSetupSectionProps,
     patientSelectorSectionProps,
     routeResultSectionProps,

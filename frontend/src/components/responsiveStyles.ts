@@ -62,6 +62,10 @@ export const responsiveStyles = {
   // Static (non-route) sidebar row, e.g. the Settings button — inactive item look.
   sidebarNavButton:
     "group flex w-full items-center gap-3 rounded-r-[10px] border-l-[3px] border-transparent px-3 py-2.5 text-left text-[13.5px] font-medium text-slate-600 transition hover:bg-slate-100/70 hover:text-slate-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:text-slate-300 dark:hover:bg-slate-800/40",
+  // Active look for the same row (Settings while its modal is open) — mirrors the
+  // sidebar nav-link active state in AppTabs so it reads identically.
+  sidebarNavButtonActive:
+    "group flex w-full items-center gap-3 rounded-r-[10px] border-l-[3px] border-blue-600 bg-blue-50 px-3 py-2.5 text-left text-[13.5px] font-semibold text-blue-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-blue-400 dark:bg-blue-950/40 dark:text-blue-200",
   // Sidebar "Today" mini-card + account card at the foot of the rail.
   sidebarTodayCard:
     "mt-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/80",
@@ -388,17 +392,17 @@ export const responsiveStyles = {
     "optimize-route-button inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto",
   routeSkeletonSection: "mt-6 border-t border-slate-200 pt-6 dark:border-slate-800",
   routeSkeletonDispatch:
-    "grid gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:rounded-[28px] sm:p-4",
-  routeSkeletonHeader: "grid gap-3",
+    "flex flex-col gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:rounded-[28px] sm:p-4",
+  routeSkeletonHeader: "flex flex-col gap-3",
   routeSkeletonTimelineMap:
     "mt-5 flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)]",
   routeSkeletonCard:
     "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:rounded-[28px] sm:p-4",
   routeSkeletonStatsGrid: "grid grid-cols-2 gap-2 xl:grid-cols-4",
   routeSkeletonSplitHeader: "flex items-start justify-between gap-3",
-  routeSkeletonCardHeader: "grid gap-2",
-  routeSkeletonTimelineList: "mt-4 grid gap-3",
-  routeSkeletonMapStack: "mt-4 grid gap-3",
+  routeSkeletonCardHeader: "flex flex-col gap-2",
+  routeSkeletonTimelineList: "mt-4 flex flex-col gap-3",
+  routeSkeletonMapStack: "mt-4 flex flex-col gap-3",
   routeSkeletonPulse:
     "route-loading-skeleton motion-reduce:animate-none rounded-xl bg-slate-200/80 dark:bg-slate-700/70",
   bootstrapFallbackPage: "mt-3 grid gap-4 sm:gap-5",
@@ -420,6 +424,24 @@ export const responsiveStyles = {
   routeSkeletonMapAction: "h-10 w-full",
   routeSkeletonMapNote: "h-4 w-44",
   routeSkeletonMapCanvas: "h-56 w-full sm:h-[min(70vh,600px)] sm:min-h-64",
+  // Progress affordance shown inside the skeleton while the optimize request runs.
+  routeSkeletonStatusRow: "flex items-center gap-2",
+  routeSkeletonStatusText: "text-sm font-medium text-slate-600 dark:text-slate-300",
+  routeSkeletonSpinner:
+    "inline-flex h-4 w-4 shrink-0 animate-spin items-center justify-center text-blue-600 motion-reduce:animate-none dark:text-blue-300",
+  routeSkeletonProgressTrack:
+    "mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/70",
+  routeSkeletonProgressBar:
+    "h-full rounded-full bg-blue-600 transition-[width] duration-500 ease-out dark:bg-blue-500",
+  // Re-optimize: keep the prior result visible but dimmed, with a floating badge,
+  // instead of flashing back to the skeleton.
+  routeReoptimizeWrap: "relative",
+  routeReoptimizeDimmed: "pointer-events-none opacity-30 transition-opacity",
+  // Sticky at the top of the result, just below the app header, so it hugs the
+  // route yet stays in view while the user scrolls during the ~4-5s re-optimize.
+  routeReoptimizeOverlay: "pointer-events-none sticky top-16 z-30 flex justify-center pt-2",
+  routeReoptimizeBadge:
+    "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-700 shadow-md backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200",
 
   // ── Visit window form ────────────────────────────────────────────────────────
   visitWindowCheckboxLabel:
@@ -491,35 +513,22 @@ export const responsiveStyles = {
     "absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
   // Clients page summary stats row (desktop only — hidden below md)
   // Active tab: one-line summary strip (replaces the four stat boxes).
+  // Tightened: a light borderless summary line (no filled band) so it reads as
+  // part of the table group rather than a separate card.
   clientStatsStrip:
-    "mb-4 hidden flex-wrap items-center gap-x-3.5 gap-y-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-[13px] font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400 md:flex",
+    "mb-4 hidden flex-wrap items-center gap-x-3.5 gap-y-1.5 px-0.5 py-1 text-[13px] font-medium text-slate-500 dark:text-slate-400 md:flex",
   clientStatsStripDot: "h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600",
   clientStatsStripValue: "font-bold text-slate-900 dark:text-slate-100",
   clientStatsStripValueFixed: "font-bold text-blue-800 dark:text-blue-300",
   clientStatsStripValueFlexible: "font-bold text-emerald-700 dark:text-emerald-300",
   // ── Clients page: title count, window filter, table avatar + repeat ──────────
   clientsTitleCount: "font-semibold text-slate-400 dark:text-slate-500",
-  clientFilterToggle:
-    "hidden shrink-0 items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800 md:inline-flex",
-  clientFilterOption:
-    "rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
-  clientFilterOptionActive:
-    "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100",
-  clientFilterOptionInactive:
-    "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
   clientAvatar:
     "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold uppercase text-blue-700 dark:bg-blue-950/50 dark:text-blue-200",
   repeatIconActive: "h-5 w-5 text-blue-600 dark:text-blue-300",
   repeatIconMuted: "h-5 w-5 text-slate-300 dark:text-slate-600",
   repeatCountBadge:
     "absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold leading-none text-white dark:bg-blue-500",
-  // Mobile clients: filter pills (own row below search) + expanded-card actions
-  clientFilterPills: "mb-6 flex flex-wrap gap-2 md:hidden",
-  clientFilterPill:
-    "rounded-full border px-4 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
-  clientFilterPillActive: "border-blue-600 bg-blue-600 text-white",
-  clientFilterPillInactive:
-    "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
   addClientMobileButton:
     "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700",
   mobileEditButton:
@@ -580,6 +589,22 @@ export const responsiveStyles = {
     "inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600",
   routeResetButton:
     "inline-flex items-center gap-1 whitespace-nowrap rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800",
+  // Route Advisor (AI) — blue-tinted selected/active card (§11), lives under the
+  // schedule summary. One card surface, no stacked shadows.
+  routeAdvisorCard:
+    "mb-4 rounded-xl border border-blue-200 bg-blue-50/50 px-4 py-3 dark:border-blue-900/60 dark:bg-blue-950/20",
+  routeAdvisorHeader: "flex items-center justify-between gap-3",
+  routeAdvisorEyebrow:
+    "m-0 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300",
+  routeAdvisorButton:
+    "inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600",
+  routeAdvisorBrief: "m-0 mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200",
+  routeAdvisorSuggestionList: "m-0 mt-2 flex list-none flex-col gap-1.5 p-0",
+  routeAdvisorSuggestion:
+    "flex items-start gap-2 text-sm leading-6 text-slate-700 dark:text-slate-200",
+  routeAdvisorSkeletonLine: "h-3.5 rounded-full bg-blue-100/80 dark:bg-blue-900/40",
+  routeAdvisorError: "m-0 mt-2 text-xs text-slate-500 dark:text-slate-400",
+  routeAdvisorDisclaimer: "m-0 mt-2.5 text-[0.7rem] leading-4 text-slate-400 dark:text-slate-500",
   dashboardNudgeCard:
     "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
   dashboardAlertItem:

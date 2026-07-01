@@ -163,6 +163,7 @@ function App() {
       {isAuthenticated && (
         <AppSidebar
           authUser={authUser}
+          isSettingsActive={isAccountSettingsOpen}
           onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
           onLogout={() => {
             void logout();

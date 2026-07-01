@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { Patient, RecurringVisitTemplate } from "../../../../../shared/contracts";
 import { getPatientDisplayName, toTimeInput } from "../domain/patientForm";
 import { getPatientInitials } from "../domain/patientName";
@@ -298,7 +299,15 @@ export const PatientsTable = ({
   const isIdle = lifecycleState === "idle";
   const showRepeat = lifecycleState === "active";
   const [openWindowsPopoverKey, setOpenWindowsPopoverKey] = useState<string | null>(null);
-  const windowsPopoverRef = useRef<HTMLDivElement | null>(null);
+  // Anchor rect captured on open — the panel is portaled to <body> (fixed
+  // position) so the table card's overflow-hidden can't clip it.
+  const [windowsPopoverAnchor, setWindowsPopoverAnchor] = useState<{
+    top: number;
+    left: number;
+    right: number;
+  } | null>(null);
+  const windowsTriggerRef = useRef<HTMLDivElement | null>(null);
+  const windowsPanelRef = useRef<HTMLDivElement | null>(null);
   const [expandedPatients, setExpandedPatients] = useState<Set<string>>(() => new Set());
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
@@ -375,23 +384,33 @@ export const PatientsTable = ({
       return;
     }
 
+    const close = () => {
+      setOpenWindowsPopoverKey(null);
+      setWindowsPopoverAnchor(null);
+    };
+
     const onMouseDown = (event: MouseEvent) => {
-      if (!windowsPopoverRef.current?.contains(event.target as Node)) {
-        setOpenWindowsPopoverKey(null);
-      }
+      const target = event.target as Node;
+      if (windowsTriggerRef.current?.contains(target)) return;
+      if (windowsPanelRef.current?.contains(target)) return;
+      close();
     };
 
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpenWindowsPopoverKey(null);
-      }
+      if (event.key === "Escape") close();
     };
 
     document.addEventListener("mousedown", onMouseDown);
     document.addEventListener("keydown", onKeyDown);
+    // A fixed-positioned panel would detach from its trigger on scroll/resize,
+    // so close rather than continuously reposition.
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("resize", close);
     return () => {
       document.removeEventListener("mousedown", onMouseDown);
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("resize", close);
     };
   }, [openWindowsPopoverKey]);
 
@@ -422,22 +441,22 @@ export const PatientsTable = ({
               <tbody className="divide-y divide-slate-100 bg-white dark:divide-slate-800 dark:bg-slate-900">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <tr key={i}>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-3.5">
                       <div className="h-4 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-3.5">
                       <div className="h-4 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-3.5">
                       <div className="h-4 w-24 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
                     </td>
-                    <td className="px-4 py-5">
+                    <td className="px-4 py-3.5">
                       <div className="h-4 w-12 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
                     </td>
-                    <td className="px-4 py-5">
+                    <td className="px-4 py-3.5">
                       <div className="mx-auto h-4 w-5 rounded bg-slate-100 animate-pulse dark:bg-slate-800" />
                     </td>
-                    <td className="px-4 py-5" />
+                    <td className="px-4 py-3.5" />
                   </tr>
                 ))}
               </tbody>
@@ -630,7 +649,7 @@ export const PatientsTable = ({
 
       <div className="hidden overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900 md:block">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+          <table className="min-w-full table-fixed divide-y divide-slate-200 dark:divide-slate-800">
             <colgroup>
               {isIdle && <col className="w-12" />}
               <col className="w-[23%]" />
@@ -794,7 +813,7 @@ export const PatientsTable = ({
                     ].join(" ")}
                   >
                     {isIdle && (
-                      <td className="px-5 py-5">
+                      <td className="px-5 py-3.5">
                         <input
                           type="checkbox"
                           checked={selectedIds.has(patient.id)}
@@ -804,26 +823,32 @@ export const PatientsTable = ({
                         />
                       </td>
                     )}
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
+                    <td className="px-6 py-3.5">
+                      <div className="flex min-w-0 items-center gap-3">
                         <span className={responsiveStyles.clientAvatar} aria-hidden="true">
                           {getPatientInitials(patient.firstName, patient.lastName)}
                         </span>
-                        <p className="m-0 line-clamp-2 text-sm font-bold text-slate-900 dark:text-slate-100">
+                        <p
+                          title={patientDisplayName}
+                          className="m-0 min-w-0 line-clamp-2 text-sm font-bold text-slate-900 dark:text-slate-100"
+                        >
                           {patientDisplayName}
                         </p>
                       </div>
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-3.5">
                       {(() => {
                         const { street, cityRegion } = splitAddress(patient.address);
                         return (
                           <>
-                            <p className="m-0 text-sm text-slate-800 dark:text-slate-200">
+                            <p
+                              title={patient.address}
+                              className="m-0 truncate text-sm text-slate-800 dark:text-slate-200"
+                            >
                               {street}
                             </p>
                             {cityRegion && (
-                              <p className="m-0 text-xs text-slate-400 dark:text-slate-500">
+                              <p className="m-0 truncate text-xs text-slate-400 dark:text-slate-500">
                                 {cityRegion}
                               </p>
                             )}
@@ -831,7 +856,7 @@ export const PatientsTable = ({
                         );
                       })()}
                     </td>
-                    <td className="px-6 py-5">
+                    <td className="px-6 py-3.5">
                       <div className="flex items-center gap-1.5">
                         {renderVisitTypePill(visitType)}
                         {windowRows[0]?.timeLabel !== "Not set" && (
@@ -843,34 +868,58 @@ export const PatientsTable = ({
                       {windowRows.length > 1 && (
                         <div
                           className="relative mt-0.5"
-                          ref={openWindowsPopoverKey === patient.id ? windowsPopoverRef : undefined}
+                          ref={openWindowsPopoverKey === patient.id ? windowsTriggerRef : undefined}
                         >
                           <button
                             type="button"
-                            onClick={() =>
-                              setOpenWindowsPopoverKey((current) =>
-                                current === patient.id ? null : patient.id,
-                              )
-                            }
+                            onClick={(event) => {
+                              if (openWindowsPopoverKey === patient.id) {
+                                setOpenWindowsPopoverKey(null);
+                                setWindowsPopoverAnchor(null);
+                                return;
+                              }
+                              const rect = event.currentTarget.getBoundingClientRect();
+                              setWindowsPopoverAnchor({
+                                top: rect.bottom,
+                                left: rect.left,
+                                right: rect.right,
+                              });
+                              setOpenWindowsPopoverKey(patient.id);
+                            }}
                             className="text-xs font-medium text-blue-600 underline underline-offset-2 cursor-pointer dark:text-blue-400"
                           >
                             +{windowRows.length - 1} more
                           </button>
-                          {openWindowsPopoverKey === patient.id && (
-                            <div className="absolute left-0 top-full z-20 mt-1 min-w-max rounded-xl border border-slate-200 bg-white p-2 shadow-md dark:border-slate-700 dark:bg-slate-900">
-                              {windowRows.slice(1).map((row) => (
-                                <div key={row.id} className="px-1 py-1">
-                                  <span className="whitespace-nowrap text-xs text-slate-600 dark:text-slate-300">
-                                    {row.timeLabel}
-                                  </span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          {openWindowsPopoverKey === patient.id &&
+                            windowsPopoverAnchor &&
+                            createPortal(
+                              <div
+                                ref={windowsPanelRef}
+                                style={{
+                                  position: "fixed",
+                                  top: windowsPopoverAnchor.top + 4,
+                                  // Right-anchor when the trigger is in the right
+                                  // ~40% of the viewport so the panel never runs off-screen.
+                                  ...(windowsPopoverAnchor.left > window.innerWidth * 0.6
+                                    ? { right: window.innerWidth - windowsPopoverAnchor.right }
+                                    : { left: windowsPopoverAnchor.left }),
+                                }}
+                                className="z-50 w-max max-w-[min(16rem,90vw)] rounded-xl border border-slate-200 bg-white p-2 shadow-md dark:border-slate-700 dark:bg-slate-900"
+                              >
+                                {windowRows.slice(1).map((row) => (
+                                  <div key={row.id} className="px-1 py-1">
+                                    <span className="whitespace-nowrap text-xs text-slate-600 dark:text-slate-300">
+                                      {row.timeLabel}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>,
+                              document.body,
+                            )}
                         </div>
                       )}
                     </td>
-                    <td className="whitespace-nowrap px-4 py-5 text-left text-sm text-slate-600 dark:text-slate-300">
+                    <td className="whitespace-nowrap px-4 py-3.5 text-left text-sm text-slate-600 dark:text-slate-300">
                       {isIdle ? (
                         (() => {
                           const { primary, secondary } = formatLastScheduled(
@@ -910,7 +959,7 @@ export const PatientsTable = ({
                       )}
                     </td>
                     {showRepeat && (
-                      <td className="px-4 py-5">
+                      <td className="px-4 py-3.5">
                         <div className="flex items-center justify-center">
                           {activeRecurringCount > 0 ? (
                             <span
@@ -936,7 +985,7 @@ export const PatientsTable = ({
                         </div>
                       </td>
                     )}
-                    <td className="px-4 py-5 text-right">
+                    <td className="px-4 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-2">
                         {isArchived ? (
                           <button

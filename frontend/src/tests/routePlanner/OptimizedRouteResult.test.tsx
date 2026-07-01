@@ -399,4 +399,60 @@ describe("OptimizedRouteResult", () => {
       expect(label.parentElement?.getAttribute("data-success")).toBe("true");
     });
   });
+
+  it("treats a flexible visit late below the warning threshold as an issue (no green banner)", () => {
+    // 18 min late on a flexible window: the backend emits no flexible_late
+    // warning (60 min tolerance), but the stop badge still shows "Late" — the
+    // summary must agree and not claim "all on time".
+    render(
+      <OptimizedRouteResult
+        result={buildResult({
+          warnings: [],
+          orderedStops: [
+            {
+              stopId: "stop-1",
+              address: "10 First Avenue",
+              lat: 43.71,
+              lng: -79.41,
+              distanceFromPreviousKm: 5,
+              durationFromPreviousSeconds: 1200,
+              arrivalTime: "2026-03-20T08:50:00-04:00",
+              departureTime: "2026-03-20T09:30:00-04:00",
+              isEndingPoint: false,
+              tasks: [
+                {
+                  visitId: "visit-1",
+                  patientId: "patient-1",
+                  patientName: "alex johnson",
+                  address: "10 First Avenue",
+                  serviceStartTime: "2026-03-20T09:00:00-04:00",
+                  serviceEndTime: "2026-03-20T09:30:00-04:00",
+                  serviceDurationMinutes: 30,
+                  windowStart: "09:00",
+                  windowEnd: "10:00",
+                  windowType: "flexible",
+                  lateBySeconds: 18 * 60,
+                  onTime: false,
+                },
+              ],
+            },
+          ],
+        })}
+        conflictWarningsDismissed={false}
+        onDismissConflictWarnings={() => undefined}
+        latenessWarningsDismissed={false}
+        onDismissLatenessWarnings={() => undefined}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
+      />,
+    );
+
+    expect(screen.queryByText("Schedule looks good")).toBeNull();
+    expect(screen.getByText("1 issue found")).toBeTruthy();
+    expect(screen.getByText("• 1 late visit")).toBeTruthy();
+  });
 });

@@ -7,7 +7,12 @@ import { resolveTodayHoursDisplay } from "../home/todayHours";
 
 // Desktop-only left rail (design 2a): brand, grouped nav, a Today card, and the
 // account menu at the foot. Hidden below md, where the top header + strip take over.
-export default function AppSidebar({ authUser, onOpenAccountSettings, onLogout }) {
+export default function AppSidebar({
+  authUser,
+  onOpenAccountSettings,
+  onLogout,
+  isSettingsActive = false,
+}) {
   const workingHours = resolveTodayHoursDisplay(authUser?.workingHours);
 
   return (
@@ -29,7 +34,14 @@ export default function AppSidebar({ authUser, onOpenAccountSettings, onLogout }
         <button
           type="button"
           onClick={onOpenAccountSettings}
-          className={responsiveStyles.sidebarNavButton}
+          aria-haspopup="dialog"
+          aria-expanded={isSettingsActive}
+          data-active={isSettingsActive ? "true" : "false"}
+          className={
+            isSettingsActive
+              ? responsiveStyles.sidebarNavButtonActive
+              : responsiveStyles.sidebarNavButton
+          }
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -40,7 +52,11 @@ export default function AppSidebar({ authUser, onOpenAccountSettings, onLogout }
             strokeLinecap="round"
             strokeLinejoin="round"
             aria-hidden="true"
-            className="h-[18px] w-[18px] shrink-0 text-slate-400 group-hover:text-slate-600 dark:text-slate-500"
+            className={`h-[18px] w-[18px] shrink-0 ${
+              isSettingsActive
+                ? "text-blue-600 dark:text-blue-300"
+                : "text-slate-400 group-hover:text-slate-600 dark:text-slate-500"
+            }`}
           >
             <circle cx="12" cy="12" r="3" />
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
@@ -58,12 +74,15 @@ export default function AppSidebar({ authUser, onOpenAccountSettings, onLogout }
           </div>
         </div>
 
+        {/* Account settings live in the Settings row above, so the card is
+            identity + Logout only — one settings entry, one logout entry. */}
         <AccountMenu
           authUser={authUser}
           isAuthenticated
           onOpenAccountSettings={onOpenAccountSettings}
           onLogout={onLogout}
           variant="card"
+          items="logoutOnly"
         />
       </div>
     </aside>

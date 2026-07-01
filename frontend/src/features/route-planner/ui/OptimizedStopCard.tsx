@@ -268,7 +268,8 @@ export function OptimizedStopCard({
                 : "text-red-600 dark:text-red-400",
           ].join(" ")}
         >
-          Outside preferred window by {Math.ceil(task.lateBySeconds / 60)} min
+          Outside {task.windowType === "fixed" ? "fixed" : "preferred"} window by{" "}
+          {Math.ceil(task.lateBySeconds / 60)} min
         </p>
       )}
 
