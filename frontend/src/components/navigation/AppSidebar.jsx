@@ -14,6 +14,11 @@ export default function AppSidebar({
   isSettingsActive = false,
 }) {
   const workingHours = resolveTodayHoursDisplay(authUser?.workingHours);
+  const dateLabel = new Date().toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
 
   return (
     <aside className={responsiveStyles.sidebar}>
@@ -67,7 +72,10 @@ export default function AppSidebar({
         <div className="flex-1" />
 
         <div className={responsiveStyles.sidebarTodayCard}>
-          <p className={responsiveStyles.sidebarTodayLabel}>Today</p>
+          <div className="flex items-baseline justify-between gap-2">
+            <p className={responsiveStyles.sidebarTodayLabel}>Today</p>
+            <span className={responsiveStyles.sidebarTodayDate}>{dateLabel}</span>
+          </div>
           <div className={responsiveStyles.sidebarTodayRow}>
             <span className={responsiveStyles.sidebarTodayKey}>Working hours</span>
             <span className={responsiveStyles.sidebarTodayValue}>{workingHours}</span>
