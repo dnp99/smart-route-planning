@@ -432,7 +432,7 @@ export const responsiveStyles = {
   // Re-optimize: keep the prior result visible but dimmed, with a floating badge,
   // instead of flashing back to the skeleton.
   routeReoptimizeWrap: "relative",
-  routeReoptimizeDimmed: "pointer-events-none opacity-40 transition-opacity",
+  routeReoptimizeDimmed: "pointer-events-none opacity-30 transition-opacity",
   routeReoptimizeOverlay:
     "pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-12 sm:pt-20",
   routeReoptimizeBadge:
