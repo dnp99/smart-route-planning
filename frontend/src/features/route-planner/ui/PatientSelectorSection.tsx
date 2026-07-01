@@ -223,7 +223,8 @@ export const PatientSelectorSection = ({
           type="button"
           onClick={() => onOptimizationObjectiveChange("distance")}
           aria-pressed={optimizationObjective === "distance"}
-          className={`${responsiveStyles.segmentedControlButtonBase} ${
+          disabled={isLoading}
+          className={`${responsiveStyles.segmentedControlButtonBase} disabled:cursor-not-allowed disabled:opacity-60 ${
             optimizationObjective === "distance"
               ? responsiveStyles.segmentedControlButtonActive
               : responsiveStyles.segmentedControlButtonInactive
@@ -238,7 +239,8 @@ export const PatientSelectorSection = ({
           type="button"
           onClick={() => onOptimizationObjectiveChange("time")}
           aria-pressed={optimizationObjective === "time"}
-          className={`${responsiveStyles.segmentedControlButtonBase} ${
+          disabled={isLoading}
+          className={`${responsiveStyles.segmentedControlButtonBase} disabled:cursor-not-allowed disabled:opacity-60 ${
             optimizationObjective === "time"
               ? responsiveStyles.segmentedControlButtonActive
               : responsiveStyles.segmentedControlButtonInactive
@@ -346,7 +348,15 @@ export const PatientSelectorSection = ({
       )}
 
       {isContentVisible && (
-        <>
+        // While an optimize is in flight, lock the whole selection area so the
+        // client set can't drift out of sync with the in-flight request (adds
+        // would otherwise land in the list but be absent from the result). A
+        // disabled fieldset natively disables every nested control.
+        <fieldset
+          disabled={isLoading}
+          data-testid="client-selection-fieldset"
+          className="m-0 min-w-0 border-0 p-0 transition-opacity disabled:opacity-60"
+        >
           <div className={responsiveStyles.patientSelectionGrid}>
             <div className="flex min-w-0 flex-col gap-2">
               <p className={responsiveStyles.patientColumnLabel}>
@@ -472,7 +482,7 @@ export const PatientSelectorSection = ({
               />
             </div>
           </div>
-        </>
+        </fieldset>
       )}
     </section>
   );
