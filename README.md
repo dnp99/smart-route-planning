@@ -74,6 +74,7 @@ Recent schema changes:
   - `PATCH /api/visit-instances/:id`
 - Route planning:
   - `POST /api/optimize-route/v3` (route optimizer)
+  - `POST /api/route-planner/advisor` (AI Route Advisor — PHI-free brief + suggestions; requires `ANTHROPIC_API_KEY`, else `503` and the UI hides the panel)
 - Address suggestions:
   - `GET /api/address-autocomplete?query=...`
 

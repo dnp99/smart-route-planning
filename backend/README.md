@@ -103,6 +103,10 @@ Production/runtime behavior:
   - Decimal between `0` and `1` used to sample `POST /api/optimize-route/v3` shadow comparison logs.
   - Default: `1`.
   - Example: `0.1` logs roughly 10% of requests with deterministic sampling by request ID.
+- `ANTHROPIC_API_KEY`
+  - Optional. Enables the Route Advisor (`POST /api/route-planner/advisor`), which turns an optimized route into a plain-English brief + suggestions via Claude Haiku.
+  - Read server-side only — never shipped to the frontend. The browser sends a de-identified, PHI-free context (no patient names/addresses).
+  - When absent, the endpoint returns `503` and the frontend hides the advisor panel (no error surfaced).
 
 Example local file:
 
@@ -126,6 +130,8 @@ SESSION_CLEANUP_CRON_SECRET=replace_with_a_long_random_secret
 SESSION_CLEANUP_REVOKED_RETENTION_DAYS=30
 OPTIMIZE_ROUTE_V3_SHADOW_COMPARE=false
 OPTIMIZE_ROUTE_V3_SHADOW_SAMPLE_RATE=0.1
+# Optional — enables the AI Route Advisor; omit to disable the feature:
+ANTHROPIC_API_KEY=sk-ant-...
 ```
 
 ## API endpoints
@@ -213,6 +219,11 @@ Authentication behavior:
   - Requires authenticated session
   - Route optimizer endpoint (greedy seed + seeded ILS)
   - Enforces per-client in-memory rate limiting and optional API-key protection
+- `POST /api/route-planner/advisor`
+  - Requires authenticated session
+  - AI Route Advisor: accepts a de-identified, PHI-free route context and returns `{ brief, suggestions[] }` from Claude Haiku (translates the solver's output — never re-plans)
+  - Per-nurse in-memory rate limit (`429`); `503` when `ANTHROPIC_API_KEY` is unset; `502` on an upstream AI failure
+  - Audits aggregates only (stop/warning counts) — never the advice text or any patient data
 
 ### Recurring visit templates
 
