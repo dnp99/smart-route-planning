@@ -71,9 +71,6 @@ export const responsiveStyles = {
     "mt-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/80",
   sidebarTodayLabel:
     "text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400 dark:text-slate-500",
-  // Today's date, shown next to the "Today" eyebrow (the single home for the
-  // date now that the top-bar date pill is gone).
-  sidebarTodayDate: "text-[11px] font-semibold text-slate-600 dark:text-slate-300",
   sidebarTodayRow: "mt-2 flex items-center justify-between gap-2",
   sidebarTodayKey: "text-xs font-medium text-slate-500 dark:text-slate-400",
   sidebarTodayValue: "text-xs font-semibold text-slate-900 dark:text-slate-100",
@@ -83,9 +80,12 @@ export const responsiveStyles = {
     "flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-xs font-bold text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200",
   accountMenuDropdownUp:
     "absolute bottom-full left-0 z-50 mb-2 w-full min-w-[12rem] rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-900",
-  // ── Top bar (design 2a): transparent, page label (desktop) + bell + mobile avatar ─
+  // ── Top bar (design 2a): transparent, date pill + bell (desktop), avatar (mobile) ─
+  topBarDatePill:
+    "hidden items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 sm:inline-flex",
   topBarIconButton:
     "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+  topBarDivider: "hidden h-6 w-px bg-slate-200 dark:bg-slate-700 md:block",
   // ── Account menu ──────────────────────────────────────────────────────────
   accountMenuButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-100 to-blue-50 text-sm font-bold uppercase tracking-[0.02em] text-blue-800 shadow-sm transition hover:from-blue-200 hover:to-blue-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-blue-700 dark:from-blue-900/70 dark:to-blue-950/60 dark:text-blue-100 dark:hover:from-blue-800 dark:hover:to-blue-900",

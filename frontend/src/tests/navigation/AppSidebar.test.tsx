@@ -39,18 +39,6 @@ describe("AppSidebar", () => {
     );
   });
 
-  it("shows today's date and working hours together in the Today card", () => {
-    renderSidebar(false);
-    expect(screen.getByText("Today")).toBeTruthy();
-    expect(screen.getByText("Working hours")).toBeTruthy();
-    const expectedDate = new Date().toLocaleDateString("en-US", {
-      weekday: "short",
-      month: "short",
-      day: "numeric",
-    });
-    expect(screen.getByText(expectedDate)).toBeTruthy();
-  });
-
   it("account card menu offers Logout only (settings lives in the Settings row)", () => {
     renderSidebar(false);
     fireEvent.click(screen.getByRole("button", { name: /Mei Su/ }));
