@@ -193,6 +193,24 @@ export function OptimizedRouteResult({
     [result.warnings],
   );
 
+  // Count late visits the same way the per-stop badges do (any lateBySeconds > 0),
+  // not by the coarser >15/>60 min warning thresholds. Keeps the summary banner
+  // consistent with the red "Late" chips and the Route Advisor, which both read
+  // task-level lateness directly.
+  const { lateVisitCount, firstLateVisitId } = useMemo(() => {
+    let count = 0;
+    let firstLate: string | null = null;
+    displayedOrderedStops.forEach((stop) => {
+      stop.tasks.forEach((task) => {
+        if (task.windowStart && task.lateBySeconds > 0) {
+          count += 1;
+          firstLate ??= task.visitId;
+        }
+      });
+    });
+    return { lateVisitCount: count, firstLateVisitId: firstLate };
+  }, [displayedOrderedStops]);
+
   const { earlyVisitCount, afterHoursVisitCount, firstAffectedVisitId } = useMemo(() => {
     if (!workStart || !workEnd)
       return { earlyVisitCount: 0, afterHoursVisitCount: 0, firstAffectedVisitId: null };
@@ -225,7 +243,9 @@ export function OptimizedRouteResult({
 
   const issueCount =
     (conflictWarnings.length > 0 && !conflictWarningsDismissed ? 1 : 0) +
-    (latenessWarnings.length > 0 && !latenessWarningsDismissed ? 1 : 0) +
+    // Late visits always count (matching the per-stop badges); the warning-based
+    // term still covers non-lateness warnings (outside hours, lunch skipped).
+    ((latenessWarnings.length > 0 && !latenessWarningsDismissed) || lateVisitCount > 0 ? 1 : 0) +
     (result.unscheduledTasks.length > 0 ? 1 : 0) +
     (earlyVisitCount > 0 ? 1 : 0) +
     (afterHoursVisitCount > 0 ? 1 : 0);
@@ -377,10 +397,9 @@ export function OptimizedRouteResult({
                         {conflictWarnings.length === 1 ? "conflict" : "conflicts"}
                       </li>
                     )}
-                    {latenessWarnings.length > 0 && !latenessWarningsDismissed && (
+                    {lateVisitCount > 0 && (
                       <li className="text-sm text-amber-800 dark:text-amber-200">
-                        • {latenessWarnings.length} late{" "}
-                        {latenessWarnings.length === 1 ? "visit" : "visits"}
+                        • {lateVisitCount} late {lateVisitCount === 1 ? "visit" : "visits"}
                       </li>
                     )}
                     {earlyVisitCount > 0 && (
@@ -405,11 +424,11 @@ export function OptimizedRouteResult({
               </div>
               <a
                 href={
-                  firstAffectedVisitId &&
                   !conflictWarnings.length &&
                   !latenessWarnings.length &&
-                  result.unscheduledTasks.length === 0
-                    ? `#stop-${firstAffectedVisitId}`
+                  result.unscheduledTasks.length === 0 &&
+                  (firstLateVisitId ?? firstAffectedVisitId)
+                    ? `#stop-${firstLateVisitId ?? firstAffectedVisitId}`
                     : "#route-alerts"
                 }
                 className="mt-0.5 shrink-0 text-xs font-medium text-amber-700 underline underline-offset-2 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200"
