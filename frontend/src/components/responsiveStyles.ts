@@ -433,12 +433,11 @@ export const responsiveStyles = {
   // instead of flashing back to the skeleton.
   routeReoptimizeWrap: "relative",
   routeReoptimizeDimmed: "pointer-events-none opacity-30 transition-opacity",
-  // Fixed to the viewport (bottom-center) so it stays visible while the user
-  // scrolls the long result during the ~4-5s re-optimize.
-  routeReoptimizeOverlay:
-    "pointer-events-none fixed inset-x-0 bottom-6 z-30 flex justify-center px-4",
+  // Sticky at the top of the result, just below the app header, so it hugs the
+  // route yet stays in view while the user scrolls during the ~4-5s re-optimize.
+  routeReoptimizeOverlay: "pointer-events-none sticky top-16 z-30 flex justify-center pt-2",
   routeReoptimizeBadge:
-    "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-700 shadow-lg backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200",
+    "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-700 shadow-md backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200",
 
   // ── Visit window form ────────────────────────────────────────────────────────
   visitWindowCheckboxLabel:
