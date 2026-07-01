@@ -151,12 +151,15 @@ export const useRouteOptimization = () => {
     optimizationObjective,
   }: OptimizeRouteInput) => {
     setError("");
-    setResult(null);
-    clearSessionResult();
     setShowOptimizeFlash(false);
     setHasAttemptedOptimize(true);
 
     if (!canOptimize) {
+      // Invalid input → drop any stale result. On a valid re-optimize we instead
+      // keep the previous result visible (dimmed) until the new one lands, so the
+      // route doesn't flash away during the ~4-5s request.
+      setResult(null);
+      clearSessionResult();
       return;
     }
 

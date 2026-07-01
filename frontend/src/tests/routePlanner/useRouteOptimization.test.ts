@@ -34,6 +34,9 @@ describe("useRouteOptimization", () => {
   beforeEach(() => {
     mockedRequestOptimizedRoute.mockReset();
     vi.useRealTimers();
+    // The hook seeds `result` from sessionStorage, so isolate tests — otherwise a
+    // prior successful optimize bleeds a cached result into the next hook mount.
+    sessionStorage.clear();
   });
 
   afterEach(() => {
@@ -182,6 +185,37 @@ describe("useRouteOptimization", () => {
     expect(result.current.error).toBe("Backend failed");
     expect(result.current.result).toBeNull();
     expect(result.current.isLoading).toBe(false);
+  });
+
+  it("keeps the previous result when a re-optimize fails", async () => {
+    const payload = buildResponse();
+    mockedRequestOptimizedRoute.mockResolvedValueOnce(payload);
+
+    const { result } = renderHook(() => useRouteOptimization());
+
+    await act(async () => {
+      await result.current.optimizeRoute({
+        startAddress: "Start",
+        endAddress: "End",
+        destinations: [],
+        canOptimize: true,
+      });
+    });
+    expect(result.current.result).toEqual(payload);
+
+    mockedRequestOptimizedRoute.mockRejectedValueOnce(new Error("Backend failed"));
+    await act(async () => {
+      await result.current.optimizeRoute({
+        startAddress: "Start",
+        endAddress: "End",
+        destinations: [],
+        canOptimize: true,
+      });
+    });
+
+    // Route stays visible (dimmed in the UI) instead of flashing away.
+    expect(result.current.result).toEqual(payload);
+    expect(result.current.error).toBe("Backend failed");
   });
 
   it("stores fallback message when optimize request fails with non-Error", async () => {

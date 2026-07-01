@@ -388,17 +388,17 @@ export const responsiveStyles = {
     "optimize-route-button inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 disabled:hover:bg-slate-300 dark:disabled:bg-blue-950/70 dark:disabled:text-slate-400 dark:disabled:hover:bg-blue-950/70 sm:w-auto",
   routeSkeletonSection: "mt-6 border-t border-slate-200 pt-6 dark:border-slate-800",
   routeSkeletonDispatch:
-    "grid gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:rounded-[28px] sm:p-4",
-  routeSkeletonHeader: "grid gap-3",
+    "flex flex-col gap-4 rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-slate-50 to-blue-50/70 p-3 dark:border-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-blue-950/20 sm:rounded-[28px] sm:p-4",
+  routeSkeletonHeader: "flex flex-col gap-3",
   routeSkeletonTimelineMap:
     "mt-5 flex flex-col gap-4 xl:grid xl:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)]",
   routeSkeletonCard:
     "rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:rounded-[28px] sm:p-4",
   routeSkeletonStatsGrid: "grid grid-cols-2 gap-2 xl:grid-cols-4",
   routeSkeletonSplitHeader: "flex items-start justify-between gap-3",
-  routeSkeletonCardHeader: "grid gap-2",
-  routeSkeletonTimelineList: "mt-4 grid gap-3",
-  routeSkeletonMapStack: "mt-4 grid gap-3",
+  routeSkeletonCardHeader: "flex flex-col gap-2",
+  routeSkeletonTimelineList: "mt-4 flex flex-col gap-3",
+  routeSkeletonMapStack: "mt-4 flex flex-col gap-3",
   routeSkeletonPulse:
     "route-loading-skeleton motion-reduce:animate-none rounded-xl bg-slate-200/80 dark:bg-slate-700/70",
   bootstrapFallbackPage: "mt-3 grid gap-4 sm:gap-5",
@@ -420,6 +420,23 @@ export const responsiveStyles = {
   routeSkeletonMapAction: "h-10 w-full",
   routeSkeletonMapNote: "h-4 w-44",
   routeSkeletonMapCanvas: "h-56 w-full sm:h-[min(70vh,600px)] sm:min-h-64",
+  // Progress affordance shown inside the skeleton while the optimize request runs.
+  routeSkeletonStatusRow: "flex items-center gap-2",
+  routeSkeletonStatusText: "text-sm font-medium text-slate-600 dark:text-slate-300",
+  routeSkeletonSpinner:
+    "inline-flex h-4 w-4 shrink-0 animate-spin items-center justify-center text-blue-600 motion-reduce:animate-none dark:text-blue-300",
+  routeSkeletonProgressTrack:
+    "mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-200/80 dark:bg-slate-700/70",
+  routeSkeletonProgressBar:
+    "h-full rounded-full bg-blue-600 transition-[width] duration-500 ease-out dark:bg-blue-500",
+  // Re-optimize: keep the prior result visible but dimmed, with a floating badge,
+  // instead of flashing back to the skeleton.
+  routeReoptimizeWrap: "relative",
+  routeReoptimizeDimmed: "pointer-events-none opacity-60 transition-opacity",
+  routeReoptimizeOverlay:
+    "pointer-events-none absolute inset-0 z-10 flex items-start justify-center pt-12 sm:pt-20",
+  routeReoptimizeBadge:
+    "inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white/95 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm backdrop-blur-sm dark:border-slate-700 dark:bg-slate-900/95 dark:text-slate-200",
 
   // ── Visit window form ────────────────────────────────────────────────────────
   visitWindowCheckboxLabel:
