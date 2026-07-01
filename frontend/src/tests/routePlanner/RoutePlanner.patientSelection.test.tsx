@@ -1236,7 +1236,7 @@ describe("RoutePlanner patient selection integration", () => {
     expect(screen.getByText(/^Expected start$/i).parentElement?.textContent).toContain(
       expectedStartTimeLabel,
     );
-    expect(screen.getByText(/Outside preferred window by 20 min/i)).toBeTruthy();
+    expect(screen.getByText(/Outside fixed window by 20 min/i)).toBeTruthy();
   });
 
   it("shows no preferred window label and suppresses late warning when route task has no preferred window", () => {
@@ -1300,7 +1300,7 @@ describe("RoutePlanner patient selection integration", () => {
         name: /Toggle details for Flex Patient/i,
       }),
     );
-    expect(screen.queryByText(/Outside preferred window by/i)).toBeNull();
+    expect(screen.queryByText(/Outside (fixed|preferred) window by/i)).toBeNull();
   });
 
   it("removes selected destination patient from planner state", () => {
