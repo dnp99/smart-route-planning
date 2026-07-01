@@ -5,3 +5,4 @@ export * from "./addressAutocomplete";
 export * from "./patients";
 export * from "./auth";
 export * from "./dashboard";
+export * from "./routeAdvisor";
