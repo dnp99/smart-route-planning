@@ -782,8 +782,11 @@ const PatientsPage = () => {
             </div>
 
             {lifecycleState !== "archived" && (
+              // One segmented control at every breakpoint (full-width on mobile,
+              // inline on desktop) — reuses the app-wide segmented tokens so the
+              // filter matches the Route Planner objective toggle.
               <div
-                className={responsiveStyles.clientFilterToggle}
+                className={responsiveStyles.segmentedControlContainer}
                 role="group"
                 aria-label="Filter clients by window type"
               >
@@ -793,10 +796,10 @@ const PatientsPage = () => {
                     type="button"
                     onClick={() => setWindowFilter(filter)}
                     aria-pressed={windowFilter === filter}
-                    className={`${responsiveStyles.clientFilterOption} ${
+                    className={`${responsiveStyles.segmentedControlButtonBase} ${
                       windowFilter === filter
-                        ? responsiveStyles.clientFilterOptionActive
-                        : responsiveStyles.clientFilterOptionInactive
+                        ? responsiveStyles.segmentedControlButtonActive
+                        : responsiveStyles.segmentedControlButtonInactive
                     }`}
                   >
                     {filter === "all" ? "All" : filter === "fixed" ? "Fixed" : "Flexible"}
@@ -814,30 +817,6 @@ const PatientsPage = () => {
               Add Client
             </button>
           </div>
-
-          {lifecycleState !== "archived" && (
-            <div
-              className={responsiveStyles.clientFilterPills}
-              role="group"
-              aria-label="Filter clients by window type"
-            >
-              {(["all", "fixed", "flexible"] as const).map((filter) => (
-                <button
-                  key={filter}
-                  type="button"
-                  onClick={() => setWindowFilter(filter)}
-                  aria-pressed={windowFilter === filter}
-                  className={`${responsiveStyles.clientFilterPill} ${
-                    windowFilter === filter
-                      ? responsiveStyles.clientFilterPillActive
-                      : responsiveStyles.clientFilterPillInactive
-                  }`}
-                >
-                  {filter === "all" ? "All" : filter === "fixed" ? "Fixed" : "Flexible"}
-                </button>
-              ))}
-            </div>
-          )}
 
           <PatientsTable
             isLoading={isLoadingPatients}

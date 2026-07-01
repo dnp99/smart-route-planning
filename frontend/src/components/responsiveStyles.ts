@@ -513,35 +513,22 @@ export const responsiveStyles = {
     "absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
   // Clients page summary stats row (desktop only — hidden below md)
   // Active tab: one-line summary strip (replaces the four stat boxes).
+  // Tightened: a light borderless summary line (no filled band) so it reads as
+  // part of the table group rather than a separate card.
   clientStatsStrip:
-    "mb-4 hidden flex-wrap items-center gap-x-3.5 gap-y-2 rounded-xl border border-slate-100 bg-slate-50 px-4 py-3 text-[13px] font-medium text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400 md:flex",
+    "mb-4 hidden flex-wrap items-center gap-x-3.5 gap-y-1.5 px-0.5 py-1 text-[13px] font-medium text-slate-500 dark:text-slate-400 md:flex",
   clientStatsStripDot: "h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600",
   clientStatsStripValue: "font-bold text-slate-900 dark:text-slate-100",
   clientStatsStripValueFixed: "font-bold text-blue-800 dark:text-blue-300",
   clientStatsStripValueFlexible: "font-bold text-emerald-700 dark:text-emerald-300",
   // ── Clients page: title count, window filter, table avatar + repeat ──────────
   clientsTitleCount: "font-semibold text-slate-400 dark:text-slate-500",
-  clientFilterToggle:
-    "hidden shrink-0 items-center gap-1 rounded-xl bg-slate-100 p-1 dark:bg-slate-800 md:inline-flex",
-  clientFilterOption:
-    "rounded-lg px-3 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
-  clientFilterOptionActive:
-    "bg-white text-slate-900 shadow-sm dark:bg-slate-900 dark:text-slate-100",
-  clientFilterOptionInactive:
-    "text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white",
   clientAvatar:
     "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold uppercase text-blue-700 dark:bg-blue-950/50 dark:text-blue-200",
   repeatIconActive: "h-5 w-5 text-blue-600 dark:text-blue-300",
   repeatIconMuted: "h-5 w-5 text-slate-300 dark:text-slate-600",
   repeatCountBadge:
     "absolute -right-1.5 -top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-blue-600 px-1 text-[10px] font-semibold leading-none text-white dark:bg-blue-500",
-  // Mobile clients: filter pills (own row below search) + expanded-card actions
-  clientFilterPills: "mb-6 flex flex-wrap gap-2 md:hidden",
-  clientFilterPill:
-    "rounded-full border px-4 py-1.5 text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50",
-  clientFilterPillActive: "border-blue-600 bg-blue-600 text-white",
-  clientFilterPillInactive:
-    "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
   addClientMobileButton:
     "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-blue-700",
   mobileEditButton:
