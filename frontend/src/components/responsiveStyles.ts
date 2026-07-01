@@ -589,6 +589,22 @@ export const responsiveStyles = {
     "inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600",
   routeResetButton:
     "inline-flex items-center gap-1 whitespace-nowrap rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-800 dark:text-slate-300 dark:hover:bg-slate-800",
+  // Route Advisor (AI) — blue-tinted selected/active card (§11), lives under the
+  // schedule summary. One card surface, no stacked shadows.
+  routeAdvisorCard:
+    "mb-4 rounded-xl border border-blue-200 bg-blue-50/50 px-4 py-3 dark:border-blue-900/60 dark:bg-blue-950/20",
+  routeAdvisorHeader: "flex items-center justify-between gap-3",
+  routeAdvisorEyebrow:
+    "m-0 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300",
+  routeAdvisorButton:
+    "inline-flex items-center gap-1.5 whitespace-nowrap rounded-xl bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-blue-500 dark:hover:bg-blue-600",
+  routeAdvisorBrief: "m-0 mt-2 text-sm leading-6 text-slate-700 dark:text-slate-200",
+  routeAdvisorSuggestionList: "m-0 mt-2 flex list-none flex-col gap-1.5 p-0",
+  routeAdvisorSuggestion:
+    "flex items-start gap-2 text-sm leading-6 text-slate-700 dark:text-slate-200",
+  routeAdvisorSkeletonLine: "h-3.5 rounded-full bg-blue-100/80 dark:bg-blue-900/40",
+  routeAdvisorError: "m-0 mt-2 text-xs text-slate-500 dark:text-slate-400",
+  routeAdvisorDisclaimer: "m-0 mt-2.5 text-[0.7rem] leading-4 text-slate-400 dark:text-slate-500",
   dashboardNudgeCard:
     "dashboard-reveal rounded-2xl border border-amber-200 bg-amber-50 p-4 shadow-sm dark:border-amber-900/70 dark:bg-amber-950/35 sm:p-5",
   dashboardAlertItem:

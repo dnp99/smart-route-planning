@@ -11,6 +11,8 @@ import {
 } from "./routePlannerResultUtils";
 import { formatNameWords } from "../../patients/domain/patientName";
 import { OptimizedStopList } from "./OptimizedStopList";
+import { RouteAdvisorPanel } from "./RouteAdvisorPanel";
+import type { RouteAdvisorResponse } from "../../../../../shared/contracts";
 
 const unscheduledReasonLabels = {
   fixed_window_unreachable: "Cannot be reached before the fixed window ends.",
@@ -73,6 +75,11 @@ type OptimizedRouteResultProps = {
   lunchDurationMinutes?: number;
   planningDate: string;
   showOptimizeFlash?: boolean;
+  advice?: RouteAdvisorResponse | null;
+  isLoadingAdvice?: boolean;
+  adviceError?: string;
+  adviceUnavailable?: boolean;
+  onRequestAdvice?: () => void;
 };
 
 export function OptimizedRouteResult({
@@ -102,6 +109,11 @@ export function OptimizedRouteResult({
   lunchDurationMinutes,
   planningDate,
   showOptimizeFlash = false,
+  advice = null,
+  isLoadingAdvice = false,
+  adviceError = "",
+  adviceUnavailable = false,
+  onRequestAdvice,
 }: OptimizedRouteResultProps) {
   const [isSavingImage, setIsSavingImage] = useState(false);
 
@@ -405,6 +417,16 @@ export function OptimizedRouteResult({
                 View details
               </a>
             </div>
+          )}
+
+          {onRequestAdvice && scheduledStopCount > 0 && (
+            <RouteAdvisorPanel
+              advice={advice}
+              isLoading={isLoadingAdvice}
+              error={adviceError}
+              unavailable={adviceUnavailable}
+              onRequestAdvice={onRequestAdvice}
+            />
           )}
 
           <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">

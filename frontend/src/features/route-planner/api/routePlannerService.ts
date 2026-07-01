@@ -1,16 +1,22 @@
 import {
+  extractApiErrorMessage,
   parseListVisitInstancesResponse,
   parseListPatientsResponse,
   parseListRecurringVisitTemplatesResponse,
   parseOptimizeRouteV2Response,
+  parseRouteAdvisorResponse,
+  type DeidentifiedRouteContext,
   type NurseWorkingHoursConstraint,
   type OptimizeRouteV2WindowType,
   type RecurringVisitTemplate,
+  type RouteAdvisorResponse,
   type VisitInstance,
   type PatientVisitWindowInput,
   type WeeklyWorkingHours,
 } from "../../../../../shared/contracts";
 import { requestAuthedJson } from "../../../components/auth/authFetch";
+import { clearAuthSession, waitForAuthBootstrap } from "../../../components/auth/authSession";
+import { resolveApiBaseUrl } from "../../../components/shared/apiBaseUrl";
 import { hasConfiguredSchedule } from "../../../components/home/workingHoursStatus";
 import { resolveOptimizeRoutePath } from "./optimizeRouteEndpoint";
 import type { OptimizeRouteResponse } from "../types";
@@ -512,4 +518,50 @@ export const requestOptimizedRoute = async ({
     ...parsedResponse,
     unscheduledTasks,
   };
+};
+
+// Thrown when the backend returns 503 (no ANTHROPIC_API_KEY). The advisor UI
+// treats this as "feature unavailable" and hides itself — not an error banner.
+export class RouteAdvisorUnavailableError extends Error {
+  constructor() {
+    super("Route Advisor is not configured.");
+    this.name = "RouteAdvisorUnavailableError";
+  }
+}
+
+export const requestRouteAdvice = async (
+  context: DeidentifiedRouteContext,
+): Promise<RouteAdvisorResponse> => {
+  await waitForAuthBootstrap();
+
+  const response = await fetch(`${resolveApiBaseUrl()}/api/route-planner/advisor`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(context),
+  });
+
+  const payload = await response.json().catch(() => null);
+
+  if (response.status === 401) {
+    clearAuthSession();
+    throw new Error(extractApiErrorMessage(payload) ?? "Session expired. Please login again.");
+  }
+
+  // 503 = advisor not configured on the server. Surface a distinct type so the
+  // UI can hide the panel rather than showing a failure.
+  if (response.status === 503) {
+    throw new RouteAdvisorUnavailableError();
+  }
+
+  if (!response.ok) {
+    throw new Error(extractApiErrorMessage(payload) ?? "Unable to get route advice.");
+  }
+
+  const advice = parseRouteAdvisorResponse(payload);
+  if (!advice) {
+    throw new Error("Unexpected API response format.");
+  }
+
+  return advice;
 };

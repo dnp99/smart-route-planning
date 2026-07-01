@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { OptimizedRouteResult } from "./OptimizedRouteResult";
 import type { OptimizeRouteResponse, OrderedStop } from "../types";
+import type { RouteAdvisorResponse } from "../../../../../shared/contracts";
 
 // Honest, generic phases for the v3 optimize (geocode → distance matrix →
 // ordering). Kept vague enough not to imply real determinate progress.
@@ -70,6 +71,11 @@ type RouteResultSectionProps = {
   lunchStartTime?: string;
   lunchDurationMinutes?: number;
   planningDate: string;
+  advice?: RouteAdvisorResponse | null;
+  isLoadingAdvice?: boolean;
+  adviceError?: string;
+  adviceUnavailable?: boolean;
+  onRequestAdvice?: () => void;
 };
 
 const OptimizedRouteSkeleton = () => {
@@ -231,6 +237,11 @@ export const RouteResultSection = ({
   lunchStartTime,
   lunchDurationMinutes,
   planningDate,
+  advice,
+  isLoadingAdvice,
+  adviceError,
+  adviceUnavailable,
+  onRequestAdvice,
 }: RouteResultSectionProps) => {
   // Mobile single-column: one persistent sticky Optimize bar (no step-wizard).
   const mobileOptimizeHint = !hasValidTripAddresses
@@ -322,6 +333,11 @@ export const RouteResultSection = ({
               lunchDurationMinutes={lunchDurationMinutes}
               planningDate={planningDate}
               showOptimizeFlash={showOptimizeFlash}
+              advice={advice}
+              isLoadingAdvice={isLoadingAdvice}
+              adviceError={adviceError}
+              adviceUnavailable={adviceUnavailable}
+              onRequestAdvice={onRequestAdvice}
             />
           </div>
         </div>
