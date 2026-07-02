@@ -1,12 +1,15 @@
 import { Link, useLocation } from "react-router-dom";
+import type { WeeklyWorkingHours } from "../../../../shared/contracts";
 import { responsiveStyles } from "../responsiveStyles";
 import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
 import AccountMenu from "./AccountMenu";
+import NotificationsMenu from "../notifications/NotificationsMenu";
 
 type AuthUser = {
   displayName?: string;
   email?: string;
   homeAddress?: string;
+  workingHours?: WeeklyWorkingHours | null;
 } | null;
 
 interface AppHeaderProps {
@@ -125,27 +128,11 @@ export default function AppHeader({
                 </svg>
                 {dateLabel}
               </span>
-              <button
-                type="button"
-                aria-label="Notifications"
-                className={`${responsiveStyles.topBarIconButton} hidden md:inline-flex`}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.9"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  aria-hidden="true"
-                  className="h-[18px] w-[18px]"
-                >
-                  <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
-                  <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-                </svg>
-                <span className="absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900" />
-              </button>
+              <NotificationsMenu
+                authUser={authUser}
+                onOpenAccountSettings={onOpenAccountSettings}
+                className="hidden md:inline-flex"
+              />
               {/* Desktop account/settings live entirely in the sidebar (identity
                   card + Settings row), so the top bar has no avatar there. Mobile
                   has no sidebar, so it keeps the full avatar menu below. */}

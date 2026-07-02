@@ -86,6 +86,24 @@ export const responsiveStyles = {
   topBarIconButton:
     "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
   topBarDivider: "hidden h-6 w-px bg-slate-200 dark:bg-slate-700 md:block",
+  // ── Notifications ─────────────────────────────────────────────────────────
+  // Unread dot on the bell; portaled dropdown panel + item rows.
+  notificationsDot:
+    "absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900",
+  notificationsPanel:
+    "w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900",
+  notificationsPanelHeader:
+    "flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800",
+  notificationsPanelTitle: "m-0 text-sm font-semibold text-slate-900 dark:text-slate-100",
+  notificationsEmpty: "px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400",
+  notificationsItem:
+    "flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/60",
+  notificationsItemTitle: "m-0 text-sm font-semibold text-slate-800 dark:text-slate-100",
+  notificationsItemDetail: "m-0 mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400",
+  notificationsIconAction:
+    "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300",
+  notificationsIconInfo:
+    "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
   // ── Account menu ──────────────────────────────────────────────────────────
   accountMenuButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-100 to-blue-50 text-sm font-bold uppercase tracking-[0.02em] text-blue-800 shadow-sm transition hover:from-blue-200 hover:to-blue-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-blue-700 dark:from-blue-900/70 dark:to-blue-950/60 dark:text-blue-100 dark:hover:from-blue-800 dark:hover:to-blue-900",
