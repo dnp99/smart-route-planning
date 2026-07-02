@@ -2871,6 +2871,90 @@ describe("optimizeRouteV3 service", () => {
     });
   });
 
+  it("clamps a client-supplied early departure to workStart when no fixed window requires leaving earlier", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Flexible Visit", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: { address: "Start", departureTime: "2026-03-13T06:00:00.000Z" },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "visit-flex-no-window",
+            patientId: "patient-flex",
+            patientName: "Flexible No Window",
+            address: "Flexible Visit",
+            windowStart: "",
+            windowEnd: "",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+        ],
+        nurseWorkingHours: { workStart: "09:00", workEnd: "17:00" },
+      },
+      "google-key",
+    );
+
+    // 06:00 was requested, but nothing forces a pre-09:00 start, so the day is
+    // clamped to workStart and the flexible visit is not serviced before the shift.
+    expect(result.start.departureTime).toBe("2026-03-13T09:00:00.000Z");
+    expect(result.orderedStops[0]?.tasks[0]?.serviceStartTime).toBe("2026-03-13T09:10:00.000Z");
+  });
+
+  it("preserves a client-supplied early departure when a fixed window requires leaving before workStart", async () => {
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Early Fixed", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: { address: "Start", departureTime: "2026-03-13T06:00:00.000Z" },
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "early-fixed",
+            patientId: "patient-fixed",
+            patientName: "Early Fixed",
+            address: "Early Fixed",
+            windowStart: "07:00",
+            windowEnd: "07:30",
+            windowType: "fixed",
+            serviceDurationMinutes: 20,
+          },
+        ],
+        nurseWorkingHours: { workStart: "09:00", workEnd: "17:00" },
+      },
+      "google-key",
+    );
+
+    // The 07:00 fixed window justifies leaving before workStart — the early
+    // departure is kept (not clamped up to 09:00) and the visit is served on time.
+    expect(new Date(result.start.departureTime).getTime()).toBeLessThan(
+      new Date("2026-03-13T09:00:00.000Z").getTime(),
+    );
+    const fixedTask = result.orderedStops[0]?.tasks[0];
+    expect(fixedTask?.visitId).toBe("early-fixed");
+    expect(fixedTask?.onTime).toBe(true);
+  });
+
   it("does not count sub-minute fixed lateness as a violation", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },

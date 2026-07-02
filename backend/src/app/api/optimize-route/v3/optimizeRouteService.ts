@@ -579,18 +579,6 @@ const resolveDepartureContext = async (
   resolveTravelSeconds: (from: LocationRef, to: LocationRef) => number,
   objective: "time" | "distance",
 ) => {
-  if (request.start.departureTime) {
-    const departureDate = new Date(request.start.departureTime);
-    const departureTimestampMs = departureDate.getTime();
-    const departureLocalSeconds = getLocalSecondsOfDay(departureDate, request.timezone);
-
-    return {
-      departureTime: request.start.departureTime,
-      departureTimestampMs,
-      departureLocalSeconds,
-    };
-  }
-
   const workStartSeconds = request.nurseWorkingHours
     ? parseTimeToSeconds(request.nurseWorkingHours.workStart)
     : undefined;
@@ -601,23 +589,68 @@ const resolveDepartureContext = async (
     resolveTravelSeconds,
     objective,
   );
-  const departureLocalSeconds = firstAnchor
-    ? Math.max(
-        0,
-        firstAnchor.windowStartSeconds -
-          (await resolveTravelSecondsFromStartToVisit(
-            request,
-            startLocation,
-            firstAnchor,
-            googleMapsApiKey,
-            hasPlanningMatrix,
-            resolveTravelSeconds,
-          )) -
-          DEPARTURE_BUFFER_SECONDS,
-      )
-    : visits.length > 0
-      ? (workStartSeconds ?? DEFAULT_UNANCHORED_DEPARTURE_LOCAL_SECONDS)
-      : 0;
+
+  // The earliest departure a fixed window genuinely forces (may be before
+  // workStart — that's legitimate). Undefined when nothing anchors the day.
+  const resolveAnchorDepartureLocalSeconds = async (): Promise<number | undefined> =>
+    firstAnchor
+      ? Math.max(
+          0,
+          firstAnchor.windowStartSeconds -
+            (await resolveTravelSecondsFromStartToVisit(
+              request,
+              startLocation,
+              firstAnchor,
+              googleMapsApiKey,
+              hasPlanningMatrix,
+              resolveTravelSeconds,
+            )) -
+            DEPARTURE_BUFFER_SECONDS,
+        )
+      : undefined;
+
+  if (request.start.departureTime) {
+    const departureDate = new Date(request.start.departureTime);
+    let departureLocalSeconds = getLocalSecondsOfDay(departureDate, request.timezone);
+    let departureTime = request.start.departureTime;
+    let departureTimestampMs = departureDate.getTime();
+
+    // Don't let a client-supplied departure start the workday before workStart
+    // unless a fixed window requires leaving earlier. Early *departure* to reach
+    // a fixed appointment is valid; starting early for no reason is not — and it
+    // is what would otherwise let flexible visits be serviced before the shift.
+    if (workStartSeconds !== undefined && departureLocalSeconds < workStartSeconds) {
+      const anchorDepartureLocalSeconds = await resolveAnchorDepartureLocalSeconds();
+      const earliestJustifiedLocalSeconds =
+        anchorDepartureLocalSeconds !== undefined
+          ? Math.min(workStartSeconds, anchorDepartureLocalSeconds)
+          : workStartSeconds;
+
+      if (departureLocalSeconds < earliestJustifiedLocalSeconds) {
+        departureLocalSeconds = earliestJustifiedLocalSeconds;
+        departureTime = toIsoFromPlanningDateAndLocalSeconds(
+          request.planningDate,
+          request.timezone,
+          departureLocalSeconds,
+        );
+        departureTimestampMs = new Date(departureTime).getTime();
+      }
+    }
+
+    return {
+      departureTime,
+      departureTimestampMs,
+      departureLocalSeconds,
+    };
+  }
+
+  const anchorDepartureLocalSeconds = await resolveAnchorDepartureLocalSeconds();
+  const departureLocalSeconds =
+    anchorDepartureLocalSeconds !== undefined
+      ? anchorDepartureLocalSeconds
+      : visits.length > 0
+        ? (workStartSeconds ?? DEFAULT_UNANCHORED_DEPARTURE_LOCAL_SECONDS)
+        : 0;
 
   const departureTime = toIsoFromPlanningDateAndLocalSeconds(
     request.planningDate,
