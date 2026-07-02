@@ -141,12 +141,14 @@ Example runtime override:
 - `start`: `{ address, googlePlaceId? }`
 - `end`: `{ address, googlePlaceId? }`
 - `visits[]`: `{ visitId, patientId, patientName, address, windowStart, windowEnd, windowType, serviceDurationMinutes, googlePlaceId?, priority? }`
+- `nurseWorkingHours?`: `{ workStart, workEnd, lunchStartTime?, lunchDurationMinutes? }` — send this so the day doesn't start before `workStart` (see departure notes)
 - `optimizationObjective?: "distance" | "time"` — defaults to `"distance"`
 
 Notes:
 
-- `start.departureTime` is optional and typically omitted by frontend.
-- Backend computes departure dynamically when omitted (earliest first-stop anchor with travel-time + buffer).
+- `start.departureTime` is optional and typically omitted by the frontend.
+- When omitted, the backend computes departure dynamically: the earliest a fixed window requires leaving, otherwise `nurseWorkingHours.workStart`.
+- When supplied, it's honored but **clamped up to `workStart`** if it would start the day earlier than a fixed window requires — so no visit is serviced before the shift unless a fixed window demands it. This clamp needs `nurseWorkingHours`; if it's omitted, the backend can't enforce it. (Details: backend README → "Departure time / day start".)
 - `"distance"` prioritizes less driving with bounded idle-gap tradeoffs.
 - `"time"` prioritizes finishing sooner (combined wait + travel), with safeguards so it does not lose to an earlier equally-safe alternative when one exists.
 
