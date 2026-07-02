@@ -837,6 +837,7 @@ const PatientsPage = () => {
             onRestore={(patient) => void handleRestore(patient)}
             restoringId={restoringId}
             recurringTemplatesByPatientId={recurringTemplatesByPatientId}
+            onAddClient={openCreateModal}
           />
         </div>
 

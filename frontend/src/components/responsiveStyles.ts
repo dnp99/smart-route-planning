@@ -696,6 +696,26 @@ export const responsiveStyles = {
     "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",
   tableEmptyState:
     "rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
+  // First-run empty state with a guided call to action.
+  tableEmptyCta:
+    "flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center dark:border-slate-800 dark:bg-slate-900",
+  tableEmptyCtaTitle: "m-0 text-base font-semibold text-slate-900 dark:text-slate-100",
+  tableEmptyCtaText: "m-0 mt-1.5 max-w-sm text-sm text-slate-500 dark:text-slate-400",
+  // ── First-run "Get started" checklist (Home) ──────────────────────────────
+  getStartedCard:
+    "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/30 sm:p-5",
+  getStartedEyebrow:
+    "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-blue-800 dark:text-blue-300",
+  getStartedTitle: "m-0 mt-1 text-sm font-semibold text-blue-900 dark:text-blue-100",
+  getStartedList: "m-0 mt-3 flex list-none flex-col gap-2 p-0",
+  getStartedRow:
+    "flex items-center gap-3 rounded-xl border border-blue-100 bg-white px-3 py-2.5 dark:border-blue-900/50 dark:bg-slate-900/60",
+  getStartedCheckDone:
+    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white",
+  getStartedCheckTodo:
+    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 dark:border-slate-600",
+  getStartedStepButton:
+    "shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700",
   tableIconButton:
     "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200",
   tableIconButtonDestructive:

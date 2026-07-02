@@ -11,6 +11,8 @@ import type {
 } from "../../../../shared/contracts";
 import { fetchDashboardSummary, fetchRouteRunsForPlanningDate } from "./homeDashboardService";
 import { resolveTodayHoursDisplay } from "./todayHours";
+import { hasConfiguredSchedule } from "./workingHoursStatus";
+import { buildGetStartedSteps, countGetStartedDone, isGetStartedComplete } from "./getStartedSteps";
 import {
   clearRoutePlannerDraft,
   readRoutePlannerDraft,
@@ -462,6 +464,48 @@ export default function HomePage({
     () => profileNudges.filter((nudge) => dismissedNudgeIds.indexOf(nudge.id) < 0),
     [dismissedNudgeIds, profileNudges],
   );
+
+  // First-run "Get started" checklist — shown until a new user finishes all
+  // three steps (then latched off in localStorage so it never returns).
+  const getStartedSteps = useMemo(
+    () =>
+      buildGetStartedSteps({
+        workingHoursDone: hasConfiguredSchedule(authUser?.workingHours),
+        hasClients: (dashboardSummary?.kpis.activePatientCount ?? 0) > 0,
+        hasRunRoute:
+          (dashboardSummary?.snapshot.completedRoutes ?? 0) > 0 ||
+          (dashboardSummary?.kpis.routesToday ?? 0) > 0 ||
+          (dashboardSummary?.kpis.visitsScheduledLast7Days ?? 0) > 0,
+      }),
+    [authUser?.workingHours, dashboardSummary],
+  );
+  const getStartedComplete = isGetStartedComplete(getStartedSteps);
+  const [getStartedDismissed, setGetStartedDismissed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("routefy.getStarted.done") === "1";
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    if (getStartedComplete && !getStartedDismissed) {
+      try {
+        localStorage.setItem("routefy.getStarted.done", "1");
+      } catch {
+        // localStorage unavailable — the checklist just won't persist its latch.
+      }
+      setGetStartedDismissed(true);
+    }
+  }, [getStartedComplete, getStartedDismissed]);
+  const dismissGetStarted = () => {
+    try {
+      localStorage.setItem("routefy.getStarted.done", "1");
+    } catch {
+      // ignore
+    }
+    setGetStartedDismissed(true);
+  };
+  const showGetStarted = isAuthenticated && !getStartedDismissed && !getStartedComplete;
   const greetingName = resolveGreetingName(authUser?.displayName);
   const greetingPrefix = resolveGreetingPrefix();
   const todayHoursDisplay = resolveTodayHoursDisplay(authUser?.workingHours);
@@ -604,6 +648,86 @@ export default function HomePage({
           </div>
         </div>
       </section>
+
+      {showGetStarted && (
+        <section className={responsiveStyles.getStartedCard}>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className={responsiveStyles.getStartedEyebrow}>Get started</p>
+              <p className={responsiveStyles.getStartedTitle}>
+                {countGetStartedDone(getStartedSteps)} of {getStartedSteps.length} done
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissGetStarted}
+              aria-label="Dismiss get started checklist"
+              className="shrink-0 rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path
+                  d="M3 3l10 10M13 3L3 13"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+          </div>
+          <ul className={responsiveStyles.getStartedList}>
+            {getStartedSteps.map((step) => (
+              <li key={step.id} className={responsiveStyles.getStartedRow}>
+                <span
+                  className={
+                    step.done
+                      ? responsiveStyles.getStartedCheckDone
+                      : responsiveStyles.getStartedCheckTodo
+                  }
+                  aria-hidden="true"
+                >
+                  {step.done && (
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+                      <polyline
+                        points="20 6 9 17 4 12"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className={`block text-sm font-semibold ${step.done ? "text-slate-400 line-through dark:text-slate-500" : "text-slate-900 dark:text-slate-100"}`}
+                  >
+                    {step.label}
+                  </span>
+                  {!step.done && (
+                    <span className="mt-0.5 block text-xs text-slate-500 dark:text-slate-400">
+                      {step.detail}
+                    </span>
+                  )}
+                </span>
+                {!step.done &&
+                  (step.to ? (
+                    <Link to={step.to} className={responsiveStyles.getStartedStepButton}>
+                      {step.cta}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => onOpenAccountSettings?.()}
+                      className={responsiveStyles.getStartedStepButton}
+                    >
+                      {step.cta}
+                    </button>
+                  ))}
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {visibleNudges.map((nudge) => (
         <section

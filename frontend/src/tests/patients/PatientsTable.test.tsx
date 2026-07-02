@@ -40,6 +40,7 @@ const baseProps = {
   onRestore: vi.fn(),
   restoringId: null,
   recurringTemplatesByPatientId: new Map(),
+  onAddClient: vi.fn(),
 };
 
 describe("PatientsTable desktop", () => {
