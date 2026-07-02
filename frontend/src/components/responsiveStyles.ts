@@ -514,7 +514,11 @@ export const responsiveStyles = {
   // Clients page lifecycle tabs (Active / Idle / Archived)
   // Row holding the lifecycle tabs (left) + the info popover trigger (right).
   clientTabsRow: "relative mb-4 flex border-b border-slate-200 dark:border-slate-800",
-  clientStateTabBar: "flex gap-1 overflow-x-auto",
+  // overflow-x-auto alone promotes overflow-y (visible) to auto per spec, which
+  // shows a stray vertical scrollbar over the last tab. Pin overflow-y and hide
+  // the scrollbar chrome (horizontal scroll still works for narrow screens).
+  clientStateTabBar:
+    "flex gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
   clientStateTab:
     "-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition",
   clientStateTabActive: "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300",
