@@ -520,27 +520,26 @@ export function useRoutePlannerController({
     visitInstances,
   ]);
 
-  // When a result is restored (session/runtime cache on mount, or a saved run)
-  // the route reappears but "Your Route" was only auto-seeded from templates.
-  // Reconcile the selection to the shown route ONCE per result so it matches
-  // (and re-optimize operates on the right clients). Runs after the auto-seed
-  // effect above so it wins the same commit; the ref guards against clobbering
-  // any manual edits the user makes to the selection afterwards.
-  const reconciledResultRef = useRef<typeof result>(null);
+  // Keep "Your Route" consistent with the route being shown. Whenever a result
+  // is displayed (restored from the session/runtime cache, a saved run, or an
+  // optimize) and the user hasn't manually curated the selection, reconcile the
+  // selection to the result's visits — so it can't drift empty (e.g. after a
+  // planning-date change wipes the auto-seed while the result still shows).
+  // Runs after the auto-seed effect so it wins the same commit; taking the
+  // manual lock stops auto-seed from re-wiping and guards the user's later edits.
   useEffect(() => {
-    if (!result) {
-      reconciledResultRef.current = null;
+    if (!result || manualTemplateSelectionLock) {
       return;
     }
-    if (reconciledResultRef.current === result) {
-      return;
-    }
-    reconciledResultRef.current = result;
 
     const restored = buildSelectedDestinationsFromResult(result);
     if (restored.length === 0) {
       return;
     }
+
+    // Own the selection so auto-seed leaves it alone; only rebuild if it doesn't
+    // already cover the result's clients (avoids clobbering a matching selection).
+    setManualTemplateSelectionLock(true);
 
     const resultPatientIds = new Set(restored.map((destination) => destination.patientId));
     const selectionPatientIds = new Set(
@@ -549,13 +548,10 @@ export function useRoutePlannerController({
     const alreadyMatches =
       resultPatientIds.size === selectionPatientIds.size &&
       [...resultPatientIds].every((patientId) => selectionPatientIds.has(patientId));
-    if (alreadyMatches) {
-      return;
+    if (!alreadyMatches) {
+      replaceSelectedDestinations(restored);
     }
-
-    setManualTemplateSelectionLock(true);
-    replaceSelectedDestinations(restored);
-  }, [result, selectedDestinations, replaceSelectedDestinations]);
+  }, [result, manualTemplateSelectionLock, selectedDestinations, replaceSelectedDestinations]);
 
   function handleAddDestinationPatient(patient: Parameters<typeof addDestinationPatient>[0]) {
     setManualTemplateSelectionLock(true);
