@@ -81,14 +81,21 @@ describe("buildNotificationItems", () => {
     expect(idle?.to).toBe("/clients?state=idle");
   });
 
-  it("returns nothing when the day is clean and setup is complete", () => {
+  it("shows only the iOS announcement when the day is clean and setup is complete", () => {
     const items = buildNotificationItems(makeSummary({}), { workingHours: enabledHours }, noop);
-    expect(items).toHaveLength(0);
+    expect(items.map((i) => i.id)).toEqual(["ios-coming-soon"]);
+  });
+
+  it("always includes the iOS coming-soon announcement, last and non-interactive", () => {
+    const items = buildNotificationItems(makeSummary({ stale: 3 }), null, noop);
+    const ios = items[items.length - 1];
+    expect(ios.id).toBe("ios-coming-soon");
+    expect(ios.to).toBeUndefined();
+    expect(ios.onSelect).toBeUndefined();
   });
 
   it("tolerates a missing summary (still surfaces setup)", () => {
     const items = buildNotificationItems(null, null, noop);
-    expect(items).toHaveLength(1);
-    expect(items[0].id).toBe("setup-working-hours");
+    expect(items.map((i) => i.id)).toEqual(["setup-working-hours", "ios-coming-soon"]);
   });
 });

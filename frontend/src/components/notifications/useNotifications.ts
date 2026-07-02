@@ -121,6 +121,15 @@ export const buildNotificationItems = (
     });
   }
 
+  // Standing announcement — the iOS app is on the way. Lowest priority, so it
+  // sits under any actionable items. Non-interactive (no link).
+  items.push({
+    id: "ios-coming-soon",
+    title: "Routefy for iOS — coming soon",
+    detail: "A native iPhone app is on the way, so you can plan routes on the go.",
+    severity: "info",
+  });
+
   return items;
 };
 

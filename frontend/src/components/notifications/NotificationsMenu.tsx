@@ -93,18 +93,23 @@ const NotificationRow = ({
     );
   }
 
-  return (
-    <button
-      type="button"
-      onClick={() => {
-        onNavigate();
-        item.onSelect?.();
-      }}
-      className={responsiveStyles.notificationsItem}
-    >
-      {body}
-    </button>
-  );
+  if (item.onSelect) {
+    return (
+      <button
+        type="button"
+        onClick={() => {
+          onNavigate();
+          item.onSelect?.();
+        }}
+        className={responsiveStyles.notificationsItem}
+      >
+        {body}
+      </button>
+    );
+  }
+
+  // Non-interactive announcement (no link/action).
+  return <div className={`${responsiveStyles.notificationsItem} cursor-default`}>{body}</div>;
 };
 
 export default function NotificationsMenu({

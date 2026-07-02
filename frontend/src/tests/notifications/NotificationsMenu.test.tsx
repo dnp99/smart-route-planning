@@ -76,8 +76,8 @@ describe("NotificationsMenu", () => {
     );
   });
 
-  it("shows an empty state when there is nothing to surface", async () => {
-    // Working hours configured + clean summary → no items.
+  it("still shows the iOS coming-soon announcement when nothing else is actionable", async () => {
+    // Working hours configured + clean summary → only the standing iOS note.
     mockedFetchSummary.mockResolvedValue(summaryWith(0));
     render(
       <MemoryRouter>
@@ -91,6 +91,7 @@ describe("NotificationsMenu", () => {
     const bell = screen.getByRole("button", { name: "Notifications" });
     await waitFor(() => expect(mockedFetchSummary).toHaveBeenCalled());
     fireEvent.click(bell);
-    expect(screen.getByText("You're all caught up.")).toBeTruthy();
+    expect(screen.getByText(/Routefy for iOS/i)).toBeTruthy();
+    expect(screen.queryByText("You're all caught up.")).toBeNull();
   });
 });
