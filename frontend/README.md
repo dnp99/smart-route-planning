@@ -16,6 +16,7 @@ This folder contains the Vite + React frontend for CareFlow.
 - Restore the latest optimization result from in-memory runtime cache when navigating away and back (same tab/session state).
 - Persist only non-sensitive route-planner draft state in localStorage (IDs/order/flags/date/objective/UI step — no addresses or place IDs).
 - Keep quote/header workspace behavior consistent across auth sessions.
+- Header notifications bell (desktop): surfaces actionable items derived from signals we already have — unset working hours, the latest route's unscheduled/late visits, and idle clients (30+ days) — from `/api/dashboard/summary` + the auth user. Unread dot is tracked via a localStorage signature and cleared when the panel opens; items deep-link to Settings / Route Planner / the Clients Idle tab. No dedicated backend endpoint.
 - Require first-use legal acknowledgement via blocking modal (`I Agree`) and re-prompt when legal notice version changes.
 - Route authenticated users with incomplete setup to `/welcome-setup` and require profile, working hours, and route objective before standard app pages.
 - Keep home address optional during setup (non-blocking); if missing, surface completion nudges on the dashboard instead of blocking access.
@@ -104,3 +105,5 @@ or:
 - `src/features/patients/ui/PatientFormModal.tsx` - client edit modal including recurring template authoring (weekday toggles, date range, active flag)
 - `src/features/patients/domain/patientForm.ts` - client form domain model, validation, mutation plan builders
 - `src/features/route-planner/hooks/useRoutePlannerController.ts` - visit instance hydration, template matching, auto-seed, and orphan guard
+- `src/components/notifications/useNotifications.ts` - derives header notification items from the dashboard summary + auth user; module-cached summary fetch and localStorage unread tracking
+- `src/components/notifications/NotificationsMenu.tsx` - header bell + portaled notifications dropdown (view only)
