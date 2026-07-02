@@ -13,8 +13,9 @@
 
 | Token | Hex | Tailwind | Usage |
 |---|---|---|---|
-| BG / Page | `#F8FAFC` | `slate-50` | Page canvas only — never used inside cards |
-| BG / Surface | `#FFFFFF` | `white` | All cards, inputs, table rows |
+| BG / Page | `#FFFFFF` | `white` | Page canvas (design 2a — flat white shell) |
+| BG / Surface | `#FFFFFF` | `white` | Primary/hero/data cards, inputs, table rows |
+| BG / Surface secondary | `#F4F4F6` | `surfaceSecondary` | Secondary tiles: sidebar Today/account, stat/KPI tiles |
 | Border / Default | `#E2E8F0` | `slate-200` | Default border on all containers |
 | Border / Hover | `#CBD5E1` | `slate-300` | Hover border on inputs and interactive cards |
 | Text / Primary | `#0F172A` | `slate-900` | Headings, body text, table cell primary text |
@@ -100,11 +101,11 @@ Allowed exceptions for dense UI metadata:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│ Header (full width, sticky, bg-slate-50/95 backdrop-blur-sm)     │
+│ Header (full width, sticky, bg-white/80 backdrop-blur-md)        │
 ├──────────────────────────────────────────────────────────────────┤
 │ Tab bar (full width, border-b)                                   │
 ├──────────────────────────────────────────────────────────────────┤
-│  bg-gradient-to-b from-slate-50 to-white canvas                  │
+│  bg-white canvas (flat white shell)                              │
 │  ┌────────────────────────────────────┐                          │
 │  │  max-w-7xl  mx-auto  px-4 sm:px-6  │                          │
 │  │  pb-6                              │                          │
@@ -117,7 +118,7 @@ Allowed exceptions for dense UI metadata:
 
 - **Max width:** `max-w-7xl` (80rem / 1280px)
 - **Horizontal padding:** `px-4 sm:px-6`
-- **Canvas:** `bg-gradient-to-b from-slate-50 to-white` on the outer flex container
+- **Canvas:** flat `bg-white` on the outer flex container (design 2a). Contrast comes from card outlines + `surfaceSecondary` tiles, not a tinted canvas.
 - **Between sections:** `mt-6` or `mt-8`
 - **Width policy:** keep app shell at `max-w-7xl`, but use narrower inner constraints for form/auth and dense data regions when readability benefits.
 - **Footer text baseline:** use low-emphasis text (`text-xs text-slate-500`) and keep footer visually subordinate to page content.
@@ -157,10 +158,18 @@ p-4 sm:p-6 md:p-8
 ... + hover:border-slate-300 cursor-pointer
 ```
 
+**Secondary tile** (design 2a — sidebar Today/account, stat/KPI tiles):
+```
+surfaceSecondary  (bg-[#F4F4F6] border border-[#E2E8F0])
+rounded-xl / rounded-2xl
+shadow-sm
+```
+
 **Rules:**
-- Background canvas (`bg-slate-50`) is for contrast only — never put gray cards on a white background
-- All primary containers are white
-- Never mix gray cards and white cards at the same level
+- The canvas is **white**; primary cards separate from it via their `border-slate-200` outline (not a gray fill).
+- **Primary / hero / data cards + inputs + table rows stay `bg-white`.** Never make a data table or a hero card gray.
+- **Secondary supporting tiles** use `surfaceSecondary` (`#F4F4F6`). This is the one sanctioned gray surface.
+- Don't mix white and `#F4F4F6` cards arbitrarily at the same level — the split is by role (primary vs secondary tile), not by whim.
 
 ---
 

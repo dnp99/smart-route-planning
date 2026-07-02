@@ -10,7 +10,9 @@ Key rules enforced every session:
 
 2. **Inputs are always `bg-white`** — never `bg-slate-50` on an active input field.
 
-3. **Cards are always `bg-white`** — never gray (`bg-slate-100`, `bg-slate-50`) as a card background. The page canvas (`bg-slate-50`) provides contrast; cards provide the white surface.
+3. **Card surface hierarchy (design 2a):** the page canvas is **white**, so contrast comes from a two-tier card system:
+   - **Primary / hero / data cards** stay **`bg-white`** with a `border-slate-200` outline (the outline, not a gray fill, separates them from the white canvas).
+   - **Secondary "tile" surfaces** (sidebar Today/account tiles, stat/KPI tiles, supporting summary tiles) use **`surfaceSecondary`** (`#F4F4F6` + `#E2E8F0` border). Never make a primary card or a data table gray.
 
 4. **Border defaults:** `border-slate-200` at rest, `border-slate-300` on hover. Never use `border-slate-300` as the default state.
 
@@ -24,7 +26,7 @@ Key rules enforced every session:
 
 8. **Spacing:** 8pt grid only — `4 / 8 / 12 / 16 / 24 / 32px`.
 
-9. **Shadows:** One level per element — `shadow-sm` for cards. Header and footer are borderless and use `bg-slate-50/95 backdrop-blur-sm` (no shadow). Never stack shadows.
+9. **Shadows:** One level per element — `shadow-sm` for cards. Header and footer are borderless and frosted over the white canvas (`bg-white/80 backdrop-blur-md`, no shadow). Never stack shadows.
 
 10. **Typography:** Map all text to the type scale in the design doc. Never introduce a new font size.
 
@@ -34,7 +36,7 @@ Key rules enforced every session:
 
 13. **Selected/Active (§11):** `border-blue-200 bg-blue-50/50`. Blue = selection only. Green = success only. Amber = warning only. Red = error only. Never mix.
 
-14. **Page background (§12):** `bg-gradient-to-b from-slate-50 to-white` on the outermost container only. The `max-w-7xl` content wrapper is always transparent.
+14. **Page background (§12):** flat **white** (`bg-white`) on the outer shell/canvas only (the `appCanvas`/`appShell` tokens). The sidebar and the `max-w-7xl` content wrapper are transparent over it. Contrast comes from card outlines + the `surfaceSecondary` (`#F4F4F6`) tiles, not from a tinted canvas.
 
 15. **Mobile (§13):** Cards `p-4`, sections `gap-4`. Tables go card layout below `md`. All buttons `w-full sm:w-auto`. Touch targets minimum `44px`.
 

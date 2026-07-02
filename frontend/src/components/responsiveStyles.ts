@@ -22,16 +22,19 @@
 
 export const responsiveStyles = {
   // ── App shell (layout components) ─────────────────────────────────────────
-  // Page canvas gradient (design 2a): cool light slate-blue. Lives on the outer
-  // shell row + content column so the transparent sidebar reads against it.
-  appCanvas: "bg-[linear-gradient(180deg,#F4F7FB_0%,#F8FAFC_100%)] dark:bg-slate-950 dark:bg-none",
-  appShell:
-    "flex min-h-screen flex-col bg-[linear-gradient(180deg,#F4F7FB_0%,#F8FAFC_100%)] dark:bg-none dark:bg-slate-950",
+  // Page canvas (design 2a): flat white shell. The transparent sidebar + content
+  // read against it; secondary tiles use `surfaceSecondary` (#F4F4F6) for contrast.
+  appCanvas: "bg-white dark:bg-slate-950",
+  appShell: "flex min-h-screen flex-col bg-white dark:bg-slate-950",
   stickyHeaderShell: "sticky top-0 z-30 w-full",
-  // Transparent, frosted top bar that blends into the page canvas on scroll.
-  appHeader: "relative z-40 w-full bg-[#F4F7FB]/80 backdrop-blur-md dark:bg-slate-950/80",
+  // Frosted top bar that blends into the white page canvas on scroll.
+  appHeader: "relative z-40 w-full bg-white/80 backdrop-blur-md dark:bg-slate-950/80",
   appHeaderBackgroundGradient: "",
   appHeaderInner: "mx-auto flex w-full max-w-7xl items-center justify-between px-6",
+  // Secondary tile surface (design 2a): warm light-gray on the white canvas.
+  // For sidebar tiles, stat/KPI cards, and other supporting surfaces — NOT for
+  // primary/hero cards or data tables, which stay bg-white.
+  surfaceSecondary: "bg-[#F4F4F6] border border-[#E2E8F0] dark:bg-slate-900 dark:border-slate-800",
   tabStrip: "relative z-30 w-full bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
   appFooter:
     "w-full bg-[linear-gradient(90deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] dark:bg-[linear-gradient(90deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
