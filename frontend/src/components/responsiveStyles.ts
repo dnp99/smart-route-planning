@@ -36,8 +36,8 @@ export const responsiveStyles = {
   // primary/hero cards or data tables, which stay bg-white.
   surfaceSecondary: "bg-[#F4F4F6] border border-[#E2E8F0] dark:bg-slate-900 dark:border-slate-800",
   tabStrip: "relative z-30 w-full bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
-  appFooter:
-    "w-full bg-[linear-gradient(90deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] dark:bg-[linear-gradient(90deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
+  // Borderless footer over the flat white canvas (design 2a) — no tinted gradient.
+  appFooter: "w-full bg-transparent dark:bg-transparent",
   appFooterInner:
     "mx-auto flex w-full max-w-7xl flex-col items-center gap-3 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:pb-4 md:pl-1 md:pr-[60px]",
   // Horizontal insets are symmetric on mobile (no sidebar); at md+ the left
