@@ -4,7 +4,9 @@ import {
   requestUpdateVisitInstance,
   requestVisitInstances,
   requestOptimizedRoute,
+  requestRouteAdvice,
   resolveWorkingHoursForDate,
+  RouteAdvisorUnavailableError,
 } from "../../features/route-planner/api/routePlannerService";
 import { setAuthSession } from "../../components/auth/authSession";
 
@@ -1010,5 +1012,98 @@ describe("requestOptimizedRoute — working hours integration", () => {
     expect(JSON.parse(String(init.body))).toMatchObject({
       optimizationObjective: "time",
     });
+  });
+});
+
+describe("requestRouteAdvice", () => {
+  const fetchMock = vi.fn();
+
+  const context = {
+    planningWeekday: "Wednesday",
+    timezone: "America/Toronto",
+    stopCount: 2,
+    visitCount: 2,
+    metrics: {
+      distanceKm: 8,
+      durationMinutes: 35,
+      lateMinutes: 0,
+      waitMinutes: 0,
+      fixedWindowViolations: 0,
+    },
+    warnings: [],
+    unscheduledByReason: {},
+    stops: [],
+  };
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+    setAuthSession({
+      id: "nurse-1",
+      email: "nurse@example.com",
+      displayName: "Nurse One",
+      homeAddress: null,
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("posts the context and returns parsed advice on success", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ brief: "Clean day.", suggestions: ["Confirm Stop 1."] }),
+    } as Response);
+
+    const advice = await requestRouteAdvice(context);
+
+    expect(advice).toEqual({ brief: "Clean day.", suggestions: ["Confirm Stop 1."] });
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(String(url)).toBe("http://api.example.com/api/route-planner/advisor");
+    expect(JSON.parse(String(init.body))).toMatchObject({ stopCount: 2 });
+  });
+
+  it("throws RouteAdvisorUnavailableError on 503", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 503,
+      json: async () => ({ error: "Route Advisor is not configured." }),
+    } as Response);
+
+    await expect(requestRouteAdvice(context)).rejects.toBeInstanceOf(RouteAdvisorUnavailableError);
+  });
+
+  it("throws a session-expired error and clears the session on 401", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: async () => ({ error: "Unauthorized." }),
+    } as Response);
+
+    await expect(requestRouteAdvice(context)).rejects.toThrow(/Unauthorized\.|Session expired/);
+  });
+
+  it("throws the API error message on a non-ok response", async () => {
+    fetchMock.mockResolvedValue({
+      ok: false,
+      status: 502,
+      json: async () => ({ error: "Route Advisor is temporarily unavailable." }),
+    } as Response);
+
+    await expect(requestRouteAdvice(context)).rejects.toThrow(
+      "Route Advisor is temporarily unavailable.",
+    );
+  });
+
+  it("throws when the response shape is invalid", async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ brief: 42 }),
+    } as Response);
+
+    await expect(requestRouteAdvice(context)).rejects.toThrow("Unexpected API response format.");
   });
 });

@@ -438,15 +438,21 @@ export function OptimizedRouteResult({
             </div>
           )}
 
-          {onRequestAdvice && scheduledStopCount > 0 && (
-            <RouteAdvisorPanel
-              advice={advice}
-              isLoading={isLoadingAdvice}
-              error={adviceError}
-              unavailable={adviceUnavailable}
-              onRequestAdvice={onRequestAdvice}
-            />
-          )}
+          {/* Only offer AI advice when there's something to advise on — on a
+              clean route the green banner already says it all, so the advisor
+              would just restate it. Keep it visible once advice is in flight or
+              loaded, even if warnings are later dismissed. */}
+          {onRequestAdvice &&
+            scheduledStopCount > 0 &&
+            (issueCount > 0 || isLoadingAdvice || advice) && (
+              <RouteAdvisorPanel
+                advice={advice}
+                isLoading={isLoadingAdvice}
+                error={adviceError}
+                unavailable={adviceUnavailable}
+                onRequestAdvice={onRequestAdvice}
+              />
+            )}
 
           <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
             <div

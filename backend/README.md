@@ -379,6 +379,12 @@ If a selected anchor has a large idle gap before service start, v3 attempts to f
 - Nearby clustering preference: visit pairs within `0.5 km` are scored to stay consecutive unless consecutive service would create a fixed-window conflict.
 - Flexible patients within 90 min of their deadline are elevated to a priority pool and sorted by tightest deadline first (EDF), so they are picked before going late rather than after.
 
+### Departure time / day start
+
+- If the request omits `start.departureTime`, v3 computes it: the earliest a **fixed window** requires leaving to arrive on time, otherwise `nurseWorkingHours.workStart` (falling back to a default when no working hours are given).
+- If the request **supplies** `start.departureTime`, it is honored — but when `nurseWorkingHours` is present it is **clamped up** to that same earliest-justified departure. A caller cannot start the workday before `workStart` unless a fixed window genuinely requires it; a gratuitously-early departure is pulled forward to `workStart`.
+- `workStart`/`workEnd` remain soft (they never make a route infeasible). Early departure to reach a genuinely-early fixed appointment is preserved, and once the nurse is out, visits are serviced as reached — there is no "wait until `workStart`" idling. Net effect: no visit is serviced before the shift starts unless a fixed window demands it. **Callers must send `nurseWorkingHours` for this clamp to apply.**
+
 ### Warnings in response
 
 The optimizer returns an optional `warnings[]` array:

@@ -455,4 +455,57 @@ describe("OptimizedRouteResult", () => {
     expect(screen.getByText("1 issue found")).toBeTruthy();
     expect(screen.getByText("• 1 late visit")).toBeTruthy();
   });
+
+  it("hides the Route Advisor on a clean route (nothing to advise on)", () => {
+    render(
+      <OptimizedRouteResult
+        result={buildResult()}
+        conflictWarningsDismissed={false}
+        onDismissConflictWarnings={() => undefined}
+        latenessWarningsDismissed={false}
+        onDismissLatenessWarnings={() => undefined}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
+        onRequestAdvice={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText("Schedule looks good")).toBeTruthy();
+    expect(screen.queryByText("Route Advisor")).toBeNull();
+    expect(screen.queryByRole("button", { name: /Get AI advice/i })).toBeNull();
+  });
+
+  it("offers the Route Advisor when the route has an issue", () => {
+    render(
+      <OptimizedRouteResult
+        result={buildResult({
+          unscheduledTasks: [
+            {
+              visitId: "visit-x",
+              patientId: "patient-x",
+              reason: "insufficient_day_capacity",
+            },
+          ],
+        })}
+        conflictWarningsDismissed={false}
+        onDismissConflictWarnings={() => undefined}
+        latenessWarningsDismissed={false}
+        onDismissLatenessWarnings={() => undefined}
+        expandedResultTaskIds={{}}
+        onToggleResultTask={() => undefined}
+        expandedResultEndingStopIds={{}}
+        onToggleResultEndingStop={() => undefined}
+        normalizedHomeAddress="99 home road"
+        planningDate="2026-03-26"
+        onRequestAdvice={() => undefined}
+      />,
+    );
+
+    expect(screen.getByText("Route Advisor")).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Get AI advice/i })).toBeTruthy();
+  });
 });
