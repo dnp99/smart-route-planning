@@ -1609,4 +1609,110 @@ describe("RoutePlanner patient selection integration", () => {
       });
     });
   });
+
+  it("restores Your Route from a cached/saved result when only templates would auto-seed", async () => {
+    // A result is present on mount (restored from the session/runtime cache or a
+    // saved run) but nothing auto-seeds those clients. The reconcile effect
+    // should rebuild Your Route from the result's visits so it matches.
+    routeOptimizationState.result = {
+      timezone: "America/Toronto",
+      start: {
+        address: "Home",
+        coords: { lat: 43.6, lon: -79.5 },
+        departureTime: "2026-07-02T12:00:00.000Z",
+      },
+      end: { address: "Home", coords: { lat: 43.6, lon: -79.5 } },
+      orderedStops: [
+        {
+          stopId: "s1",
+          address: "123 Main St",
+          coords: { lat: 43.7, lon: -79.7 },
+          arrivalTime: "2026-07-02T12:00:00.000Z",
+          departureTime: "2026-07-02T12:30:00.000Z",
+          distanceFromPreviousKm: 1,
+          durationFromPreviousSeconds: 60,
+          isEndingPoint: false,
+          tasks: [
+            {
+              visitId: "v-1",
+              patientId: "patient-1",
+              patientName: "Jane Doe",
+              address: "123 Main St",
+              windowStart: "09:00",
+              windowEnd: "11:00",
+              windowType: "fixed",
+              serviceDurationMinutes: 30,
+              arrivalTime: "2026-07-02T12:40:00.000Z",
+              serviceStartTime: "2026-07-02T12:40:00.000Z",
+              serviceEndTime: "2026-07-02T12:55:00.000Z",
+              waitSeconds: 0,
+              lateBySeconds: 0,
+              onTime: true,
+            },
+          ],
+        },
+        {
+          stopId: "s2",
+          address: "456 Oak Ave",
+          coords: { lat: 43.71, lon: -79.71 },
+          arrivalTime: "2026-07-02T12:00:00.000Z",
+          departureTime: "2026-07-02T12:30:00.000Z",
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 120,
+          isEndingPoint: false,
+          tasks: [
+            {
+              visitId: "v-2",
+              patientId: "patient-2",
+              patientName: "John Smith",
+              address: "456 Oak Ave",
+              windowStart: "12:00",
+              windowEnd: "13:00",
+              windowType: "flexible",
+              serviceDurationMinutes: 20,
+              arrivalTime: "2026-07-02T12:40:00.000Z",
+              serviceStartTime: "2026-07-02T12:40:00.000Z",
+              serviceEndTime: "2026-07-02T12:55:00.000Z",
+              waitSeconds: 0,
+              lateBySeconds: 0,
+              onTime: true,
+            },
+          ],
+        },
+        {
+          stopId: "end",
+          address: "Home",
+          coords: { lat: 43.6, lon: -79.5 },
+          arrivalTime: "2026-07-02T12:00:00.000Z",
+          departureTime: "2026-07-02T12:30:00.000Z",
+          distanceFromPreviousKm: 1,
+          durationFromPreviousSeconds: 60,
+          isEndingPoint: true,
+          tasks: [],
+        },
+      ],
+      routeLegs: [],
+      unscheduledTasks: [],
+      metrics: {
+        fixedWindowViolations: 0,
+        totalLateSeconds: 0,
+        totalWaitSeconds: 0,
+        totalDistanceMeters: 0,
+        totalDistanceKm: 0,
+        totalDurationSeconds: 0,
+      },
+      algorithmVersion: "v3",
+    };
+    routeOptimizationState.hasAttemptedOptimize = true;
+
+    render(<RoutePlanner />);
+
+    // The client section collapses when a result is present — expand it to see
+    // Your Route. It should be reconciled from the result's visits (both
+    // clients), not just the auto-seeded templates (none here).
+    fireEvent.click(await screen.findByRole("button", { name: "Expand client search" }));
+
+    expect(await screen.findByRole("button", { name: /Remove Jane Doe/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /Remove John Smith/i })).toBeTruthy();
+  });
 });

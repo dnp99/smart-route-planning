@@ -1,6 +1,9 @@
 import type { Patient, VisitInstance } from "../../../../../shared/contracts";
 import { formatNameWords, formatPatientNameFromParts } from "../../patients/domain/patientName";
 import type { SelectedPatientDestination } from "./routePlannerTypes";
+import type { OptimizeRouteResponse } from "../types";
+
+const DEFAULT_SERVICE_DURATION_MINUTES = 20;
 
 export const toWindowTime = (value: string) => value.slice(0, 5);
 
@@ -107,6 +110,67 @@ export const toSelectedVisitInstanceDestinations = (
     isIncluded: instance.status === "scheduled",
     persistPlanningWindow: false,
   }));
+};
+
+// Rebuild the "Your Route" selection from an optimized result's visits. Used
+// when a result is restored from the session/runtime cache or a saved run — the
+// result comes back but the selection was only auto-seeded from templates, so
+// this makes "Your Route" reflect the clients actually in the shown route (and
+// keeps re-optimize operating on them). Mirrors the manual-destination shape.
+export const buildSelectedDestinationsFromResult = (
+  result: OptimizeRouteResponse,
+): SelectedPatientDestination[] => {
+  const destinations: SelectedPatientDestination[] = [];
+  const seen = new Set<string>();
+
+  const push = (task: {
+    visitId?: string;
+    patientId: string;
+    patientName?: string;
+    address?: string;
+    googlePlaceId?: string | null;
+    windowStart?: string;
+    windowEnd?: string;
+    windowType?: "fixed" | "flexible";
+    serviceDurationMinutes?: number;
+  }) => {
+    if (!task.patientId) {
+      return;
+    }
+    const visitKey = task.visitId
+      ? `${task.patientId}:result:${task.visitId}`
+      : `${task.patientId}:result:${destinations.length}`;
+    if (seen.has(visitKey)) {
+      return;
+    }
+    seen.add(visitKey);
+    destinations.push({
+      visitKey,
+      ...(task.visitId ? { visitId: task.visitId } : {}),
+      sourceWindowId: null,
+      patientId: task.patientId,
+      patientName: task.patientName ?? "",
+      address: task.address ?? "",
+      googlePlaceId: task.googlePlaceId ?? null,
+      windowStart: task.windowStart ? toWindowTime(task.windowStart) : "",
+      windowEnd: task.windowEnd ? toWindowTime(task.windowEnd) : "",
+      windowType: task.windowType ?? "flexible",
+      serviceDurationMinutes: task.serviceDurationMinutes ?? DEFAULT_SERVICE_DURATION_MINUTES,
+      requiresPlanningWindow: false,
+      isIncluded: true,
+      persistPlanningWindow: false,
+    });
+  };
+
+  result.orderedStops.forEach((stop) => {
+    if (stop.isEndingPoint) {
+      return;
+    }
+    stop.tasks.forEach((task) => push(task));
+  });
+  result.unscheduledTasks.forEach((task) => push(task));
+
+  return destinations;
 };
 
 export const formatPatientListLabel = (destinations: SelectedPatientDestination[]) => {
