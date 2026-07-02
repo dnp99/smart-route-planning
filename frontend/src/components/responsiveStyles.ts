@@ -71,14 +71,14 @@ export const responsiveStyles = {
     "group flex w-full items-center gap-3 rounded-r-[10px] border-l-[3px] border-blue-600 bg-blue-50 px-3 py-2.5 text-left text-[13.5px] font-semibold text-blue-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-blue-400 dark:bg-blue-950/40 dark:text-blue-200",
   // Sidebar "Today" mini-card + account card at the foot of the rail.
   sidebarTodayCard:
-    "mt-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/80",
+    "mt-2 rounded-xl border border-[#E2E8F0] bg-[#F4F4F6] px-3 py-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80",
   sidebarTodayLabel:
     "text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400 dark:text-slate-500",
   sidebarTodayRow: "mt-2 flex items-center justify-between gap-2",
   sidebarTodayKey: "text-xs font-medium text-slate-500 dark:text-slate-400",
   sidebarTodayValue: "text-xs font-semibold text-slate-900 dark:text-slate-100",
   sidebarAccountCard:
-    "mt-2.5 flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-slate-700 dark:bg-slate-900",
+    "mt-2.5 flex w-full items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F4F4F6] px-2.5 py-2 text-left shadow-sm transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-slate-700 dark:bg-slate-900",
   sidebarAccountAvatar:
     "flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-xs font-bold text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200",
   accountMenuDropdownUp:
@@ -506,7 +506,7 @@ export const responsiveStyles = {
   dashboardHeroActions: "mt-6 flex flex-wrap gap-2.5",
   dashboardKpiGrid: "dashboard-reveal grid gap-3 sm:grid-cols-2 xl:grid-cols-4",
   dashboardKpiCard:
-    "dashboard-reveal dashboard-kpi-card block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-5",
+    "dashboard-reveal dashboard-kpi-card block rounded-2xl border border-[#E2E8F0] bg-[#F4F4F6] p-4 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-5",
   dashboardKpiLabel:
     "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
   dashboardKpiValue: "m-0 mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100",
