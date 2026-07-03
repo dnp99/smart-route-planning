@@ -748,92 +748,96 @@ export default function HomePage({
         </section>
       )}
 
-      {visibleNudges.map((nudge) => (
-        <section
-          key={nudge.id}
-          className={
-            nudge.tone === "warning"
-              ? responsiveStyles.dashboardNudgeCard
-              : "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/35 sm:p-5"
-          }
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
-            <div className="min-w-0">
-              <p
-                className={`m-0 text-xs font-semibold uppercase tracking-[0.14em] ${
-                  nudge.tone === "warning"
-                    ? "text-amber-800 dark:text-amber-300"
-                    : "text-blue-800 dark:text-blue-300"
-                }`}
-              >
-                {nudge.tone === "warning" ? "Setup Priority" : "Coverage Reminder"}
-              </p>
-              <p
-                className={`m-0 mt-1 text-sm font-semibold ${
-                  nudge.tone === "warning"
-                    ? "text-amber-900 dark:text-amber-200"
-                    : "text-blue-900 dark:text-blue-200"
-                }`}
-              >
-                {nudge.message}
-              </p>
-              <p
-                className={`m-0 mt-1 text-sm ${
-                  nudge.tone === "warning"
-                    ? "text-amber-800/90 dark:text-amber-300/90"
-                    : "text-blue-800/90 dark:text-blue-300/90"
-                }`}
-              >
-                {nudge.rationale}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                className={
-                  nudge.tone === "warning"
-                    ? responsiveStyles.warningBannerButton
-                    : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
-                }
-                onClick={() => {
-                  if (nudge.action === "setup") {
-                    navigate("/welcome-setup");
-                    return;
+      {/* The Get-started checklist supersedes the profile setup nudges while it's
+          visible — showing both is redundant. Nudges return once onboarding is
+          done/dismissed to surface any remaining gaps (route priority, home address). */}
+      {!showGetStarted &&
+        visibleNudges.map((nudge) => (
+          <section
+            key={nudge.id}
+            className={
+              nudge.tone === "warning"
+                ? responsiveStyles.dashboardNudgeCard
+                : "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/35 sm:p-5"
+            }
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
+              <div className="min-w-0">
+                <p
+                  className={`m-0 text-xs font-semibold uppercase tracking-[0.14em] ${
+                    nudge.tone === "warning"
+                      ? "text-amber-800 dark:text-amber-300"
+                      : "text-blue-800 dark:text-blue-300"
+                  }`}
+                >
+                  {nudge.tone === "warning" ? "Setup Priority" : "Coverage Reminder"}
+                </p>
+                <p
+                  className={`m-0 mt-1 text-sm font-semibold ${
+                    nudge.tone === "warning"
+                      ? "text-amber-900 dark:text-amber-200"
+                      : "text-blue-900 dark:text-blue-200"
+                  }`}
+                >
+                  {nudge.message}
+                </p>
+                <p
+                  className={`m-0 mt-1 text-sm ${
+                    nudge.tone === "warning"
+                      ? "text-amber-800/90 dark:text-amber-300/90"
+                      : "text-blue-800/90 dark:text-blue-300/90"
+                  }`}
+                >
+                  {nudge.rationale}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className={
+                    nudge.tone === "warning"
+                      ? responsiveStyles.warningBannerButton
+                      : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
                   }
+                  onClick={() => {
+                    if (nudge.action === "setup") {
+                      navigate("/welcome-setup");
+                      return;
+                    }
 
-                  if (nudge.action === "templates") {
-                    navigate("/clients?templateFilter=without");
-                    return;
+                    if (nudge.action === "templates") {
+                      navigate("/clients?templateFilter=without");
+                      return;
+                    }
+
+                    onOpenAccountSettings?.();
+                  }}
+                >
+                  {nudge.action === "setup"
+                    ? "Complete setup"
+                    : nudge.action === "templates"
+                      ? "Set up templates"
+                      : "Open Settings"}
+                </button>
+                <button
+                  type="button"
+                  className={
+                    nudge.tone === "warning"
+                      ? "rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                      : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
                   }
-
-                  onOpenAccountSettings?.();
-                }}
-              >
-                {nudge.action === "setup"
-                  ? "Complete setup"
-                  : nudge.action === "templates"
-                    ? "Set up templates"
-                    : "Open Settings"}
-              </button>
-              <button
-                type="button"
-                className={
-                  nudge.tone === "warning"
-                    ? "rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
-                    : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
-                }
-                onClick={() =>
-                  setDismissedNudgeIds((current) =>
-                    current.indexOf(nudge.id) >= 0 ? current : [...current, nudge.id],
-                  )
-                }
-              >
-                Dismiss
-              </button>
+                  onClick={() =>
+                    setDismissedNudgeIds((current) =>
+                      current.indexOf(nudge.id) >= 0 ? current : [...current, nudge.id],
+                    )
+                  }
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
-          </div>
-        </section>
-      ))}
+          </section>
+        ))}
 
       {isAuthenticated && (dashboardError || isDashboardLoading) && (
         <section
