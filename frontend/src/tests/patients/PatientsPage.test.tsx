@@ -234,8 +234,12 @@ describe("PatientsPage", () => {
 
     // Select all → the primary-tinted bulk bar appears with Restore + Delete permanently.
     fireEvent.click(await screen.findByRole("checkbox", { name: "Select all clients" }));
-    const restoreButton = await screen.findByRole("button", { name: "Restore 2 clients" });
-    fireEvent.click(restoreButton);
+    fireEvent.click(await screen.findByRole("button", { name: "Restore 2 clients" }));
+
+    // Confirm dialog gates the bulk restore (no immediate call).
+    expect(mockedRestoreClients).not.toHaveBeenCalled();
+    expect(await screen.findByText(/Restore 2 clients\?/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
 
     await waitFor(() => {
       expect(mockedRestoreClients).toHaveBeenCalledWith(["patient-1", "patient-2"]);
