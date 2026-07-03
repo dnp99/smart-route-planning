@@ -35,12 +35,15 @@ function App() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [accountSettingsTab, setAccountSettingsTab] = useState("profile");
-  // Accept an optional target tab. Some callers wire this straight to onClick,
-  // which would pass a click Event — so anything that isn't a known tab falls
-  // back to Profile (never an empty modal).
-  const openAccountSettings = (section) => {
+  const [accountSettingsFocus, setAccountSettingsFocus] = useState(null);
+  // Accept an optional target tab and field to focus. Some callers wire this
+  // straight to onClick, which would pass a click Event — so anything that isn't
+  // a known tab falls back to Profile (never an empty modal), and a non-string
+  // focus target is ignored.
+  const openAccountSettings = (section, focusField) => {
     const tab = ["profile", "working-hours", "route"].includes(section) ? section : "profile";
     setAccountSettingsTab(tab);
+    setAccountSettingsFocus(typeof focusField === "string" ? focusField : null);
     setIsAccountSettingsOpen(true);
   };
   const [isLegalNoticeRequired, setIsLegalNoticeRequired] = useState(false);
@@ -215,6 +218,7 @@ function App() {
       <AccountSettingsModal
         isOpen={isAccountSettingsOpen}
         initialTab={accountSettingsTab}
+        initialFocusField={accountSettingsFocus}
         onClose={() => setIsAccountSettingsOpen(false)}
         authUser={authUser}
         onHomeAddressSaved={(updatedUser) => {

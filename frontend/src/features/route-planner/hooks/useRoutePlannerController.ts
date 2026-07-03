@@ -63,7 +63,10 @@ type UseRoutePlannerControllerParams = {
   nurseHomeAddress?: string | null;
   nurseWorkingHours?: WeeklyWorkingHours | null;
   nurseBreakGapThresholdMinutes?: number | null;
-  onOpenAccountSettings?: () => void;
+  onOpenAccountSettings?: (
+    section?: "profile" | "working-hours" | "route",
+    focusField?: "home-address",
+  ) => void;
   optimizationObjective: "time" | "distance";
   autoOptimizeToday?: boolean;
   savedRouteRunId?: string | null;

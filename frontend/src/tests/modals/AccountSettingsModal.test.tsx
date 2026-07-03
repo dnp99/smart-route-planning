@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import AccountSettingsModal from "../../components/modals/AccountSettingsModal";
 import type { AuthUser } from "../../../../shared/contracts";
@@ -42,6 +42,38 @@ describe("AccountSettingsModal initial tab", () => {
     renderModal("route");
     expect(screen.getByRole("button", { name: "Save route" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Save profile" })).toBeNull();
+  });
+
+  it("auto-focuses the Home address input when the route-planner nudge requests it", async () => {
+    render(
+      <AccountSettingsModal
+        isOpen
+        initialTab="profile"
+        initialFocusField="home-address"
+        onClose={vi.fn()}
+        authUser={authUser}
+        onHomeAddressSaved={vi.fn()}
+      />,
+    );
+    const input = document.getElementById("account-settings-home-address");
+    expect(input).not.toBeNull();
+    await waitFor(() => expect(document.activeElement).toBe(input));
+  });
+
+  it("does not steal focus when no field is requested", async () => {
+    render(
+      <AccountSettingsModal
+        isOpen
+        initialTab="profile"
+        onClose={vi.fn()}
+        authUser={authUser}
+        onHomeAddressSaved={vi.fn()}
+      />,
+    );
+    const input = document.getElementById("account-settings-home-address");
+    // Give any deferred focus a chance to run, then confirm it stayed put.
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(document.activeElement).not.toBe(input);
   });
 
   it("falls back to Profile (never an empty body) for an unexpected tab value", () => {

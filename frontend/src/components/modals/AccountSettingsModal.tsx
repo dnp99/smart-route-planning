@@ -18,6 +18,8 @@ interface AccountSettingsModalProps {
   onHomeAddressSaved: (updatedUser: SharedAuthUser | null) => void;
   /** Tab to open on. Lets callers deep-link (e.g. "Set hours" → Working hours). */
   initialTab?: SettingsTab;
+  /** Field to focus on open, e.g. "home-address" from the route planner nudge. */
+  initialFocusField?: string | null;
 }
 
 const EyeIcon = ({ className }: { className?: string }) => (
@@ -76,6 +78,7 @@ export default function AccountSettingsModal({
   authUser,
   onHomeAddressSaved,
   initialTab = "profile",
+  initialFocusField = null,
 }: AccountSettingsModalProps) {
   const [showBreakReminderInfo, setShowBreakReminderInfo] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>(
@@ -93,6 +96,25 @@ export default function AccountSettingsModal({
       setPendingTabSwitch(null);
     }
   }, [isOpen, initialTab]);
+
+  // Auto-focus a requested field on open (e.g. the route planner's "set home
+  // address" nudge → Home address input). Deferred to the next frame so the tab
+  // content is rendered first.
+  useEffect(() => {
+    if (!isOpen || initialFocusField !== "home-address") {
+      return;
+    }
+    if (normalizeSettingsTab(initialTab) !== "profile") {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      const input = document.getElementById(PROFILE_MODAL_HOME_ADDRESS_ID);
+      if (input instanceof HTMLInputElement) {
+        input.focus();
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, initialTab, initialFocusField]);
   const currentOptimizationObjective = authUser?.optimizationObjective ?? "time";
   const [routeObjectiveInput, setRouteObjectiveInput] = useState<"time" | "distance">(
     currentOptimizationObjective,
