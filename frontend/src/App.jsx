@@ -151,7 +151,8 @@ function App() {
       });
   };
 
-  const optimizationObjective = authUser?.optimizationObjective ?? "distance";
+  // New users (no saved preference) default to "time" (Finish sooner).
+  const optimizationObjective = authUser?.optimizationObjective ?? "time";
   const defaultProtectedPath = "/home";
 
   if (isBootstrapping) {

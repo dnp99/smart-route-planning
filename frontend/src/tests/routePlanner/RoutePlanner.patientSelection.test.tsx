@@ -536,7 +536,7 @@ describe("RoutePlanner patient selection integration", () => {
       canOptimize: true,
       planningDate: expect.any(String),
       workingHours: null,
-      optimizationObjective: "distance",
+      optimizationObjective: "time",
     });
   });
 
@@ -585,7 +585,7 @@ describe("RoutePlanner patient selection integration", () => {
       canOptimize: true,
       planningDate: expect.any(String),
       workingHours: null,
-      optimizationObjective: "distance",
+      optimizationObjective: "time",
     });
   });
 
@@ -1021,7 +1021,7 @@ describe("RoutePlanner patient selection integration", () => {
       canOptimize: true,
       planningDate: expect.any(String),
       workingHours: null,
-      optimizationObjective: "distance",
+      optimizationObjective: "time",
     });
   });
 
@@ -1064,7 +1064,7 @@ describe("RoutePlanner patient selection integration", () => {
       canOptimize: true,
       planningDate: expect.any(String),
       workingHours: null,
-      optimizationObjective: "distance",
+      optimizationObjective: "time",
     });
   });
 
@@ -1507,7 +1507,7 @@ describe("RoutePlanner patient selection integration", () => {
       canOptimize: true,
       planningDate: expect.any(String),
       workingHours: null,
-      optimizationObjective: "distance",
+      optimizationObjective: "time",
     });
   });
 
@@ -1574,7 +1574,7 @@ describe("RoutePlanner patient selection integration", () => {
       canOptimize: true,
       planningDate: expect.any(String),
       workingHours: null,
-      optimizationObjective: "distance",
+      optimizationObjective: "time",
     });
   });
 
@@ -1630,7 +1630,7 @@ describe("RoutePlanner patient selection integration", () => {
         canOptimize: true,
         planningDate: expect.any(String),
         workingHours: null,
-        optimizationObjective: "distance",
+        optimizationObjective: "time",
       });
     });
   });

@@ -21,7 +21,7 @@ function RoutePlanner({
   nurseWorkingHours,
   nurseBreakGapThresholdMinutes,
   onOpenAccountSettings,
-  optimizationObjective = "distance",
+  optimizationObjective = "time",
 }: RoutePlannerProps) {
   const location = useLocation();
   const locationState = location.state as {

@@ -85,7 +85,7 @@ const buildOptimizationSnapshot = ({
 }) =>
   [
     planningDate ?? "",
-    optimizationObjective ?? "distance",
+    optimizationObjective ?? "time",
     startAddress,
     endAddress,
     destinations

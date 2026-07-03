@@ -73,7 +73,7 @@ export default function AccountSettingsModal({
   const [pendingTabSwitch, setPendingTabSwitch] = useState<
     "profile" | "working-hours" | "route" | null
   >(null);
-  const currentOptimizationObjective = authUser?.optimizationObjective ?? "distance";
+  const currentOptimizationObjective = authUser?.optimizationObjective ?? "time";
   const [routeObjectiveInput, setRouteObjectiveInput] = useState<"time" | "distance">(
     currentOptimizationObjective,
   );
