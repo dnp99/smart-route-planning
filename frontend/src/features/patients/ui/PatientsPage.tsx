@@ -123,8 +123,13 @@ const PatientsPage = () => {
     if (next === lifecycleState) return;
     setLifecycleState(next);
     setSelectedIds(new Set());
+    // Filters don't carry across tabs — each tab opens on a clean, unfiltered list.
+    setWindowFilter("all");
+    setSearchQuery("");
+    setTemplateFilterMode(null);
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
+      params.delete("templateFilter");
       if (next === "active") {
         params.delete("state");
       } else {
