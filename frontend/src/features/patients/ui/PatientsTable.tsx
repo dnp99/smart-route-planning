@@ -504,7 +504,7 @@ export const PatientsTable = ({
     const emptyMessage = searchQuery.trim()
       ? "No clients match this search."
       : lifecycleState === "idle"
-        ? "No idle clients — everyone's been used in the last 30 days."
+        ? "No idle clients — everyone's had a visit in the last 30 days."
         : "No archived clients in the last 7 days.";
     return <div className={responsiveStyles.tableEmptyState}>{emptyMessage}</div>;
   }
