@@ -26,6 +26,9 @@ type HomePageProps = {
   onOpenAccountSettings?: () => void;
 };
 
+// Temporarily hidden per product request — kept so it can be flipped back on.
+const SHOW_TEMPLATE_COVERAGE_NUDGE = false;
+
 const EMPTY_TREND: DashboardTrendPoint[] = [
   { date: "", label: "Mon", onTimeRatePercent: 0 },
   { date: "", label: "Tue", onTimeRatePercent: 0 },
@@ -442,7 +445,8 @@ export default function HomePage({
 
     const activePatientCount = dashboardSummary?.kpis.activePatientCount ?? 0;
     const templatedActivePatientCount = dashboardSummary?.kpis.templatedActivePatientCount ?? 0;
-    if (activePatientCount > 0) {
+    // Temporarily hidden — flip to re-enable the "N clients missing templates" nudge.
+    if (SHOW_TEMPLATE_COVERAGE_NUDGE && activePatientCount > 0) {
       const coveragePercent = Math.round((templatedActivePatientCount / activePatientCount) * 100);
       const clientsWithoutTemplates = Math.max(0, activePatientCount - templatedActivePatientCount);
       if (clientsWithoutTemplates > 0) {
