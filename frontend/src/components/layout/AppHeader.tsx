@@ -135,14 +135,25 @@ export default function AppHeader({
               />
               {/* Divider before the account avatar (desktop only): date · bell | avatar. */}
               <span className={responsiveStyles.topBarDivider} aria-hidden="true" />
-              {/* Account avatar lives in the header on every size now (Settings still
-                  has its own sidebar row on desktop). */}
+              {/* Desktop: Account settings lives in the sidebar Settings row, so the
+                  header avatar menu is Logout only. */}
               <AccountMenu
                 authUser={authUser}
                 isAuthenticated={isAuthenticated}
                 onOpenAccountSettings={onOpenAccountSettings}
                 onLogout={onLogout}
                 variant="avatar"
+                items="logoutOnly"
+                className="hidden md:block"
+              />
+              {/* Mobile: no sidebar, so keep the full menu (Account settings + Logout). */}
+              <AccountMenu
+                authUser={authUser}
+                isAuthenticated={isAuthenticated}
+                onOpenAccountSettings={onOpenAccountSettings}
+                onLogout={onLogout}
+                variant="avatar"
+                className="md:hidden"
               />
             </div>
           </>
