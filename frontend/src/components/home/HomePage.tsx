@@ -1074,6 +1074,15 @@ export default function HomePage({
             template” to raise it.
           </li>
         </ul>
+        <p className="m-0 mb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+          How recurring templates work
+        </p>
+        <ul className="m-0 mb-5 list-disc space-y-1.5 pl-5 text-sm text-slate-600 dark:text-slate-300">
+          <li>Pick the weekdays to repeat — e.g. Mon, Wed, Fri.</li>
+          <li>Set a start date; leave the end date blank to repeat indefinitely.</li>
+          <li>On matching days the client is auto-added to your Route Planner.</li>
+          <li>Visits reuse the client&apos;s saved visit window and duration.</li>
+        </ul>
       </InfoDialog>
 
       {lastUpdatedLabel && (
