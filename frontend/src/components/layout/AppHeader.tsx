@@ -133,16 +133,16 @@ export default function AppHeader({
                 onOpenAccountSettings={onOpenAccountSettings}
                 className="hidden md:inline-flex"
               />
-              {/* Desktop account/settings live entirely in the sidebar (identity
-                  card + Settings row), so the top bar has no avatar there. Mobile
-                  has no sidebar, so it keeps the full avatar menu below. */}
+              {/* Divider before the account avatar (desktop only): date · bell | avatar. */}
+              <span className={responsiveStyles.topBarDivider} aria-hidden="true" />
+              {/* Account avatar lives in the header on every size now (Settings still
+                  has its own sidebar row on desktop). */}
               <AccountMenu
                 authUser={authUser}
                 isAuthenticated={isAuthenticated}
                 onOpenAccountSettings={onOpenAccountSettings}
                 onLogout={onLogout}
                 variant="avatar"
-                className="md:hidden"
               />
             </div>
           </>

@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { MemoryRouter } from "react-router-dom";
 import AppSidebar from "../../components/navigation/AppSidebar";
@@ -39,11 +39,8 @@ describe("AppSidebar", () => {
     );
   });
 
-  it("account card menu offers Logout only (settings lives in the Settings row)", () => {
+  it("no longer renders the account card (identity + menu moved to the header)", () => {
     renderSidebar(false);
-    fireEvent.click(screen.getByRole("button", { name: /Mei Su/ }));
-
-    expect(screen.getByRole("menuitem", { name: /Logout/i })).toBeTruthy();
-    expect(screen.queryByRole("menuitem", { name: /Account settings/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Mei Su/ })).toBeNull();
   });
 });
