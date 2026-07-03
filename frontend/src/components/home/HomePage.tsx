@@ -14,6 +14,7 @@ import { resolveTodayHoursDisplay } from "./todayHours";
 import { hasConfiguredSchedule } from "./workingHoursStatus";
 import { buildGetStartedSteps, countGetStartedDone, isGetStartedComplete } from "./getStartedSteps";
 import { OnboardingTour } from "./OnboardingTour";
+import { InfoDialog } from "../shared/InfoDialog";
 import {
   clearRoutePlannerDraft,
   readRoutePlannerDraft,
@@ -146,6 +147,7 @@ export default function HomePage({
   const [routeRunsError, setRouteRunsError] = useState("");
   const [isRouteRunsLoading, setIsRouteRunsLoading] = useState(false);
   const [isOpeningRouteRun, setIsOpeningRouteRun] = useState(false);
+  const [isCoverageInfoOpen, setIsCoverageInfoOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -991,6 +993,31 @@ export default function HomePage({
                 );
               }
 
+              // "Template coverage" is jargon — pair its card with an "i" that
+              // explains it. The button sits as a sibling overlay (not nested in
+              // the Link, which would be invalid), and h-full keeps card heights even.
+              if (kpi.label === "Template coverage") {
+                return (
+                  <div key={kpi.label} className="relative">
+                    <Link
+                      to={to}
+                      className={`${responsiveStyles.dashboardKpiCard} group block h-full`}
+                      style={{ animationDelay: `${80 + index * 45}ms` }}
+                    >
+                      {cardBody}
+                    </Link>
+                    <button
+                      type="button"
+                      aria-label="What is template coverage?"
+                      onClick={() => setIsCoverageInfoOpen(true)}
+                      className={`${responsiveStyles.infoIconButton} absolute right-3 top-3 z-10`}
+                    >
+                      i
+                    </button>
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={kpi.label}
@@ -1006,6 +1033,27 @@ export default function HomePage({
           </section>
         )}
       </CarFlyAnimation>
+
+      <InfoDialog
+        open={isCoverageInfoOpen}
+        title="Template coverage"
+        onClose={() => setIsCoverageInfoOpen(false)}
+      >
+        <p className={responsiveStyles.confirmDialogMessage}>
+          The share of your active clients that have a recurring template — an automatic weekly
+          visit schedule.
+        </p>
+        <ul className="m-0 mb-5 list-disc space-y-1.5 pl-5 text-sm text-slate-600 dark:text-slate-300">
+          <li>
+            <b>1 / 4 clients</b> means 1 of your 4 active clients repeats automatically each week.
+          </li>
+          <li>The other 3 have no template, so you&apos;d add them to each route by hand.</li>
+          <li>
+            Higher coverage means less manual scheduling — open a client and “Add recurring
+            template” to raise it.
+          </li>
+        </ul>
+      </InfoDialog>
 
       {lastUpdatedLabel && (
         <p className="m-0 -mt-2 text-right text-xs font-medium text-slate-500 dark:text-slate-400">

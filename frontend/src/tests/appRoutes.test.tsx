@@ -358,6 +358,24 @@ describe("App routing", () => {
     ).toBe(true);
   });
 
+  it("explains template coverage via the KPI info button", async () => {
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "What is template coverage?" }));
+    expect(await screen.findByText(/share of your active clients/i)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Got it" }));
+    await waitFor(() => {
+      expect(screen.queryByText(/share of your active clients/i)).toBeNull();
+    });
+  });
+
   it("shows required legal notice modal and acknowledges it", async () => {
     fetchLegalNoticeStatusMock.mockResolvedValueOnce({
       required: true,

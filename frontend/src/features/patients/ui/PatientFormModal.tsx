@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { FormEvent } from "react";
-import { createPortal } from "react-dom";
 import type { AddressSuggestion } from "../types";
 import AddressAutocompleteInput from "../../../components/shared/AddressAutocompleteInput";
+import { InfoDialog } from "../../../components/shared/InfoDialog";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { Patient, VisitTimeType } from "../../../../../shared/contracts";
 import type {
@@ -90,19 +90,6 @@ export const PatientFormModal = ({
   onAddressPick,
 }: PatientFormModalProps) => {
   const [isRecurringInfoOpen, setIsRecurringInfoOpen] = useState(false);
-
-  useEffect(() => {
-    if (!isRecurringInfoOpen) {
-      return;
-    }
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setIsRecurringInfoOpen(false);
-      }
-    };
-    document.addEventListener("keydown", onKeyDown);
-    return () => document.removeEventListener("keydown", onKeyDown);
-  }, [isRecurringInfoOpen]);
 
   if (!isOpen) {
     return null;
@@ -713,63 +700,29 @@ export const PatientFormModal = ({
         </form>
       </div>
 
-      {isRecurringInfoOpen &&
-        createPortal(
-          <div
-            className={responsiveStyles.modalBackdrop}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="recurring-info-title"
-            onPointerDown={(event) => {
-              if (event.target === event.currentTarget) {
-                setIsRecurringInfoOpen(false);
-              }
-            }}
-          >
-            <div className={responsiveStyles.confirmDialogSurface}>
-              <div className="mb-1 flex items-start justify-between gap-3">
-                <h3 id="recurring-info-title" className={responsiveStyles.confirmDialogTitle}>
-                  Recurring templates
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setIsRecurringInfoOpen(false)}
-                  aria-label="Close"
-                  className="-mr-1 -mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300"
-                >
-                  <CloseIcon className="h-4 w-4" />
-                </button>
-              </div>
-              <p className={responsiveStyles.confirmDialogMessage}>
-                Automatically schedule this client&apos;s visits on repeating days each week — so
-                you don&apos;t have to add them to every route by hand.
-              </p>
-              <p className="m-0 mb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
-                How it works
-              </p>
-              <ul className="m-0 mb-4 list-disc space-y-1.5 pl-5 text-sm text-slate-600 dark:text-slate-300">
-                <li>Pick the weekdays to repeat — e.g. Mon, Wed, Fri.</li>
-                <li>Set a start date; leave the end date blank to repeat indefinitely.</li>
-                <li>On matching days this client is auto-added to your Route Planner.</li>
-                <li>Visits reuse this client&apos;s saved visit window and duration above.</li>
-              </ul>
-              <p className="m-0 mb-5 text-sm text-slate-500 dark:text-slate-400">
-                Set it once and your regular clients stay on the schedule automatically — no manual
-                re-entry each week.
-              </p>
-              <div className="flex justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsRecurringInfoOpen(false)}
-                  className={responsiveStyles.primaryButton}
-                >
-                  Got it
-                </button>
-              </div>
-            </div>
-          </div>,
-          document.body,
-        )}
+      <InfoDialog
+        open={isRecurringInfoOpen}
+        title="Recurring templates"
+        onClose={() => setIsRecurringInfoOpen(false)}
+      >
+        <p className={responsiveStyles.confirmDialogMessage}>
+          Automatically schedule this client&apos;s visits on repeating days each week — so you
+          don&apos;t have to add them to every route by hand.
+        </p>
+        <p className="m-0 mb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+          How it works
+        </p>
+        <ul className="m-0 mb-4 list-disc space-y-1.5 pl-5 text-sm text-slate-600 dark:text-slate-300">
+          <li>Pick the weekdays to repeat — e.g. Mon, Wed, Fri.</li>
+          <li>Set a start date; leave the end date blank to repeat indefinitely.</li>
+          <li>On matching days this client is auto-added to your Route Planner.</li>
+          <li>Visits reuse this client&apos;s saved visit window and duration above.</li>
+        </ul>
+        <p className="m-0 mb-5 text-sm text-slate-500 dark:text-slate-400">
+          Set it once and your regular clients stay on the schedule automatically — no manual
+          re-entry each week.
+        </p>
+      </InfoDialog>
     </div>
   );
 };
