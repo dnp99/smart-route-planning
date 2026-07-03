@@ -536,10 +536,12 @@ export const responsiveStyles = {
     "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30",
   infoPopover:
     "absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
-  // Hover/focus tooltip for icon-only controls (e.g. table row actions).
-  tooltipWrapper: "group relative inline-flex",
+  // Hover/focus tooltip for icon-only controls (e.g. table row actions). Uses a
+  // NAMED group (group/tooltip) so it reacts only to its own wrapper — not an
+  // ancestor `group` like the table row, which would fire it across the whole row.
+  tooltipWrapper: "group/tooltip relative inline-flex",
   tooltipBubble:
-    "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-slate-700",
+    "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover/tooltip:opacity-100 group-focus-within/tooltip:opacity-100 dark:bg-slate-700",
   // Clients page summary stats row (desktop only — hidden below md)
   // Active tab: one-line summary strip (replaces the four stat boxes).
   // Tightened: a light borderless summary line (no filled band) so it reads as
@@ -681,7 +683,12 @@ export const responsiveStyles = {
     "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
   // Footer pinned to the bottom of the scrolling modal surface on all breakpoints.
   modalStickyFooter:
-    "sticky bottom-0 z-10 -mx-5 mt-1 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:-mx-6 sm:flex-row sm:justify-end sm:px-6 sm:pb-4",
+    "sticky bottom-0 z-10 -mx-5 mt-1 flex flex-col gap-3 border-t border-slate-200 bg-white/95 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:-mx-6 sm:px-6 sm:pb-4",
+  // Error shown inside the sticky footer (above the buttons) so a validation
+  // failure is visible on tap without scrolling to the bottom of a long form.
+  modalStickyFooterError:
+    "m-0 flex items-start gap-1.5 text-sm font-medium text-red-600 dark:text-red-400",
+  modalStickyFooterButtons: "flex flex-col-reverse gap-3 sm:flex-row sm:justify-end",
 
   // ── Tables ────────────────────────────────────────────────────────────────
   tableCard:
@@ -748,7 +755,7 @@ export const responsiveStyles = {
     "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-blue-800 dark:text-blue-300",
   // ── Onboarding tour card + video modal ────────────────────────────────────
   tourCard:
-    "dashboard-reveal flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+    "dashboard-reveal flex flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:gap-4 sm:p-5",
   tourThumb:
     "relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-900 sm:h-16 sm:w-28",
   tourThumbImg: "absolute inset-0 h-full w-full object-cover opacity-90",
@@ -760,9 +767,13 @@ export const responsiveStyles = {
   tourTitle: "m-0 mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100",
   tourSub: "m-0 mt-0.5 text-[13px] text-slate-500 dark:text-slate-400",
   tourWatchButton:
-    "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700",
+    "inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:flex-none",
   tourDismissButton:
     "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300",
+  // Centered on every breakpoint (unlike the app's bottom-sheet modalBackdrop),
+  // so the tour video sits in the middle of the screen on mobile too.
+  tourModalBackdrop:
+    "fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-[4px]",
   tourModalSurface: "relative w-full max-w-3xl overflow-hidden rounded-2xl bg-slate-900 shadow-2xl",
   tourModalClose:
     "absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70",
