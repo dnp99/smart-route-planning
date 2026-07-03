@@ -51,36 +51,40 @@ export function OnboardingTour({ onDismiss }: OnboardingTourProps) {
   return (
     <>
       <section className={responsiveStyles.tourCard} aria-label="Product tour">
-        <span className={responsiveStyles.tourThumb} aria-hidden="true">
-          <img className={responsiveStyles.tourThumbImg} src={TOUR_POSTER_SRC} alt="" />
-          <span className={responsiveStyles.tourPlayBadge}>
-            <PlayIcon className="ml-0.5 h-4 w-4" />
+        <div className="flex min-w-0 flex-1 items-center gap-4">
+          <span className={responsiveStyles.tourThumb} aria-hidden="true">
+            <img className={responsiveStyles.tourThumbImg} src={TOUR_POSTER_SRC} alt="" />
+            <span className={responsiveStyles.tourPlayBadge}>
+              <PlayIcon className="ml-0.5 h-4 w-4" />
+            </span>
           </span>
-        </span>
-        <div className={responsiveStyles.tourCopy}>
-          <p className={responsiveStyles.tourEyebrow}>New here?</p>
-          <p className={responsiveStyles.tourTitle}>Take the 30-second tour</p>
-          <p className={responsiveStyles.tourSub}>
-            See how to set your hours, add clients, and plan an optimized route.
-          </p>
+          <div className={responsiveStyles.tourCopy}>
+            <p className={responsiveStyles.tourEyebrow}>New here?</p>
+            <p className={responsiveStyles.tourTitle}>Take the 30-second tour</p>
+            <p className={responsiveStyles.tourSub}>
+              See how to set your hours, add clients, and plan an optimized route.
+            </p>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className={responsiveStyles.tourWatchButton}
-        >
-          <PlayIcon className="h-3.5 w-3.5" />
-          Watch tour
-        </button>
-        <button
-          type="button"
-          onClick={onDismiss}
-          aria-label="Dismiss tour"
-          title="Dismiss"
-          className={responsiveStyles.tourDismissButton}
-        >
-          <CloseIcon className="h-4 w-4" />
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className={responsiveStyles.tourWatchButton}
+          >
+            <PlayIcon className="h-3.5 w-3.5" />
+            Watch tour
+          </button>
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Dismiss tour"
+            title="Dismiss"
+            className={responsiveStyles.tourDismissButton}
+          >
+            <CloseIcon className="h-4 w-4" />
+          </button>
+        </div>
       </section>
 
       {isOpen && (
