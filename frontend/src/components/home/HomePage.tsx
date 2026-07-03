@@ -139,7 +139,6 @@ export default function HomePage({
   const location = useLocation();
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummaryResponse | null>(null);
   const [dashboardError, setDashboardError] = useState("");
-  const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
   const [isRunPickerOpen, setIsRunPickerOpen] = useState(false);
   const [routeRuns, setRouteRuns] = useState<RouteRunPickerItem[]>([]);
@@ -153,12 +152,10 @@ export default function HomePage({
     if (!isAuthenticated) {
       setDashboardSummary(null);
       setDashboardError("");
-      setIsDashboardLoading(false);
       return;
     }
 
     let active = true;
-    setIsDashboardLoading(true);
 
     void fetchDashboardSummary()
       .then((summary) => {
@@ -175,13 +172,6 @@ export default function HomePage({
         }
 
         setDashboardError(error instanceof Error ? error.message : "Unable to load dashboard.");
-      })
-      .finally(() => {
-        if (!active) {
-          return;
-        }
-
-        setIsDashboardLoading(false);
       });
 
     return () => {
@@ -888,35 +878,23 @@ export default function HomePage({
           </section>
         ))}
 
-      {isAuthenticated && (dashboardError || isDashboardLoading) && (
-        <section
-          className={
-            dashboardError
-              ? "dashboard-reveal rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm dark:border-rose-900/70 dark:bg-rose-950/30 sm:p-5"
-              : responsiveStyles.dashboardCard
-          }
-        >
-          <h2 className={responsiveStyles.cardTitle}>
-            {dashboardError ? "Dashboard data unavailable" : "Refreshing dashboard"}
-          </h2>
+      {isAuthenticated && dashboardError && (
+        <section className="dashboard-reveal rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm dark:border-rose-900/70 dark:bg-rose-950/30 sm:p-5">
+          <h2 className={responsiveStyles.cardTitle}>Dashboard data unavailable</h2>
           <p className={`${responsiveStyles.cardDescription} mt-2`}>
-            {dashboardError
-              ? dashboardSummary
-                ? "Your last successful dashboard snapshot is still displayed."
-                : "No dashboard snapshot is available yet."
-              : "Loading the latest route metrics..."}
+            {dashboardSummary
+              ? "Your last successful dashboard snapshot is still displayed."
+              : "No dashboard snapshot is available yet."}
           </p>
-          {dashboardError && (
-            <div className={responsiveStyles.dashboardDraftActions}>
-              <button
-                type="button"
-                className={responsiveStyles.secondaryButton}
-                onClick={() => setDashboardRefreshKey((value) => value + 1)}
-              >
-                Retry Dashboard
-              </button>
-            </div>
-          )}
+          <div className={responsiveStyles.dashboardDraftActions}>
+            <button
+              type="button"
+              className={responsiveStyles.secondaryButton}
+              onClick={() => setDashboardRefreshKey((value) => value + 1)}
+            >
+              Retry Dashboard
+            </button>
+          </div>
         </section>
       )}
 
