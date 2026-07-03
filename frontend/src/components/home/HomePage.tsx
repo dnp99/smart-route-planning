@@ -63,7 +63,12 @@ const resolveGreetingName = (displayName?: string | null) => {
   }
 
   const [firstToken] = trimmed.split(/\s+/);
-  return firstToken || "there";
+  if (!firstToken) {
+    return "there";
+  }
+  // Capitalize the first character so a lowercase name (e.g. "test") still reads
+  // as a proper greeting ("Test"); leave the rest of the token untouched.
+  return firstToken.charAt(0).toUpperCase() + firstToken.slice(1);
 };
 
 const resolveDraftDateLabel = (planningDate?: string) => {
