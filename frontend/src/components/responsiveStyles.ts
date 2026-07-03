@@ -765,6 +765,10 @@ export const responsiveStyles = {
     "inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 sm:flex-none",
   tourDismissButton:
     "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300",
+  // Centered on every breakpoint (unlike the app's bottom-sheet modalBackdrop),
+  // so the tour video sits in the middle of the screen on mobile too.
+  tourModalBackdrop:
+    "fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-[4px]",
   tourModalSurface: "relative w-full max-w-3xl overflow-hidden rounded-2xl bg-slate-900 shadow-2xl",
   tourModalClose:
     "absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70",

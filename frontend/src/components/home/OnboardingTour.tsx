@@ -89,7 +89,7 @@ export function OnboardingTour({ onDismiss }: OnboardingTourProps) {
 
       {isOpen && (
         <div
-          className={responsiveStyles.modalBackdrop}
+          className={responsiveStyles.tourModalBackdrop}
           role="dialog"
           aria-modal="true"
           aria-label="Routefy product tour"
