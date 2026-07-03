@@ -739,6 +739,8 @@ export const responsiveStyles = {
     "flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center dark:border-slate-800 dark:bg-slate-900",
   tableEmptyCtaTitle: "m-0 text-base font-semibold text-slate-900 dark:text-slate-100",
   tableEmptyCtaText: "m-0 mt-1.5 max-w-sm text-sm text-slate-500 dark:text-slate-400",
+  tableEmptyCtaButton:
+    "mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700",
   // ── First-run "Get started" checklist (Home) ──────────────────────────────
   getStartedCard:
     "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/30 sm:p-5",
