@@ -724,6 +724,11 @@ export const responsiveStyles = {
   // Archived-row Restore button — blue outline + refresh icon per figma.
   restoreButton:
     "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",
+  // Per-row Archive pill — mirrors restoreButton in the amber archive theme.
+  archiveButton:
+    "inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-[13px] font-semibold text-amber-700 transition hover:border-amber-400 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-900/60 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-amber-950/40",
+  mobileArchiveButton:
+    "inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-amber-300 px-3 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-900/60 dark:text-amber-300 dark:hover:bg-amber-950/30",
   tableEmptyState:
     "rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
   // First-run empty state with a guided call to action.

@@ -204,9 +204,9 @@ describe("PatientsPage", () => {
       expect(mockedListPatients).toHaveBeenCalledWith("", "idle");
     });
 
-    // Idle desktop rows expose Edit but no per-row archive (sub-decision A).
+    // Idle desktop rows expose Edit and a per-row Archive pill.
     expect(await screen.findByRole("button", { name: "Edit Jane Doe" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Archive Jane Doe" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Archive Jane Doe" })).toBeTruthy();
 
     // Select all → the in-header amber bulk bar appears with the count.
     fireEvent.click(screen.getByRole("checkbox", { name: "Select all clients" }));

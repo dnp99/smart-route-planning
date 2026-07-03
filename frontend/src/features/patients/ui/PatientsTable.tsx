@@ -668,18 +668,16 @@ export const PatientsTable = ({
                           <EditIcon className="h-4 w-4" />
                           Edit
                         </button>
-                        {lifecycleState === "active" && (
-                          <button
-                            type="button"
-                            onClick={() => void onDelete(patient.id)}
-                            disabled={isSubmitting}
-                            aria-label={`Archive ${patientDisplayName}`}
-                            title="Archive"
-                            className={responsiveStyles.mobileDeleteButton}
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => void onDelete(patient.id)}
+                          disabled={isSubmitting}
+                          aria-label={`Archive ${patientDisplayName}`}
+                          className={responsiveStyles.mobileArchiveButton}
+                        >
+                          <ArchiveIcon className="h-4 w-4" />
+                          Archive
+                        </button>
                       </>
                     )}
                   </div>
@@ -1063,7 +1061,7 @@ export const PatientsTable = ({
                             {restoringId === patient.id ? "Restoring…" : "Restore"}
                           </button>
                         ) : (
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-2">
                             <button
                               type="button"
                               onClick={() => onEdit(patient)}
@@ -1073,18 +1071,16 @@ export const PatientsTable = ({
                             >
                               <EditIcon className="h-3.5 w-3.5" />
                             </button>
-                            {lifecycleState === "active" && (
-                              <button
-                                type="button"
-                                onClick={() => void onDelete(patient.id)}
-                                disabled={isSubmitting}
-                                aria-label={`Archive ${patientDisplayName}`}
-                                title="Archive"
-                                className={responsiveStyles.tableIconButtonDestructive}
-                              >
-                                <TrashIcon className="h-3.5 w-3.5" />
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => void onDelete(patient.id)}
+                              disabled={isSubmitting}
+                              aria-label={`Archive ${patientDisplayName}`}
+                              className={responsiveStyles.archiveButton}
+                            >
+                              <ArchiveIcon className="h-3.5 w-3.5" />
+                              Archive
+                            </button>
                           </div>
                         )}
                       </div>
