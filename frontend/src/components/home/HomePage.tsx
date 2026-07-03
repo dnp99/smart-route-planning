@@ -998,27 +998,50 @@ export default function HomePage({
                 );
               }
 
-              // "Template coverage" is jargon — pair its card with an "i" that
-              // explains it. The button sits as a sibling overlay (not nested in
-              // the Link, which would be invalid), and h-full keeps card heights even.
+              // "Template coverage" is jargon — pair its title with an "i" that
+              // explains it. The title row (with the button) sits outside the Link,
+              // since nesting a button inside an anchor is invalid; the rest of the
+              // card stays the navigation target.
               if (kpi.label === "Template coverage") {
                 return (
-                  <div key={kpi.label} className="relative">
-                    <Link
-                      to={to}
-                      className={`${responsiveStyles.dashboardKpiCard} group block h-full`}
-                      style={{ animationDelay: `${80 + index * 45}ms` }}
-                    >
-                      {cardBody}
+                  <div
+                    key={kpi.label}
+                    className={`${responsiveStyles.dashboardKpiCard} group`}
+                    style={{ animationDelay: `${80 + index * 45}ms` }}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
+                      <button
+                        type="button"
+                        aria-label="What is template coverage?"
+                        onClick={() => setIsCoverageInfoOpen(true)}
+                        className={responsiveStyles.infoIconButton}
+                      >
+                        i
+                      </button>
+                    </div>
+                    <Link to={to} className="block">
+                      <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
+                      <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>
+                        {kpi.delta}
+                      </p>
+                      {typeof kpi.progressPercent === "number" && (
+                        <div className={responsiveStyles.dashboardKpiProgressTrack}>
+                          <div
+                            className={responsiveStyles.dashboardKpiProgressFill}
+                            style={{
+                              width: `${Math.max(0, Math.min(100, kpi.progressPercent))}%`,
+                              animationDelay: `${140 + index * 45}ms`,
+                            }}
+                          />
+                        </div>
+                      )}
+                      {kpi.trend && (
+                        <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                          {kpi.trend}
+                        </p>
+                      )}
                     </Link>
-                    <button
-                      type="button"
-                      aria-label="What is template coverage?"
-                      onClick={() => setIsCoverageInfoOpen(true)}
-                      className={`${responsiveStyles.infoIconButton} absolute right-3 top-3 z-10`}
-                    >
-                      i
-                    </button>
                   </div>
                 );
               }
