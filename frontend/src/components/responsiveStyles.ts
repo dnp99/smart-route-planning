@@ -511,6 +511,12 @@ export const responsiveStyles = {
     "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
   dashboardKpiValue: "m-0 mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100",
   dashboardKpiDelta: "m-0 mt-2 text-xs font-semibold",
+  // Shimmer placeholders shown in place of the value/delta while the dashboard
+  // summary request is in flight (reuses the route-loading-skeleton sweep).
+  dashboardKpiValueSkeleton:
+    "route-loading-skeleton motion-reduce:animate-none mb-1 mt-3 block h-6 w-20 rounded-md bg-slate-200/80 dark:bg-slate-700/70",
+  dashboardKpiDeltaSkeleton:
+    "route-loading-skeleton motion-reduce:animate-none mt-3 block h-3 w-28 rounded bg-slate-200/80 dark:bg-slate-700/70",
   dashboardKpiProgressTrack: "mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700",
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import CarFlyAnimation from "../shared/CarFlyAnimation";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type {
@@ -371,6 +371,24 @@ export default function HomePage({
       },
     ];
   }, [dashboardSummary]);
+
+  // The summary request is in flight when we're signed in but have neither a
+  // snapshot nor an error yet. Drives the shimmer on the KPI value/delta lines.
+  const isDashboardPending = isAuthenticated && !dashboardSummary && !dashboardError;
+
+  const renderKpiValue = (value: string) =>
+    isDashboardPending ? (
+      <span className={responsiveStyles.dashboardKpiValueSkeleton} aria-hidden="true" />
+    ) : (
+      <p className={responsiveStyles.dashboardKpiValue}>{value}</p>
+    );
+
+  const renderKpiDelta = (delta: ReactNode, tone: string) =>
+    isDashboardPending ? (
+      <span className={responsiveStyles.dashboardKpiDeltaSkeleton} aria-hidden="true" />
+    ) : (
+      <p className={`${responsiveStyles.dashboardKpiDelta} ${tone}`}>{delta}</p>
+    );
 
   const upcomingStops = dashboardSummary?.upcomingStops ?? [];
   const trendBars =
@@ -919,11 +937,12 @@ export default function HomePage({
                     disabled={isRouteRunsLoading}
                   >
                     <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
-                    <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
-                    <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>
-                      {isRouteRunsLoading ? "Loading saved runs..." : kpi.delta}
-                    </p>
-                    {typeof kpi.progressPercent === "number" && (
+                    {renderKpiValue(kpi.value)}
+                    {renderKpiDelta(
+                      isRouteRunsLoading ? "Loading saved runs..." : kpi.delta,
+                      kpi.tone,
+                    )}
+                    {!isDashboardPending && typeof kpi.progressPercent === "number" && (
                       <div className={responsiveStyles.dashboardKpiProgressTrack}>
                         <div
                           className={responsiveStyles.dashboardKpiProgressFill}
@@ -934,9 +953,11 @@ export default function HomePage({
                         />
                       </div>
                     )}
-                    <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
-                      {kpi.trend}
-                    </p>
+                    {!isDashboardPending && (
+                      <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                        {kpi.trend}
+                      </p>
+                    )}
                   </button>
                 );
               }
@@ -944,9 +965,9 @@ export default function HomePage({
               const cardBody = (
                 <>
                   <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
-                  <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
-                  <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
-                  {typeof kpi.progressPercent === "number" && (
+                  {renderKpiValue(kpi.value)}
+                  {renderKpiDelta(kpi.delta, kpi.tone)}
+                  {!isDashboardPending && typeof kpi.progressPercent === "number" && (
                     <div className={responsiveStyles.dashboardKpiProgressTrack}>
                       <div
                         className={responsiveStyles.dashboardKpiProgressFill}
@@ -957,7 +978,7 @@ export default function HomePage({
                       />
                     </div>
                   )}
-                  {kpi.trend && (
+                  {!isDashboardPending && kpi.trend && (
                     <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
                       {kpi.trend}
                     </p>
@@ -1001,11 +1022,9 @@ export default function HomePage({
                       </button>
                     </div>
                     <Link to={to} className="block">
-                      <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
-                      <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>
-                        {kpi.delta}
-                      </p>
-                      {typeof kpi.progressPercent === "number" && (
+                      {renderKpiValue(kpi.value)}
+                      {renderKpiDelta(kpi.delta, kpi.tone)}
+                      {!isDashboardPending && typeof kpi.progressPercent === "number" && (
                         <div className={responsiveStyles.dashboardKpiProgressTrack}>
                           <div
                             className={responsiveStyles.dashboardKpiProgressFill}
@@ -1016,7 +1035,7 @@ export default function HomePage({
                           />
                         </div>
                       )}
-                      {kpi.trend && (
+                      {!isDashboardPending && kpi.trend && (
                         <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
                           {kpi.trend}
                         </p>
