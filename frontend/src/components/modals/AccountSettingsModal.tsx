@@ -635,7 +635,7 @@ export default function AccountSettingsModal({
                           value: "distance",
                           label: "Less driving",
                           description: "Fewer kilometers, more efficient routes",
-                          badge: "Recommended",
+                          badge: null,
                           icon: (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
@@ -659,7 +659,7 @@ export default function AccountSettingsModal({
                           value: "time",
                           label: "Finish sooner",
                           description: "Complete your day earlier — may involve more travel",
-                          badge: null,
+                          badge: "Recommended",
                           icon: (
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
