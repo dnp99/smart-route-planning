@@ -3,6 +3,7 @@ import {
   requestOptimizedRoute,
   type OptimizeRouteDestinationInput,
 } from "../api/routePlannerService";
+import { registerSessionScopedCleanup } from "../../../components/auth/authSession";
 import type { WeeklyWorkingHours } from "../../../../../shared/contracts";
 import type { OptimizeRouteResponse } from "../types";
 
@@ -27,7 +28,10 @@ type RouteOptimizationRuntimeCache = {
 
 let runtimeCache: RouteOptimizationRuntimeCache | null = null;
 
-const SESSION_KEY = "routeOptimizationResult";
+// The cached optimized route holds PHI (client names + addresses). This key must
+// stay in authSession's SESSION_STORAGE_SCOPED_KEYS so it's purged on login/logout.
+export const ROUTE_OPTIMIZATION_RESULT_STORAGE_KEY = "routeOptimizationResult";
+const SESSION_KEY = ROUTE_OPTIMIZATION_RESULT_STORAGE_KEY;
 
 const readSessionResult = (): OptimizeRouteResponse | null => {
   try {
@@ -54,6 +58,18 @@ const clearSessionResult = () => {
   }
 };
 
+// Purge every trace of a cached route — the in-memory runtime cache and the
+// sessionStorage copy — so a session boundary (login as a different nurse, or
+// logout) can't surface one nurse's PHI-bearing route to the next on a shared
+// device. Registered with authSession, which runs it on login/logout only (not
+// on same-user bootstrap, so a refresh still restores the nurse's own route).
+export const resetRouteOptimizationCache = () => {
+  runtimeCache = null;
+  clearSessionResult();
+};
+
+registerSessionScopedCleanup(resetRouteOptimizationCache);
+
 const buildOptimizationSnapshot = ({
   planningDate,
   optimizationObjective,
@@ -69,7 +85,7 @@ const buildOptimizationSnapshot = ({
 }) =>
   [
     planningDate ?? "",
-    optimizationObjective ?? "distance",
+    optimizationObjective ?? "time",
     startAddress,
     endAddress,
     destinations

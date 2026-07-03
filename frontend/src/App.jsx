@@ -34,6 +34,18 @@ function App() {
   const [isAuthResolved, setIsAuthResolved] = useState(() => getSessionPresenceFlag());
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
+  const [accountSettingsTab, setAccountSettingsTab] = useState("profile");
+  const [accountSettingsFocus, setAccountSettingsFocus] = useState(null);
+  // Accept an optional target tab and field to focus. Some callers wire this
+  // straight to onClick, which would pass a click Event — so anything that isn't
+  // a known tab falls back to Profile (never an empty modal), and a non-string
+  // focus target is ignored.
+  const openAccountSettings = (section, focusField) => {
+    const tab = ["profile", "working-hours", "route"].indexOf(section) !== -1 ? section : "profile";
+    setAccountSettingsTab(tab);
+    setAccountSettingsFocus(typeof focusField === "string" ? focusField : null);
+    setIsAccountSettingsOpen(true);
+  };
   const [isLegalNoticeRequired, setIsLegalNoticeRequired] = useState(false);
   const [isLegalNoticeSubmitting, setIsLegalNoticeSubmitting] = useState(false);
   const [legalNoticeError, setLegalNoticeError] = useState("");
@@ -151,7 +163,8 @@ function App() {
       });
   };
 
-  const optimizationObjective = authUser?.optimizationObjective ?? "distance";
+  // New users (no saved preference) default to "time" (Finish sooner).
+  const optimizationObjective = authUser?.optimizationObjective ?? "time";
   const defaultProtectedPath = "/home";
 
   if (isBootstrapping) {
@@ -164,7 +177,7 @@ function App() {
         <AppSidebar
           authUser={authUser}
           isSettingsActive={isAccountSettingsOpen}
-          onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+          onOpenAccountSettings={openAccountSettings}
           onLogout={() => {
             void logout();
             clearAuthSession();
@@ -176,7 +189,7 @@ function App() {
         <AppHeader
           isAuthenticated={isAuthenticated}
           authUser={authUser}
-          onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+          onOpenAccountSettings={openAccountSettings}
           onLogout={() => {
             void logout();
             clearAuthSession();
@@ -196,7 +209,7 @@ function App() {
           isAuthenticated={isAuthenticated}
           isBootstrapping={isBootstrapping}
           authUser={authUser}
-          onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+          onOpenAccountSettings={openAccountSettings}
           optimizationObjective={optimizationObjective}
           defaultProtectedPath={defaultProtectedPath}
         />
@@ -204,6 +217,8 @@ function App() {
       <AppFooter />
       <AccountSettingsModal
         isOpen={isAccountSettingsOpen}
+        initialTab={accountSettingsTab}
+        initialFocusField={accountSettingsFocus}
         onClose={() => setIsAccountSettingsOpen(false)}
         authUser={authUser}
         onHomeAddressSaved={(updatedUser) => {

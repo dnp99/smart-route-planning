@@ -333,6 +333,9 @@ describe("App routing", () => {
 
   it("renders home page at / for signed-in users", async () => {
     seedAuthenticatedSession();
+    // Onboarded user: the Get-started checklist is dismissed, so the profile
+    // setup nudges (which the checklist otherwise supersedes) are shown.
+    window.localStorage.setItem("routefy.getStarted.done:nurse-1", "1");
 
     render(
       <MemoryRouter initialEntries={["/"]}>

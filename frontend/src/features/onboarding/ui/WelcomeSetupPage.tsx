@@ -75,7 +75,7 @@ export default function WelcomeSetupPage({ authUser }: WelcomeSetupPageProps) {
     String(authUser?.breakGapThresholdMinutes ?? 30),
   );
   const [objectiveInput, setObjectiveInput] = useState<"time" | "distance">(
-    authUser?.optimizationObjective ?? "distance",
+    authUser?.optimizationObjective ?? "time",
   );
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState("");

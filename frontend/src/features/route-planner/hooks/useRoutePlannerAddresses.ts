@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import type { AddressSuggestion } from "../../../components/types";
 
-const DEFAULT_START_ADDRESS = "3361 Ingram Road, Mississauga, ON";
-
 type UseRoutePlannerAddressesParams = {
   normalizedHomeAddress: string;
   hasAttemptedOptimize: boolean;
@@ -12,9 +10,9 @@ export function useRoutePlannerAddresses({
   normalizedHomeAddress,
   hasAttemptedOptimize,
 }: UseRoutePlannerAddressesParams) {
-  const [startAddress, setStartAddress] = useState(
-    normalizedHomeAddress.length > 0 ? normalizedHomeAddress : DEFAULT_START_ADDRESS,
-  );
+  // Start empty for new users — the nurse's saved home address fills it in once
+  // profile data arrives (below); we never prepopulate a hard-coded location.
+  const [startAddress, setStartAddress] = useState(normalizedHomeAddress);
   const [manualEndAddress, setManualEndAddress] = useState(normalizedHomeAddress);
   const [startGooglePlaceId, setStartGooglePlaceId] = useState<string | null>(null);
   const [manualEndGooglePlaceId, setManualEndGooglePlaceId] = useState<string | null>(null);
@@ -25,7 +23,7 @@ export function useRoutePlannerAddresses({
   useEffect(() => {
     if (normalizedHomeAddress.length === 0) return;
 
-    if (startAddress.trim().length === 0 || startAddress === DEFAULT_START_ADDRESS) {
+    if (startAddress.trim().length === 0) {
       setStartAddress(normalizedHomeAddress);
       setStartGooglePlaceId(null);
     }

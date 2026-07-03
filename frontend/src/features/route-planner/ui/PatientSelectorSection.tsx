@@ -476,6 +476,31 @@ export const PatientSelectorSection = ({
                     })}
                   </ul>
                 )}
+                {!isSearchLoading && !searchError && destinationSearchResults.length === 0 && (
+                  <>
+                    {destinationSearchQuery.trim().length > 0 ? (
+                      <p className={responsiveStyles.panelEmptyText}>
+                        No clients match “{destinationSearchQuery.trim()}”.
+                      </p>
+                    ) : (
+                      <div className={responsiveStyles.tableEmptyCta}>
+                        <p className={responsiveStyles.tableEmptyCtaTitle}>No clients yet</p>
+                        <p className={responsiveStyles.tableEmptyCtaText}>
+                          Add your first client — their address and visit window — then build an
+                          optimized route.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={onOpenCreatePatient}
+                          className={responsiveStyles.tableEmptyCtaButton}
+                        >
+                          <PlusIcon />
+                          Add your first client
+                        </button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 

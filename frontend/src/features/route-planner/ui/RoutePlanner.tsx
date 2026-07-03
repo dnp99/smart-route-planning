@@ -12,7 +12,10 @@ type RoutePlannerProps = {
   nurseHomeAddress?: string | null;
   nurseWorkingHours?: WeeklyWorkingHours | null;
   nurseBreakGapThresholdMinutes?: number | null;
-  onOpenAccountSettings?: () => void;
+  onOpenAccountSettings?: (
+    section?: "profile" | "working-hours" | "route",
+    focusField?: "home-address",
+  ) => void;
   optimizationObjective?: "time" | "distance";
 };
 
@@ -21,7 +24,7 @@ function RoutePlanner({
   nurseWorkingHours,
   nurseBreakGapThresholdMinutes,
   onOpenAccountSettings,
-  optimizationObjective = "distance",
+  optimizationObjective = "time",
 }: RoutePlannerProps) {
   const location = useLocation();
   const locationState = location.state as {

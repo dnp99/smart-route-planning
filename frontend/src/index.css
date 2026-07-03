@@ -112,6 +112,20 @@
     animation: route-button-success 700ms ease-out;
   }
 
+  /* Onboarding "Get started" card — a gentle attention ring (on a pseudo-element
+     so it doesn't clobber the card's own shadow/ring) marks it as the focal
+     point until the user finishes or dismisses it. */
+  .get-started-focus::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: 1rem;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
+    opacity: 0;
+    pointer-events: none;
+    animation: get-started-pulse 2.6s ease-in-out infinite;
+  }
+
   .route-loading-skeleton {
     position: relative;
     overflow: hidden;
@@ -149,6 +163,16 @@
 
   .route-result-stat-card[data-success="true"] {
     animation: route-result-flash 650ms ease-out;
+  }
+}
+
+@keyframes get-started-pulse {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.9;
   }
 }
 
@@ -267,9 +291,15 @@
   .optimize-route-button,
   .optimize-route-button::after,
   .route-loading-skeleton::after,
+  .get-started-focus::after,
   .route-result-stat-card {
     animation: none !important;
     transition: none !important;
+  }
+
+  /* Keep a static (non-pulsing) attention ring so the highlight still reads. */
+  .get-started-focus::after {
+    opacity: 0.5;
   }
 
   .optimize-route-button:not(:disabled):active {

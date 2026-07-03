@@ -6,6 +6,7 @@ import { getPatientInitials } from "../domain/patientName";
 import { resolveVisitTypeLabel, type WindowFilter } from "../domain/visitType";
 import { countActiveRecurringTemplates } from "../domain/recurringTemplate";
 import { responsiveStyles } from "../../../components/responsiveStyles";
+import { Tooltip } from "../../../components/shared/Tooltip";
 
 type SortField = "name" | "duration" | "lastScheduled" | null;
 type SortDir = "asc" | "desc";
@@ -504,7 +505,7 @@ export const PatientsTable = ({
     const emptyMessage = searchQuery.trim()
       ? "No clients match this search."
       : lifecycleState === "idle"
-        ? "No idle clients — everyone's been used in the last 30 days."
+        ? "No idle clients — everyone's had a visit in the last 30 days."
         : "No archived clients in the last 7 days.";
     return <div className={responsiveStyles.tableEmptyState}>{emptyMessage}</div>;
   }
@@ -668,18 +669,16 @@ export const PatientsTable = ({
                           <EditIcon className="h-4 w-4" />
                           Edit
                         </button>
-                        {lifecycleState === "active" && (
-                          <button
-                            type="button"
-                            onClick={() => void onDelete(patient.id)}
-                            disabled={isSubmitting}
-                            aria-label={`Archive ${patientDisplayName}`}
-                            title="Archive"
-                            className={responsiveStyles.mobileDeleteButton}
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          onClick={() => void onDelete(patient.id)}
+                          disabled={isSubmitting}
+                          aria-label={`Archive ${patientDisplayName}`}
+                          className={responsiveStyles.mobileArchiveButton}
+                        >
+                          <ArchiveIcon className="h-4 w-4" />
+                          Archive
+                        </button>
                       </>
                     )}
                   </div>
@@ -1063,28 +1062,28 @@ export const PatientsTable = ({
                             {restoringId === patient.id ? "Restoring…" : "Restore"}
                           </button>
                         ) : (
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => onEdit(patient)}
-                              aria-label={`Edit ${patientDisplayName}`}
-                              title="Edit"
-                              className={responsiveStyles.tableIconButton}
-                            >
-                              <EditIcon className="h-3.5 w-3.5" />
-                            </button>
-                            {lifecycleState === "active" && (
+                          <div className="flex items-center gap-2">
+                            <Tooltip label="Edit">
+                              <button
+                                type="button"
+                                onClick={() => onEdit(patient)}
+                                aria-label={`Edit ${patientDisplayName}`}
+                                className={responsiveStyles.tableIconButton}
+                              >
+                                <EditIcon className="h-3.5 w-3.5" />
+                              </button>
+                            </Tooltip>
+                            <Tooltip label="Archive">
                               <button
                                 type="button"
                                 onClick={() => void onDelete(patient.id)}
                                 disabled={isSubmitting}
                                 aria-label={`Archive ${patientDisplayName}`}
-                                title="Archive"
-                                className={responsiveStyles.tableIconButtonDestructive}
+                                className={responsiveStyles.tableIconButtonArchive}
                               >
-                                <TrashIcon className="h-3.5 w-3.5" />
+                                <ArchiveIcon className="h-3.5 w-3.5" />
                               </button>
-                            )}
+                            </Tooltip>
                           </div>
                         )}
                       </div>

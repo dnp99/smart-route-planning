@@ -13,6 +13,7 @@ import { fetchDashboardSummary, fetchRouteRunsForPlanningDate } from "./homeDash
 import { resolveTodayHoursDisplay } from "./todayHours";
 import { hasConfiguredSchedule } from "./workingHoursStatus";
 import { buildGetStartedSteps, countGetStartedDone, isGetStartedComplete } from "./getStartedSteps";
+import { OnboardingTour } from "./OnboardingTour";
 import {
   clearRoutePlannerDraft,
   readRoutePlannerDraft,
@@ -23,7 +24,7 @@ import RouteRunPickerModal, { type RouteRunPickerItem } from "../modals/RouteRun
 type HomePageProps = {
   isAuthenticated: boolean;
   authUser?: AuthUser | null;
-  onOpenAccountSettings?: () => void;
+  onOpenAccountSettings?: (section?: "profile" | "working-hours" | "route") => void;
 };
 
 // Temporarily hidden per product request — kept so it can be flipped back on.
@@ -63,7 +64,12 @@ const resolveGreetingName = (displayName?: string | null) => {
   }
 
   const [firstToken] = trimmed.split(/\s+/);
-  return firstToken || "there";
+  if (!firstToken) {
+    return "there";
+  }
+  // Capitalize the first character so a lowercase name (e.g. "test") still reads
+  // as a proper greeting ("Test"); leave the rest of the token untouched.
+  return firstToken.charAt(0).toUpperCase() + firstToken.slice(1);
 };
 
 const resolveDraftDateLabel = (planningDate?: string) => {
@@ -484,32 +490,70 @@ export default function HomePage({
     [authUser?.workingHours, dashboardSummary],
   );
   const getStartedComplete = isGetStartedComplete(getStartedSteps);
-  const [getStartedDismissed, setGetStartedDismissed] = useState<boolean>(() => {
+  // Latch the "finished onboarding" flag per nurse id, not globally, so a new
+  // user on a shared browser gets a fresh checklist rather than inheriting the
+  // previous user's dismissed/completed state.
+  const getStartedLatchKey = authUser?.id ? `routefy.getStarted.done:${authUser.id}` : null;
+  const readGetStartedLatch = (key: string | null) => {
+    if (!key) return false;
     try {
-      return localStorage.getItem("routefy.getStarted.done") === "1";
+      return localStorage.getItem(key) === "1";
     } catch {
       return false;
     }
-  });
+  };
+  const [getStartedDismissed, setGetStartedDismissed] = useState<boolean>(() =>
+    readGetStartedLatch(getStartedLatchKey),
+  );
+  // Re-sync the latch when the signed-in nurse changes (e.g. account switch
+  // without a full remount) so it always reflects the current user.
   useEffect(() => {
-    if (getStartedComplete && !getStartedDismissed) {
+    setGetStartedDismissed(readGetStartedLatch(getStartedLatchKey));
+  }, [getStartedLatchKey]);
+  useEffect(() => {
+    if (getStartedComplete && !getStartedDismissed && getStartedLatchKey) {
       try {
-        localStorage.setItem("routefy.getStarted.done", "1");
+        localStorage.setItem(getStartedLatchKey, "1");
       } catch {
         // localStorage unavailable — the checklist just won't persist its latch.
       }
       setGetStartedDismissed(true);
     }
-  }, [getStartedComplete, getStartedDismissed]);
+  }, [getStartedComplete, getStartedDismissed, getStartedLatchKey]);
   const dismissGetStarted = () => {
-    try {
-      localStorage.setItem("routefy.getStarted.done", "1");
-    } catch {
-      // ignore
+    if (getStartedLatchKey) {
+      try {
+        localStorage.setItem(getStartedLatchKey, "1");
+      } catch {
+        // ignore
+      }
     }
     setGetStartedDismissed(true);
   };
   const showGetStarted = isAuthenticated && !getStartedDismissed && !getStartedComplete;
+
+  // Onboarding tour card — same "new user" gate as the checklist, with its own
+  // per-nurse dismiss latch so watching/closing the tour is independent of the
+  // checklist. Hidden once onboarding is complete.
+  const tourLatchKey = authUser?.id ? `routefy.tour.done:${authUser.id}` : null;
+  const [tourDismissed, setTourDismissed] = useState<boolean>(() =>
+    readGetStartedLatch(tourLatchKey),
+  );
+  useEffect(() => {
+    setTourDismissed(readGetStartedLatch(tourLatchKey));
+  }, [tourLatchKey]);
+  const dismissTour = () => {
+    if (tourLatchKey) {
+      try {
+        localStorage.setItem(tourLatchKey, "1");
+      } catch {
+        // ignore
+      }
+    }
+    setTourDismissed(true);
+  };
+  const showTour = isAuthenticated && !tourDismissed && !getStartedComplete;
+
   const greetingName = resolveGreetingName(authUser?.displayName);
   const greetingPrefix = resolveGreetingPrefix();
   const todayHoursDisplay = resolveTodayHoursDisplay(authUser?.workingHours);
@@ -619,40 +663,6 @@ export default function HomePage({
 
   return (
     <main className="mt-3 grid gap-4 sm:gap-5">
-      <section className={responsiveStyles.dashboardHeroSection}>
-        <div
-          aria-hidden="true"
-          className="dashboard-grid-bg pointer-events-none absolute inset-0 opacity-35"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-cyan-100/80 blur-2xl dark:bg-cyan-900/20"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-16 -left-24 h-48 w-48 rounded-full bg-orange-100/70 blur-2xl dark:bg-orange-900/20"
-        />
-        <div className="relative max-w-[48rem]">
-          <p className={`${responsiveStyles.dashboardEyebrow} opacity-85`}>
-            Routefy Mission Control
-          </p>
-          <h1 className={responsiveStyles.dashboardHeroHeading}>
-            {greetingPrefix}, {greetingName}
-          </h1>
-          <p className={responsiveStyles.dashboardHeroMeta}>{currentDateLabel}</p>
-          <p className={responsiveStyles.dashboardHeroMeta}>
-            Working hours today: {todayHoursDisplay}
-          </p>
-          <p className={responsiveStyles.dashboardHeroBody}>
-            Track operations in one place, spot delays early, and launch route updates with fewer
-            clicks.
-          </p>
-          <div className={responsiveStyles.dashboardHeroActions}>
-            {isAuthenticated ? renderAuthenticatedActions() : renderSignedOutActions()}
-          </div>
-        </div>
-      </section>
-
       {showGetStarted && (
         <section className={responsiveStyles.getStartedCard}>
           <div className="flex items-start justify-between gap-3">
@@ -721,7 +731,7 @@ export default function HomePage({
                   ) : (
                     <button
                       type="button"
-                      onClick={() => onOpenAccountSettings?.()}
+                      onClick={() => onOpenAccountSettings?.("working-hours")}
                       className={responsiveStyles.getStartedStepButton}
                     >
                       {step.cta}
@@ -733,92 +743,132 @@ export default function HomePage({
         </section>
       )}
 
-      {visibleNudges.map((nudge) => (
-        <section
-          key={nudge.id}
-          className={
-            nudge.tone === "warning"
-              ? responsiveStyles.dashboardNudgeCard
-              : "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/35 sm:p-5"
-          }
-        >
-          <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
-            <div className="min-w-0">
-              <p
-                className={`m-0 text-xs font-semibold uppercase tracking-[0.14em] ${
-                  nudge.tone === "warning"
-                    ? "text-amber-800 dark:text-amber-300"
-                    : "text-blue-800 dark:text-blue-300"
-                }`}
-              >
-                {nudge.tone === "warning" ? "Setup Priority" : "Coverage Reminder"}
-              </p>
-              <p
-                className={`m-0 mt-1 text-sm font-semibold ${
-                  nudge.tone === "warning"
-                    ? "text-amber-900 dark:text-amber-200"
-                    : "text-blue-900 dark:text-blue-200"
-                }`}
-              >
-                {nudge.message}
-              </p>
-              <p
-                className={`m-0 mt-1 text-sm ${
-                  nudge.tone === "warning"
-                    ? "text-amber-800/90 dark:text-amber-300/90"
-                    : "text-blue-800/90 dark:text-blue-300/90"
-                }`}
-              >
-                {nudge.rationale}
-              </p>
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                className={
-                  nudge.tone === "warning"
-                    ? responsiveStyles.warningBannerButton
-                    : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
-                }
-                onClick={() => {
-                  if (nudge.action === "setup") {
-                    navigate("/welcome-setup");
-                    return;
-                  }
+      {showTour && <OnboardingTour onDismiss={dismissTour} />}
 
-                  if (nudge.action === "templates") {
-                    navigate("/clients?templateFilter=without");
-                    return;
-                  }
-
-                  onOpenAccountSettings?.();
-                }}
-              >
-                {nudge.action === "setup"
-                  ? "Complete setup"
-                  : nudge.action === "templates"
-                    ? "Set up templates"
-                    : "Open Settings"}
-              </button>
-              <button
-                type="button"
-                className={
-                  nudge.tone === "warning"
-                    ? "rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
-                    : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
-                }
-                onClick={() =>
-                  setDismissedNudgeIds((current) =>
-                    current.indexOf(nudge.id) >= 0 ? current : [...current, nudge.id],
-                  )
-                }
-              >
-                Dismiss
-              </button>
-            </div>
+      <section className={responsiveStyles.dashboardHeroSection}>
+        <div
+          aria-hidden="true"
+          className="dashboard-grid-bg pointer-events-none absolute inset-0 opacity-35"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-cyan-100/80 blur-2xl dark:bg-cyan-900/20"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-16 -left-24 h-48 w-48 rounded-full bg-orange-100/70 blur-2xl dark:bg-orange-900/20"
+        />
+        <div className="relative max-w-[48rem]">
+          <p className={`${responsiveStyles.dashboardEyebrow} opacity-85`}>
+            Routefy Mission Control
+          </p>
+          <h1 className={responsiveStyles.dashboardHeroHeading}>
+            {greetingPrefix}, {greetingName}
+          </h1>
+          <p className={responsiveStyles.dashboardHeroMeta}>{currentDateLabel}</p>
+          <p className={responsiveStyles.dashboardHeroMeta}>
+            Working hours today: {todayHoursDisplay}
+          </p>
+          <p className={responsiveStyles.dashboardHeroBody}>
+            Track operations in one place, spot delays early, and launch route updates with fewer
+            clicks.
+          </p>
+          <div className={responsiveStyles.dashboardHeroActions}>
+            {isAuthenticated ? renderAuthenticatedActions() : renderSignedOutActions()}
           </div>
-        </section>
-      ))}
+        </div>
+      </section>
+
+      {/* The Get-started checklist supersedes the profile setup nudges while it's
+          visible — showing both is redundant. Nudges return once onboarding is
+          done/dismissed to surface any remaining gaps (route priority, home address). */}
+      {!showGetStarted &&
+        visibleNudges.map((nudge) => (
+          <section
+            key={nudge.id}
+            className={
+              nudge.tone === "warning"
+                ? responsiveStyles.dashboardNudgeCard
+                : "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/35 sm:p-5"
+            }
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3 sm:flex-nowrap">
+              <div className="min-w-0">
+                <p
+                  className={`m-0 text-xs font-semibold uppercase tracking-[0.14em] ${
+                    nudge.tone === "warning"
+                      ? "text-amber-800 dark:text-amber-300"
+                      : "text-blue-800 dark:text-blue-300"
+                  }`}
+                >
+                  {nudge.tone === "warning" ? "Setup Priority" : "Coverage Reminder"}
+                </p>
+                <p
+                  className={`m-0 mt-1 text-sm font-semibold ${
+                    nudge.tone === "warning"
+                      ? "text-amber-900 dark:text-amber-200"
+                      : "text-blue-900 dark:text-blue-200"
+                  }`}
+                >
+                  {nudge.message}
+                </p>
+                <p
+                  className={`m-0 mt-1 text-sm ${
+                    nudge.tone === "warning"
+                      ? "text-amber-800/90 dark:text-amber-300/90"
+                      : "text-blue-800/90 dark:text-blue-300/90"
+                  }`}
+                >
+                  {nudge.rationale}
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  className={
+                    nudge.tone === "warning"
+                      ? responsiveStyles.warningBannerButton
+                      : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                  }
+                  onClick={() => {
+                    if (nudge.action === "setup") {
+                      navigate("/welcome-setup");
+                      return;
+                    }
+
+                    if (nudge.action === "templates") {
+                      navigate("/clients?templateFilter=without");
+                      return;
+                    }
+
+                    onOpenAccountSettings?.();
+                  }}
+                >
+                  {nudge.action === "setup"
+                    ? "Complete setup"
+                    : nudge.action === "templates"
+                      ? "Set up templates"
+                      : "Open Settings"}
+                </button>
+                <button
+                  type="button"
+                  className={
+                    nudge.tone === "warning"
+                      ? "rounded-lg border border-amber-300 px-2.5 py-1.5 text-xs font-semibold text-amber-900 transition hover:bg-amber-100 dark:border-amber-800 dark:text-amber-200 dark:hover:bg-amber-900/40"
+                      : "rounded-lg border border-blue-300 px-2.5 py-1.5 text-xs font-semibold text-blue-900 transition hover:bg-blue-100 dark:border-blue-800 dark:text-blue-200 dark:hover:bg-blue-900/40"
+                  }
+                  onClick={() =>
+                    setDismissedNudgeIds((current) =>
+                      current.indexOf(nudge.id) >= 0 ? current : [...current, nudge.id],
+                    )
+                  }
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </section>
+        ))}
 
       {isAuthenticated && (dashboardError || isDashboardLoading) && (
         <section

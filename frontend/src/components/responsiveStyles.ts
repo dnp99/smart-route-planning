@@ -536,6 +536,10 @@ export const responsiveStyles = {
     "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30",
   infoPopover:
     "absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+  // Hover/focus tooltip for icon-only controls (e.g. table row actions).
+  tooltipWrapper: "group relative inline-flex",
+  tooltipBubble:
+    "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-slate-700",
   // Clients page summary stats row (desktop only — hidden below md)
   // Active tab: one-line summary strip (replaces the four stat boxes).
   // Tightened: a light borderless summary line (no filled band) so it reads as
@@ -694,8 +698,10 @@ export const responsiveStyles = {
   tableBulkDivider: "h-4 w-px bg-amber-300 dark:bg-amber-700",
   tableBulkClear:
     "text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200",
+  // Outlined amber to mirror the per-row / bulk Restore treatment, in the idle
+  // bulk bar's amber theme (was a solid amber fill).
   tableBulkArchiveButton:
-    "inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60",
+    "inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3.5 py-2 text-sm font-semibold text-amber-700 transition hover:border-amber-400 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-900/60 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-amber-950/40",
   // Mobile sticky bulk-archive bar (Idle + selection).
   mobileBulkBar:
     "fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-amber-300 bg-amber-50 px-4 py-3 md:hidden dark:border-amber-700 dark:bg-amber-950/40",
@@ -722,6 +728,10 @@ export const responsiveStyles = {
   // Archived-row Restore button — blue outline + refresh icon per figma.
   restoreButton:
     "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",
+  // Per-row Archive on mobile — full-width labeled button in the amber theme
+  // (desktop uses the compact icon-only tableIconButtonArchive).
+  mobileArchiveButton:
+    "inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-amber-300 px-3 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-900/60 dark:text-amber-300 dark:hover:bg-amber-950/30",
   tableEmptyState:
     "rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
   // First-run empty state with a guided call to action.
@@ -729,11 +739,34 @@ export const responsiveStyles = {
     "flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center dark:border-slate-800 dark:bg-slate-900",
   tableEmptyCtaTitle: "m-0 text-base font-semibold text-slate-900 dark:text-slate-100",
   tableEmptyCtaText: "m-0 mt-1.5 max-w-sm text-sm text-slate-500 dark:text-slate-400",
+  tableEmptyCtaButton:
+    "mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700",
   // ── First-run "Get started" checklist (Home) ──────────────────────────────
   getStartedCard:
-    "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/30 sm:p-5",
+    "get-started-focus dashboard-reveal relative rounded-2xl border border-blue-300 bg-blue-50/70 p-4 shadow-sm ring-1 ring-blue-200 dark:border-blue-800 dark:bg-blue-950/40 dark:ring-blue-900/60 sm:p-5",
   getStartedEyebrow:
     "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-blue-800 dark:text-blue-300",
+  // ── Onboarding tour card + video modal ────────────────────────────────────
+  tourCard:
+    "dashboard-reveal flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+  tourThumb:
+    "relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-900 sm:h-16 sm:w-28",
+  tourThumbImg: "absolute inset-0 h-full w-full object-cover opacity-90",
+  tourPlayBadge:
+    "relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-blue-600 shadow-sm",
+  tourCopy: "min-w-0 flex-1",
+  tourEyebrow:
+    "m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300",
+  tourTitle: "m-0 mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100",
+  tourSub: "m-0 mt-0.5 text-[13px] text-slate-500 dark:text-slate-400",
+  tourWatchButton:
+    "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700",
+  tourDismissButton:
+    "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300",
+  tourModalSurface: "relative w-full max-w-3xl overflow-hidden rounded-2xl bg-slate-900 shadow-2xl",
+  tourModalClose:
+    "absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70",
+  tourVideo: "block h-auto max-h-[80vh] w-full bg-black",
   getStartedTitle: "m-0 mt-1 text-sm font-semibold text-blue-900 dark:text-blue-100",
   getStartedList: "m-0 mt-3 flex list-none flex-col gap-2 p-0",
   getStartedRow:
@@ -748,6 +781,9 @@ export const responsiveStyles = {
     "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200",
   tableIconButtonDestructive:
     "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
+  // Archive row action: neutral like the edit icon at rest, amber on hover.
+  tableIconButtonArchive:
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-amber-950/30 dark:hover:text-amber-400",
 
   // ── Dropdown menus ────────────────────────────────────────────────────────
   dropdownMenu:

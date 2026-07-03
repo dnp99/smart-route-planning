@@ -9,11 +9,17 @@ const MAX_HOME_ADDRESS_LENGTH = 200;
 const MAX_DISPLAY_NAME_LENGTH = 120;
 const PROFILE_MODAL_HOME_ADDRESS_ID = "account-settings-home-address";
 
+type SettingsTab = "profile" | "working-hours" | "route";
+
 interface AccountSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   authUser: SharedAuthUser | null;
   onHomeAddressSaved: (updatedUser: SharedAuthUser | null) => void;
+  /** Tab to open on. Lets callers deep-link (e.g. "Set hours" → Working hours). */
+  initialTab?: SettingsTab;
+  /** Field to focus on open, e.g. "home-address" from the route planner nudge. */
+  initialFocusField?: string | null;
 }
 
 const EyeIcon = ({ className }: { className?: string }) => (
@@ -52,6 +58,12 @@ const EyeOffIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const SETTINGS_TABS: readonly SettingsTab[] = ["profile", "working-hours", "route"];
+// Guard against an unexpected initialTab (e.g. a click Event passed by mistake)
+// so the modal always shows a real tab rather than an empty body.
+const normalizeSettingsTab = (tab: unknown): SettingsTab =>
+  SETTINGS_TABS.indexOf(tab as SettingsTab) !== -1 ? (tab as SettingsTab) : "profile";
+
 const resolveSettingsTabClassName = (isActive: boolean) =>
   [
     responsiveStyles.settingsTabButtonBase,
@@ -65,15 +77,45 @@ export default function AccountSettingsModal({
   onClose,
   authUser,
   onHomeAddressSaved,
+  initialTab = "profile",
+  initialFocusField = null,
 }: AccountSettingsModalProps) {
   const [showBreakReminderInfo, setShowBreakReminderInfo] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"profile" | "working-hours" | "route">(
-    "profile",
+  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>(
+    normalizeSettingsTab(initialTab),
   );
   const [pendingTabSwitch, setPendingTabSwitch] = useState<
     "profile" | "working-hours" | "route" | null
   >(null);
-  const currentOptimizationObjective = authUser?.optimizationObjective ?? "distance";
+
+  // Open on the requested tab each time the modal is shown (e.g. the checklist's
+  // "Set hours" deep-links straight to Working hours).
+  useEffect(() => {
+    if (isOpen) {
+      setActiveSettingsTab(normalizeSettingsTab(initialTab));
+      setPendingTabSwitch(null);
+    }
+  }, [isOpen, initialTab]);
+
+  // Auto-focus a requested field on open (e.g. the route planner's "set home
+  // address" nudge → Home address input). Deferred to the next frame so the tab
+  // content is rendered first.
+  useEffect(() => {
+    if (!isOpen || initialFocusField !== "home-address") {
+      return;
+    }
+    if (normalizeSettingsTab(initialTab) !== "profile") {
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      const input = document.getElementById(PROFILE_MODAL_HOME_ADDRESS_ID);
+      if (input instanceof HTMLInputElement) {
+        input.focus();
+      }
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isOpen, initialTab, initialFocusField]);
+  const currentOptimizationObjective = authUser?.optimizationObjective ?? "time";
   const [routeObjectiveInput, setRouteObjectiveInput] = useState<"time" | "distance">(
     currentOptimizationObjective,
   );

@@ -1,8 +1,37 @@
 import type { AuthUser } from "../../../../shared/contracts";
 
+// Browser-storage keys holding PHI (client names/addresses) that MUST be purged
+// on a real session boundary — a fresh login or a logout — so a shared device
+// never surfaces one nurse's data to the next. These strings must match the keys
+// the owning features actually write; a drifted key silently leaks (see the
+// regression test in authSession.sessionScope.test.ts).
 const SESSION_SCOPED_KEYS = ["careflow.route-planner.draft.v1"];
-const SESSION_STORAGE_SCOPED_KEYS = ["careflow_route_optimization_result"];
+const SESSION_STORAGE_SCOPED_KEYS = ["routeOptimizationResult"];
 const SESSION_PRESENCE_KEY = "careflow.session-presence.v1";
+
+// In-memory PHI caches (e.g. the module-level cached optimized route) register a
+// reset callback here so they're cleared on the same session boundaries as the
+// storage keys above — without authSession importing feature modules, which would
+// create an import cycle. Deliberately NOT run on same-user bootstrap, so a page
+// refresh still restores the signed-in nurse's own cached route.
+const sessionScopedCleanups = new Set<() => void>();
+
+export const registerSessionScopedCleanup = (cleanup: () => void): (() => void) => {
+  sessionScopedCleanups.add(cleanup);
+  return () => {
+    sessionScopedCleanups.delete(cleanup);
+  };
+};
+
+const runSessionScopedCleanups = () => {
+  sessionScopedCleanups.forEach((cleanup) => {
+    try {
+      cleanup();
+    } catch {
+      // a single failing cleanup must not block the others
+    }
+  });
+};
 let authBootstrapInFlight = false;
 let authBootstrapPromise: Promise<void> | null = null;
 let resolveAuthBootstrap: (() => void) | null = null;
@@ -242,6 +271,7 @@ export const setAuthSession = (user: AuthUser) => {
 
   SESSION_SCOPED_KEYS.forEach((key) => window.localStorage.removeItem(key));
   SESSION_STORAGE_SCOPED_KEYS.forEach((key) => window.sessionStorage.removeItem(key));
+  runSessionScopedCleanups();
   currentAuthUser = user;
   setSessionPresenceFlag();
   emitAuthChanged();
@@ -262,5 +292,6 @@ export const clearAuthSession = () => {
   clearSessionPresenceFlag();
   SESSION_SCOPED_KEYS.forEach((key) => window.localStorage.removeItem(key));
   SESSION_STORAGE_SCOPED_KEYS.forEach((key) => window.sessionStorage.removeItem(key));
+  runSessionScopedCleanups();
   emitAuthChanged();
 };

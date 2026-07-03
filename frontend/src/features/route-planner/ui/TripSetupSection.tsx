@@ -83,7 +83,10 @@ type TripSetupSectionProps = {
   onEndAddressPick: (suggestion: AddressSuggestion) => void;
   onStartBlur: () => void;
   onEndBlur: () => void;
-  onOpenAccountSettings?: () => void;
+  onOpenAccountSettings?: (
+    section?: "profile" | "working-hours" | "route",
+    focusField?: "home-address",
+  ) => void;
   planningDate: string;
   onPlanningDateChange: (date: string) => void;
 };
@@ -289,7 +292,7 @@ export const TripSetupSection = ({
             {onOpenAccountSettings && (
               <button
                 type="button"
-                onClick={onOpenAccountSettings}
+                onClick={() => onOpenAccountSettings("profile", "home-address")}
                 className={responsiveStyles.warningBannerButton}
               >
                 Open account settings

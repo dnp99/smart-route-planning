@@ -188,7 +188,8 @@ describe("WelcomeSetupPage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Complete setup" }));
 
     await waitFor(() => {
-      expect(updateOptimizationObjectiveMock).toHaveBeenCalledWith("distance");
+      // New users default to "time" (Finish sooner) when they don't change it.
+      expect(updateOptimizationObjectiveMock).toHaveBeenCalledWith("time");
     });
     expect(await screen.findByRole("heading", { name: "Home Page" })).toBeTruthy();
   });
