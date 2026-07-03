@@ -186,8 +186,13 @@ export const PatientSelectorSection = ({
 }: PatientSelectorSectionProps) => {
   if (!isVisible) return null;
 
-  const isContentVisible = isExpanded || isMobileViewport;
-  const isCollapsedDesktop = !isExpanded && !isMobileViewport;
+  // Only collapsible once clients are selected — the collapsed view is a preview
+  // of the selections, so with none it would be an empty, dead-end card. Keep it
+  // expanded (and hide the toggle) until there's something to preview.
+  const isCollapsible = destinationCount > 0;
+  const resolvedExpanded = isCollapsible ? isExpanded : true;
+  const isContentVisible = resolvedExpanded || isMobileViewport;
+  const isCollapsedDesktop = !resolvedExpanded && !isMobileViewport;
   const mobileSearchListMaxHeight = `${MOBILE_SEARCH_VISIBLE_ROWS * MOBILE_SEARCH_ROW_HEIGHT_PX}px`;
 
   // Preview row: first 3 unique patient names abbreviated (e.g. "Ravi R")
@@ -301,31 +306,34 @@ export const PatientSelectorSection = ({
               </button>
             )}
           </div>
-          {/* Collapse control — separated from CTA */}
-          <button
-            type="button"
-            aria-label={isExpanded ? "Collapse client search" : "Expand client search"}
-            onClick={() => onSetExpanded(!isExpanded)}
-            className={`${responsiveStyles.panelChevronButton} ml-3`}
-          >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden="true"
+          {/* Collapse control — separated from CTA. Only shown when the card is
+              collapsible (has a result + selected clients); otherwise it stays open. */}
+          {isCollapsible && (
+            <button
+              type="button"
+              aria-label={resolvedExpanded ? "Collapse client search" : "Expand client search"}
+              onClick={() => onSetExpanded(!resolvedExpanded)}
+              className={`${responsiveStyles.panelChevronButton} ml-3`}
             >
-              {isExpanded ? (
-                <polyline points="18 15 12 9 6 15" />
-              ) : (
-                <polyline points="6 9 12 15 18 9" />
-              )}
-            </svg>
-          </button>
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                {resolvedExpanded ? (
+                  <polyline points="18 15 12 9 6 15" />
+                ) : (
+                  <polyline points="6 9 12 15 18 9" />
+                )}
+              </svg>
+            </button>
+          )}
         </div>
       </div>
 
