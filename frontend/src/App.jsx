@@ -35,8 +35,12 @@ function App() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
   const [accountSettingsTab, setAccountSettingsTab] = useState("profile");
-  const openAccountSettings = (section = "profile") => {
-    setAccountSettingsTab(section);
+  // Accept an optional target tab. Some callers wire this straight to onClick,
+  // which would pass a click Event — so anything that isn't a known tab falls
+  // back to Profile (never an empty modal).
+  const openAccountSettings = (section) => {
+    const tab = ["profile", "working-hours", "route"].includes(section) ? section : "profile";
+    setAccountSettingsTab(tab);
     setIsAccountSettingsOpen(true);
   };
   const [isLegalNoticeRequired, setIsLegalNoticeRequired] = useState(false);

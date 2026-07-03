@@ -56,6 +56,12 @@ const EyeOffIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const SETTINGS_TABS: readonly SettingsTab[] = ["profile", "working-hours", "route"];
+// Guard against an unexpected initialTab (e.g. a click Event passed by mistake)
+// so the modal always shows a real tab rather than an empty body.
+const normalizeSettingsTab = (tab: unknown): SettingsTab =>
+  SETTINGS_TABS.includes(tab as SettingsTab) ? (tab as SettingsTab) : "profile";
+
 const resolveSettingsTabClassName = (isActive: boolean) =>
   [
     responsiveStyles.settingsTabButtonBase,
@@ -72,7 +78,9 @@ export default function AccountSettingsModal({
   initialTab = "profile",
 }: AccountSettingsModalProps) {
   const [showBreakReminderInfo, setShowBreakReminderInfo] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>(initialTab);
+  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>(
+    normalizeSettingsTab(initialTab),
+  );
   const [pendingTabSwitch, setPendingTabSwitch] = useState<
     "profile" | "working-hours" | "route" | null
   >(null);
@@ -81,7 +89,7 @@ export default function AccountSettingsModal({
   // "Set hours" deep-links straight to Working hours).
   useEffect(() => {
     if (isOpen) {
-      setActiveSettingsTab(initialTab);
+      setActiveSettingsTab(normalizeSettingsTab(initialTab));
       setPendingTabSwitch(null);
     }
   }, [isOpen, initialTab]);

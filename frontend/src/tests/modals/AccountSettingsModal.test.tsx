@@ -43,4 +43,19 @@ describe("AccountSettingsModal initial tab", () => {
     expect(screen.getByRole("button", { name: "Save route" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Save profile" })).toBeNull();
   });
+
+  it("falls back to Profile (never an empty body) for an unexpected tab value", () => {
+    // e.g. a caller wiring onClick={onOpenAccountSettings} passes a click Event.
+    render(
+      <AccountSettingsModal
+        isOpen
+        // @ts-expect-error — deliberately invalid to exercise the guard
+        initialTab={{ nativeEvent: true }}
+        onClose={vi.fn()}
+        authUser={authUser}
+        onHomeAddressSaved={vi.fn()}
+      />,
+    );
+    expect(screen.getByRole("button", { name: "Save profile" })).toBeTruthy();
+  });
 });
