@@ -100,9 +100,11 @@ const PatientsPage = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkArchiving, setIsBulkArchiving] = useState(false);
   const [isBulkRestoring, setIsBulkRestoring] = useState(false);
+  const [isBulkRestoreOpen, setIsBulkRestoreOpen] = useState(false);
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<Patient | null>(null);
   const [counts, setCounts] = useState<PatientCounts | null>(null);
   const [showPrivacyReminder, setShowPrivacyReminder] = useState(false);
   const privacyReminderRef = useRef<HTMLDivElement | null>(null);
@@ -231,11 +233,13 @@ const PatientsPage = () => {
     }
   };
 
-  const handleRestore = async (patient: Patient) => {
-    setRestoringId(patient.id);
+  const confirmRestore = async () => {
+    if (!pendingRestore) return;
+    setRestoringId(pendingRestore.id);
     setPageError("");
     try {
-      await restoreClient(patient.id);
+      await restoreClient(pendingRestore.id);
+      setPendingRestore(null);
       await fetchPatients(searchQuery);
     } catch (error) {
       setPageError(error instanceof Error ? error.message : "Unable to restore client.");
@@ -244,7 +248,7 @@ const PatientsPage = () => {
     }
   };
 
-  const handleRestoreSelected = async () => {
+  const confirmRestoreSelected = async () => {
     const ids = [...selectedIds];
     if (ids.length === 0) return;
     setIsBulkRestoring(true);
@@ -252,6 +256,7 @@ const PatientsPage = () => {
     try {
       await restoreClients(ids);
       setSelectedIds(new Set());
+      setIsBulkRestoreOpen(false);
       await fetchPatients(searchQuery);
     } catch (error) {
       setPageError(error instanceof Error ? error.message : "Unable to restore clients.");
@@ -877,11 +882,11 @@ const PatientsPage = () => {
             onClearSelection={clearSelection}
             onArchiveSelected={() => void handleArchiveSelected()}
             isBulkArchiving={isBulkArchiving}
-            onRestoreSelected={() => void handleRestoreSelected()}
+            onRestoreSelected={() => setIsBulkRestoreOpen(true)}
             isBulkRestoring={isBulkRestoring}
             onPermanentDeleteSelected={() => setIsPermanentDeleteOpen(true)}
             isBulkDeleting={isBulkDeleting}
-            onRestore={(patient) => void handleRestore(patient)}
+            onRestore={(patient) => setPendingRestore(patient)}
             restoringId={restoringId}
             recurringTemplatesByPatientId={recurringTemplatesByPatientId}
             onAddClient={openCreateModal}
@@ -935,7 +940,7 @@ const PatientsPage = () => {
               <>
                 <button
                   type="button"
-                  onClick={() => void handleRestoreSelected()}
+                  onClick={() => setIsBulkRestoreOpen(true)}
                   disabled={isBulkRestoring}
                   className={responsiveStyles.tableBulkRestoreButton}
                 >
@@ -1001,6 +1006,34 @@ const PatientsPage = () => {
             onConfirm={confirmDelete}
             onCancel={() => setPendingDeleteId(null)}
             isLoading={isDeletingPatient}
+          />
+        )}
+
+        {pendingRestore && (
+          <ConfirmDialog
+            title="Restore client"
+            message="They’ll move back to your Active clients and can be scheduled again."
+            confirmLabel="Restore"
+            confirmLoadingLabel="Restoring..."
+            confirmVariant="primary"
+            onConfirm={() => void confirmRestore()}
+            onCancel={() => setPendingRestore(null)}
+            isLoading={restoringId === pendingRestore.id}
+          />
+        )}
+
+        {isBulkRestoreOpen && (
+          <ConfirmDialog
+            title="Restore clients"
+            message={`Restore ${selectedIds.size} client${
+              selectedIds.size === 1 ? "" : "s"
+            }? They’ll move back to your Active clients and can be scheduled again.`}
+            confirmLabel="Restore"
+            confirmLoadingLabel="Restoring..."
+            confirmVariant="primary"
+            onConfirm={() => void confirmRestoreSelected()}
+            onCancel={() => setIsBulkRestoreOpen(false)}
+            isLoading={isBulkRestoring}
           />
         )}
 

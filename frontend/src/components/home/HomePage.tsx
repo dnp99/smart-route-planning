@@ -530,7 +530,12 @@ export default function HomePage({
     }
     setGetStartedDismissed(true);
   };
-  const showGetStarted = isAuthenticated && !getStartedDismissed && !getStartedComplete;
+  // Wait for the dashboard summary before deciding "new user" — otherwise
+  // getStartedComplete is briefly false (client/route counts unknown) and the
+  // onboarding surfaces flash in for existing users on first load.
+  const isOnboardingStatusResolved = dashboardSummary !== null;
+  const showGetStarted =
+    isAuthenticated && isOnboardingStatusResolved && !getStartedDismissed && !getStartedComplete;
 
   // Onboarding tour card — same "new user" gate as the checklist, with its own
   // per-nurse dismiss latch so watching/closing the tour is independent of the
@@ -552,7 +557,8 @@ export default function HomePage({
     }
     setTourDismissed(true);
   };
-  const showTour = isAuthenticated && !tourDismissed && !getStartedComplete;
+  const showTour =
+    isAuthenticated && isOnboardingStatusResolved && !tourDismissed && !getStartedComplete;
 
   const greetingName = resolveGreetingName(authUser?.displayName);
   const greetingPrefix = resolveGreetingPrefix();
