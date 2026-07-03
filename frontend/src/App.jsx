@@ -41,7 +41,7 @@ function App() {
   // a known tab falls back to Profile (never an empty modal), and a non-string
   // focus target is ignored.
   const openAccountSettings = (section, focusField) => {
-    const tab = ["profile", "working-hours", "route"].includes(section) ? section : "profile";
+    const tab = ["profile", "working-hours", "route"].indexOf(section) !== -1 ? section : "profile";
     setAccountSettingsTab(tab);
     setAccountSettingsFocus(typeof focusField === "string" ? focusField : null);
     setIsAccountSettingsOpen(true);

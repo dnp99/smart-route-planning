@@ -62,7 +62,7 @@ const SETTINGS_TABS: readonly SettingsTab[] = ["profile", "working-hours", "rout
 // Guard against an unexpected initialTab (e.g. a click Event passed by mistake)
 // so the modal always shows a real tab rather than an empty body.
 const normalizeSettingsTab = (tab: unknown): SettingsTab =>
-  SETTINGS_TABS.includes(tab as SettingsTab) ? (tab as SettingsTab) : "profile";
+  SETTINGS_TABS.indexOf(tab as SettingsTab) !== -1 ? (tab as SettingsTab) : "profile";
 
 const resolveSettingsTabClassName = (isActive: boolean) =>
   [
