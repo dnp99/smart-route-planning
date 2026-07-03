@@ -2852,6 +2852,48 @@ export const optimizeRouteV3 = async (
     encodedPolyline: leg.encodedPolyline,
   }));
 
+  // Re-derive the departure from the ACTUAL first stop now that the order is
+  // known. The pre-solve anchor (resolveDepartureContext) times the departure for
+  // whichever windowed visit it guesses is served first — on a window tie it picks
+  // the visit nearest the start. When the optimizer instead sequences a farther
+  // windowed visit first, that departure is too late to reach it inside its
+  // window, so the first stop is needlessly late. Using the precise first-leg
+  // duration, leave just early enough (minus the standard buffer) to arrive within
+  // the window. This only ever pulls the departure EARLIER, so no other stop can
+  // become more late. Skipped when the caller pinned an explicit departure.
+  if (!request.start.departureTime) {
+    const firstVisit = orderedVisits[0];
+    const firstLegDurationSeconds = drivingRoute.routeLegs[0]?.durationSeconds;
+    if (firstVisit?.hasPreferredWindow && typeof firstLegDurationSeconds === "number") {
+      const arrivalLocalSeconds = departureLocalSeconds + firstLegDurationSeconds;
+      const serviceStartLocalSeconds = Math.max(arrivalLocalSeconds, firstVisit.windowStartSeconds);
+      const serviceEndLocalSeconds =
+        serviceStartLocalSeconds + firstVisit.serviceDurationMinutes * 60;
+      // Only intervene when the first stop is late *because* we arrive after its
+      // window opens (fixable by leaving earlier). A visit that arrives before the
+      // window — or is late only because the window is shorter than its service —
+      // gains nothing here, and pulling earlier would re-introduce the exact idle
+      // wait that the departure-delay pass above deliberately removed.
+      const arrivesAfterWindowOpens = arrivalLocalSeconds > firstVisit.windowStartSeconds;
+      const wouldBeLate = serviceEndLocalSeconds > firstVisit.windowEndSeconds;
+      if (arrivesAfterWindowOpens && wouldBeLate) {
+        const correctedDepartureLocalSeconds = Math.max(
+          0,
+          firstVisit.windowStartSeconds - firstLegDurationSeconds - DEPARTURE_BUFFER_SECONDS,
+        );
+        if (correctedDepartureLocalSeconds < departureLocalSeconds) {
+          departureLocalSeconds = correctedDepartureLocalSeconds;
+          departureTime = toIsoFromPlanningDateAndLocalSeconds(
+            request.planningDate,
+            request.timezone,
+            departureLocalSeconds,
+          );
+          departureTimestampMs = new Date(departureTime).getTime();
+        }
+      }
+    }
+  }
+
   let cursorLocalSeconds = departureLocalSeconds;
   let fixedWindowViolations = 0;
   let totalLateSeconds = 0;

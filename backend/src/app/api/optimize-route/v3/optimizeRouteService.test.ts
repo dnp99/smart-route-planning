@@ -2614,6 +2614,121 @@ describe("optimizeRouteV3 service", () => {
     ]);
   });
 
+  it("re-derives the departure from the actual first stop so it is reached within its window", async () => {
+    // Two fixed visits share the same 09:00 window, but one is far from the start
+    // and the other is near. The pre-solve anchor times the departure for the
+    // nearer visit; with the order pinned so the FAR visit is served first, that
+    // departure would arrive after the window opens and make the first stop late.
+    // The departure must be pulled earlier so the first-served stop is on time.
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Test Far", coords: { lat: 43.2, lon: -79.9 } },
+      { address: "Deep Near", coords: { lat: 43.6003, lon: -79.6003 } },
+      { address: "End", coords: { lat: 43.6, lon: -79.6 } },
+    ]);
+
+    mockedBuildPlanningTravelDurationMatrix.mockResolvedValue(
+      buildTravelMatrix([
+        ["address:start", "address:test far", 53 * 60],
+        ["address:start", "address:deep near", 5 * 60],
+        ["address:start", "address:end", 5 * 60],
+        ["address:test far", "address:start", 53 * 60],
+        ["address:test far", "address:deep near", 50 * 60],
+        ["address:test far", "address:end", 53 * 60],
+        ["address:deep near", "address:start", 5 * 60],
+        ["address:deep near", "address:test far", 50 * 60],
+        ["address:deep near", "address:end", 5 * 60],
+        ["address:end", "address:start", 5 * 60],
+        ["address:end", "address:test far", 53 * 60],
+        ["address:end", "address:deep near", 5 * 60],
+      ]),
+    );
+
+    // Precise driving legs mirror the matrix so the first leg (Start -> Test Far)
+    // is genuinely long (53 min), which is what makes the anchored departure late.
+    const legDurationSeconds = new Map<string, number>([
+      ["Start->Test Far", 53 * 60],
+      ["Test Far->Deep Near", 50 * 60],
+      ["Deep Near->End", 5 * 60],
+    ]);
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) => {
+      const addresses = orderedStops.map((stop) => stop.address);
+      const routeLegs = addresses.map((toAddress, index) => {
+        const fromAddress = index === 0 ? "Start" : addresses[index - 1];
+        const durationSeconds = legDurationSeconds.get(`${fromAddress}->${toAddress}`) ?? 5 * 60;
+        return {
+          fromAddress,
+          toAddress,
+          distanceMeters: durationSeconds * 10,
+          durationSeconds,
+          encodedPolyline: "abc",
+        };
+      });
+      return {
+        orderedStops: addresses.map((address, index) => ({
+          address,
+          coords: { lat: index + 1, lon: index + 1 },
+          distanceFromPreviousKm: 1,
+          durationFromPreviousSeconds: routeLegs[index]?.durationSeconds ?? 0,
+          isEndingPoint: index === addresses.length - 1,
+        })),
+        routeLegs,
+        totalDistanceMeters: routeLegs.reduce((sum, leg) => sum + leg.distanceMeters, 0),
+        totalDistanceKm: 1,
+        totalDurationSeconds: routeLegs.reduce((sum, leg) => sum + leg.durationSeconds, 0),
+      };
+    });
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-07-04",
+        timezone: "America/Toronto",
+        start: { address: "Start" },
+        end: { address: "End" },
+        preserveOrder: true,
+        visits: [
+          {
+            visitId: "visit-test-far",
+            patientId: "patient-test-far",
+            patientName: "Test Far",
+            address: "Test Far",
+            windowStart: "09:00",
+            windowEnd: "09:35",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+          {
+            visitId: "visit-deep-near",
+            patientId: "patient-deep-near",
+            patientName: "Deep Near",
+            address: "Deep Near",
+            windowStart: "09:00",
+            windowEnd: "09:30",
+            windowType: "fixed",
+            serviceDurationMinutes: 30,
+          },
+        ],
+        optimizationObjective: "time",
+      },
+      "google-key",
+    );
+
+    // Leave at 07:57 local (11:57Z): 09:00 window - 53 min drive - 10 min buffer,
+    // instead of the 08:45 anchored to the nearer (second-served) visit.
+    expect(result.start.departureTime).toBe("2026-07-04T11:57:00.000Z");
+
+    const firstTask = result.orderedStops[0]?.tasks[0];
+    expect(firstTask?.visitId).toBe("visit-test-far");
+    expect(firstTask?.onTime).toBe(true);
+    expect(firstTask?.lateBySeconds).toBe(0);
+
+    // The second (nearer) visit is still unavoidably late — that's the genuine
+    // window conflict, not something the departure change can fix.
+    const secondTask = result.orderedStops[1]?.tasks[0];
+    expect(secondTask?.visitId).toBe("visit-deep-near");
+    expect(secondTask?.lateBySeconds).toBeGreaterThan(0);
+  });
+
   it("keeps fixed-window visits scheduled even when the selected departure makes them late", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
