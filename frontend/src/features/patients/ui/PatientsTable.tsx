@@ -1068,7 +1068,7 @@ export const PatientsTable = ({
                                 type="button"
                                 onClick={() => onEdit(patient)}
                                 aria-label={`Edit ${patientDisplayName}`}
-                                className={responsiveStyles.tableIconButton}
+                                className={responsiveStyles.tableIconButtonEdit}
                               >
                                 <EditIcon className="h-3.5 w-3.5" />
                               </button>

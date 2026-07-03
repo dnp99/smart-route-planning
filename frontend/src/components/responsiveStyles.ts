@@ -788,8 +788,10 @@ export const responsiveStyles = {
     "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 dark:border-slate-600",
   getStartedStepButton:
     "shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700",
-  tableIconButton:
-    "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200",
+  // Edit row action: neutral at rest, primary blue on hover (mirrors the archive
+  // icon's amber hover).
+  tableIconButtonEdit:
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-blue-950/30 dark:hover:text-blue-400",
   tableIconButtonDestructive:
     "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
   // Archive row action: neutral like the edit icon at rest, amber on hover.
