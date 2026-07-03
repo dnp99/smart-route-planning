@@ -2,17 +2,12 @@ import { Link } from "react-router-dom";
 import { responsiveStyles } from "../responsiveStyles";
 import RoutefyBrandMark from "../../assets/RoutefyBrandMark";
 import AppTabs from "./AppTabs";
-import AccountMenu from "../layout/AccountMenu";
 import { resolveTodayHoursDisplay } from "../home/todayHours";
 
-// Desktop-only left rail (design 2a): brand, grouped nav, a Today card, and the
-// account menu at the foot. Hidden below md, where the top header + strip take over.
-export default function AppSidebar({
-  authUser,
-  onOpenAccountSettings,
-  onLogout,
-  isSettingsActive = false,
-}) {
+// Desktop-only left rail (design 2a): brand, grouped nav, and a Today card.
+// The account avatar/menu lives in the header. Hidden below md, where the top
+// header + strip take over.
+export default function AppSidebar({ authUser, onOpenAccountSettings, isSettingsActive = false }) {
   const workingHours = resolveTodayHoursDisplay(authUser?.workingHours);
 
   return (
@@ -66,6 +61,8 @@ export default function AppSidebar({
 
         <div className="flex-1" />
 
+        {/* The account identity + menu now lives in the header (avatar right of
+            the bell). The sidebar keeps the Today card + Settings row. */}
         <div className={responsiveStyles.sidebarTodayCard}>
           <p className={responsiveStyles.sidebarTodayLabel}>Today</p>
           <div className={responsiveStyles.sidebarTodayRow}>
@@ -73,17 +70,6 @@ export default function AppSidebar({
             <span className={responsiveStyles.sidebarTodayValue}>{workingHours}</span>
           </div>
         </div>
-
-        {/* Account settings live in the Settings row above, so the card is
-            identity + Logout only — one settings entry, one logout entry. */}
-        <AccountMenu
-          authUser={authUser}
-          isAuthenticated
-          onOpenAccountSettings={onOpenAccountSettings}
-          onLogout={onLogout}
-          variant="card"
-          items="logoutOnly"
-        />
       </div>
     </aside>
   );

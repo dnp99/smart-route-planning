@@ -28,6 +28,7 @@ import {
   resolveWorkingHoursForDate,
 } from "../api/routePlannerService";
 import {
+  buildSelectedDestinationsFromResult,
   patientMatchesSearchQuery,
   toSelectedVisitInstanceDestinations,
 } from "../domain/routePlannerHelpers";
@@ -518,6 +519,39 @@ export function useRoutePlannerController({
     selectedDestinations,
     visitInstances,
   ]);
+
+  // Keep "Your Route" consistent with the route being shown. Whenever a result
+  // is displayed (restored from the session/runtime cache, a saved run, or an
+  // optimize) and the user hasn't manually curated the selection, reconcile the
+  // selection to the result's visits — so it can't drift empty (e.g. after a
+  // planning-date change wipes the auto-seed while the result still shows).
+  // Runs after the auto-seed effect so it wins the same commit; taking the
+  // manual lock stops auto-seed from re-wiping and guards the user's later edits.
+  useEffect(() => {
+    if (!result || manualTemplateSelectionLock) {
+      return;
+    }
+
+    const restored = buildSelectedDestinationsFromResult(result);
+    if (restored.length === 0) {
+      return;
+    }
+
+    // Own the selection so auto-seed leaves it alone; only rebuild if it doesn't
+    // already cover the result's clients (avoids clobbering a matching selection).
+    setManualTemplateSelectionLock(true);
+
+    const resultPatientIds = new Set(restored.map((destination) => destination.patientId));
+    const selectionPatientIds = new Set(
+      selectedDestinations.map((destination) => destination.patientId),
+    );
+    const alreadyMatches =
+      resultPatientIds.size === selectionPatientIds.size &&
+      [...resultPatientIds].every((patientId) => selectionPatientIds.has(patientId));
+    if (!alreadyMatches) {
+      replaceSelectedDestinations(restored);
+    }
+  }, [result, manualTemplateSelectionLock, selectedDestinations, replaceSelectedDestinations]);
 
   function handleAddDestinationPatient(patient: Parameters<typeof addDestinationPatient>[0]) {
     setManualTemplateSelectionLock(true);

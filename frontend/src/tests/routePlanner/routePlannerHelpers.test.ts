@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildSelectedDestinationsFromResult,
   formatPatientListLabel,
   toSelectedPatientDestinations,
 } from "../../features/route-planner/domain/routePlannerHelpers";
+import type { OptimizeRouteResponse } from "../../components/types";
 import type { Patient } from "../../../../shared/contracts";
 import type { SelectedPatientDestination } from "../../features/route-planner/domain/routePlannerTypes";
 
@@ -136,5 +138,133 @@ describe("formatPatientListLabel", () => {
       makeDestination("Jane Doe"),
     ]);
     expect(result).toBe("Jane Doe");
+  });
+});
+
+describe("buildSelectedDestinationsFromResult", () => {
+  const buildResult = (): OptimizeRouteResponse =>
+    ({
+      timezone: "America/Toronto",
+      start: { address: "Home", coords: { lat: 43.6, lon: -79.5 }, departureTime: "" },
+      end: { address: "Home", coords: { lat: 43.6, lon: -79.5 } },
+      orderedStops: [
+        {
+          stopId: "s1",
+          address: "10 First Ave",
+          coords: { lat: 43.7, lon: -79.7 },
+          arrivalTime: "",
+          departureTime: "",
+          distanceFromPreviousKm: 1,
+          durationFromPreviousSeconds: 60,
+          isEndingPoint: false,
+          tasks: [
+            {
+              visitId: "v-yasmin-am",
+              patientId: "yasmin",
+              patientName: "Yasmin Ramji",
+              address: "10 First Ave",
+              windowStart: "08:40",
+              windowEnd: "08:55",
+              windowType: "fixed",
+              serviceDurationMinutes: 15,
+              arrivalTime: "",
+              serviceStartTime: "",
+              serviceEndTime: "",
+              waitSeconds: 0,
+              lateBySeconds: 0,
+              onTime: true,
+            },
+          ],
+        },
+        {
+          stopId: "s2",
+          address: "22 Second St",
+          coords: { lat: 43.71, lon: -79.71 },
+          arrivalTime: "",
+          departureTime: "",
+          distanceFromPreviousKm: 2,
+          durationFromPreviousSeconds: 120,
+          isEndingPoint: false,
+          tasks: [
+            {
+              visitId: "v-nasim",
+              patientId: "nasim",
+              patientName: "Nasim Akhter",
+              address: "22 Second St",
+              windowStart: "09:00",
+              windowEnd: "11:00",
+              windowType: "flexible",
+              serviceDurationMinutes: 20,
+              arrivalTime: "",
+              serviceStartTime: "",
+              serviceEndTime: "",
+              waitSeconds: 0,
+              lateBySeconds: 0,
+              onTime: true,
+            },
+          ],
+        },
+        {
+          stopId: "end",
+          address: "Home",
+          coords: { lat: 43.6, lon: -79.5 },
+          arrivalTime: "",
+          departureTime: "",
+          distanceFromPreviousKm: 3,
+          durationFromPreviousSeconds: 180,
+          isEndingPoint: true,
+          tasks: [],
+        },
+      ],
+      routeLegs: [],
+      unscheduledTasks: [
+        {
+          visitId: "v-kenneth",
+          patientId: "kenneth",
+          reason: "insufficient_day_capacity",
+          patientName: "Kenneth Clark",
+          address: "99 Late Rd",
+          windowStart: "10:00",
+          windowEnd: "10:30",
+          windowType: "fixed",
+        },
+      ],
+      metrics: {
+        fixedWindowViolations: 0,
+        totalLateSeconds: 0,
+        totalWaitSeconds: 0,
+        totalDistanceMeters: 0,
+        totalDistanceKm: 0,
+        totalDurationSeconds: 0,
+      },
+      algorithmVersion: "v3",
+    }) as OptimizeRouteResponse;
+
+  it("rebuilds the selection from scheduled and unscheduled visits (skips the ending stop)", () => {
+    const destinations = buildSelectedDestinationsFromResult(buildResult());
+
+    expect(destinations.map((d) => d.patientId)).toEqual(["yasmin", "nasim", "kenneth"]);
+    expect(destinations.every((d) => d.isIncluded)).toBe(true);
+
+    const yasmin = destinations[0];
+    expect(yasmin.visitId).toBe("v-yasmin-am");
+    expect(yasmin.visitKey).toBe("yasmin:result:v-yasmin-am");
+    expect(yasmin.windowStart).toBe("08:40");
+    expect(yasmin.windowEnd).toBe("08:55");
+    expect(yasmin.windowType).toBe("fixed");
+    expect(yasmin.serviceDurationMinutes).toBe(15);
+
+    // Unscheduled visits are preserved too (they were part of the plan).
+    expect(destinations[2].patientId).toBe("kenneth");
+    expect(destinations[2].address).toBe("99 Late Rd");
+  });
+
+  it("returns an empty list for a result with no visits", () => {
+    const empty = buildSelectedDestinationsFromResult({
+      ...buildResult(),
+      orderedStops: [],
+      unscheduledTasks: [],
+    });
+    expect(empty).toEqual([]);
   });
 });

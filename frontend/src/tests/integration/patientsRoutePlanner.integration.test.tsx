@@ -270,6 +270,43 @@ vi.mock("../../components/auth/authService", () => ({
   acknowledgeLegalNotice: acknowledgeLegalNoticeMock,
 }));
 
+// The header's notifications bell fetches the dashboard summary on mount — stub
+// it so it doesn't make a real network call during the integration flow.
+vi.mock("../../components/home/homeDashboardService", async () => {
+  const actual = await vi.importActual<typeof import("../../components/home/homeDashboardService")>(
+    "../../components/home/homeDashboardService",
+  );
+  return {
+    ...actual,
+    fetchDashboardSummary: vi.fn(async () => ({
+      asOf: "2026-07-02T00:00:00.000Z",
+      timezone: "UTC",
+      kpis: {
+        routesToday: 0,
+        visitsScheduledToday: 0,
+        visitsScheduledLast7Days: 0,
+        onTimeRatePercent7d: null,
+        staleClientsCount: 0,
+        driveHoursLast7Days: 0,
+        totalDistanceKm7d: 0,
+        activePatientCount: 0,
+        templatedActivePatientCount: 0,
+      },
+      alerts: [],
+      upcomingStops: [],
+      trend: [],
+      busiestDays: [],
+      patientRisks: [],
+      snapshot: {
+        completedRoutes: 0,
+        delayedRoutes: 0,
+        unscheduledVisits: 0,
+        totalDistanceKm: 0,
+      },
+    })),
+  };
+});
+
 vi.mock("../../components/shared/AddressAutocompleteInput", () => ({
   default: ({
     id,

@@ -557,3 +557,28 @@ export const archivePatientsForNurse = async (nurseId: string, patientIds: strin
 
   return archived.map((row) => row.id);
 };
+
+// "Permanent delete" (soft): push archived_at to the epoch sentinel so the row
+// falls outside the ARCHIVED_VISIBILITY_DAYS window forever — invisible in every
+// tab and no longer restorable from the UI, while the row is retained in the DB.
+// Only acts on already-archived rows scoped to the nurse.
+export const permanentlyDeletePatientsForNurse = async (nurseId: string, patientIds: string[]) => {
+  if (patientIds.length === 0) {
+    return [];
+  }
+
+  const now = new Date();
+  const deleted = await getDb()
+    .update(patients)
+    .set({ isActive: false, archivedAt: new Date(0), updatedAt: now })
+    .where(
+      and(
+        eq(patients.nurseId, nurseId),
+        eq(patients.isActive, false),
+        inArray(patients.id, patientIds),
+      ),
+    )
+    .returning({ id: patients.id });
+
+  return deleted.map((row) => row.id);
+};

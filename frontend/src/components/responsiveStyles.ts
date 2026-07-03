@@ -22,19 +22,22 @@
 
 export const responsiveStyles = {
   // ── App shell (layout components) ─────────────────────────────────────────
-  // Page canvas gradient (design 2a): cool light slate-blue. Lives on the outer
-  // shell row + content column so the transparent sidebar reads against it.
-  appCanvas: "bg-[linear-gradient(180deg,#F4F7FB_0%,#F8FAFC_100%)] dark:bg-slate-950 dark:bg-none",
-  appShell:
-    "flex min-h-screen flex-col bg-[linear-gradient(180deg,#F4F7FB_0%,#F8FAFC_100%)] dark:bg-none dark:bg-slate-950",
+  // Page canvas (design 2a): flat white shell. The transparent sidebar + content
+  // read against it; secondary tiles use `surfaceSecondary` (#F4F4F6) for contrast.
+  appCanvas: "bg-white dark:bg-slate-950",
+  appShell: "flex min-h-screen flex-col bg-white dark:bg-slate-950",
   stickyHeaderShell: "sticky top-0 z-30 w-full",
-  // Transparent, frosted top bar that blends into the page canvas on scroll.
-  appHeader: "relative z-40 w-full bg-[#F4F7FB]/80 backdrop-blur-md dark:bg-slate-950/80",
+  // Frosted top bar that blends into the white page canvas on scroll.
+  appHeader: "relative z-40 w-full bg-white/80 backdrop-blur-md dark:bg-slate-950/80",
   appHeaderBackgroundGradient: "",
   appHeaderInner: "mx-auto flex w-full max-w-7xl items-center justify-between px-6",
+  // Secondary tile surface (design 2a): warm light-gray on the white canvas.
+  // For sidebar tiles, stat/KPI cards, and other supporting surfaces — NOT for
+  // primary/hero cards or data tables, which stay bg-white.
+  surfaceSecondary: "bg-[#F4F4F6] border border-[#E2E8F0] dark:bg-slate-900 dark:border-slate-800",
   tabStrip: "relative z-30 w-full bg-slate-50/95 backdrop-blur-sm dark:bg-slate-950/95",
-  appFooter:
-    "w-full bg-[linear-gradient(90deg,rgba(236,254,255,0.75)_0%,rgba(239,246,255,0.7)_40%,rgba(241,245,249,0.65)_75%,rgba(248,250,252,0.6)_100%)] dark:bg-[linear-gradient(90deg,rgba(8,47,73,0.45)_0%,rgba(14,116,144,0.4)_40%,rgba(15,23,42,0.38)_75%,rgba(15,23,42,0.32)_100%)]",
+  // Borderless footer over the flat white canvas (design 2a) — no tinted gradient.
+  appFooter: "w-full bg-transparent dark:bg-transparent",
   appFooterInner:
     "mx-auto flex w-full max-w-7xl flex-col items-center gap-3 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6 sm:pb-4 md:pl-1 md:pr-[60px]",
   // Horizontal insets are symmetric on mobile (no sidebar); at md+ the left
@@ -68,14 +71,14 @@ export const responsiveStyles = {
     "group flex w-full items-center gap-3 rounded-r-[10px] border-l-[3px] border-blue-600 bg-blue-50 px-3 py-2.5 text-left text-[13.5px] font-semibold text-blue-700 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-blue-400 dark:bg-blue-950/40 dark:text-blue-200",
   // Sidebar "Today" mini-card + account card at the foot of the rail.
   sidebarTodayCard:
-    "mt-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-700 dark:bg-slate-900/80",
+    "mt-2 rounded-xl border border-[#E2E8F0] bg-[#F4F4F6] px-3 py-2.5 shadow-sm dark:border-slate-700 dark:bg-slate-900/80",
   sidebarTodayLabel:
     "text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400 dark:text-slate-500",
   sidebarTodayRow: "mt-2 flex items-center justify-between gap-2",
   sidebarTodayKey: "text-xs font-medium text-slate-500 dark:text-slate-400",
   sidebarTodayValue: "text-xs font-semibold text-slate-900 dark:text-slate-100",
   sidebarAccountCard:
-    "mt-2.5 flex w-full items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-2.5 py-2 text-left transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-slate-700 dark:bg-slate-900",
+    "mt-2.5 flex w-full items-center gap-2.5 rounded-xl border border-[#E2E8F0] bg-[#F4F4F6] px-2.5 py-2 text-left shadow-sm transition hover:border-slate-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/40 dark:border-slate-700 dark:bg-slate-900",
   sidebarAccountAvatar:
     "flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-xs font-bold text-blue-800 dark:border-blue-900/60 dark:bg-blue-950/40 dark:text-blue-200",
   accountMenuDropdownUp:
@@ -86,6 +89,24 @@ export const responsiveStyles = {
   topBarIconButton:
     "relative inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
   topBarDivider: "hidden h-6 w-px bg-slate-200 dark:bg-slate-700 md:block",
+  // ── Notifications ─────────────────────────────────────────────────────────
+  // Unread dot on the bell; portaled dropdown panel + item rows.
+  notificationsDot:
+    "absolute right-2.5 top-2.5 h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-slate-900",
+  notificationsPanel:
+    "w-80 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900",
+  notificationsPanelHeader:
+    "flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-slate-800",
+  notificationsPanelTitle: "m-0 text-sm font-semibold text-slate-900 dark:text-slate-100",
+  notificationsEmpty: "px-4 py-8 text-center text-sm text-slate-500 dark:text-slate-400",
+  notificationsItem:
+    "flex w-full items-start gap-3 px-4 py-3 text-left transition hover:bg-slate-50 dark:hover:bg-slate-800/60",
+  notificationsItemTitle: "m-0 text-sm font-semibold text-slate-800 dark:text-slate-100",
+  notificationsItemDetail: "m-0 mt-0.5 text-xs leading-5 text-slate-500 dark:text-slate-400",
+  notificationsIconAction:
+    "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600 dark:bg-amber-900/40 dark:text-amber-300",
+  notificationsIconInfo:
+    "mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400",
   // ── Account menu ──────────────────────────────────────────────────────────
   accountMenuButton:
     "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-blue-200 bg-gradient-to-br from-blue-100 to-blue-50 text-sm font-bold uppercase tracking-[0.02em] text-blue-800 shadow-sm transition hover:from-blue-200 hover:to-blue-100 hover:shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/50 dark:border-blue-700 dark:from-blue-900/70 dark:to-blue-950/60 dark:text-blue-100 dark:hover:from-blue-800 dark:hover:to-blue-900",
@@ -485,7 +506,7 @@ export const responsiveStyles = {
   dashboardHeroActions: "mt-6 flex flex-wrap gap-2.5",
   dashboardKpiGrid: "dashboard-reveal grid gap-3 sm:grid-cols-2 xl:grid-cols-4",
   dashboardKpiCard:
-    "dashboard-reveal dashboard-kpi-card block rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-5",
+    "dashboard-reveal dashboard-kpi-card block rounded-2xl border border-[#E2E8F0] bg-[#F4F4F6] p-4 shadow-sm transition hover:border-slate-300 hover:shadow dark:border-slate-800 dark:bg-slate-900 dark:hover:border-slate-700 sm:p-5",
   dashboardKpiLabel:
     "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
   dashboardKpiValue: "m-0 mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100",
@@ -496,7 +517,11 @@ export const responsiveStyles = {
   // Clients page lifecycle tabs (Active / Idle / Archived)
   // Row holding the lifecycle tabs (left) + the info popover trigger (right).
   clientTabsRow: "relative mb-4 flex border-b border-slate-200 dark:border-slate-800",
-  clientStateTabBar: "flex gap-1 overflow-x-auto",
+  // overflow-x-auto alone promotes overflow-y (visible) to auto per spec, which
+  // shows a stray vertical scrollbar over the last tab. Pin overflow-y and hide
+  // the scrollbar chrome (horizontal scroll still works for narrow screens).
+  clientStateTabBar:
+    "flex gap-1 overflow-x-auto overflow-y-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
   clientStateTab:
     "-mb-px shrink-0 whitespace-nowrap border-b-2 px-3 py-2 text-sm font-semibold transition",
   clientStateTabActive: "border-blue-600 text-blue-700 dark:border-blue-400 dark:text-blue-300",
@@ -671,6 +696,26 @@ export const responsiveStyles = {
     "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",
   tableEmptyState:
     "rounded-2xl border border-slate-200 bg-white px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-400",
+  // First-run empty state with a guided call to action.
+  tableEmptyCta:
+    "flex flex-col items-center rounded-2xl border border-slate-200 bg-white px-6 py-12 text-center dark:border-slate-800 dark:bg-slate-900",
+  tableEmptyCtaTitle: "m-0 text-base font-semibold text-slate-900 dark:text-slate-100",
+  tableEmptyCtaText: "m-0 mt-1.5 max-w-sm text-sm text-slate-500 dark:text-slate-400",
+  // ── First-run "Get started" checklist (Home) ──────────────────────────────
+  getStartedCard:
+    "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/30 sm:p-5",
+  getStartedEyebrow:
+    "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-blue-800 dark:text-blue-300",
+  getStartedTitle: "m-0 mt-1 text-sm font-semibold text-blue-900 dark:text-blue-100",
+  getStartedList: "m-0 mt-3 flex list-none flex-col gap-2 p-0",
+  getStartedRow:
+    "flex items-center gap-3 rounded-xl border border-blue-100 bg-white px-3 py-2.5 dark:border-blue-900/50 dark:bg-slate-900/60",
+  getStartedCheckDone:
+    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white",
+  getStartedCheckTodo:
+    "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 dark:border-slate-600",
+  getStartedStepButton:
+    "shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700",
   tableIconButton:
     "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200",
   tableIconButtonDestructive:

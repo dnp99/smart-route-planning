@@ -29,6 +29,7 @@ type PatientsTableProps = {
   onRestore: (patient: Patient) => void;
   restoringId: string | null;
   recurringTemplatesByPatientId: Map<string, RecurringVisitTemplate[]>;
+  onAddClient: () => void;
 };
 
 const TrashIcon = ({ className }: { className?: string }) => (
@@ -294,6 +295,7 @@ export const PatientsTable = ({
   onRestore,
   restoringId,
   recurringTemplatesByPatientId,
+  onAddClient,
 }: PatientsTableProps) => {
   const isArchived = lifecycleState === "archived";
   const isIdle = lifecycleState === "idle";
@@ -468,13 +470,30 @@ export const PatientsTable = ({
   }
 
   if (patients.length === 0) {
+    // First-run: no clients yet on the Active tab → a guided call to action.
+    if (!searchQuery.trim() && lifecycleState === "active") {
+      return (
+        <div className={responsiveStyles.tableEmptyCta}>
+          <p className={responsiveStyles.tableEmptyCtaTitle}>Add your first client</p>
+          <p className={responsiveStyles.tableEmptyCtaText}>
+            Clients are the people you visit. Add them here, then plan an optimized route.
+          </p>
+          <button
+            type="button"
+            onClick={onAddClient}
+            className={`${responsiveStyles.primaryButton} mt-4 inline-flex w-auto items-center gap-1.5`}
+          >
+            <span aria-hidden="true">+</span> Add your first client
+          </button>
+        </div>
+      );
+    }
+
     const emptyMessage = searchQuery.trim()
       ? "No clients match this search."
       : lifecycleState === "idle"
         ? "No idle clients — everyone's been used in the last 30 days."
-        : lifecycleState === "archived"
-          ? "No archived clients in the last 7 days."
-          : "No clients added yet.";
+        : "No archived clients in the last 7 days.";
     return <div className={responsiveStyles.tableEmptyState}>{emptyMessage}</div>;
   }
 
