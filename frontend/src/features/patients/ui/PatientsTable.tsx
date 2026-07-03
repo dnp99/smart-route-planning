@@ -1076,10 +1076,10 @@ export const PatientsTable = ({
                               onClick={() => void onDelete(patient.id)}
                               disabled={isSubmitting}
                               aria-label={`Archive ${patientDisplayName}`}
-                              className={responsiveStyles.archiveButton}
+                              title="Archive"
+                              className={responsiveStyles.tableIconButtonArchive}
                             >
                               <ArchiveIcon className="h-3.5 w-3.5" />
-                              Archive
                             </button>
                           </div>
                         )}

@@ -474,6 +474,11 @@ describe("patients and route planner integration", () => {
     // Nav renders twice (desktop header + mobile strip); either link routes the same.
     fireEvent.click(screen.getAllByRole("link", { name: "Route Planner" })[0]);
     expect(await screen.findByRole("heading", { name: "Smart Route Planner" })).toBeTruthy();
+    // Start is no longer prepopulated for a nurse without a saved home address,
+    // so enter one before optimizing.
+    fireEvent.change(screen.getByLabelText("Starting point"), {
+      target: { value: "Clinic HQ" },
+    });
     fireEvent.change(screen.getByLabelText("Ending point"), {
       target: { value: "Airport" },
     });

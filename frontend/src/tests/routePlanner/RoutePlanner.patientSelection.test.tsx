@@ -304,6 +304,12 @@ const getDefaultPlanningDate = () => {
   return `${year}-${month}-${day}`;
 };
 
+// The start address is no longer prepopulated for new users (empty by default),
+// so tests that optimize a route must enter a starting point first — mirroring
+// what a real nurse without a saved home address does.
+const setStartingPoint = (value = "3361 Ingram Road, Mississauga, ON") =>
+  fireEvent.change(screen.getByLabelText(/Starting point/i), { target: { value } });
+
 describe("RoutePlanner patient selection integration", () => {
   beforeEach(() => {
     window.localStorage.clear();
@@ -495,6 +501,8 @@ describe("RoutePlanner patient selection integration", () => {
     unmount();
     render(<RoutePlanner />);
 
+    // Neither trip address is restored/prepopulated after a remount.
+    expect(screen.getByLabelText(/Starting point/i)).toHaveProperty("value", "");
     expect(screen.getByLabelText(/Ending point/i)).toHaveProperty("value", "");
 
     fireEvent.change(screen.getByLabelText(/Ending point/i), {
@@ -505,6 +513,7 @@ describe("RoutePlanner patient selection integration", () => {
 
     expect(optimizeRouteMock).not.toHaveBeenCalled();
 
+    setStartingPoint();
     fireEvent.click(screen.getByRole("button", { name: "Expand client search" }));
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
@@ -533,6 +542,8 @@ describe("RoutePlanner patient selection integration", () => {
 
   it("allows route optimization when selected patient windows overlap", () => {
     render(<RoutePlanner />);
+
+    setStartingPoint();
 
     fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
@@ -606,6 +617,7 @@ describe("RoutePlanner patient selection integration", () => {
       expect(requestVisitInstancesMock).toHaveBeenCalledTimes(1);
     });
 
+    setStartingPoint();
     fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
@@ -706,6 +718,7 @@ describe("RoutePlanner patient selection integration", () => {
       expect(requestRecurringVisitTemplatesMock).toHaveBeenCalledTimes(1);
     });
 
+    setStartingPoint();
     fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
@@ -982,6 +995,8 @@ describe("RoutePlanner patient selection integration", () => {
   it("submits optimize payload with patient-linked destinations", () => {
     render(<RoutePlanner />);
 
+    setStartingPoint();
+
     fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
@@ -1012,6 +1027,8 @@ describe("RoutePlanner patient selection integration", () => {
 
   it("uses planner-edited windows as plan-only overrides unless save is checked", () => {
     render(<RoutePlanner />);
+
+    setStartingPoint();
 
     fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
@@ -1464,6 +1481,8 @@ describe("RoutePlanner patient selection integration", () => {
   it("allows optimizing flexible patients without preferred windows", () => {
     render(<RoutePlanner />);
 
+    setStartingPoint();
+
     fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
@@ -1495,6 +1514,8 @@ describe("RoutePlanner patient selection integration", () => {
   it("requires both window boundaries when nurse partially sets a flexible window", () => {
     render(<RoutePlanner />);
 
+    setStartingPoint();
+
     fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
     });
@@ -1515,6 +1536,8 @@ describe("RoutePlanner patient selection integration", () => {
 
   it("allows excluding individual patient windows from a multi-window patient", () => {
     render(<RoutePlanner />);
+
+    setStartingPoint();
 
     fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },
@@ -1557,6 +1580,8 @@ describe("RoutePlanner patient selection integration", () => {
 
   it("can persist planner-entered windows for flexible no-window patients", async () => {
     render(<RoutePlanner />);
+
+    setStartingPoint();
 
     fireEvent.change(screen.getByLabelText(/Ending point/i), {
       target: { value: "Airport" },

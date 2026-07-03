@@ -724,9 +724,8 @@ export const responsiveStyles = {
   // Archived-row Restore button — blue outline + refresh icon per figma.
   restoreButton:
     "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",
-  // Per-row Archive pill — mirrors restoreButton in the amber archive theme.
-  archiveButton:
-    "inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3 py-1.5 text-[13px] font-semibold text-amber-700 transition hover:border-amber-400 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-900/60 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-amber-950/40",
+  // Per-row Archive on mobile — full-width labeled button in the amber theme
+  // (desktop uses the compact icon-only tableIconButtonArchive).
   mobileArchiveButton:
     "inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-amber-300 px-3 py-2.5 text-sm font-semibold text-amber-700 transition hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-900/60 dark:text-amber-300 dark:hover:bg-amber-950/30",
   tableEmptyState:
@@ -755,6 +754,9 @@ export const responsiveStyles = {
     "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200",
   tableIconButtonDestructive:
     "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
+  // Archive row action: neutral like the edit icon at rest, amber on hover.
+  tableIconButtonArchive:
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-amber-300 hover:bg-amber-50 hover:text-amber-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-amber-950/30 dark:hover:text-amber-400",
 
   // ── Dropdown menus ────────────────────────────────────────────────────────
   dropdownMenu:
