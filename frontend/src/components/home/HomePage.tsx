@@ -634,40 +634,6 @@ export default function HomePage({
 
   return (
     <main className="mt-3 grid gap-4 sm:gap-5">
-      <section className={responsiveStyles.dashboardHeroSection}>
-        <div
-          aria-hidden="true"
-          className="dashboard-grid-bg pointer-events-none absolute inset-0 opacity-35"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-cyan-100/80 blur-2xl dark:bg-cyan-900/20"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-16 -left-24 h-48 w-48 rounded-full bg-orange-100/70 blur-2xl dark:bg-orange-900/20"
-        />
-        <div className="relative max-w-[48rem]">
-          <p className={`${responsiveStyles.dashboardEyebrow} opacity-85`}>
-            Routefy Mission Control
-          </p>
-          <h1 className={responsiveStyles.dashboardHeroHeading}>
-            {greetingPrefix}, {greetingName}
-          </h1>
-          <p className={responsiveStyles.dashboardHeroMeta}>{currentDateLabel}</p>
-          <p className={responsiveStyles.dashboardHeroMeta}>
-            Working hours today: {todayHoursDisplay}
-          </p>
-          <p className={responsiveStyles.dashboardHeroBody}>
-            Track operations in one place, spot delays early, and launch route updates with fewer
-            clicks.
-          </p>
-          <div className={responsiveStyles.dashboardHeroActions}>
-            {isAuthenticated ? renderAuthenticatedActions() : renderSignedOutActions()}
-          </div>
-        </div>
-      </section>
-
       {showGetStarted && (
         <section className={responsiveStyles.getStartedCard}>
           <div className="flex items-start justify-between gap-3">
@@ -747,6 +713,40 @@ export default function HomePage({
           </ul>
         </section>
       )}
+
+      <section className={responsiveStyles.dashboardHeroSection}>
+        <div
+          aria-hidden="true"
+          className="dashboard-grid-bg pointer-events-none absolute inset-0 opacity-35"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-20 -top-20 h-60 w-60 rounded-full bg-cyan-100/80 blur-2xl dark:bg-cyan-900/20"
+        />
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -bottom-16 -left-24 h-48 w-48 rounded-full bg-orange-100/70 blur-2xl dark:bg-orange-900/20"
+        />
+        <div className="relative max-w-[48rem]">
+          <p className={`${responsiveStyles.dashboardEyebrow} opacity-85`}>
+            Routefy Mission Control
+          </p>
+          <h1 className={responsiveStyles.dashboardHeroHeading}>
+            {greetingPrefix}, {greetingName}
+          </h1>
+          <p className={responsiveStyles.dashboardHeroMeta}>{currentDateLabel}</p>
+          <p className={responsiveStyles.dashboardHeroMeta}>
+            Working hours today: {todayHoursDisplay}
+          </p>
+          <p className={responsiveStyles.dashboardHeroBody}>
+            Track operations in one place, spot delays early, and launch route updates with fewer
+            clicks.
+          </p>
+          <div className={responsiveStyles.dashboardHeroActions}>
+            {isAuthenticated ? renderAuthenticatedActions() : renderSignedOutActions()}
+          </div>
+        </div>
+      </section>
 
       {/* The Get-started checklist supersedes the profile setup nudges while it's
           visible — showing both is redundant. Nudges return once onboarding is
