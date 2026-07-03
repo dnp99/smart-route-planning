@@ -584,6 +584,16 @@ export const responsiveStyles = {
     "border-blue-200 bg-blue-50/60 hover:border-blue-300 dark:border-blue-900 dark:bg-blue-950/30",
   routeClientName: "m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100",
   routeClientAddress: "m-0 truncate text-xs text-slate-500 dark:text-slate-400",
+  // Skeleton placeholder for the client search list — mirrors routeClientCard's
+  // footprint so results swap in without any layout jump.
+  routeClientSkeletonCard:
+    "flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900",
+  routeClientSkeletonAvatar:
+    "route-loading-skeleton motion-reduce:animate-none h-9 w-9 shrink-0 rounded-full bg-slate-200/80 dark:bg-slate-700/70",
+  routeClientSkeletonLine:
+    "route-loading-skeleton motion-reduce:animate-none rounded bg-slate-200/80 dark:bg-slate-700/70",
+  routeClientSkeletonName: "h-3.5 w-32",
+  routeClientSkeletonAddress: "mt-1.5 h-3 w-48 max-w-full",
   routeInRouteBadge:
     "inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white dark:bg-blue-500",
   routeAddClientButton:
@@ -691,6 +701,24 @@ export const responsiveStyles = {
     "fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-amber-300 bg-amber-50 px-4 py-3 md:hidden dark:border-amber-700 dark:bg-amber-950/40",
   mobileBulkClearButton:
     "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-amber-300 bg-white text-amber-800 transition hover:bg-amber-100 dark:border-amber-700 dark:bg-slate-900 dark:text-amber-300",
+  // Archived-tab bulk toolbar — primary (blue) variant instead of amber.
+  tableBulkBarPrimary: "flex items-center gap-3 bg-blue-50 px-5 py-2.5 dark:bg-blue-950/30",
+  tableBulkLabelPrimary: "text-sm font-semibold text-blue-900 dark:text-blue-200",
+  tableBulkDividerPrimary: "h-4 w-px bg-blue-300 dark:bg-blue-700",
+  tableBulkClearPrimary:
+    "text-sm font-semibold text-blue-800 underline underline-offset-2 transition hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200",
+  // Outlined blue to match the per-row Restore button (restoreButton), sized
+  // for the bulk toolbar so it aligns with the Delete permanently button.
+  tableBulkRestoreButton:
+    "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3.5 py-2 text-sm font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",
+  // Destructive action → red text on a red-outlined white surface, not a red
+  // fill (design system §16).
+  tableBulkDeleteButton:
+    "inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3.5 py-2 text-sm font-semibold text-red-600 transition hover:border-red-300 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-red-900 dark:bg-slate-900 dark:text-red-400 dark:hover:bg-red-950/30",
+  mobileBulkBarPrimary:
+    "fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-blue-300 bg-blue-50 px-4 py-3 md:hidden dark:border-blue-700 dark:bg-blue-950/40",
+  mobileBulkClearButtonPrimary:
+    "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-blue-300 bg-white text-blue-800 transition hover:bg-blue-100 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-300",
   // Archived-row Restore button — blue outline + refresh icon per figma.
   restoreButton:
     "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3 py-1.5 text-[13px] font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",

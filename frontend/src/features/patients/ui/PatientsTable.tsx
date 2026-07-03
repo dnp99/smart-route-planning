@@ -26,6 +26,10 @@ type PatientsTableProps = {
   onClearSelection: () => void;
   onArchiveSelected: () => void;
   isBulkArchiving: boolean;
+  onRestoreSelected: () => void;
+  isBulkRestoring: boolean;
+  onPermanentDeleteSelected: () => void;
+  isBulkDeleting: boolean;
   onRestore: (patient: Patient) => void;
   restoringId: string | null;
   recurringTemplatesByPatientId: Map<string, RecurringVisitTemplate[]>;
@@ -292,6 +296,10 @@ export const PatientsTable = ({
   onClearSelection,
   onArchiveSelected,
   isBulkArchiving,
+  onRestoreSelected,
+  isBulkRestoring,
+  onPermanentDeleteSelected,
+  isBulkDeleting,
   onRestore,
   restoringId,
   recurringTemplatesByPatientId,
@@ -300,6 +308,10 @@ export const PatientsTable = ({
   const isArchived = lifecycleState === "archived";
   const isIdle = lifecycleState === "idle";
   const showRepeat = lifecycleState === "active";
+  // Multi-select (checkbox column + bulk toolbar) is available on Idle (bulk
+  // Archive) and Archived (bulk Restore / Delete permanently). The toolbar theme
+  // is amber on Idle and primary/blue on Archived.
+  const isSelectable = isIdle || isArchived;
   const [openWindowsPopoverKey, setOpenWindowsPopoverKey] = useState<string | null>(null);
   // Anchor rect captured on open — the panel is portaled to <body> (fixed
   // position) so the table card's overflow-hidden can't clip it.
@@ -502,10 +514,22 @@ export const PatientsTable = ({
   const visibleIds = sortedFilteredPatients.map((patient) => patient.id);
   const selectedVisibleCount = visibleIds.filter((id) => selectedIds.has(id)).length;
   const allSelected = visibleIds.length > 0 && selectedVisibleCount === visibleIds.length;
-  const showBulkBar = isIdle && selectedIds.size > 0;
+  const showBulkBar = isSelectable && selectedIds.size > 0;
   const bulkCount = selectedIds.size;
+  const bulkBarClass = isArchived
+    ? responsiveStyles.tableBulkBarPrimary
+    : responsiveStyles.tableBulkBar;
+  const bulkLabelClass = isArchived
+    ? responsiveStyles.tableBulkLabelPrimary
+    : responsiveStyles.tableBulkLabel;
+  const bulkDividerClass = isArchived
+    ? responsiveStyles.tableBulkDividerPrimary
+    : responsiveStyles.tableBulkDivider;
+  const bulkClearClass = isArchived
+    ? responsiveStyles.tableBulkClearPrimary
+    : responsiveStyles.tableBulkClear;
   // Name, Address, Window, Duration/Last-scheduled, Actions + optional checkbox + optional Repeat.
-  const columnCount = 5 + (isIdle ? 1 : 0) + (showRepeat ? 1 : 0);
+  const columnCount = 5 + (isSelectable ? 1 : 0) + (showRepeat ? 1 : 0);
   const handleToggleSelectAll = () => {
     if (allSelected) {
       onClearSelection();
@@ -523,7 +547,7 @@ export const PatientsTable = ({
           const patientDisplayName = getPatientDisplayName(patient);
           const { street, cityRegion } = splitAddress(patient.address);
           const isExpanded = expandedPatients.has(patient.id);
-          const isSelected = isIdle && selectedIds.has(patient.id);
+          const isSelected = isSelectable && selectedIds.has(patient.id);
 
           return (
             <article
@@ -536,7 +560,7 @@ export const PatientsTable = ({
               ].join(" ")}
             >
               <div className="flex items-center gap-3">
-                {isIdle && (
+                {isSelectable && (
                   <input
                     type="checkbox"
                     checked={selectedIds.has(patient.id)}
@@ -670,7 +694,7 @@ export const PatientsTable = ({
         <div className="overflow-x-auto">
           <table className="min-w-full table-fixed divide-y divide-slate-200 dark:divide-slate-800">
             <colgroup>
-              {isIdle && <col className="w-12" />}
+              {isSelectable && <col className="w-12" />}
               <col className="w-[23%]" />
               <col className="w-[23%]" />
               <col className="w-[26%]" />
@@ -682,49 +706,70 @@ export const PatientsTable = ({
               {showBulkBar ? (
                 <tr>
                   <th colSpan={columnCount} className="p-0 font-normal">
-                    <div className={responsiveStyles.tableBulkBar}>
+                    <div className={bulkBarClass}>
                       <input
                         type="checkbox"
                         checked={allSelected}
                         onChange={handleToggleSelectAll}
-                        aria-label="Select all idle clients"
+                        aria-label="Select all clients"
                         className={responsiveStyles.tableSelectCheckbox}
                       />
-                      <span className={responsiveStyles.tableBulkLabel}>
+                      <span className={bulkLabelClass}>
                         {bulkCount} client{bulkCount === 1 ? "" : "s"} selected
                       </span>
-                      <span className={responsiveStyles.tableBulkDivider} aria-hidden="true" />
-                      <button
-                        type="button"
-                        onClick={onClearSelection}
-                        className={responsiveStyles.tableBulkClear}
-                      >
+                      <span className={bulkDividerClass} aria-hidden="true" />
+                      <button type="button" onClick={onClearSelection} className={bulkClearClass}>
                         Clear
                       </button>
                       <div className="flex-1" />
-                      <button
-                        type="button"
-                        onClick={onArchiveSelected}
-                        disabled={isBulkArchiving}
-                        className={responsiveStyles.tableBulkArchiveButton}
-                      >
-                        <ArchiveIcon className="h-4 w-4" />
-                        {isBulkArchiving
-                          ? "Archiving…"
-                          : `Archive ${bulkCount} client${bulkCount === 1 ? "" : "s"}`}
-                      </button>
+                      {isArchived ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={onRestoreSelected}
+                            disabled={isBulkRestoring}
+                            className={responsiveStyles.tableBulkRestoreButton}
+                          >
+                            <RefreshIcon className="h-4 w-4" />
+                            {isBulkRestoring
+                              ? "Restoring…"
+                              : `Restore ${bulkCount} client${bulkCount === 1 ? "" : "s"}`}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={onPermanentDeleteSelected}
+                            disabled={isBulkDeleting}
+                            className={responsiveStyles.tableBulkDeleteButton}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                            {isBulkDeleting ? "Deleting…" : "Delete permanently"}
+                          </button>
+                        </>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={onArchiveSelected}
+                          disabled={isBulkArchiving}
+                          className={responsiveStyles.tableBulkArchiveButton}
+                        >
+                          <ArchiveIcon className="h-4 w-4" />
+                          {isBulkArchiving
+                            ? "Archiving…"
+                            : `Archive ${bulkCount} client${bulkCount === 1 ? "" : "s"}`}
+                        </button>
+                      )}
                     </div>
                   </th>
                 </tr>
               ) : (
                 <tr>
-                  {isIdle && (
+                  {isSelectable && (
                     <th className="w-12 px-5 py-3 text-left">
                       <input
                         type="checkbox"
                         checked={allSelected}
                         onChange={handleToggleSelectAll}
-                        aria-label="Select all idle clients"
+                        aria-label="Select all clients"
                         className={responsiveStyles.tableSelectCheckbox}
                       />
                     </th>
@@ -822,7 +867,7 @@ export const PatientsTable = ({
                 const activeRecurringCount = countActiveRecurringTemplates(
                   recurringTemplatesByPatientId.get(patient.id),
                 );
-                const isSelected = isIdle && selectedIds.has(patient.id);
+                const isSelected = isSelectable && selectedIds.has(patient.id);
                 return (
                   <tr
                     key={patient.id}
@@ -831,7 +876,7 @@ export const PatientsTable = ({
                       isSelected ? responsiveStyles.tableRowSelected : "",
                     ].join(" ")}
                   >
-                    {isIdle && (
+                    {isSelectable && (
                       <td className="px-5 py-3.5">
                         <input
                           type="checkbox"

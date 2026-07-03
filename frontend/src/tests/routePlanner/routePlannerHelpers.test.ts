@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildSelectedDestinationsFromResult,
+  comparePatientsByName,
   formatPatientListLabel,
   toSelectedPatientDestinations,
 } from "../../features/route-planner/domain/routePlannerHelpers";
@@ -87,6 +88,24 @@ describe("toSelectedPatientDestinations", () => {
       windowEnd: "14:30",
       windowType: "flexible",
     });
+  });
+});
+
+describe("comparePatientsByName", () => {
+  it("sorts A→Z by first name, then last name, case-insensitively", () => {
+    const patients = [
+      buildPatient({ id: "1", firstName: "wow", lastName: "Hey" }),
+      buildPatient({ id: "2", firstName: "Test", lastName: "Test" }),
+      buildPatient({ id: "3", firstName: "Jing", lastName: "S" }),
+      buildPatient({ id: "4", firstName: "Test2", lastName: "45" }),
+      buildPatient({ id: "5", firstName: "test", lastName: "Alpha" }),
+    ];
+
+    const ordered = [...patients].sort(comparePatientsByName).map((patient) => patient.id);
+
+    // Jing, then the two "Test" first names (Alpha < Test on last name,
+    // case-insensitively), then Test2, then wow.
+    expect(ordered).toEqual(["3", "5", "2", "4", "1"]);
   });
 });
 

@@ -9,6 +9,8 @@ vi.mock("../../features/patients/api/patientService", () => ({
   deletePatient: vi.fn(),
   archiveClients: vi.fn().mockResolvedValue([]),
   restoreClient: vi.fn(),
+  restoreClients: vi.fn().mockResolvedValue([]),
+  permanentlyDeleteClients: vi.fn().mockResolvedValue([]),
   fetchPatientCounts: vi.fn().mockResolvedValue({ active: 0, idle: 0, archived: 0 }),
 }));
 
@@ -24,6 +26,8 @@ import {
   createPatient,
   deletePatient,
   listPatients,
+  permanentlyDeleteClients,
+  restoreClients,
   updatePatient,
 } from "../../features/patients/api/patientService";
 import {
@@ -35,6 +39,8 @@ import {
 
 const mockedListPatients = vi.mocked(listPatients);
 const mockedArchiveClients = vi.mocked(archiveClients);
+const mockedRestoreClients = vi.mocked(restoreClients);
+const mockedPermanentlyDeleteClients = vi.mocked(permanentlyDeleteClients);
 const mockedCreatePatient = vi.mocked(createPatient);
 const mockedDeletePatient = vi.mocked(deletePatient);
 const mockedUpdatePatient = vi.mocked(updatePatient);
@@ -203,12 +209,59 @@ describe("PatientsPage", () => {
     expect(screen.queryByRole("button", { name: "Archive Jane Doe" })).toBeNull();
 
     // Select all → the in-header amber bulk bar appears with the count.
-    fireEvent.click(screen.getByRole("checkbox", { name: "Select all idle clients" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Select all clients" }));
     const archiveButton = await screen.findByRole("button", { name: "Archive 2 clients" });
     fireEvent.click(archiveButton);
 
     await waitFor(() => {
       expect(mockedArchiveClients).toHaveBeenCalledWith(["patient-1", "patient-2"]);
+    });
+  });
+
+  it("bulk-restores archived clients via the select-all toolbar", async () => {
+    mockedListPatients.mockResolvedValue([seedPatient, secondPatient]);
+    mockedRestoreClients.mockResolvedValue([]);
+
+    render(<PatientsPage />);
+
+    // Switch to the Archived tab → the list refetches with state "archived".
+    fireEvent.click(screen.getByRole("tab", { name: /Archived/ }));
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("", "archived");
+    });
+
+    // Select all → the primary-tinted bulk bar appears with Restore + Delete permanently.
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Select all clients" }));
+    const restoreButton = await screen.findByRole("button", { name: "Restore 2 clients" });
+    fireEvent.click(restoreButton);
+
+    await waitFor(() => {
+      expect(mockedRestoreClients).toHaveBeenCalledWith(["patient-1", "patient-2"]);
+    });
+  });
+
+  it("permanently deletes archived clients after confirming the dialog", async () => {
+    mockedListPatients.mockResolvedValue([seedPatient, secondPatient]);
+    mockedPermanentlyDeleteClients.mockResolvedValue(["patient-1", "patient-2"]);
+
+    render(<PatientsPage />);
+
+    fireEvent.click(screen.getByRole("tab", { name: /Archived/ }));
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("", "archived");
+    });
+
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Select all clients" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Delete permanently" }));
+
+    // Confirm dialog opens with a destructive confirm button (rendered after the
+    // toolbar in the DOM, so it's the last "Delete permanently" control).
+    expect(await screen.findByText(/Permanently delete 2 clients/)).toBeTruthy();
+    const deleteButtons = screen.getAllByRole("button", { name: "Delete permanently" });
+    fireEvent.click(deleteButtons[deleteButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(mockedPermanentlyDeleteClients).toHaveBeenCalledWith(["patient-1", "patient-2"]);
     });
   });
 

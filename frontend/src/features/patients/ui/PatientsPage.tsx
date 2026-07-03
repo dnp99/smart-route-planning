@@ -32,7 +32,9 @@ import {
   deletePatient,
   fetchPatientCounts,
   listPatients,
+  permanentlyDeleteClients,
   restoreClient,
+  restoreClients,
   updatePatient,
   type PatientCounts,
   type PatientLifecycleState,
@@ -97,6 +99,9 @@ const PatientsPage = () => {
   });
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isBulkArchiving, setIsBulkArchiving] = useState(false);
+  const [isBulkRestoring, setIsBulkRestoring] = useState(false);
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false);
+  const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
   const [counts, setCounts] = useState<PatientCounts | null>(null);
   const [showPrivacyReminder, setShowPrivacyReminder] = useState(false);
@@ -236,6 +241,39 @@ const PatientsPage = () => {
       setPageError(error instanceof Error ? error.message : "Unable to restore client.");
     } finally {
       setRestoringId(null);
+    }
+  };
+
+  const handleRestoreSelected = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setIsBulkRestoring(true);
+    setPageError("");
+    try {
+      await restoreClients(ids);
+      setSelectedIds(new Set());
+      await fetchPatients(searchQuery);
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Unable to restore clients.");
+    } finally {
+      setIsBulkRestoring(false);
+    }
+  };
+
+  const confirmPermanentDeleteSelected = async () => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    setIsBulkDeleting(true);
+    setPageError("");
+    try {
+      await permanentlyDeleteClients(ids);
+      setSelectedIds(new Set());
+      setIsPermanentDeleteOpen(false);
+      await fetchPatients(searchQuery);
+    } catch (error) {
+      setPageError(error instanceof Error ? error.message : "Unable to delete clients.");
+    } finally {
+      setIsBulkDeleting(false);
     }
   };
 
@@ -839,6 +877,10 @@ const PatientsPage = () => {
             onClearSelection={clearSelection}
             onArchiveSelected={() => void handleArchiveSelected()}
             isBulkArchiving={isBulkArchiving}
+            onRestoreSelected={() => void handleRestoreSelected()}
+            isBulkRestoring={isBulkRestoring}
+            onPermanentDeleteSelected={() => setIsPermanentDeleteOpen(true)}
+            isBulkDeleting={isBulkDeleting}
             onRestore={(patient) => void handleRestore(patient)}
             restoringId={restoringId}
             recurringTemplatesByPatientId={recurringTemplatesByPatientId}
@@ -846,13 +888,23 @@ const PatientsPage = () => {
           />
         </div>
 
-        {lifecycleState === "idle" && selectedIds.size > 0 && (
-          <div className={responsiveStyles.mobileBulkBar}>
+        {(lifecycleState === "idle" || lifecycleState === "archived") && selectedIds.size > 0 && (
+          <div
+            className={
+              lifecycleState === "archived"
+                ? responsiveStyles.mobileBulkBarPrimary
+                : responsiveStyles.mobileBulkBar
+            }
+          >
             <button
               type="button"
               onClick={clearSelection}
               aria-label="Clear selection"
-              className={responsiveStyles.mobileBulkClearButton}
+              className={
+                lifecycleState === "archived"
+                  ? responsiveStyles.mobileBulkClearButtonPrimary
+                  : responsiveStyles.mobileBulkClearButton
+              }
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -869,31 +921,74 @@ const PatientsPage = () => {
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
-            <span className={responsiveStyles.tableBulkLabel}>{selectedIds.size} selected</span>
-            <div className="flex-1" />
-            <button
-              type="button"
-              onClick={() => void handleArchiveSelected()}
-              disabled={isBulkArchiving}
-              className={responsiveStyles.tableBulkArchiveButton}
+            <span
+              className={
+                lifecycleState === "archived"
+                  ? responsiveStyles.tableBulkLabelPrimary
+                  : responsiveStyles.tableBulkLabel
+              }
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-                className="h-4 w-4"
+              {selectedIds.size} selected
+            </span>
+            <div className="flex-1" />
+            {lifecycleState === "archived" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => void handleRestoreSelected()}
+                  disabled={isBulkRestoring}
+                  className={responsiveStyles.tableBulkRestoreButton}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    className="h-4 w-4"
+                  >
+                    <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+                    <path d="M3 3v5h5" />
+                  </svg>
+                  {isBulkRestoring ? "Restoring…" : `Restore ${selectedIds.size}`}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPermanentDeleteOpen(true)}
+                  disabled={isBulkDeleting}
+                  className={responsiveStyles.tableBulkDeleteButton}
+                >
+                  Delete
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void handleArchiveSelected()}
+                disabled={isBulkArchiving}
+                className={responsiveStyles.tableBulkArchiveButton}
               >
-                <path d="M21 8v13H3V8" />
-                <path d="M1 3h22v5H1z" />
-                <path d="M10 12h4" />
-              </svg>
-              {isBulkArchiving ? "Archiving…" : `Archive ${selectedIds.size}`}
-            </button>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  className="h-4 w-4"
+                >
+                  <path d="M21 8v13H3V8" />
+                  <path d="M1 3h22v5H1z" />
+                  <path d="M10 12h4" />
+                </svg>
+                {isBulkArchiving ? "Archiving…" : `Archive ${selectedIds.size}`}
+              </button>
+            )}
           </div>
         )}
 
@@ -906,6 +1001,20 @@ const PatientsPage = () => {
             onConfirm={confirmDelete}
             onCancel={() => setPendingDeleteId(null)}
             isLoading={isDeletingPatient}
+          />
+        )}
+
+        {isPermanentDeleteOpen && (
+          <ConfirmDialog
+            title="Delete permanently"
+            message={`Permanently delete ${selectedIds.size} client${
+              selectedIds.size === 1 ? "" : "s"
+            }? They'll be removed from all your lists for good — this can't be undone.`}
+            confirmLabel="Delete permanently"
+            confirmLoadingLabel="Deleting..."
+            onConfirm={() => void confirmPermanentDeleteSelected()}
+            onCancel={() => setIsPermanentDeleteOpen(false)}
+            isLoading={isBulkDeleting}
           />
         )}
 
