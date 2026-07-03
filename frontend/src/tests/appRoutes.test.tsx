@@ -369,6 +369,9 @@ describe("App routing", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "What is template coverage?" }));
     expect(await screen.findByText(/share of your active clients/i)).toBeTruthy();
+    // Uses the real coverage numbers (mock: 8 of 24 covered → 16 without), not a
+    // hard-coded example.
+    expect(screen.getByText(/The other 16 would be added/)).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Got it" }));
     await waitFor(() => {

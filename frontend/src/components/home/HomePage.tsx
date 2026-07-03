@@ -566,6 +566,11 @@ export default function HomePage({
   const greetingPrefix = resolveGreetingPrefix();
   const todayHoursDisplay = resolveTodayHoursDisplay(authUser?.workingHours);
   const lastUpdatedLabel = resolveLastUpdatedLabel(dashboardSummary);
+  // Real coverage numbers for the info modal — so the example matches the card,
+  // not a hard-coded "1 / 4".
+  const coverageCovered = dashboardSummary?.kpis.templatedActivePatientCount ?? 0;
+  const coverageTotal = dashboardSummary?.kpis.activePatientCount ?? 0;
+  const coverageWithout = Math.max(0, coverageTotal - coverageCovered);
   const todayPlanningDate = resolveTodayPlanningDate();
   const todayPlanningDateLabel = resolvePlanningDateDisplay(todayPlanningDate);
 
@@ -1044,10 +1049,26 @@ export default function HomePage({
           visit schedule.
         </p>
         <ul className="m-0 mb-5 list-disc space-y-1.5 pl-5 text-sm text-slate-600 dark:text-slate-300">
-          <li>
-            <b>1 / 4 clients</b> means 1 of your 4 active clients repeats automatically each week.
-          </li>
-          <li>The other 3 have no template, so you&apos;d add them to each route by hand.</li>
+          {coverageTotal > 0 ? (
+            <>
+              <li>
+                Right now{" "}
+                <b>
+                  {coverageCovered} / {coverageTotal} clients
+                </b>{" "}
+                {coverageCovered === 1 ? "has" : "have"} a recurring template that repeats
+                automatically each week.
+              </li>
+              {coverageWithout > 0 && (
+                <li>
+                  The other {coverageWithout} would be added to each route by hand until you give{" "}
+                  {coverageWithout === 1 ? "it" : "them"} a template.
+                </li>
+              )}
+            </>
+          ) : (
+            <li>Add active clients, then give them recurring templates to lift coverage.</li>
+          )}
           <li>
             Higher coverage means less manual scheduling — open a client and “Add recurring
             template” to raise it.
