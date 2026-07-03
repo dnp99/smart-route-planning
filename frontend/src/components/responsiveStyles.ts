@@ -584,6 +584,16 @@ export const responsiveStyles = {
     "border-blue-200 bg-blue-50/60 hover:border-blue-300 dark:border-blue-900 dark:bg-blue-950/30",
   routeClientName: "m-0 truncate text-sm font-semibold text-slate-900 dark:text-slate-100",
   routeClientAddress: "m-0 truncate text-xs text-slate-500 dark:text-slate-400",
+  // Skeleton placeholder for the client search list — mirrors routeClientCard's
+  // footprint so results swap in without any layout jump.
+  routeClientSkeletonCard:
+    "flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900",
+  routeClientSkeletonAvatar:
+    "route-loading-skeleton motion-reduce:animate-none h-9 w-9 shrink-0 rounded-full bg-slate-200/80 dark:bg-slate-700/70",
+  routeClientSkeletonLine:
+    "route-loading-skeleton motion-reduce:animate-none rounded bg-slate-200/80 dark:bg-slate-700/70",
+  routeClientSkeletonName: "h-3.5 w-32",
+  routeClientSkeletonAddress: "mt-1.5 h-3 w-48 max-w-full",
   routeInRouteBadge:
     "inline-flex shrink-0 items-center gap-1 rounded-lg bg-blue-600 px-2.5 py-1 text-xs font-semibold text-white dark:bg-blue-500",
   routeAddClientButton:

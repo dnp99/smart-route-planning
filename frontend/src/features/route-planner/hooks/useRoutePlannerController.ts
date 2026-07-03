@@ -29,6 +29,7 @@ import {
 } from "../api/routePlannerService";
 import {
   buildSelectedDestinationsFromResult,
+  comparePatientsByName,
   patientMatchesSearchQuery,
   toSelectedVisitInstanceDestinations,
 } from "../domain/routePlannerHelpers";
@@ -233,9 +234,11 @@ export function useRoutePlannerController({
 
     // Keep already-selected patients in the list (shown with an "In route"
     // badge) rather than removing them, matching the redesigned client list.
-    return [...byId.values()].filter((patient) =>
-      patientMatchesSearchQuery(patient, destinationSearchQuery),
-    );
+    // Sort A→Z so the merged list (search results + locally created) always
+    // reads in a stable alphabetical order regardless of source order.
+    return [...byId.values()]
+      .filter((patient) => patientMatchesSearchQuery(patient, destinationSearchQuery))
+      .sort(comparePatientsByName);
   }, [destinationSearchPatients, destinationSearchQuery, locallyCreatedPatients]);
 
   const { planningDate, setPlanningDate, isMobileViewport } = useRoutePlannerDraftState({

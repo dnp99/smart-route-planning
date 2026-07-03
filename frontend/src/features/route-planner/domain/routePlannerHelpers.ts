@@ -215,3 +215,14 @@ export const patientMatchesSearchQuery = (patient: Patient, query: string) => {
     address.indexOf(normalizedQuery) !== -1
   );
 };
+
+// Alphabetical (A→Z) ordering for the client search list: by last name, then
+// first name, matching how the list reads on screen. Locale-aware and
+// case-insensitive so accents and casing sort naturally.
+export const comparePatientsByName = (a: Patient, b: Patient) => {
+  const byLastName = a.lastName.localeCompare(b.lastName, undefined, { sensitivity: "base" });
+  if (byLastName !== 0) {
+    return byLastName;
+  }
+  return a.firstName.localeCompare(b.firstName, undefined, { sensitivity: "base" });
+};

@@ -402,8 +402,27 @@ export const PatientSelectorSection = ({
                     Add
                   </button>
                 </div>
-                {isSearchLoading && (
-                  <p className={responsiveStyles.panelEmptyText}>Loading clients…</p>
+                {isSearchLoading && destinationSearchResults.length === 0 && (
+                  <ul className={responsiveStyles.selectableList} aria-label="Loading clients">
+                    {[0, 1, 2, 3].map((index) => (
+                      <li key={index} className={responsiveStyles.routeClientSkeletonCard}>
+                        <span
+                          className={responsiveStyles.routeClientSkeletonAvatar}
+                          aria-hidden="true"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div
+                            className={`${responsiveStyles.routeClientSkeletonLine} ${responsiveStyles.routeClientSkeletonName}`}
+                            aria-hidden="true"
+                          />
+                          <div
+                            className={`${responsiveStyles.routeClientSkeletonLine} ${responsiveStyles.routeClientSkeletonAddress}`}
+                            aria-hidden="true"
+                          />
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
                 )}
                 {searchError && (
                   <p className="m-0 text-xs text-amber-700 dark:text-amber-300">{searchError}</p>
