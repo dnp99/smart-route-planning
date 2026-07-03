@@ -694,8 +694,10 @@ export const responsiveStyles = {
   tableBulkDivider: "h-4 w-px bg-amber-300 dark:bg-amber-700",
   tableBulkClear:
     "text-sm font-semibold text-amber-800 underline underline-offset-2 transition hover:text-amber-900 dark:text-amber-300 dark:hover:text-amber-200",
+  // Outlined amber to mirror the per-row / bulk Restore treatment, in the idle
+  // bulk bar's amber theme (was a solid amber fill).
   tableBulkArchiveButton:
-    "inline-flex items-center gap-1.5 rounded-lg bg-amber-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60",
+    "inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-white px-3.5 py-2 text-sm font-semibold text-amber-700 transition hover:border-amber-400 hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-amber-900/60 dark:bg-slate-900 dark:text-amber-300 dark:hover:bg-amber-950/40",
   // Mobile sticky bulk-archive bar (Idle + selection).
   mobileBulkBar:
     "fixed inset-x-0 bottom-0 z-40 flex items-center gap-3 border-t border-amber-300 bg-amber-50 px-4 py-3 md:hidden dark:border-amber-700 dark:bg-amber-950/40",
