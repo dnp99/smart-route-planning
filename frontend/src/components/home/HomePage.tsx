@@ -13,6 +13,7 @@ import { fetchDashboardSummary, fetchRouteRunsForPlanningDate } from "./homeDash
 import { resolveTodayHoursDisplay } from "./todayHours";
 import { hasConfiguredSchedule } from "./workingHoursStatus";
 import { buildGetStartedSteps, countGetStartedDone, isGetStartedComplete } from "./getStartedSteps";
+import { OnboardingTour } from "./OnboardingTour";
 import {
   clearRoutePlannerDraft,
   readRoutePlannerDraft,
@@ -530,6 +531,29 @@ export default function HomePage({
     setGetStartedDismissed(true);
   };
   const showGetStarted = isAuthenticated && !getStartedDismissed && !getStartedComplete;
+
+  // Onboarding tour card — same "new user" gate as the checklist, with its own
+  // per-nurse dismiss latch so watching/closing the tour is independent of the
+  // checklist. Hidden once onboarding is complete.
+  const tourLatchKey = authUser?.id ? `routefy.tour.done:${authUser.id}` : null;
+  const [tourDismissed, setTourDismissed] = useState<boolean>(() =>
+    readGetStartedLatch(tourLatchKey),
+  );
+  useEffect(() => {
+    setTourDismissed(readGetStartedLatch(tourLatchKey));
+  }, [tourLatchKey]);
+  const dismissTour = () => {
+    if (tourLatchKey) {
+      try {
+        localStorage.setItem(tourLatchKey, "1");
+      } catch {
+        // ignore
+      }
+    }
+    setTourDismissed(true);
+  };
+  const showTour = isAuthenticated && !tourDismissed && !getStartedComplete;
+
   const greetingName = resolveGreetingName(authUser?.displayName);
   const greetingPrefix = resolveGreetingPrefix();
   const todayHoursDisplay = resolveTodayHoursDisplay(authUser?.workingHours);
@@ -718,6 +742,8 @@ export default function HomePage({
           </ul>
         </section>
       )}
+
+      {showTour && <OnboardingTour onDismiss={dismissTour} />}
 
       <section className={responsiveStyles.dashboardHeroSection}>
         <div

@@ -746,6 +746,27 @@ export const responsiveStyles = {
     "get-started-focus dashboard-reveal relative rounded-2xl border border-blue-300 bg-blue-50/70 p-4 shadow-sm ring-1 ring-blue-200 dark:border-blue-800 dark:bg-blue-950/40 dark:ring-blue-900/60 sm:p-5",
   getStartedEyebrow:
     "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-blue-800 dark:text-blue-300",
+  // ── Onboarding tour card + video modal ────────────────────────────────────
+  tourCard:
+    "dashboard-reveal flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+  tourThumb:
+    "relative flex h-16 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-slate-900 sm:h-16 sm:w-28",
+  tourThumbImg: "absolute inset-0 h-full w-full object-cover opacity-90",
+  tourPlayBadge:
+    "relative z-10 flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-blue-600 shadow-sm",
+  tourCopy: "min-w-0 flex-1",
+  tourEyebrow:
+    "m-0 text-[11px] font-semibold uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300",
+  tourTitle: "m-0 mt-0.5 text-sm font-semibold text-slate-900 dark:text-slate-100",
+  tourSub: "m-0 mt-0.5 text-[13px] text-slate-500 dark:text-slate-400",
+  tourWatchButton:
+    "inline-flex shrink-0 items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700",
+  tourDismissButton:
+    "inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-800 dark:hover:text-slate-300",
+  tourModalSurface: "relative w-full max-w-3xl overflow-hidden rounded-2xl bg-slate-900 shadow-2xl",
+  tourModalClose:
+    "absolute right-3 top-3 z-10 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/50 text-white transition hover:bg-black/70",
+  tourVideo: "block h-auto max-h-[80vh] w-full bg-black",
   getStartedTitle: "m-0 mt-1 text-sm font-semibold text-blue-900 dark:text-blue-100",
   getStartedList: "m-0 mt-3 flex list-none flex-col gap-2 p-0",
   getStartedRow:
