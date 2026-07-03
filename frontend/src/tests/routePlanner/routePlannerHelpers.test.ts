@@ -92,19 +92,20 @@ describe("toSelectedPatientDestinations", () => {
 });
 
 describe("comparePatientsByName", () => {
-  it("sorts A→Z by last name, then first name, case-insensitively", () => {
+  it("sorts A→Z by first name, then last name, case-insensitively", () => {
     const patients = [
-      buildPatient({ id: "1", firstName: "Nasim", lastName: "Akhter" }),
-      buildPatient({ id: "2", firstName: "Yousra", lastName: "abbud" }),
-      buildPatient({ id: "3", firstName: "Anwer", lastName: "Al Kadry" }),
-      buildPatient({ id: "4", firstName: "Miriam", lastName: "Abu-halimeh" }),
-      buildPatient({ id: "5", firstName: "Bob", lastName: "Abbud" }),
+      buildPatient({ id: "1", firstName: "wow", lastName: "Hey" }),
+      buildPatient({ id: "2", firstName: "Test", lastName: "Test" }),
+      buildPatient({ id: "3", firstName: "Jing", lastName: "S" }),
+      buildPatient({ id: "4", firstName: "Test2", lastName: "45" }),
+      buildPatient({ id: "5", firstName: "test", lastName: "Alpha" }),
     ];
 
     const ordered = [...patients].sort(comparePatientsByName).map((patient) => patient.id);
 
-    // abbud/Abbud tie on last name → first name breaks it (Bob before Yousra).
-    expect(ordered).toEqual(["5", "2", "4", "1", "3"]);
+    // Jing, then the two "Test" first names (Alpha < Test on last name,
+    // case-insensitively), then Test2, then wow.
+    expect(ordered).toEqual(["3", "5", "2", "4", "1"]);
   });
 });
 
