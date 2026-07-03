@@ -683,7 +683,12 @@ export const responsiveStyles = {
     "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
   // Footer pinned to the bottom of the scrolling modal surface on all breakpoints.
   modalStickyFooter:
-    "sticky bottom-0 z-10 -mx-5 mt-1 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:-mx-6 sm:flex-row sm:justify-end sm:px-6 sm:pb-4",
+    "sticky bottom-0 z-10 -mx-5 mt-1 flex flex-col gap-3 border-t border-slate-200 bg-white/95 px-5 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:-mx-6 sm:px-6 sm:pb-4",
+  // Error shown inside the sticky footer (above the buttons) so a validation
+  // failure is visible on tap without scrolling to the bottom of a long form.
+  modalStickyFooterError:
+    "m-0 flex items-start gap-1.5 text-sm font-medium text-red-600 dark:text-red-400",
+  modalStickyFooterButtons: "flex flex-col-reverse gap-3 sm:flex-row sm:justify-end",
 
   // ── Tables ────────────────────────────────────────────────────────────────
   tableCard:

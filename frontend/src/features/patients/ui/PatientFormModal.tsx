@@ -638,30 +638,33 @@ export const PatientFormModal = ({
             </div>
           </div>
 
-          {fixedWindowDurationError && (
-            <p className="m-0 text-xs text-red-600 dark:text-red-400">{fixedWindowDurationError}</p>
-          )}
-
           <div className={responsiveStyles.modalStickyFooter}>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isSubmitting}
-              className={responsiveStyles.secondaryButton}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !isFormValid || (formMode === "edit" && !isDirty)}
-              className={responsiveStyles.primaryButton}
-            >
-              {isSubmitting
-                ? "Saving..."
-                : formMode === "create"
-                  ? "Save new client"
-                  : "Save changes"}
-            </button>
+            {fixedWindowDurationError && (
+              <p className={responsiveStyles.modalStickyFooterError} role="alert">
+                {fixedWindowDurationError}
+              </p>
+            )}
+            <div className={responsiveStyles.modalStickyFooterButtons}>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isSubmitting}
+                className={responsiveStyles.secondaryButton}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !isFormValid || (formMode === "edit" && !isDirty)}
+                className={responsiveStyles.primaryButton}
+              >
+                {isSubmitting
+                  ? "Saving..."
+                  : formMode === "create"
+                    ? "Save new client"
+                    : "Save changes"}
+              </button>
+            </div>
           </div>
         </form>
       </div>
