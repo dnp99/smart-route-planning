@@ -86,6 +86,34 @@ export const archiveClients = async (patientIds: string[]): Promise<string[]> =>
   return (payload as { archivedIds: string[] }).archivedIds;
 };
 
+// Bulk restore of archived clients — loops the single-client restore endpoint.
+export const restoreClients = async (patientIds: string[]): Promise<Patient[]> =>
+  Promise.all(patientIds.map((patientId) => restoreClient(patientId)));
+
+// Permanent delete (soft on the server) of archived clients — hides them from
+// every tab and makes them non-restorable, while the row is retained in the DB.
+export const permanentlyDeleteClients = async (patientIds: string[]): Promise<string[]> => {
+  const payload = await requestJson(
+    "/api/patients/permanent-delete",
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ patientIds }),
+    },
+    "Unable to delete clients.",
+  );
+
+  if (
+    typeof payload !== "object" ||
+    payload === null ||
+    !Array.isArray((payload as { deletedIds?: unknown }).deletedIds)
+  ) {
+    throw new Error("Unexpected delete response format.");
+  }
+
+  return (payload as { deletedIds: string[] }).deletedIds;
+};
+
 export const createPatient = async (request: CreatePatientRequest): Promise<Patient> => {
   const payload = await requestJson(
     "/api/patients",
