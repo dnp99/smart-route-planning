@@ -103,6 +103,7 @@ const PatientsPage = () => {
   const [isBulkDeleting, setIsBulkDeleting] = useState(false);
   const [isPermanentDeleteOpen, setIsPermanentDeleteOpen] = useState(false);
   const [restoringId, setRestoringId] = useState<string | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<Patient | null>(null);
   const [counts, setCounts] = useState<PatientCounts | null>(null);
   const [showPrivacyReminder, setShowPrivacyReminder] = useState(false);
   const privacyReminderRef = useRef<HTMLDivElement | null>(null);
@@ -231,11 +232,13 @@ const PatientsPage = () => {
     }
   };
 
-  const handleRestore = async (patient: Patient) => {
-    setRestoringId(patient.id);
+  const confirmRestore = async () => {
+    if (!pendingRestore) return;
+    setRestoringId(pendingRestore.id);
     setPageError("");
     try {
-      await restoreClient(patient.id);
+      await restoreClient(pendingRestore.id);
+      setPendingRestore(null);
       await fetchPatients(searchQuery);
     } catch (error) {
       setPageError(error instanceof Error ? error.message : "Unable to restore client.");
@@ -881,7 +884,7 @@ const PatientsPage = () => {
             isBulkRestoring={isBulkRestoring}
             onPermanentDeleteSelected={() => setIsPermanentDeleteOpen(true)}
             isBulkDeleting={isBulkDeleting}
-            onRestore={(patient) => void handleRestore(patient)}
+            onRestore={(patient) => setPendingRestore(patient)}
             restoringId={restoringId}
             recurringTemplatesByPatientId={recurringTemplatesByPatientId}
             onAddClient={openCreateModal}
@@ -1001,6 +1004,19 @@ const PatientsPage = () => {
             onConfirm={confirmDelete}
             onCancel={() => setPendingDeleteId(null)}
             isLoading={isDeletingPatient}
+          />
+        )}
+
+        {pendingRestore && (
+          <ConfirmDialog
+            title="Restore client"
+            message="They’ll move back to your Active clients and can be scheduled again."
+            confirmLabel="Restore"
+            confirmLoadingLabel="Restoring..."
+            confirmVariant="primary"
+            onConfirm={() => void confirmRestore()}
+            onCancel={() => setPendingRestore(null)}
+            isLoading={restoringId === pendingRestore.id}
           />
         )}
 

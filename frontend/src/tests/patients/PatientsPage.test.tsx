@@ -27,6 +27,7 @@ import {
   deletePatient,
   listPatients,
   permanentlyDeleteClients,
+  restoreClient,
   restoreClients,
   updatePatient,
 } from "../../features/patients/api/patientService";
@@ -40,6 +41,7 @@ import {
 const mockedListPatients = vi.mocked(listPatients);
 const mockedArchiveClients = vi.mocked(archiveClients);
 const mockedRestoreClients = vi.mocked(restoreClients);
+const mockedRestoreClient = vi.mocked(restoreClient);
 const mockedPermanentlyDeleteClients = vi.mocked(permanentlyDeleteClients);
 const mockedCreatePatient = vi.mocked(createPatient);
 const mockedDeletePatient = vi.mocked(deletePatient);
@@ -237,6 +239,29 @@ describe("PatientsPage", () => {
 
     await waitFor(() => {
       expect(mockedRestoreClients).toHaveBeenCalledWith(["patient-1", "patient-2"]);
+    });
+  });
+
+  it("restores an archived client only after confirming the dialog", async () => {
+    mockedListPatients.mockResolvedValue([seedPatient]);
+    mockedRestoreClient.mockResolvedValue(seedPatient);
+
+    render(<PatientsPage />);
+
+    fireEvent.click(screen.getByRole("tab", { name: /Archived/ }));
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("", "archived");
+    });
+
+    // Per-row Restore opens a confirm dialog rather than restoring immediately.
+    fireEvent.click(await screen.findByRole("button", { name: "Restore Jane Doe" }));
+    expect(mockedRestoreClient).not.toHaveBeenCalled();
+
+    expect(await screen.findByText(/move back to your Active clients/i)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Restore" }));
+
+    await waitFor(() => {
+      expect(mockedRestoreClient).toHaveBeenCalledWith("patient-1");
     });
   });
 
