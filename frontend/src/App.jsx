@@ -34,6 +34,11 @@ function App() {
   const [isAuthResolved, setIsAuthResolved] = useState(() => getSessionPresenceFlag());
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [isAccountSettingsOpen, setIsAccountSettingsOpen] = useState(false);
+  const [accountSettingsTab, setAccountSettingsTab] = useState("profile");
+  const openAccountSettings = (section = "profile") => {
+    setAccountSettingsTab(section);
+    setIsAccountSettingsOpen(true);
+  };
   const [isLegalNoticeRequired, setIsLegalNoticeRequired] = useState(false);
   const [isLegalNoticeSubmitting, setIsLegalNoticeSubmitting] = useState(false);
   const [legalNoticeError, setLegalNoticeError] = useState("");
@@ -165,7 +170,7 @@ function App() {
         <AppSidebar
           authUser={authUser}
           isSettingsActive={isAccountSettingsOpen}
-          onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+          onOpenAccountSettings={openAccountSettings}
           onLogout={() => {
             void logout();
             clearAuthSession();
@@ -177,7 +182,7 @@ function App() {
         <AppHeader
           isAuthenticated={isAuthenticated}
           authUser={authUser}
-          onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+          onOpenAccountSettings={openAccountSettings}
           onLogout={() => {
             void logout();
             clearAuthSession();
@@ -197,7 +202,7 @@ function App() {
           isAuthenticated={isAuthenticated}
           isBootstrapping={isBootstrapping}
           authUser={authUser}
-          onOpenAccountSettings={() => setIsAccountSettingsOpen(true)}
+          onOpenAccountSettings={openAccountSettings}
           optimizationObjective={optimizationObjective}
           defaultProtectedPath={defaultProtectedPath}
         />
@@ -205,6 +210,7 @@ function App() {
       <AppFooter />
       <AccountSettingsModal
         isOpen={isAccountSettingsOpen}
+        initialTab={accountSettingsTab}
         onClose={() => setIsAccountSettingsOpen(false)}
         authUser={authUser}
         onHomeAddressSaved={(updatedUser) => {

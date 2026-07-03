@@ -9,11 +9,15 @@ const MAX_HOME_ADDRESS_LENGTH = 200;
 const MAX_DISPLAY_NAME_LENGTH = 120;
 const PROFILE_MODAL_HOME_ADDRESS_ID = "account-settings-home-address";
 
+type SettingsTab = "profile" | "working-hours" | "route";
+
 interface AccountSettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
   authUser: SharedAuthUser | null;
   onHomeAddressSaved: (updatedUser: SharedAuthUser | null) => void;
+  /** Tab to open on. Lets callers deep-link (e.g. "Set hours" → Working hours). */
+  initialTab?: SettingsTab;
 }
 
 const EyeIcon = ({ className }: { className?: string }) => (
@@ -65,14 +69,22 @@ export default function AccountSettingsModal({
   onClose,
   authUser,
   onHomeAddressSaved,
+  initialTab = "profile",
 }: AccountSettingsModalProps) {
   const [showBreakReminderInfo, setShowBreakReminderInfo] = useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = useState<"profile" | "working-hours" | "route">(
-    "profile",
-  );
+  const [activeSettingsTab, setActiveSettingsTab] = useState<SettingsTab>(initialTab);
   const [pendingTabSwitch, setPendingTabSwitch] = useState<
     "profile" | "working-hours" | "route" | null
   >(null);
+
+  // Open on the requested tab each time the modal is shown (e.g. the checklist's
+  // "Set hours" deep-links straight to Working hours).
+  useEffect(() => {
+    if (isOpen) {
+      setActiveSettingsTab(initialTab);
+      setPendingTabSwitch(null);
+    }
+  }, [isOpen, initialTab]);
   const currentOptimizationObjective = authUser?.optimizationObjective ?? "time";
   const [routeObjectiveInput, setRouteObjectiveInput] = useState<"time" | "distance">(
     currentOptimizationObjective,

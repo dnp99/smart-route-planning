@@ -24,7 +24,7 @@ import RouteRunPickerModal, { type RouteRunPickerItem } from "../modals/RouteRun
 type HomePageProps = {
   isAuthenticated: boolean;
   authUser?: AuthUser | null;
-  onOpenAccountSettings?: () => void;
+  onOpenAccountSettings?: (section?: "profile" | "working-hours" | "route") => void;
 };
 
 // Temporarily hidden per product request — kept so it can be flipped back on.
@@ -731,7 +731,7 @@ export default function HomePage({
                   ) : (
                     <button
                       type="button"
-                      onClick={() => onOpenAccountSettings?.()}
+                      onClick={() => onOpenAccountSettings?.("working-hours")}
                       className={responsiveStyles.getStartedStepButton}
                     >
                       {step.cta}
