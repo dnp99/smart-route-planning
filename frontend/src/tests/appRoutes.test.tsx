@@ -344,7 +344,11 @@ describe("App routing", () => {
     );
 
     expect(await screen.findByText(/Good (morning|afternoon|evening), Nurse/i)).toBeTruthy();
-    expect(screen.getByText(/Add a home address for default start and end points/i)).toBeTruthy();
+    // The setup nudges render once the dashboard summary resolves (they wait so
+    // they don't flash before the checklist can supersede them).
+    expect(
+      await screen.findByText(/Add a home address for default start and end points/i),
+    ).toBeTruthy();
     // The sidebar + mobile-strip nav links mark the active route (the breadcrumb's
     // root "Home" link is not an active indicator), so at least one is current.
     expect(

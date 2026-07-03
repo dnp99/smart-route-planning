@@ -787,8 +787,11 @@ export default function HomePage({
 
       {/* The Get-started checklist supersedes the profile setup nudges while it's
           visible — showing both is redundant. Nudges return once onboarding is
-          done/dismissed to surface any remaining gaps (route priority, home address). */}
-      {!showGetStarted &&
+          done/dismissed to surface any remaining gaps (route priority, home address).
+          Also wait for the onboarding status to resolve so the amber nudges don't
+          flash in before the checklist decides whether to supersede them. */}
+      {isOnboardingStatusResolved &&
+        !showGetStarted &&
         visibleNudges.map((nudge) => (
           <section
             key={nudge.id}
