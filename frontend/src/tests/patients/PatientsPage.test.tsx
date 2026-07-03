@@ -714,4 +714,23 @@ describe("PatientsPage", () => {
       expect(mockedUpdatePatient).not.toHaveBeenCalled();
     });
   });
+
+  it("explains recurring templates via the info modal", async () => {
+    mockedListPatients.mockResolvedValue([]);
+
+    render(<PatientsPage />);
+    await waitFor(() => {
+      expect(mockedListPatients).toHaveBeenCalledWith("", "active");
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /Add Client/ }));
+    fireEvent.click(screen.getByRole("button", { name: "What are recurring templates?" }));
+
+    expect(await screen.findByText(/add them to every route by hand/i)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Got it" }));
+    await waitFor(() => {
+      expect(screen.queryByText(/add them to every route by hand/i)).toBeNull();
+    });
+  });
 });
