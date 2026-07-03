@@ -484,28 +484,43 @@ export default function HomePage({
     [authUser?.workingHours, dashboardSummary],
   );
   const getStartedComplete = isGetStartedComplete(getStartedSteps);
-  const [getStartedDismissed, setGetStartedDismissed] = useState<boolean>(() => {
+  // Latch the "finished onboarding" flag per nurse id, not globally, so a new
+  // user on a shared browser gets a fresh checklist rather than inheriting the
+  // previous user's dismissed/completed state.
+  const getStartedLatchKey = authUser?.id ? `routefy.getStarted.done:${authUser.id}` : null;
+  const readGetStartedLatch = (key: string | null) => {
+    if (!key) return false;
     try {
-      return localStorage.getItem("routefy.getStarted.done") === "1";
+      return localStorage.getItem(key) === "1";
     } catch {
       return false;
     }
-  });
+  };
+  const [getStartedDismissed, setGetStartedDismissed] = useState<boolean>(() =>
+    readGetStartedLatch(getStartedLatchKey),
+  );
+  // Re-sync the latch when the signed-in nurse changes (e.g. account switch
+  // without a full remount) so it always reflects the current user.
   useEffect(() => {
-    if (getStartedComplete && !getStartedDismissed) {
+    setGetStartedDismissed(readGetStartedLatch(getStartedLatchKey));
+  }, [getStartedLatchKey]);
+  useEffect(() => {
+    if (getStartedComplete && !getStartedDismissed && getStartedLatchKey) {
       try {
-        localStorage.setItem("routefy.getStarted.done", "1");
+        localStorage.setItem(getStartedLatchKey, "1");
       } catch {
         // localStorage unavailable — the checklist just won't persist its latch.
       }
       setGetStartedDismissed(true);
     }
-  }, [getStartedComplete, getStartedDismissed]);
+  }, [getStartedComplete, getStartedDismissed, getStartedLatchKey]);
   const dismissGetStarted = () => {
-    try {
-      localStorage.setItem("routefy.getStarted.done", "1");
-    } catch {
-      // ignore
+    if (getStartedLatchKey) {
+      try {
+        localStorage.setItem(getStartedLatchKey, "1");
+      } catch {
+        // ignore
+      }
     }
     setGetStartedDismissed(true);
   };
