@@ -198,6 +198,8 @@ export default function HomePage({
 
   const kpis = useMemo(() => {
     if (!dashboardSummary) {
+      // Placeholder cards while the summary loads — must mirror the loaded set's
+      // labels AND order below, so the grid doesn't reshuffle when data arrives.
       return [
         {
           label: "Routes today",
@@ -208,9 +210,42 @@ export default function HomePage({
           href: "/route-planner",
         },
         {
-          label: "Unscheduled visits",
+          label: "Active clients",
           value: "—",
-          delta: "Today",
+          delta: "All time",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/clients",
+        },
+        {
+          label: "Idle clients",
+          value: "—",
+          delta: "Not used in 30+ days",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/clients?state=idle",
+        },
+        {
+          label: "Template coverage",
+          value: "—",
+          delta: "No active clients yet",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/clients?templateFilter=without",
+          progressPercent: 0,
+        },
+        {
+          label: "Visits this week",
+          value: "—",
+          delta: "Last 7 days",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
+        },
+        {
+          label: "On-time rate",
+          value: "—",
+          delta: "Last 7 days",
           tone: "text-slate-500",
           trend: "No baseline yet",
           href: "/route-planner",
@@ -226,43 +261,10 @@ export default function HomePage({
         {
           label: "Total distance",
           value: "—",
-          delta: "Today",
-          tone: "text-slate-500",
-          trend: "No baseline yet",
-          href: "/route-planner",
-        },
-        {
-          label: "On-time rate",
-          value: "—",
           delta: "Last 7 days",
           tone: "text-slate-500",
           trend: "No baseline yet",
           href: "/route-planner",
-        },
-        {
-          label: "Active clients",
-          value: "—",
-          delta: "All time",
-          tone: "text-slate-500",
-          trend: "No baseline yet",
-          href: "/clients",
-        },
-        {
-          label: "Template coverage",
-          value: "—",
-          delta: "No active clients yet",
-          tone: "text-blue-600",
-          trend: "No baseline yet",
-          href: "/clients?templateFilter=without",
-          progressPercent: 0,
-        },
-        {
-          label: "Idle clients",
-          value: "—",
-          delta: "Not used in 30+ days",
-          tone: "text-slate-500",
-          trend: "No baseline yet",
-          href: "/clients?state=idle",
         },
       ];
     }
