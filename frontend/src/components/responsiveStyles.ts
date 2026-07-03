@@ -743,7 +743,7 @@ export const responsiveStyles = {
     "mt-4 inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700",
   // ── First-run "Get started" checklist (Home) ──────────────────────────────
   getStartedCard:
-    "dashboard-reveal rounded-2xl border border-blue-200 bg-blue-50/60 p-4 shadow-sm dark:border-blue-900/70 dark:bg-blue-950/30 sm:p-5",
+    "get-started-focus dashboard-reveal relative rounded-2xl border border-blue-300 bg-blue-50/70 p-4 shadow-sm ring-1 ring-blue-200 dark:border-blue-800 dark:bg-blue-950/40 dark:ring-blue-900/60 sm:p-5",
   getStartedEyebrow:
     "m-0 text-xs font-semibold uppercase tracking-[0.14em] text-blue-800 dark:text-blue-300",
   getStartedTitle: "m-0 mt-1 text-sm font-semibold text-blue-900 dark:text-blue-100",
