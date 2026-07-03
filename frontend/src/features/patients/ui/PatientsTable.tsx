@@ -6,6 +6,7 @@ import { getPatientInitials } from "../domain/patientName";
 import { resolveVisitTypeLabel, type WindowFilter } from "../domain/visitType";
 import { countActiveRecurringTemplates } from "../domain/recurringTemplate";
 import { responsiveStyles } from "../../../components/responsiveStyles";
+import { Tooltip } from "../../../components/shared/Tooltip";
 
 type SortField = "name" | "duration" | "lastScheduled" | null;
 type SortDir = "asc" | "desc";
@@ -1062,25 +1063,27 @@ export const PatientsTable = ({
                           </button>
                         ) : (
                           <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => onEdit(patient)}
-                              aria-label={`Edit ${patientDisplayName}`}
-                              title="Edit"
-                              className={responsiveStyles.tableIconButton}
-                            >
-                              <EditIcon className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => void onDelete(patient.id)}
-                              disabled={isSubmitting}
-                              aria-label={`Archive ${patientDisplayName}`}
-                              title="Archive"
-                              className={responsiveStyles.tableIconButtonArchive}
-                            >
-                              <ArchiveIcon className="h-3.5 w-3.5" />
-                            </button>
+                            <Tooltip label="Edit">
+                              <button
+                                type="button"
+                                onClick={() => onEdit(patient)}
+                                aria-label={`Edit ${patientDisplayName}`}
+                                className={responsiveStyles.tableIconButton}
+                              >
+                                <EditIcon className="h-3.5 w-3.5" />
+                              </button>
+                            </Tooltip>
+                            <Tooltip label="Archive">
+                              <button
+                                type="button"
+                                onClick={() => void onDelete(patient.id)}
+                                disabled={isSubmitting}
+                                aria-label={`Archive ${patientDisplayName}`}
+                                className={responsiveStyles.tableIconButtonArchive}
+                              >
+                                <ArchiveIcon className="h-3.5 w-3.5" />
+                              </button>
+                            </Tooltip>
                           </div>
                         )}
                       </div>

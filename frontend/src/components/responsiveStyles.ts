@@ -536,6 +536,10 @@ export const responsiveStyles = {
     "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30",
   infoPopover:
     "absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+  // Hover/focus tooltip for icon-only controls (e.g. table row actions).
+  tooltipWrapper: "group relative inline-flex",
+  tooltipBubble:
+    "pointer-events-none absolute bottom-full left-1/2 z-30 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-white opacity-0 shadow-sm transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 dark:bg-slate-700",
   // Clients page summary stats row (desktop only — hidden below md)
   // Active tab: one-line summary strip (replaces the four stat boxes).
   // Tightened: a light borderless summary line (no filled band) so it reads as
