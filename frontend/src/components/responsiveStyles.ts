@@ -536,9 +536,10 @@ export const responsiveStyles = {
     "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30",
   infoPopover:
     "absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
-  // Small "i" circle button that opens an explanatory popover/modal.
+  // Small "i" circle button that opens an explanatory popover/modal. Soft-filled
+  // (not a thin outline) so it stays visible on tinted card surfaces.
   infoIconButton:
-    "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30",
+    "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700 transition hover:bg-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900",
   // Hover/focus tooltip for icon-only controls (e.g. table row actions). Uses a
   // NAMED group (group/tooltip) so it reacts only to its own wrapper — not an
   // ancestor `group` like the table row, which would fire it across the whole row.
