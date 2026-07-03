@@ -673,6 +673,9 @@ export const responsiveStyles = {
   formLabel: "text-sm font-semibold text-slate-800 dark:text-slate-200",
   formInput:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+  // Same as formInput but red-outlined — for fields flagged by a validation error.
+  formInputError:
+    "w-full rounded-xl border border-red-400 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-100 dark:border-red-700 dark:bg-slate-950 dark:text-slate-100",
   formSelect:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 cursor-pointer",
   requiredAsterisk: "text-red-500 dark:text-red-400",

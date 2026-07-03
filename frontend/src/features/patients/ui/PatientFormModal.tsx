@@ -91,13 +91,16 @@ export const PatientFormModal = ({
     return null;
   }
 
+  const isFixedWindowError = (message?: string | null): boolean =>
+    typeof message === "string" && message.indexOf("fixed window must be at least") !== -1;
+
   const fixedWindowDurationError =
-    formErrors.visitWindowRows
-      ?.map((row) => row.endTime)
-      .find(
-        (message): message is string =>
-          typeof message === "string" && message.indexOf("fixed window must be at least") !== -1,
-      ) ?? null;
+    formErrors.visitWindowRows?.map((row) => row.endTime).find(isFixedWindowError) ?? null;
+
+  // The fixed-window error is cross-field, so flag every input it implicates: the
+  // visit duration plus the too-short window's start and end times.
+  const rowHasFixedWindowError = (index: number): boolean =>
+    isFixedWindowError(formErrors.visitWindowRows?.[index]?.endTime);
 
   const isFormValid =
     formValues.firstName.trim().length > 0 &&
@@ -241,7 +244,11 @@ export const PatientFormModal = ({
                   const safeValue = parsed !== parsed ? 0 : parsed;
                   onFieldChange("visitDurationMinutes", safeValue);
                 }}
-                className={responsiveStyles.formInput}
+                className={
+                  formErrors.visitDurationMinutes || fixedWindowDurationError
+                    ? responsiveStyles.formInputError
+                    : responsiveStyles.formInput
+                }
               />
               {formErrors.visitDurationMinutes && (
                 <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -289,7 +296,12 @@ export const PatientFormModal = ({
                       onChange={(event) =>
                         onVisitWindowChange(window.id, "startTime", event.target.value)
                       }
-                      className={`appearance-none ${responsiveStyles.formInput}`}
+                      className={`appearance-none ${
+                        formErrors.visitWindowRows?.[index]?.startTime ||
+                        rowHasFixedWindowError(index)
+                          ? responsiveStyles.formInputError
+                          : responsiveStyles.formInput
+                      }`}
                     />
                     {formErrors.visitWindowRows?.[index]?.startTime && (
                       <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -312,7 +324,12 @@ export const PatientFormModal = ({
                       onChange={(event) =>
                         onVisitWindowChange(window.id, "endTime", event.target.value)
                       }
-                      className={`appearance-none ${responsiveStyles.formInput}`}
+                      className={`appearance-none ${
+                        formErrors.visitWindowRows?.[index]?.endTime ||
+                        rowHasFixedWindowError(index)
+                          ? responsiveStyles.formInputError
+                          : responsiveStyles.formInput
+                      }`}
                     />
                     {formErrors.visitWindowRows?.[index]?.endTime &&
                       formErrors.visitWindowRows[index].endTime !== fixedWindowDurationError && (

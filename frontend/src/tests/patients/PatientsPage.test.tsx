@@ -683,6 +683,11 @@ describe("PatientsPage", () => {
       ).toBeTruthy();
       expect(mockedCreatePatient).not.toHaveBeenCalled();
     });
+
+    // The three related inputs are flagged red: duration + the window's start/end.
+    expect(screen.getByLabelText("Visit duration (minutes)").className).toContain("border-red-400");
+    expect(screen.getByLabelText("Preferred visit start").className).toContain("border-red-400");
+    expect(screen.getByLabelText("Preferred visit end").className).toContain("border-red-400");
   });
 
   it("shows fixed-window duration validation while editing a patient", async () => {
