@@ -390,6 +390,21 @@ export default function HomePage({
       <p className={`${responsiveStyles.dashboardKpiDelta} ${tone}`}>{delta}</p>
     );
 
+  const renderPanelSkeleton = (rows: number, tall = false) => (
+    <ul className="m-0 mt-4 list-none space-y-2.5 p-0" aria-hidden="true">
+      {Array.from({ length: rows }).map((_, rowIndex) => (
+        <li
+          key={rowIndex}
+          className={
+            tall
+              ? responsiveStyles.dashboardPanelSkeletonRowTall
+              : responsiveStyles.dashboardPanelSkeletonRow
+          }
+        />
+      ))}
+    </ul>
+  );
+
   const upcomingStops = dashboardSummary?.upcomingStops ?? [];
   const trendBars =
     dashboardSummary && dashboardSummary.trend.length > 0 ? dashboardSummary.trend : EMPTY_TREND;
@@ -1144,7 +1159,9 @@ export default function HomePage({
           <p className={responsiveStyles.cardDescription}>
             Average scheduled visits by day of week across all routes.
           </p>
-          {busiestDays.length === 0 ? (
+          {isDashboardPending ? (
+            renderPanelSkeleton(5)
+          ) : busiestDays.length === 0 ? (
             <p
               className={`${responsiveStyles.cardDescription} mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-700`}
             >
@@ -1177,7 +1194,9 @@ export default function HomePage({
           <p className={responsiveStyles.cardDescription}>
             Clients frequently unscheduled or late in the last 30 days.
           </p>
-          {patientRisks.length === 0 ? (
+          {isDashboardPending ? (
+            renderPanelSkeleton(3, true)
+          ) : patientRisks.length === 0 ? (
             <p
               className={`${responsiveStyles.cardDescription} mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-700`}
             >
@@ -1217,7 +1236,9 @@ export default function HomePage({
       <section className="dashboard-reveal grid gap-4 xl:grid-cols-2">
         <article className={responsiveStyles.dashboardCard}>
           <h2 className={responsiveStyles.cardTitle}>Today&apos;s Schedule</h2>
-          {upcomingStops.length === 0 ? (
+          {isDashboardPending ? (
+            renderPanelSkeleton(3, true)
+          ) : upcomingStops.length === 0 ? (
             <p
               className={`${responsiveStyles.cardDescription} mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-700`}
             >
@@ -1259,27 +1280,31 @@ export default function HomePage({
           <p className={responsiveStyles.cardDescription}>
             Weighted on-time percentage over the last 7 planning days.
           </p>
-          <ul className="m-0 mt-4 list-none space-y-2 p-0">
-            {trendBars.map((day, index) => (
-              <li key={`${day.label}-${day.date}`} className={responsiveStyles.dashboardTrendRow}>
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {day.label}
-                </span>
-                <div className={responsiveStyles.dashboardTrendTrack}>
-                  <div
-                    className={responsiveStyles.dashboardTrendFill}
-                    style={{
-                      width: `${Math.max(0, Math.min(100, day.onTimeRatePercent))}%`,
-                      animationDelay: `${70 + index * 30}ms`,
-                    }}
-                  />
-                </div>
-                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                  {Math.round(day.onTimeRatePercent)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {isDashboardPending ? (
+            renderPanelSkeleton(5)
+          ) : (
+            <ul className="m-0 mt-4 list-none space-y-2 p-0">
+              {trendBars.map((day, index) => (
+                <li key={`${day.label}-${day.date}`} className={responsiveStyles.dashboardTrendRow}>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {day.label}
+                  </span>
+                  <div className={responsiveStyles.dashboardTrendTrack}>
+                    <div
+                      className={responsiveStyles.dashboardTrendFill}
+                      style={{
+                        width: `${Math.max(0, Math.min(100, day.onTimeRatePercent))}%`,
+                        animationDelay: `${70 + index * 30}ms`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    {Math.round(day.onTimeRatePercent)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </article>
       </section>
 

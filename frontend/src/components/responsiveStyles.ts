@@ -517,6 +517,12 @@ export const responsiveStyles = {
     "route-loading-skeleton motion-reduce:animate-none mb-1 mt-3 block h-6 w-20 rounded-md bg-slate-200/80 dark:bg-slate-700/70",
   dashboardKpiDeltaSkeleton:
     "route-loading-skeleton motion-reduce:animate-none mt-3 block h-3 w-28 rounded bg-slate-200/80 dark:bg-slate-700/70",
+  // Shimmer rows for the lower dashboard panels (Busiest Days, Client Risk,
+  // Today's Schedule, Weekly On-time Trend) while the summary request is in flight.
+  dashboardPanelSkeletonRow:
+    "route-loading-skeleton motion-reduce:animate-none h-6 rounded-lg bg-slate-200/80 dark:bg-slate-700/70",
+  dashboardPanelSkeletonRowTall:
+    "route-loading-skeleton motion-reduce:animate-none h-14 rounded-xl bg-slate-200/80 dark:bg-slate-700/70",
   dashboardKpiProgressTrack: "mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700",
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
