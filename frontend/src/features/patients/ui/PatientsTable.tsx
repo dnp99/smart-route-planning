@@ -730,6 +730,7 @@ export const PatientsTable = ({
                             disabled={isBulkRestoring}
                             className={responsiveStyles.tableBulkRestoreButton}
                           >
+                            <RefreshIcon className="h-4 w-4" />
                             {isBulkRestoring
                               ? "Restoring…"
                               : `Restore ${bulkCount} client${bulkCount === 1 ? "" : "s"}`}

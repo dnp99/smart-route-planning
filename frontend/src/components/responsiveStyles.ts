@@ -707,8 +707,10 @@ export const responsiveStyles = {
   tableBulkDividerPrimary: "h-4 w-px bg-blue-300 dark:bg-blue-700",
   tableBulkClearPrimary:
     "text-sm font-semibold text-blue-800 underline underline-offset-2 transition hover:text-blue-900 dark:text-blue-300 dark:hover:text-blue-200",
+  // Outlined blue to match the per-row Restore button (restoreButton), sized
+  // for the bulk toolbar so it aligns with the Delete permanently button.
   tableBulkRestoreButton:
-    "inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60",
+    "inline-flex items-center gap-1.5 rounded-lg border border-blue-200 bg-white px-3.5 py-2 text-sm font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-blue-900/60 dark:bg-slate-900 dark:text-blue-300 dark:hover:bg-blue-950/40",
   // Destructive action → red text on a red-outlined white surface, not a red
   // fill (design system §16).
   tableBulkDeleteButton:
