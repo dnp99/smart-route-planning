@@ -344,7 +344,11 @@ describe("App routing", () => {
     );
 
     expect(await screen.findByText(/Good (morning|afternoon|evening), Nurse/i)).toBeTruthy();
-    expect(screen.getByText(/Add a home address for default start and end points/i)).toBeTruthy();
+    // The setup nudges render once the dashboard summary resolves (they wait so
+    // they don't flash before the checklist can supersede them).
+    expect(
+      await screen.findByText(/Add a home address for default start and end points/i),
+    ).toBeTruthy();
     // The sidebar + mobile-strip nav links mark the active route (the breadcrumb's
     // root "Home" link is not an active indicator), so at least one is current.
     expect(
@@ -352,6 +356,27 @@ describe("App routing", () => {
         .getAllByRole("link", { name: "Home" })
         .some((link) => link.getAttribute("aria-current") === "page"),
     ).toBe(true);
+  });
+
+  it("explains template coverage via the KPI info button", async () => {
+    seedAuthenticatedSession();
+
+    render(
+      <MemoryRouter initialEntries={["/"]}>
+        <App />
+      </MemoryRouter>,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "What is template coverage?" }));
+    expect(await screen.findByText(/share of your active clients/i)).toBeTruthy();
+    // Uses the real coverage numbers (mock: 8 of 24 covered → 16 without), not a
+    // hard-coded example.
+    expect(screen.getByText(/The other 16 would be added/)).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Got it" }));
+    await waitFor(() => {
+      expect(screen.queryByText(/share of your active clients/i)).toBeNull();
+    });
   });
 
   it("shows required legal notice modal and acknowledges it", async () => {

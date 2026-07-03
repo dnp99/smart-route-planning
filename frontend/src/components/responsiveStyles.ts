@@ -511,6 +511,18 @@ export const responsiveStyles = {
     "m-0 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400",
   dashboardKpiValue: "m-0 mt-2 text-2xl font-semibold text-slate-900 dark:text-slate-100",
   dashboardKpiDelta: "m-0 mt-2 text-xs font-semibold",
+  // Shimmer placeholders shown in place of the value/delta while the dashboard
+  // summary request is in flight (reuses the route-loading-skeleton sweep).
+  dashboardKpiValueSkeleton:
+    "route-loading-skeleton motion-reduce:animate-none mb-1 mt-3 block h-6 w-20 rounded-md bg-slate-200/80 dark:bg-slate-700/70",
+  dashboardKpiDeltaSkeleton:
+    "route-loading-skeleton motion-reduce:animate-none mt-3 block h-3 w-28 rounded bg-slate-200/80 dark:bg-slate-700/70",
+  // Shimmer rows for the lower dashboard panels (Busiest Days, Client Risk,
+  // Today's Schedule, Weekly On-time Trend) while the summary request is in flight.
+  dashboardPanelSkeletonRow:
+    "route-loading-skeleton motion-reduce:animate-none h-6 rounded-lg bg-slate-200/80 dark:bg-slate-700/70",
+  dashboardPanelSkeletonRowTall:
+    "route-loading-skeleton motion-reduce:animate-none h-14 rounded-xl bg-slate-200/80 dark:bg-slate-700/70",
   dashboardKpiProgressTrack: "mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700",
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
@@ -536,6 +548,10 @@ export const responsiveStyles = {
     "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-blue-300 text-xs font-semibold text-blue-600 transition hover:bg-blue-50 dark:border-blue-700 dark:text-blue-300 dark:hover:bg-blue-950/30",
   infoPopover:
     "absolute right-0 top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white px-3.5 py-3 text-[13px] leading-relaxed text-slate-600 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
+  // Small "i" circle button that opens an explanatory popover/modal. Soft-filled
+  // (not a thin outline) so it stays visible on tinted card surfaces.
+  infoIconButton:
+    "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-semibold text-blue-700 transition hover:bg-blue-200 dark:bg-blue-950/60 dark:text-blue-300 dark:hover:bg-blue-900",
   // Hover/focus tooltip for icon-only controls (e.g. table row actions). Uses a
   // NAMED group (group/tooltip) so it reacts only to its own wrapper — not an
   // ancestor `group` like the table row, which would fire it across the whole row.
@@ -673,6 +689,9 @@ export const responsiveStyles = {
   formLabel: "text-sm font-semibold text-slate-800 dark:text-slate-200",
   formInput:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100",
+  // Same as formInput but red-outlined — for fields flagged by a validation error.
+  formInputError:
+    "w-full rounded-xl border border-red-400 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-100 dark:border-red-700 dark:bg-slate-950 dark:text-slate-100",
   formSelect:
     "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none transition hover:border-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 cursor-pointer",
   requiredAsterisk: "text-red-500 dark:text-red-400",
@@ -788,8 +807,10 @@ export const responsiveStyles = {
     "flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 border-slate-300 dark:border-slate-600",
   getStartedStepButton:
     "shrink-0 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700",
-  tableIconButton:
-    "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-slate-300 hover:bg-slate-100 hover:text-slate-700 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-200",
+  // Edit row action: neutral at rest, primary blue on hover (mirrors the archive
+  // icon's amber hover).
+  tableIconButtonEdit:
+    "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-blue-300 hover:bg-blue-50 hover:text-blue-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-blue-950/30 dark:hover:text-blue-400",
   tableIconButtonDestructive:
     "inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-500 dark:hover:bg-red-950/30 dark:hover:text-red-400",
   // Archive row action: neutral like the edit icon at rest, amber on hover.

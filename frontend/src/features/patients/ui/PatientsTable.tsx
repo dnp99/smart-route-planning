@@ -505,7 +505,7 @@ export const PatientsTable = ({
     const emptyMessage = searchQuery.trim()
       ? "No clients match this search."
       : lifecycleState === "idle"
-        ? "No idle clients — everyone's had a visit in the last 30 days."
+        ? "No idle clients. Everyone's had a visit in the last 30 days."
         : "No archived clients in the last 7 days.";
     return <div className={responsiveStyles.tableEmptyState}>{emptyMessage}</div>;
   }
@@ -1068,7 +1068,7 @@ export const PatientsTable = ({
                                 type="button"
                                 onClick={() => onEdit(patient)}
                                 aria-label={`Edit ${patientDisplayName}`}
-                                className={responsiveStyles.tableIconButton}
+                                className={responsiveStyles.tableIconButtonEdit}
                               >
                                 <EditIcon className="h-3.5 w-3.5" />
                               </button>

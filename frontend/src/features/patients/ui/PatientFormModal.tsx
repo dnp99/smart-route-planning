@@ -1,6 +1,8 @@
+import { useState } from "react";
 import type { FormEvent } from "react";
 import type { AddressSuggestion } from "../types";
 import AddressAutocompleteInput from "../../../components/shared/AddressAutocompleteInput";
+import { InfoDialog } from "../../../components/shared/InfoDialog";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { Patient, VisitTimeType } from "../../../../../shared/contracts";
 import type {
@@ -87,17 +89,22 @@ export const PatientFormModal = ({
   onAddressChange,
   onAddressPick,
 }: PatientFormModalProps) => {
+  const [isRecurringInfoOpen, setIsRecurringInfoOpen] = useState(false);
+
   if (!isOpen) {
     return null;
   }
 
+  const isFixedWindowError = (message?: string | null): boolean =>
+    typeof message === "string" && message.indexOf("fixed window must be at least") !== -1;
+
   const fixedWindowDurationError =
-    formErrors.visitWindowRows
-      ?.map((row) => row.endTime)
-      .find(
-        (message): message is string =>
-          typeof message === "string" && message.indexOf("fixed window must be at least") !== -1,
-      ) ?? null;
+    formErrors.visitWindowRows?.map((row) => row.endTime).find(isFixedWindowError) ?? null;
+
+  // The fixed-window error is cross-field, so flag every input it implicates: the
+  // visit duration plus the too-short window's start and end times.
+  const rowHasFixedWindowError = (index: number): boolean =>
+    isFixedWindowError(formErrors.visitWindowRows?.[index]?.endTime);
 
   const isFormValid =
     formValues.firstName.trim().length > 0 &&
@@ -241,7 +248,11 @@ export const PatientFormModal = ({
                   const safeValue = parsed !== parsed ? 0 : parsed;
                   onFieldChange("visitDurationMinutes", safeValue);
                 }}
-                className={responsiveStyles.formInput}
+                className={
+                  formErrors.visitDurationMinutes || fixedWindowDurationError
+                    ? responsiveStyles.formInputError
+                    : responsiveStyles.formInput
+                }
               />
               {formErrors.visitDurationMinutes && (
                 <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -289,7 +300,12 @@ export const PatientFormModal = ({
                       onChange={(event) =>
                         onVisitWindowChange(window.id, "startTime", event.target.value)
                       }
-                      className={`appearance-none ${responsiveStyles.formInput}`}
+                      className={`appearance-none ${
+                        formErrors.visitWindowRows?.[index]?.startTime ||
+                        rowHasFixedWindowError(index)
+                          ? responsiveStyles.formInputError
+                          : responsiveStyles.formInput
+                      }`}
                     />
                     {formErrors.visitWindowRows?.[index]?.startTime && (
                       <p className="m-0 text-xs text-red-600 dark:text-red-400">
@@ -312,7 +328,12 @@ export const PatientFormModal = ({
                       onChange={(event) =>
                         onVisitWindowChange(window.id, "endTime", event.target.value)
                       }
-                      className={`appearance-none ${responsiveStyles.formInput}`}
+                      className={`appearance-none ${
+                        formErrors.visitWindowRows?.[index]?.endTime ||
+                        rowHasFixedWindowError(index)
+                          ? responsiveStyles.formInputError
+                          : responsiveStyles.formInput
+                      }`}
                     />
                     {formErrors.visitWindowRows?.[index]?.endTime &&
                       formErrors.visitWindowRows[index].endTime !== fixedWindowDurationError && (
@@ -369,7 +390,17 @@ export const PatientFormModal = ({
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className={`sm:col-span-2 ${responsiveStyles.formGroupSection}`}>
               <div className="flex items-center justify-between gap-2">
-                <p className={responsiveStyles.formGroupEyebrow}>Recurring templates</p>
+                <div className="flex items-center gap-2">
+                  <p className={responsiveStyles.formGroupEyebrow}>Recurring templates</p>
+                  <button
+                    type="button"
+                    aria-label="What are recurring templates?"
+                    onClick={() => setIsRecurringInfoOpen(true)}
+                    className={responsiveStyles.infoIconButton}
+                  >
+                    i
+                  </button>
+                </div>
                 <button
                   type="button"
                   onClick={onAddRecurringTemplate}
@@ -668,6 +699,30 @@ export const PatientFormModal = ({
           </div>
         </form>
       </div>
+
+      <InfoDialog
+        open={isRecurringInfoOpen}
+        title="Recurring templates"
+        onClose={() => setIsRecurringInfoOpen(false)}
+      >
+        <p className={responsiveStyles.confirmDialogMessage}>
+          Automatically schedule this client&apos;s visits on repeating days each week — so you
+          don&apos;t have to add them to every route by hand.
+        </p>
+        <p className="m-0 mb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+          How it works
+        </p>
+        <ul className="m-0 mb-4 list-disc space-y-1.5 pl-5 text-sm text-slate-600 dark:text-slate-300">
+          <li>Pick the weekdays to repeat — e.g. Mon, Wed, Fri.</li>
+          <li>Set a start date; leave the end date blank to repeat indefinitely.</li>
+          <li>On matching days this client is auto-added to your Route Planner.</li>
+          <li>Visits reuse this client&apos;s saved visit window and duration above.</li>
+        </ul>
+        <p className="m-0 mb-5 text-sm text-slate-500 dark:text-slate-400">
+          Set it once and your regular clients stay on the schedule automatically — no manual
+          re-entry each week.
+        </p>
+      </InfoDialog>
     </div>
   );
 };

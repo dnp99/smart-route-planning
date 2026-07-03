@@ -514,7 +514,8 @@ describe("RoutePlanner patient selection integration", () => {
     expect(optimizeRouteMock).not.toHaveBeenCalled();
 
     setStartingPoint();
-    fireEvent.click(screen.getByRole("button", { name: "Expand client search" }));
+    // With no clients selected after the remount the search stays expanded (no
+    // dead-end collapsed card), so the client list is directly reachable.
     fireEvent.click(screen.getAllByRole("button", { name: /Jane Doe/i })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Optimize Route" }));
 

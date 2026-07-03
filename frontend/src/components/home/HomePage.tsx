@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import CarFlyAnimation from "../shared/CarFlyAnimation";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import type {
@@ -14,6 +14,7 @@ import { resolveTodayHoursDisplay } from "./todayHours";
 import { hasConfiguredSchedule } from "./workingHoursStatus";
 import { buildGetStartedSteps, countGetStartedDone, isGetStartedComplete } from "./getStartedSteps";
 import { OnboardingTour } from "./OnboardingTour";
+import { InfoDialog } from "../shared/InfoDialog";
 import {
   clearRoutePlannerDraft,
   readRoutePlannerDraft,
@@ -138,7 +139,6 @@ export default function HomePage({
   const location = useLocation();
   const [dashboardSummary, setDashboardSummary] = useState<DashboardSummaryResponse | null>(null);
   const [dashboardError, setDashboardError] = useState("");
-  const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
   const [isRunPickerOpen, setIsRunPickerOpen] = useState(false);
   const [routeRuns, setRouteRuns] = useState<RouteRunPickerItem[]>([]);
@@ -146,17 +146,16 @@ export default function HomePage({
   const [routeRunsError, setRouteRunsError] = useState("");
   const [isRouteRunsLoading, setIsRouteRunsLoading] = useState(false);
   const [isOpeningRouteRun, setIsOpeningRouteRun] = useState(false);
+  const [isCoverageInfoOpen, setIsCoverageInfoOpen] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) {
       setDashboardSummary(null);
       setDashboardError("");
-      setIsDashboardLoading(false);
       return;
     }
 
     let active = true;
-    setIsDashboardLoading(true);
 
     void fetchDashboardSummary()
       .then((summary) => {
@@ -173,13 +172,6 @@ export default function HomePage({
         }
 
         setDashboardError(error instanceof Error ? error.message : "Unable to load dashboard.");
-      })
-      .finally(() => {
-        if (!active) {
-          return;
-        }
-
-        setIsDashboardLoading(false);
       });
 
     return () => {
@@ -196,6 +188,8 @@ export default function HomePage({
 
   const kpis = useMemo(() => {
     if (!dashboardSummary) {
+      // Placeholder cards while the summary loads — must mirror the loaded set's
+      // labels AND order below, so the grid doesn't reshuffle when data arrives.
       return [
         {
           label: "Routes today",
@@ -206,9 +200,42 @@ export default function HomePage({
           href: "/route-planner",
         },
         {
-          label: "Unscheduled visits",
+          label: "Active clients",
           value: "—",
-          delta: "Today",
+          delta: "All time",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/clients",
+        },
+        {
+          label: "Idle clients",
+          value: "—",
+          delta: "Not used in 30+ days",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/clients?state=idle",
+        },
+        {
+          label: "Template coverage",
+          value: "—",
+          delta: "No active clients yet",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/clients?templateFilter=without",
+          progressPercent: 0,
+        },
+        {
+          label: "Visits this week",
+          value: "—",
+          delta: "Last 7 days",
+          tone: "text-slate-500",
+          trend: "No baseline yet",
+          href: "/route-planner",
+        },
+        {
+          label: "On-time rate",
+          value: "—",
+          delta: "Last 7 days",
           tone: "text-slate-500",
           trend: "No baseline yet",
           href: "/route-planner",
@@ -224,43 +251,10 @@ export default function HomePage({
         {
           label: "Total distance",
           value: "—",
-          delta: "Today",
-          tone: "text-slate-500",
-          trend: "No baseline yet",
-          href: "/route-planner",
-        },
-        {
-          label: "On-time rate",
-          value: "—",
           delta: "Last 7 days",
           tone: "text-slate-500",
           trend: "No baseline yet",
           href: "/route-planner",
-        },
-        {
-          label: "Active clients",
-          value: "—",
-          delta: "All time",
-          tone: "text-slate-500",
-          trend: "No baseline yet",
-          href: "/clients",
-        },
-        {
-          label: "Template coverage",
-          value: "—",
-          delta: "No active clients yet",
-          tone: "text-blue-600",
-          trend: "No baseline yet",
-          href: "/clients?templateFilter=without",
-          progressPercent: 0,
-        },
-        {
-          label: "Idle clients",
-          value: "—",
-          delta: "Not used in 30+ days",
-          tone: "text-slate-500",
-          trend: "No baseline yet",
-          href: "/clients?state=idle",
         },
       ];
     }
@@ -377,6 +371,39 @@ export default function HomePage({
       },
     ];
   }, [dashboardSummary]);
+
+  // The summary request is in flight when we're signed in but have neither a
+  // snapshot nor an error yet. Drives the shimmer on the KPI value/delta lines.
+  const isDashboardPending = isAuthenticated && !dashboardSummary && !dashboardError;
+
+  const renderKpiValue = (value: string) =>
+    isDashboardPending ? (
+      <span className={responsiveStyles.dashboardKpiValueSkeleton} aria-hidden="true" />
+    ) : (
+      <p className={responsiveStyles.dashboardKpiValue}>{value}</p>
+    );
+
+  const renderKpiDelta = (delta: ReactNode, tone: string) =>
+    isDashboardPending ? (
+      <span className={responsiveStyles.dashboardKpiDeltaSkeleton} aria-hidden="true" />
+    ) : (
+      <p className={`${responsiveStyles.dashboardKpiDelta} ${tone}`}>{delta}</p>
+    );
+
+  const renderPanelSkeleton = (rows: number, tall = false) => (
+    <ul className="m-0 mt-4 list-none space-y-2.5 p-0" aria-hidden="true">
+      {Array.from({ length: rows }).map((_, rowIndex) => (
+        <li
+          key={rowIndex}
+          className={
+            tall
+              ? responsiveStyles.dashboardPanelSkeletonRowTall
+              : responsiveStyles.dashboardPanelSkeletonRow
+          }
+        />
+      ))}
+    </ul>
+  );
 
   const upcomingStops = dashboardSummary?.upcomingStops ?? [];
   const trendBars =
@@ -564,6 +591,11 @@ export default function HomePage({
   const greetingPrefix = resolveGreetingPrefix();
   const todayHoursDisplay = resolveTodayHoursDisplay(authUser?.workingHours);
   const lastUpdatedLabel = resolveLastUpdatedLabel(dashboardSummary);
+  // Real coverage numbers for the info modal — so the example matches the card,
+  // not a hard-coded "1 / 4".
+  const coverageCovered = dashboardSummary?.kpis.templatedActivePatientCount ?? 0;
+  const coverageTotal = dashboardSummary?.kpis.activePatientCount ?? 0;
+  const coverageWithout = Math.max(0, coverageTotal - coverageCovered);
   const todayPlanningDate = resolveTodayPlanningDate();
   const todayPlanningDateLabel = resolvePlanningDateDisplay(todayPlanningDate);
 
@@ -787,8 +819,11 @@ export default function HomePage({
 
       {/* The Get-started checklist supersedes the profile setup nudges while it's
           visible — showing both is redundant. Nudges return once onboarding is
-          done/dismissed to surface any remaining gaps (route priority, home address). */}
-      {!showGetStarted &&
+          done/dismissed to surface any remaining gaps (route priority, home address).
+          Also wait for the onboarding status to resolve so the amber nudges don't
+          flash in before the checklist decides whether to supersede them. */}
+      {isOnboardingStatusResolved &&
+        !showGetStarted &&
         visibleNudges.map((nudge) => (
           <section
             key={nudge.id}
@@ -876,35 +911,23 @@ export default function HomePage({
           </section>
         ))}
 
-      {isAuthenticated && (dashboardError || isDashboardLoading) && (
-        <section
-          className={
-            dashboardError
-              ? "dashboard-reveal rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm dark:border-rose-900/70 dark:bg-rose-950/30 sm:p-5"
-              : responsiveStyles.dashboardCard
-          }
-        >
-          <h2 className={responsiveStyles.cardTitle}>
-            {dashboardError ? "Dashboard data unavailable" : "Refreshing dashboard"}
-          </h2>
+      {isAuthenticated && dashboardError && (
+        <section className="dashboard-reveal rounded-2xl border border-rose-200 bg-rose-50 p-4 shadow-sm dark:border-rose-900/70 dark:bg-rose-950/30 sm:p-5">
+          <h2 className={responsiveStyles.cardTitle}>Dashboard data unavailable</h2>
           <p className={`${responsiveStyles.cardDescription} mt-2`}>
-            {dashboardError
-              ? dashboardSummary
-                ? "Your last successful dashboard snapshot is still displayed."
-                : "No dashboard snapshot is available yet."
-              : "Loading the latest route metrics..."}
+            {dashboardSummary
+              ? "Your last successful dashboard snapshot is still displayed."
+              : "No dashboard snapshot is available yet."}
           </p>
-          {dashboardError && (
-            <div className={responsiveStyles.dashboardDraftActions}>
-              <button
-                type="button"
-                className={responsiveStyles.secondaryButton}
-                onClick={() => setDashboardRefreshKey((value) => value + 1)}
-              >
-                Retry Dashboard
-              </button>
-            </div>
-          )}
+          <div className={responsiveStyles.dashboardDraftActions}>
+            <button
+              type="button"
+              className={responsiveStyles.secondaryButton}
+              onClick={() => setDashboardRefreshKey((value) => value + 1)}
+            >
+              Retry Dashboard
+            </button>
+          </div>
         </section>
       )}
 
@@ -929,11 +952,12 @@ export default function HomePage({
                     disabled={isRouteRunsLoading}
                   >
                     <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
-                    <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
-                    <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>
-                      {isRouteRunsLoading ? "Loading saved runs..." : kpi.delta}
-                    </p>
-                    {typeof kpi.progressPercent === "number" && (
+                    {renderKpiValue(kpi.value)}
+                    {renderKpiDelta(
+                      isRouteRunsLoading ? "Loading saved runs..." : kpi.delta,
+                      kpi.tone,
+                    )}
+                    {!isDashboardPending && typeof kpi.progressPercent === "number" && (
                       <div className={responsiveStyles.dashboardKpiProgressTrack}>
                         <div
                           className={responsiveStyles.dashboardKpiProgressFill}
@@ -944,9 +968,11 @@ export default function HomePage({
                         />
                       </div>
                     )}
-                    <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
-                      {kpi.trend}
-                    </p>
+                    {!isDashboardPending && (
+                      <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                        {kpi.trend}
+                      </p>
+                    )}
                   </button>
                 );
               }
@@ -954,9 +980,9 @@ export default function HomePage({
               const cardBody = (
                 <>
                   <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
-                  <p className={responsiveStyles.dashboardKpiValue}>{kpi.value}</p>
-                  <p className={`${responsiveStyles.dashboardKpiDelta} ${kpi.tone}`}>{kpi.delta}</p>
-                  {typeof kpi.progressPercent === "number" && (
+                  {renderKpiValue(kpi.value)}
+                  {renderKpiDelta(kpi.delta, kpi.tone)}
+                  {!isDashboardPending && typeof kpi.progressPercent === "number" && (
                     <div className={responsiveStyles.dashboardKpiProgressTrack}>
                       <div
                         className={responsiveStyles.dashboardKpiProgressFill}
@@ -967,7 +993,7 @@ export default function HomePage({
                       />
                     </div>
                   )}
-                  {kpi.trend && (
+                  {!isDashboardPending && kpi.trend && (
                     <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
                       {kpi.trend}
                     </p>
@@ -988,6 +1014,52 @@ export default function HomePage({
                 );
               }
 
+              // "Template coverage" is jargon — pair its title with an "i" that
+              // explains it. The title row (with the button) sits outside the Link,
+              // since nesting a button inside an anchor is invalid; the rest of the
+              // card stays the navigation target.
+              if (kpi.label === "Template coverage") {
+                return (
+                  <div
+                    key={kpi.label}
+                    className={`${responsiveStyles.dashboardKpiCard} group`}
+                    style={{ animationDelay: `${80 + index * 45}ms` }}
+                  >
+                    <div className="flex items-center gap-1.5">
+                      <p className={responsiveStyles.dashboardKpiLabel}>{kpi.label}</p>
+                      <button
+                        type="button"
+                        aria-label="What is template coverage?"
+                        onClick={() => setIsCoverageInfoOpen(true)}
+                        className={responsiveStyles.infoIconButton}
+                      >
+                        i
+                      </button>
+                    </div>
+                    <Link to={to} className="block">
+                      {renderKpiValue(kpi.value)}
+                      {renderKpiDelta(kpi.delta, kpi.tone)}
+                      {!isDashboardPending && typeof kpi.progressPercent === "number" && (
+                        <div className={responsiveStyles.dashboardKpiProgressTrack}>
+                          <div
+                            className={responsiveStyles.dashboardKpiProgressFill}
+                            style={{
+                              width: `${Math.max(0, Math.min(100, kpi.progressPercent))}%`,
+                              animationDelay: `${140 + index * 45}ms`,
+                            }}
+                          />
+                        </div>
+                      )}
+                      {!isDashboardPending && kpi.trend && (
+                        <p className="m-0 mt-2 text-xs font-medium text-slate-500 transition group-hover:text-slate-700 dark:text-slate-400 dark:group-hover:text-slate-300">
+                          {kpi.trend}
+                        </p>
+                      )}
+                    </Link>
+                  </div>
+                );
+              }
+
               return (
                 <Link
                   key={kpi.label}
@@ -1003,6 +1075,52 @@ export default function HomePage({
           </section>
         )}
       </CarFlyAnimation>
+
+      <InfoDialog
+        open={isCoverageInfoOpen}
+        title="Template coverage"
+        onClose={() => setIsCoverageInfoOpen(false)}
+      >
+        <p className={responsiveStyles.confirmDialogMessage}>
+          The share of your active clients that have a recurring template — an automatic weekly
+          visit schedule.
+        </p>
+        <ul className="m-0 mb-5 list-disc space-y-1.5 pl-5 text-sm text-slate-600 dark:text-slate-300">
+          {coverageTotal > 0 ? (
+            <>
+              <li>
+                Right now{" "}
+                <b>
+                  {coverageCovered} / {coverageTotal} clients
+                </b>{" "}
+                {coverageCovered === 1 ? "has" : "have"} a recurring template that repeats
+                automatically each week.
+              </li>
+              {coverageWithout > 0 && (
+                <li>
+                  The other {coverageWithout} would be added to each route by hand until you give{" "}
+                  {coverageWithout === 1 ? "it" : "them"} a template.
+                </li>
+              )}
+            </>
+          ) : (
+            <li>Add active clients, then give them recurring templates to lift coverage.</li>
+          )}
+          <li>
+            Higher coverage means less manual scheduling — open a client and “Add recurring
+            template” to raise it.
+          </li>
+        </ul>
+        <p className="m-0 mb-2 text-sm font-semibold text-slate-800 dark:text-slate-200">
+          How recurring templates work
+        </p>
+        <ul className="m-0 mb-5 list-disc space-y-1.5 pl-5 text-sm text-slate-600 dark:text-slate-300">
+          <li>Pick the weekdays to repeat — e.g. Mon, Wed, Fri.</li>
+          <li>Set a start date; leave the end date blank to repeat indefinitely.</li>
+          <li>On matching days the client is auto-added to your Route Planner.</li>
+          <li>Visits reuse the client&apos;s saved visit window and duration.</li>
+        </ul>
+      </InfoDialog>
 
       {lastUpdatedLabel && (
         <p className="m-0 -mt-2 text-right text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -1041,7 +1159,9 @@ export default function HomePage({
           <p className={responsiveStyles.cardDescription}>
             Average scheduled visits by day of week across all routes.
           </p>
-          {busiestDays.length === 0 ? (
+          {isDashboardPending ? (
+            renderPanelSkeleton(5)
+          ) : busiestDays.length === 0 ? (
             <p
               className={`${responsiveStyles.cardDescription} mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-700`}
             >
@@ -1074,7 +1194,9 @@ export default function HomePage({
           <p className={responsiveStyles.cardDescription}>
             Clients frequently unscheduled or late in the last 30 days.
           </p>
-          {patientRisks.length === 0 ? (
+          {isDashboardPending ? (
+            renderPanelSkeleton(3, true)
+          ) : patientRisks.length === 0 ? (
             <p
               className={`${responsiveStyles.cardDescription} mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-700`}
             >
@@ -1114,7 +1236,9 @@ export default function HomePage({
       <section className="dashboard-reveal grid gap-4 xl:grid-cols-2">
         <article className={responsiveStyles.dashboardCard}>
           <h2 className={responsiveStyles.cardTitle}>Today&apos;s Schedule</h2>
-          {upcomingStops.length === 0 ? (
+          {isDashboardPending ? (
+            renderPanelSkeleton(3, true)
+          ) : upcomingStops.length === 0 ? (
             <p
               className={`${responsiveStyles.cardDescription} mt-4 rounded-xl border border-slate-200 p-3 dark:border-slate-700`}
             >
@@ -1156,27 +1280,31 @@ export default function HomePage({
           <p className={responsiveStyles.cardDescription}>
             Weighted on-time percentage over the last 7 planning days.
           </p>
-          <ul className="m-0 mt-4 list-none space-y-2 p-0">
-            {trendBars.map((day, index) => (
-              <li key={`${day.label}-${day.date}`} className={responsiveStyles.dashboardTrendRow}>
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {day.label}
-                </span>
-                <div className={responsiveStyles.dashboardTrendTrack}>
-                  <div
-                    className={responsiveStyles.dashboardTrendFill}
-                    style={{
-                      width: `${Math.max(0, Math.min(100, day.onTimeRatePercent))}%`,
-                      animationDelay: `${70 + index * 30}ms`,
-                    }}
-                  />
-                </div>
-                <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                  {Math.round(day.onTimeRatePercent)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {isDashboardPending ? (
+            renderPanelSkeleton(5)
+          ) : (
+            <ul className="m-0 mt-4 list-none space-y-2 p-0">
+              {trendBars.map((day, index) => (
+                <li key={`${day.label}-${day.date}`} className={responsiveStyles.dashboardTrendRow}>
+                  <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+                    {day.label}
+                  </span>
+                  <div className={responsiveStyles.dashboardTrendTrack}>
+                    <div
+                      className={responsiveStyles.dashboardTrendFill}
+                      style={{
+                        width: `${Math.max(0, Math.min(100, day.onTimeRatePercent))}%`,
+                        animationDelay: `${70 + index * 30}ms`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    {Math.round(day.onTimeRatePercent)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </article>
       </section>
 
