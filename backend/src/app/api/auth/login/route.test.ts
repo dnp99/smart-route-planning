@@ -6,11 +6,13 @@ const {
   updateNurseLastLoginAtMock,
   verifyPasswordMock,
   createAuthSessionMock,
+  logAuditEventMock,
 } = vi.hoisted(() => ({
   findNurseByEmailMock: vi.fn(),
   updateNurseLastLoginAtMock: vi.fn(),
   verifyPasswordMock: vi.fn(),
   createAuthSessionMock: vi.fn(),
+  logAuditEventMock: vi.fn(),
 }));
 
 vi.mock("../../../../lib/patients/patientRepository", () => ({
@@ -24,6 +26,10 @@ vi.mock("../../../../lib/auth/password", () => ({
 
 vi.mock("../../../../lib/auth/sessionRepository", () => ({
   createAuthSession: createAuthSessionMock,
+}));
+
+vi.mock("../../../../lib/audit/auditLogger", () => ({
+  logAuditEvent: logAuditEventMock,
 }));
 
 import { OPTIONS, POST } from "./route";
@@ -44,6 +50,7 @@ describe("/api/auth/login route", () => {
     updateNurseLastLoginAtMock.mockReset();
     verifyPasswordMock.mockReset();
     createAuthSessionMock.mockReset();
+    logAuditEventMock.mockReset();
   });
 
   afterEach(() => {
@@ -253,6 +260,13 @@ describe("/api/auth/login route", () => {
     });
     expect(response.headers.get("set-cookie")).toContain("careflow_session=session-1");
     expect(updateNurseLastLoginAtMock).toHaveBeenCalledWith("nurse-1");
+    expect(logAuditEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorNurseId: "nurse-1",
+        action: "login",
+        outcome: "success",
+      }),
+    );
   });
 
   it("returns 500 when session creation fails unexpectedly", async () => {

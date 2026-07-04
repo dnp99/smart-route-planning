@@ -7,6 +7,11 @@ import {
   type WeeklyWorkingHours,
 } from "../../../../../../shared/contracts";
 import { logAuthAuditEvent } from "../../../../lib/auth/auditLogger";
+import { logAuditEvent } from "../../../../lib/audit/auditLogger";
+import {
+  resolveRequestIpAddress,
+  resolveRequestUserAgent,
+} from "../../../../lib/audit/requestAuditContext";
 import { verifyPassword } from "../../../../lib/auth/password";
 import { buildSessionCookie } from "../../../../lib/auth/sessionCookie";
 import { createAuthSession } from "../../../../lib/auth/sessionRepository";
@@ -182,6 +187,18 @@ export async function POST(request: Request) {
       outcome: "success",
       email,
       clientKey,
+    });
+
+    // Persist to the durable audit trail (the console log above is a masked
+    // security log; this is the actor-attributed record the admin dashboard reads).
+    void logAuditEvent({
+      actorNurseId: nurse.id,
+      action: "login",
+      resourceType: "nurse",
+      resourceId: nurse.id,
+      outcome: "success",
+      ipAddress: resolveRequestIpAddress(request),
+      userAgent: resolveRequestUserAgent(request),
     });
 
     return NextResponse.json(

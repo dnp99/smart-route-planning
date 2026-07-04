@@ -9,6 +9,11 @@ import {
 import { buildSessionCookie } from "../../../../lib/auth/sessionCookie";
 import { createAuthSession } from "../../../../lib/auth/sessionRepository";
 import { hashPassword } from "../../../../lib/auth/password";
+import { logAuditEvent } from "../../../../lib/audit/auditLogger";
+import {
+  resolveRequestIpAddress,
+  resolveRequestUserAgent,
+} from "../../../../lib/audit/requestAuditContext";
 import { buildCorsHeaders, HttpError, toErrorResponse } from "../../../../lib/http";
 import { enforceLoginRateLimit, requireSecureAuthTransport } from "../requestGuards";
 import {
@@ -160,6 +165,18 @@ export const POST = async (request: Request) => {
     if (!createdSession) {
       throw new Error("Unable to create auth session.");
     }
+
+    // First-class signup event for the admin dashboard (previously only
+    // inferable from nurses.createdAt, with no IP/UA).
+    void logAuditEvent({
+      actorNurseId: nurse.id,
+      action: "signup",
+      resourceType: "nurse",
+      resourceId: nurse.id,
+      outcome: "success",
+      ipAddress: resolveRequestIpAddress(request),
+      userAgent: resolveRequestUserAgent(request),
+    });
 
     return NextResponse.json(
       {
