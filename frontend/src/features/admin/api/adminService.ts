@@ -76,3 +76,44 @@ export const adminLogout = async (): Promise<void> => {
     credentials: "include",
   }).catch(() => undefined);
 };
+
+export type AdminNurseSummary = {
+  id: string;
+  email: string;
+  displayName: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  createdAt: string;
+  lastLoginAt: string | null;
+  lastActivityAt: string | null;
+  activePatientCount: number;
+};
+
+export type AdminMetrics = {
+  nurses: { total: number; active: number };
+  signups: { total: number; last7Days: number; last30Days: number };
+  activeNurses: { dau: number; wau: number };
+  clientsAdded: { last7Days: number; last30Days: number };
+  signupTrend: { date: string; count: number }[];
+};
+
+const getJson = async (path: string): Promise<unknown> => {
+  const response = await fetch(`${resolveApiBaseUrl()}${path}`, {
+    method: "GET",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return response.json();
+};
+
+export const fetchAdminNurses = async (): Promise<AdminNurseSummary[]> => {
+  const payload = (await getJson("/api/admin/nurses")) as { nurses?: unknown };
+  return Array.isArray(payload.nurses) ? (payload.nurses as AdminNurseSummary[]) : [];
+};
+
+export const fetchAdminMetrics = async (): Promise<AdminMetrics> => {
+  const payload = (await getJson("/api/admin/metrics")) as { metrics?: AdminMetrics };
+  return payload.metrics as AdminMetrics;
+};

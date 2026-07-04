@@ -1,6 +1,25 @@
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { useAdminAuth } from "../hooks/useAdminAuth";
+import { useAdminDashboard } from "../hooks/useAdminDashboard";
+import AdminDashboardPage from "./AdminDashboardPage";
 import AdminLoginPage from "./AdminLoginPage";
+
+// Dashboard route container — wires the data hook to the view and navigation.
+const AdminDashboardRoute = () => {
+  const navigate = useNavigate();
+  const { nurses, metrics, isLoading, error } = useAdminDashboard();
+
+  return (
+    <AdminDashboardPage
+      nurses={nurses}
+      metrics={metrics}
+      isLoading={isLoading}
+      error={error}
+      onSelectNurse={(nurseId) => navigate(`/admin/nurses/${nurseId}`)}
+    />
+  );
+};
 
 // Root of the isolated /admin/* area. Gates on the admin session: unresolved →
 // nothing (brief), signed-out → login, signed-in → the admin shell. Rendered by
@@ -44,9 +63,10 @@ const AdminApp = () => {
       </header>
 
       <main className={responsiveStyles.adminContent}>
-        <p className={responsiveStyles.cardDescription}>
-          Signed in as {admin.displayName}. User activity and metrics load here next.
-        </p>
+        <Routes>
+          <Route path="/admin" element={<AdminDashboardRoute />} />
+          <Route path="*" element={<Navigate to="/admin" replace />} />
+        </Routes>
       </main>
     </div>
   );
