@@ -6,7 +6,9 @@ import {
   fetchLegalNoticeStatus,
   fetchMe,
   logout,
+  updatePassword,
 } from "./components/auth/authService";
+import ForcedPasswordChange from "./components/auth/ForcedPasswordChange";
 import {
   beginAuthBootstrap,
   completeAuthBootstrap,
@@ -181,6 +183,23 @@ function App() {
 
   if (isBootstrapping) {
     return <AuthBootstrapLoader />;
+  }
+
+  // An admin reset this nurse's password — force a change before anything else.
+  if (isAuthenticated && authUser?.mustChangePassword) {
+    return (
+      <ForcedPasswordChange
+        onSubmit={async (currentPassword, newPassword) => {
+          await updatePassword(currentPassword, newPassword);
+          const refreshed = await fetchMe();
+          setStoredAuthUser(refreshed.user);
+        }}
+        onSignOut={() => {
+          void logout();
+          clearAuthSession();
+        }}
+      />
+    );
   }
 
   return (
