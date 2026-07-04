@@ -523,6 +523,76 @@ export const responsiveStyles = {
     "route-loading-skeleton motion-reduce:animate-none h-6 rounded-lg bg-slate-200/80 dark:bg-slate-700/70",
   dashboardPanelSkeletonRowTall:
     "route-loading-skeleton motion-reduce:animate-none h-14 rounded-xl bg-slate-200/80 dark:bg-slate-700/70",
+  // Admin dashboard (isolated /admin/* area). White canvas + surfaceSecondary
+  // tiles per the design system; blue is the admin accent.
+  adminEyebrow:
+    "m-0 mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400",
+  adminShell: "flex min-h-screen w-full flex-col bg-white dark:bg-slate-950",
+  adminTopBar:
+    "sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80",
+  adminTopBarInner:
+    "mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6",
+  adminBrand: "m-0 text-lg font-semibold text-slate-900 dark:text-slate-100",
+  adminTopBarMeta: "flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300",
+  adminSignOutButton:
+    "rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
+  adminContent: "mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6",
+  adminSectionTitle: "m-0 text-base font-semibold text-slate-900 dark:text-slate-100",
+  adminCard:
+    "rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5",
+  adminTableWrap: "overflow-x-auto",
+  adminTable: "w-full min-w-[720px] border-collapse text-left text-sm",
+  adminTableHeadCell:
+    "border-b border-slate-200 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:border-slate-800 dark:text-slate-400",
+  adminTableRow: "cursor-pointer transition hover:bg-slate-50 dark:hover:bg-slate-800/50",
+  adminTableCell:
+    "border-b border-slate-100 px-3 py-3 align-middle text-slate-700 dark:border-slate-800 dark:text-slate-300",
+  adminStatusActive:
+    "inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300",
+  adminStatusInactive:
+    "inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-800 dark:text-slate-300",
+  adminEmptyRow: "px-3 py-8 text-center text-slate-500 dark:text-slate-400",
+  adminBackLink:
+    "inline-flex items-center gap-1 text-sm font-semibold text-blue-600 transition hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300",
+  adminMetaGrid: "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3",
+  adminMetaLabel:
+    "m-0 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400",
+  adminMetaValue: "m-0 mt-0.5 text-sm font-medium text-slate-900 dark:text-slate-100",
+  adminFeedItem:
+    "flex items-start justify-between gap-3 border-b border-slate-100 py-2.5 last:border-b-0 dark:border-slate-800",
+  adminFeedMeta: "text-xs text-slate-500 dark:text-slate-400",
+  adminFeedDenied:
+    "inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-950/50 dark:text-rose-300",
+  adminActionRow: "mt-4 flex flex-wrap items-center gap-2",
+  adminActionButton:
+    "rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
+  // Destructive is red text, not a red fill (design §16).
+  adminDangerButton:
+    "rounded-lg px-3 py-1.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:opacity-60 dark:text-rose-400 dark:hover:bg-rose-950/40",
+  // Blue-tinted selected/active surface (design §11) for the one-time secret.
+  adminTempPanel:
+    "mt-4 rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900 dark:bg-blue-950/30",
+  adminTempCode:
+    "mt-2 block rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+  adminChartRow: "mt-3 flex h-28 items-end gap-1",
+  adminChartBar: "flex-1 rounded-t bg-blue-500/80 dark:bg-blue-400/70",
+  adminChartAxis: "mt-1 flex justify-between text-[10px] text-slate-400 dark:text-slate-500",
+  // Amber-tinted highlight for onboarding risk (design §11: amber = warning).
+  adminWarnCard:
+    "rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm dark:border-amber-900 dark:bg-amber-950/30 sm:p-5",
+  adminStatValue: "m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100",
+  adminPaginationRow: "mt-4 flex flex-wrap items-center justify-center gap-1",
+  adminPageButton:
+    "inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
+  adminPageButtonActive: "bg-blue-600 text-white",
+  adminPageButtonInactive:
+    "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+  adminPageEllipsis: "px-1 text-sm text-slate-400 dark:text-slate-500",
+  adminSearchInput:
+    "w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500 sm:max-w-xs",
+  // Clickable sortable column header; carries a caret when it's the active sort.
+  adminSortHeader:
+    "cursor-pointer select-none border-b border-slate-200 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:text-slate-700 dark:border-slate-800 dark:text-slate-400 dark:hover:text-slate-200",
   dashboardKpiProgressTrack: "mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700",
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",

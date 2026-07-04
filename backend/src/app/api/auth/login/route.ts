@@ -7,6 +7,11 @@ import {
   type WeeklyWorkingHours,
 } from "../../../../../../shared/contracts";
 import { logAuthAuditEvent } from "../../../../lib/auth/auditLogger";
+import { logAuditEvent } from "../../../../lib/audit/auditLogger";
+import {
+  resolveRequestIpAddress,
+  resolveRequestUserAgent,
+} from "../../../../lib/audit/requestAuditContext";
 import { verifyPassword } from "../../../../lib/auth/password";
 import { buildSessionCookie } from "../../../../lib/auth/sessionCookie";
 import { createAuthSession } from "../../../../lib/auth/sessionRepository";
@@ -29,6 +34,7 @@ const toAuthUser = (value: {
   workingHours?: WeeklyWorkingHours | null;
   breakGapThresholdMinutes?: number | null;
   optimizationObjective?: string | null;
+  mustChangePassword?: boolean | null;
 }): AuthUser => ({
   id: value.id,
   email: value.email,
@@ -36,6 +42,7 @@ const toAuthUser = (value: {
   homeAddress: value.homeAddress ?? null,
   workingHours: value.workingHours ?? null,
   breakGapThresholdMinutes: value.breakGapThresholdMinutes ?? null,
+  mustChangePassword: value.mustChangePassword ?? false,
   optimizationObjective:
     value.optimizationObjective === "time" || value.optimizationObjective === "distance"
       ? value.optimizationObjective
@@ -184,6 +191,18 @@ export async function POST(request: Request) {
       clientKey,
     });
 
+    // Persist to the durable audit trail (the console log above is a masked
+    // security log; this is the actor-attributed record the admin dashboard reads).
+    void logAuditEvent({
+      actorNurseId: nurse.id,
+      action: "login",
+      resourceType: "nurse",
+      resourceId: nurse.id,
+      outcome: "success",
+      ipAddress: resolveRequestIpAddress(request),
+      userAgent: resolveRequestUserAgent(request),
+    });
+
     return NextResponse.json(
       {
         user: toAuthUser({
@@ -194,6 +213,7 @@ export async function POST(request: Request) {
           workingHours: nurse.workingHours as WeeklyWorkingHours | null | undefined,
           breakGapThresholdMinutes: nurse.breakGapThresholdMinutes,
           optimizationObjective: nurse.optimizationObjective,
+          mustChangePassword: nurse.mustChangePassword,
         }),
       },
       {

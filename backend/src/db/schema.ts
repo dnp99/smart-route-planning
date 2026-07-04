@@ -25,6 +25,7 @@ export const nurses = pgTable("nurses", {
   legalNoticeAcceptedAt: timestamp("legal_notice_accepted_at", { withTimezone: true }),
   legalNoticeAcceptedVersion: text("legal_notice_accepted_version"),
   passwordHash: text("password_hash").notNull(),
+  mustChangePassword: boolean("must_change_password").notNull().default(false),
   isActive: boolean("is_active").notNull().default(true),
   lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   lastDeactivatedClientsAt: timestamp("last_deactivated_clients_at", { withTimezone: true }),
@@ -400,11 +401,50 @@ export const authSessions = pgTable(
   ],
 );
 
+export const admins = pgTable("admins", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  email: text("email").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  passwordHash: text("password_hash").notNull(),
+  isActive: boolean("is_active").notNull().default(true),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const adminSessions = pgTable(
+  "admin_sessions",
+  {
+    id: text("id").primaryKey(),
+    adminId: uuid("admin_id")
+      .notNull()
+      .references(() => admins.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    revokedAt: timestamp("revoked_at", { withTimezone: true }),
+    lastSeenAt: timestamp("last_seen_at", { withTimezone: true }).defaultNow().notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    deviceType: text("device_type").notNull().default("unknown"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index("admin_sessions_admin_id_idx").on(table.adminId),
+    index("admin_sessions_admin_expires_idx").on(table.adminId, table.expiresAt),
+    index("admin_sessions_expires_idx").on(table.expiresAt),
+    index("admin_sessions_revoked_idx").on(table.revokedAt),
+    check(
+      "admin_sessions_device_type_chk",
+      sql`${table.deviceType} in ('desktop', 'mobile', 'tablet', 'bot', 'unknown')`,
+    ),
+  ],
+);
+
 export const auditEvents = pgTable(
   "audit_events",
   {
     id: uuid("id").defaultRandom().primaryKey(),
     actorNurseId: uuid("actor_nurse_id").references(() => nurses.id, { onDelete: "set null" }),
+    actorAdminId: uuid("actor_admin_id").references(() => admins.id, { onDelete: "set null" }),
     action: text("action").notNull(),
     resourceType: text("resource_type").notNull(),
     resourceId: text("resource_id"),
@@ -418,6 +458,7 @@ export const auditEvents = pgTable(
   },
   (table) => [
     index("audit_events_actor_created_idx").on(table.actorNurseId, table.createdAt),
+    index("audit_events_admin_actor_created_idx").on(table.actorAdminId, table.createdAt),
     index("audit_events_resource_created_idx").on(table.resourceType, table.createdAt),
   ],
 );
@@ -443,3 +484,7 @@ export type AuthSession = typeof authSessions.$inferSelect;
 export type NewAuthSession = typeof authSessions.$inferInsert;
 export type AuditEvent = typeof auditEvents.$inferSelect;
 export type NewAuditEvent = typeof auditEvents.$inferInsert;
+export type Admin = typeof admins.$inferSelect;
+export type NewAdmin = typeof admins.$inferInsert;
+export type AdminSession = typeof adminSessions.$inferSelect;
+export type NewAdminSession = typeof adminSessions.$inferInsert;

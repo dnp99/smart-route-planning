@@ -7,6 +7,7 @@ const {
   updateNurseLastLoginAtMock,
   hashPasswordMock,
   createAuthSessionMock,
+  logAuditEventMock,
   NurseEmailConflictErrorMock,
 } = vi.hoisted(() => ({
   findNurseByEmailMock: vi.fn(),
@@ -14,6 +15,7 @@ const {
   updateNurseLastLoginAtMock: vi.fn(),
   hashPasswordMock: vi.fn(),
   createAuthSessionMock: vi.fn(),
+  logAuditEventMock: vi.fn(),
   NurseEmailConflictErrorMock: class NurseEmailConflictError extends Error {},
 }));
 
@@ -30,6 +32,10 @@ vi.mock("../../../../lib/auth/password", () => ({
 
 vi.mock("../../../../lib/auth/sessionRepository", () => ({
   createAuthSession: createAuthSessionMock,
+}));
+
+vi.mock("../../../../lib/audit/auditLogger", () => ({
+  logAuditEvent: logAuditEventMock,
 }));
 
 import { OPTIONS, POST } from "./route";
@@ -51,6 +57,7 @@ describe("/api/auth/signup route", () => {
     updateNurseLastLoginAtMock.mockReset();
     hashPasswordMock.mockReset();
     createAuthSessionMock.mockReset();
+    logAuditEventMock.mockReset();
   });
 
   afterEach(() => {
@@ -302,11 +309,19 @@ describe("/api/auth/signup route", () => {
         workingHours: null,
         breakGapThresholdMinutes: null,
         optimizationObjective: null,
+        mustChangePassword: false,
         setupMissing: ["workingHours", "optimizationObjective"],
         isSetupComplete: false,
       },
     });
     expect(response.headers.get("set-cookie")).toContain("careflow_session=session-2");
     expect(updateNurseLastLoginAtMock).toHaveBeenCalledWith("nurse-2");
+    expect(logAuditEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        actorNurseId: "nurse-2",
+        action: "signup",
+        outcome: "success",
+      }),
+    );
   });
 });

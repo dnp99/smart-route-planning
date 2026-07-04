@@ -3,6 +3,7 @@ import { auditEvents } from "../../db/schema";
 
 type AuditEventInput = {
   actorNurseId?: string | null;
+  actorAdminId?: string | null;
   action: string;
   resourceType: string;
   resourceId?: string | null;
@@ -18,6 +19,7 @@ export const logAuditEvent = async (event: AuditEventInput): Promise<void> => {
       .insert(auditEvents)
       .values({
         actorNurseId: event.actorNurseId ?? null,
+        actorAdminId: event.actorAdminId ?? null,
         action: event.action,
         resourceType: event.resourceType,
         resourceId: event.resourceId ?? null,

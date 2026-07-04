@@ -37,6 +37,9 @@ export type AuthUser = {
   optimizationObjective?: "time" | "distance" | null;
   isSetupComplete?: boolean;
   setupMissing?: SetupMissingField[];
+  // True when an admin has reset this nurse's password — the app forces a change
+  // before anything else can be used. Cleared once they set a new password.
+  mustChangePassword?: boolean;
 };
 
 export type LoginRequest = {
@@ -102,6 +105,10 @@ export const isAuthUser = (value: unknown): value is AuthUser => {
   }
 
   if (value.isSetupComplete !== undefined && typeof value.isSetupComplete !== "boolean") {
+    return false;
+  }
+
+  if (value.mustChangePassword !== undefined && typeof value.mustChangePassword !== "boolean") {
     return false;
   }
 

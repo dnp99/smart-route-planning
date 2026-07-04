@@ -1,0 +1,411 @@
+import { and, desc, eq, gte, isNotNull, isNull, lt, notExists, sql } from "drizzle-orm";
+import { getDb } from "../../db";
+import {
+  auditEvents,
+  nurses,
+  patients,
+  recurringVisitTemplates,
+  routeOptimizationRuns,
+} from "../../db/schema";
+
+export type AdminNurseSummary = {
+  id: string;
+  email: string;
+  displayName: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  createdAt: Date;
+  lastLoginAt: Date | null;
+  activePatientCount: number;
+  lastActivityAt: Date | null;
+};
+
+// One row per nurse with the at-a-glance counts the admin users table needs.
+// The two aggregates (active-client count, last-activity time) are fetched as
+// grouped queries and merged in memory rather than as correlated subqueries —
+// simpler to read and index-friendly on the existing patient/audit indexes.
+export const listNursesWithSummary = async (): Promise<AdminNurseSummary[]> => {
+  const db = getDb();
+
+  const nurseRows = await db
+    .select({
+      id: nurses.id,
+      email: nurses.email,
+      displayName: nurses.displayName,
+      isActive: nurses.isActive,
+      mustChangePassword: nurses.mustChangePassword,
+      createdAt: nurses.createdAt,
+      lastLoginAt: nurses.lastLoginAt,
+    })
+    .from(nurses)
+    .orderBy(desc(nurses.createdAt));
+
+  const activeCounts = await db
+    .select({
+      nurseId: patients.nurseId,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(patients)
+    .where(eq(patients.isActive, true))
+    .groupBy(patients.nurseId);
+
+  const lastActivity = await db
+    .select({
+      nurseId: auditEvents.actorNurseId,
+      // A raw aggregate — postgres-js/Drizzle returns this as a string (only
+      // declared columns are mapped to Date), so coerce below.
+      lastAt: sql<string | Date>`max(${auditEvents.createdAt})`,
+    })
+    .from(auditEvents)
+    .where(isNotNull(auditEvents.actorNurseId))
+    .groupBy(auditEvents.actorNurseId);
+
+  const countByNurse = new Map(activeCounts.map((row) => [row.nurseId, row.count]));
+  const activityByNurse = new Map(
+    lastActivity.map((row) => [row.nurseId, row.lastAt ? new Date(row.lastAt) : null]),
+  );
+
+  return nurseRows.map((nurse) => ({
+    ...nurse,
+    activePatientCount: countByNurse.get(nurse.id) ?? 0,
+    lastActivityAt: activityByNurse.get(nurse.id) ?? null,
+  }));
+};
+
+export type AdminNurseProfile = {
+  id: string;
+  email: string;
+  displayName: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  homeAddress: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  lastLoginAt: Date | null;
+};
+
+export const getNurseProfile = async (nurseId: string): Promise<AdminNurseProfile | null> => {
+  const [row] = await getDb()
+    .select({
+      id: nurses.id,
+      email: nurses.email,
+      displayName: nurses.displayName,
+      isActive: nurses.isActive,
+      mustChangePassword: nurses.mustChangePassword,
+      homeAddress: nurses.homeAddress,
+      createdAt: nurses.createdAt,
+      updatedAt: nurses.updatedAt,
+      lastLoginAt: nurses.lastLoginAt,
+    })
+    .from(nurses)
+    .where(eq(nurses.id, nurseId))
+    .limit(1);
+  return row ?? null;
+};
+
+export type AdminNursePatient = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  address: string;
+  isActive: boolean;
+  archivedAt: Date | null;
+  createdAt: Date;
+};
+
+// Full patient detail (PHI) for one nurse — names and addresses included. Reads
+// through here are audited by the caller as an admin.nurse.view.
+export const listNursePatients = async (nurseId: string): Promise<AdminNursePatient[]> =>
+  getDb()
+    .select({
+      id: patients.id,
+      firstName: patients.firstName,
+      lastName: patients.lastName,
+      address: patients.address,
+      isActive: patients.isActive,
+      archivedAt: patients.archivedAt,
+      createdAt: patients.createdAt,
+    })
+    .from(patients)
+    .where(eq(patients.nurseId, nurseId))
+    .orderBy(desc(patients.createdAt));
+
+export type AdminActivityEvent = {
+  id: string;
+  action: string;
+  resourceType: string;
+  resourceId: string | null;
+  outcome: string;
+  metadata: unknown;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: Date;
+};
+
+export const listNurseActivity = async (
+  nurseId: string,
+  limit = 100,
+): Promise<AdminActivityEvent[]> =>
+  getDb()
+    .select({
+      id: auditEvents.id,
+      action: auditEvents.action,
+      resourceType: auditEvents.resourceType,
+      resourceId: auditEvents.resourceId,
+      outcome: auditEvents.outcome,
+      metadata: auditEvents.metadata,
+      ipAddress: auditEvents.ipAddress,
+      userAgent: auditEvents.userAgent,
+      createdAt: auditEvents.createdAt,
+    })
+    .from(auditEvents)
+    .where(eq(auditEvents.actorNurseId, nurseId))
+    .orderBy(desc(auditEvents.createdAt))
+    .limit(Math.max(1, Math.min(500, limit)));
+
+export type AdminMetrics = {
+  nurses: { total: number; active: number };
+  signups: { total: number; last7Days: number; last30Days: number };
+  activeNurses: { dau: number; wau: number };
+  clientsAdded: { last7Days: number; last30Days: number };
+  routeRuns: { last7Days: number; last30Days: number };
+  templateCoverage: { covered: number; total: number };
+  onboarding: { neverLoggedIn: number; noClients: number };
+  // Dense 14-day series (zero-filled), oldest first, for the signup chart.
+  signupTrend: { date: string; count: number }[];
+};
+
+const countInt = sql<number>`count(*)::int`;
+
+// In-app KPIs for the admin dashboard. Signup counts/trend come from
+// nurses.createdAt (accurate for accounts that predate the signup audit event);
+// DAU/WAU come from login audit events (forward-looking — only logins recorded
+// after that feature shipped count). No PHI is read here.
+export const getAdminMetrics = async (now = new Date()): Promise<AdminMetrics> => {
+  const db = getDb();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const since = (days: number) => new Date(now.getTime() - days * dayMs);
+
+  const [nurseTotals] = await db
+    .select({
+      total: countInt,
+      active: sql<number>`count(*) filter (where ${nurses.isActive})::int`,
+    })
+    .from(nurses);
+
+  const [signupTotal] = await db.select({ total: countInt }).from(nurses);
+  const [signups7] = await db
+    .select({ total: countInt })
+    .from(nurses)
+    .where(gte(nurses.createdAt, since(7)));
+  const [signups30] = await db
+    .select({ total: countInt })
+    .from(nurses)
+    .where(gte(nurses.createdAt, since(30)));
+
+  const distinctLoginActors = (days: number) =>
+    db
+      .select({ n: sql<number>`count(distinct ${auditEvents.actorNurseId})::int` })
+      .from(auditEvents)
+      .where(
+        and(
+          eq(auditEvents.action, "login"),
+          isNotNull(auditEvents.actorNurseId),
+          gte(auditEvents.createdAt, since(days)),
+        ),
+      );
+
+  const [dau] = await distinctLoginActors(1);
+  const [wau] = await distinctLoginActors(7);
+
+  const clientsAddedSince = (days: number) =>
+    db
+      .select({ n: countInt })
+      .from(auditEvents)
+      .where(
+        and(
+          eq(auditEvents.action, "patients.create"),
+          eq(auditEvents.outcome, "success"),
+          gte(auditEvents.createdAt, since(days)),
+        ),
+      );
+
+  const [clients7] = await clientsAddedSince(7);
+  const [clients30] = await clientsAddedSince(30);
+
+  const trendRows = await db
+    .select({
+      day: sql<string>`to_char(date_trunc('day', ${nurses.createdAt}), 'YYYY-MM-DD')`,
+      count: countInt,
+    })
+    .from(nurses)
+    .where(gte(nurses.createdAt, since(14)))
+    .groupBy(sql`date_trunc('day', ${nurses.createdAt})`)
+    .orderBy(sql`date_trunc('day', ${nurses.createdAt})`);
+
+  const routeRunsSince = (days: number) =>
+    db
+      .select({ n: countInt })
+      .from(auditEvents)
+      .where(
+        and(
+          eq(auditEvents.action, "optimize.v3"),
+          eq(auditEvents.outcome, "success"),
+          gte(auditEvents.createdAt, since(days)),
+        ),
+      );
+  const [runs7] = await routeRunsSince(7);
+  const [runs30] = await routeRunsSince(30);
+
+  // Template coverage across all active clients: how many have an active
+  // recurring template vs. the total active-client population.
+  const [coverageTotal] = await db
+    .select({ n: countInt })
+    .from(patients)
+    .where(eq(patients.isActive, true));
+  const [coverageCovered] = await db
+    .select({ n: sql<number>`count(distinct ${patients.id})::int` })
+    .from(patients)
+    .innerJoin(
+      recurringVisitTemplates,
+      and(
+        eq(recurringVisitTemplates.patientId, patients.id),
+        eq(recurringVisitTemplates.isActive, true),
+      ),
+    )
+    .where(eq(patients.isActive, true));
+
+  // Onboarding risk: active nurses who never logged in, or have no active clients.
+  const [neverLoggedIn] = await db
+    .select({ n: countInt })
+    .from(nurses)
+    .where(and(eq(nurses.isActive, true), isNull(nurses.lastLoginAt)));
+  const [noClients] = await db
+    .select({ n: countInt })
+    .from(nurses)
+    .where(
+      and(
+        eq(nurses.isActive, true),
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(patients)
+            .where(and(eq(patients.nurseId, nurses.id), eq(patients.isActive, true))),
+        ),
+      ),
+    );
+
+  // Zero-fill the signup series to a full 14-day window so the chart has no gaps.
+  const countByDay = new Map(trendRows.map((row) => [row.day, row.count]));
+  const signupTrend: { date: string; count: number }[] = [];
+  for (let dayOffset = 13; dayOffset >= 0; dayOffset -= 1) {
+    const day = new Date(now.getTime() - dayOffset * dayMs).toISOString().slice(0, 10);
+    signupTrend.push({ date: day, count: countByDay.get(day) ?? 0 });
+  }
+
+  return {
+    nurses: { total: nurseTotals?.total ?? 0, active: nurseTotals?.active ?? 0 },
+    signups: {
+      total: signupTotal?.total ?? 0,
+      last7Days: signups7?.total ?? 0,
+      last30Days: signups30?.total ?? 0,
+    },
+    activeNurses: { dau: dau?.n ?? 0, wau: wau?.n ?? 0 },
+    clientsAdded: { last7Days: clients7?.n ?? 0, last30Days: clients30?.n ?? 0 },
+    routeRuns: { last7Days: runs7?.n ?? 0, last30Days: runs30?.n ?? 0 },
+    templateCoverage: { covered: coverageCovered?.n ?? 0, total: coverageTotal?.n ?? 0 },
+    onboarding: { neverLoggedIn: neverLoggedIn?.n ?? 0, noClients: noClients?.n ?? 0 },
+    signupTrend,
+  };
+};
+
+export type AdminRouteRun = {
+  id: string;
+  planningDate: string;
+  createdAt: Date;
+  requestedVisitCount: number;
+  scheduledVisitCount: number;
+  unscheduledVisitCount: number;
+  onTimeVisitCount: number;
+  totalDurationSeconds: number;
+  totalDistanceMeters: number;
+  optimizationObjective: string | null;
+};
+
+const ROUTE_RUN_PAGE_SIZE = 30;
+const ROUTE_RUN_WINDOW_CAP = 100;
+const ROUTE_RUN_WINDOW_DAYS = 7;
+
+const routeRunColumns = {
+  id: routeOptimizationRuns.id,
+  planningDate: routeOptimizationRuns.planningDate,
+  createdAt: routeOptimizationRuns.createdAt,
+  requestedVisitCount: routeOptimizationRuns.requestedVisitCount,
+  scheduledVisitCount: routeOptimizationRuns.scheduledVisitCount,
+  unscheduledVisitCount: routeOptimizationRuns.unscheduledVisitCount,
+  onTimeVisitCount: routeOptimizationRuns.onTimeVisitCount,
+  totalDurationSeconds: routeOptimizationRuns.totalDurationSeconds,
+  totalDistanceMeters: routeOptimizationRuns.totalDistanceMeters,
+  optimizationObjective: routeOptimizationRuns.optimizationObjective,
+};
+
+// Paginated route-run history for one nurse. Only aggregate columns are read
+// (counts/durations/dates) — never the request/result payloads, which hold PHI.
+// First page (no cursor) = the last 7 days; "load more" pages older runs by
+// count via the returned nextCursor (an ISO createdAt).
+export const listNurseRouteRuns = async (
+  nurseId: string,
+  options: { before?: Date | null; now?: Date } = {},
+): Promise<{ runs: AdminRouteRun[]; nextCursor: string | null; hasMore: boolean }> => {
+  const db = getDb();
+
+  if (!options.before) {
+    const now = options.now ?? new Date();
+    const windowStart = new Date(now.getTime() - ROUTE_RUN_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+    const runs = await db
+      .select(routeRunColumns)
+      .from(routeOptimizationRuns)
+      .where(
+        and(
+          eq(routeOptimizationRuns.nurseId, nurseId),
+          gte(routeOptimizationRuns.createdAt, windowStart),
+        ),
+      )
+      .orderBy(desc(routeOptimizationRuns.createdAt))
+      .limit(ROUTE_RUN_WINDOW_CAP);
+
+    const older = await db
+      .select({ id: routeOptimizationRuns.id })
+      .from(routeOptimizationRuns)
+      .where(
+        and(
+          eq(routeOptimizationRuns.nurseId, nurseId),
+          lt(routeOptimizationRuns.createdAt, windowStart),
+        ),
+      )
+      .limit(1);
+    const hasMore = older.length > 0;
+
+    return { runs, nextCursor: hasMore ? windowStart.toISOString() : null, hasMore };
+  }
+
+  const rows = await db
+    .select(routeRunColumns)
+    .from(routeOptimizationRuns)
+    .where(
+      and(
+        eq(routeOptimizationRuns.nurseId, nurseId),
+        lt(routeOptimizationRuns.createdAt, options.before),
+      ),
+    )
+    .orderBy(desc(routeOptimizationRuns.createdAt))
+    .limit(ROUTE_RUN_PAGE_SIZE + 1);
+
+  const hasMore = rows.length > ROUTE_RUN_PAGE_SIZE;
+  const runs = rows.slice(0, ROUTE_RUN_PAGE_SIZE);
+  const nextCursor =
+    hasMore && runs.length > 0 ? runs[runs.length - 1].createdAt.toISOString() : null;
+
+  return { runs, nextCursor, hasMore };
+};
