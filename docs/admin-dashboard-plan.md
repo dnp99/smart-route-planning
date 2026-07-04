@@ -1,8 +1,8 @@
 # Admin Dashboard — Design & Plan
 
-Status: **Phase 1 & 2 complete** (read dashboard live, verified end-to-end
-against the running server). **Phase 3 next** (admin actions).
-Admin UI location confirmed: same app, gated `/admin/*` route tree.
+Status: **Phase 1, 2 & 3 complete** — admin dashboard is fully functional
+(read + actions), all verified end-to-end against the running server.
+Remaining work is Phase 4 (optional). Admin UI: same app, gated `/admin/*`.
 
 An internal admin surface for the app owner (data controller) to monitor and
 manage nurse accounts: new signups, per-user activity (logins, clients added,
@@ -163,11 +163,16 @@ resolves `admin_sessions` -> `admins`, rejects nurse sessions).
 - [x] Verified end-to-end against the running server (auth guard, real metrics,
       users list, detail, and the `admin.nurse.view` audit event persisting).
 
-### Phase 3 — Admin actions
-- [ ] Deactivate / reactivate nurse (audited).
-- [ ] Reset password: temp + `mustChangePassword`; enforce forced change at nurse
-      login; clear on change.
-- [ ] Tests: each action audited; forced-change gate at login.
+### Phase 3 — Admin actions ✅ (done)
+- [x] Deactivate / reactivate nurse (audited) — `[id]/deactivate|reactivate`.
+- [x] Reset password: temp password + `mustChangePassword`; returned once, never
+      stored/logged — `[id]/reset-password`.
+- [x] Enforce forced change: `mustChangePassword` surfaced in login/me/signup;
+      App renders a blocking `ForcedPasswordChange` gate; self-service change
+      clears the flag.
+- [x] Frontend action buttons on the detail page (+ one-time temp-password panel).
+- [x] Tests: each action audited; forced-change guards; whole reset→change chain
+      verified end-to-end against the running server.
 
 ### Phase 4 — Later / optional
 - [ ] Richer analytics charts (trends, retention).
