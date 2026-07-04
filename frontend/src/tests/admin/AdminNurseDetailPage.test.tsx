@@ -45,6 +45,13 @@ const baseProps = {
   isLoading: false,
   error: "",
   onBack: () => undefined,
+  isBusy: false,
+  actionError: "",
+  temporaryPassword: null,
+  onDeactivate: () => undefined,
+  onReactivate: () => undefined,
+  onResetPassword: () => undefined,
+  onDismissTemporaryPassword: () => undefined,
 };
 
 describe("AdminNurseDetailPage", () => {
@@ -70,5 +77,31 @@ describe("AdminNurseDetailPage", () => {
       <AdminNurseDetailPage {...baseProps} detail={null} error="Unable to load this nurse." />,
     );
     expect(screen.getByText("Unable to load this nurse.")).toBeTruthy();
+  });
+
+  it("shows Deactivate for an active nurse and fires the callback", () => {
+    const onDeactivate = vi.fn();
+    render(<AdminNurseDetailPage {...baseProps} onDeactivate={onDeactivate} />);
+    fireEvent.click(screen.getByText("Deactivate"));
+    expect(onDeactivate).toHaveBeenCalled();
+  });
+
+  it("shows Reactivate for an inactive nurse", () => {
+    const inactive = { ...detail, nurse: { ...detail.nurse, isActive: false } };
+    render(<AdminNurseDetailPage {...baseProps} detail={inactive} />);
+    expect(screen.getByText("Reactivate")).toBeTruthy();
+    expect(screen.queryByText("Deactivate")).toBeNull();
+  });
+
+  it("fires reset password and renders the one-time temporary password", () => {
+    const onResetPassword = vi.fn();
+    const { rerender } = render(
+      <AdminNurseDetailPage {...baseProps} onResetPassword={onResetPassword} />,
+    );
+    fireEvent.click(screen.getByText("Reset password"));
+    expect(onResetPassword).toHaveBeenCalled();
+
+    rerender(<AdminNurseDetailPage {...baseProps} temporaryPassword="Tmp3xample9zQ" />);
+    expect(screen.getByText("Tmp3xample9zQ")).toBeTruthy();
   });
 });

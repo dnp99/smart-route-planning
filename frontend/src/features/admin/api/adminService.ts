@@ -169,3 +169,30 @@ export const fetchAdminNurseDetail = async (nurseId: string): Promise<AdminNurse
     activity: Array.isArray(payload.activity) ? payload.activity : [],
   };
 };
+
+const postAdmin = async (path: string): Promise<unknown> => {
+  const response = await fetch(`${resolveApiBaseUrl()}${path}`, {
+    method: "POST",
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error(await readError(response));
+  }
+  return response.json().catch(() => ({}));
+};
+
+export const deactivateNurse = (nurseId: string): Promise<unknown> =>
+  postAdmin(`/api/admin/nurses/${encodeURIComponent(nurseId)}/deactivate`);
+
+export const reactivateNurse = (nurseId: string): Promise<unknown> =>
+  postAdmin(`/api/admin/nurses/${encodeURIComponent(nurseId)}/reactivate`);
+
+export const resetNursePassword = async (nurseId: string): Promise<string> => {
+  const payload = (await postAdmin(
+    `/api/admin/nurses/${encodeURIComponent(nurseId)}/reset-password`,
+  )) as { temporaryPassword?: unknown };
+  if (typeof payload.temporaryPassword !== "string") {
+    throw new Error("Unexpected reset response.");
+  }
+  return payload.temporaryPassword;
+};

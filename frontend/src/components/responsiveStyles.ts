@@ -563,6 +563,17 @@ export const responsiveStyles = {
   adminFeedMeta: "text-xs text-slate-500 dark:text-slate-400",
   adminFeedDenied:
     "inline-flex items-center rounded-full bg-rose-100 px-2 py-0.5 text-xs font-semibold text-rose-700 dark:bg-rose-950/50 dark:text-rose-300",
+  adminActionRow: "mt-4 flex flex-wrap items-center gap-2",
+  adminActionButton:
+    "rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 disabled:opacity-60 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
+  // Destructive is red text, not a red fill (design §16).
+  adminDangerButton:
+    "rounded-lg px-3 py-1.5 text-sm font-semibold text-rose-600 transition hover:bg-rose-50 disabled:opacity-60 dark:text-rose-400 dark:hover:bg-rose-950/40",
+  // Blue-tinted selected/active surface (design §11) for the one-time secret.
+  adminTempPanel:
+    "mt-4 rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900 dark:bg-blue-950/30",
+  adminTempCode:
+    "mt-2 block rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
   dashboardKpiProgressTrack: "mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700",
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",

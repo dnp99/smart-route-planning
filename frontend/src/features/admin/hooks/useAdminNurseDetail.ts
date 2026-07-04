@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { fetchAdminNurseDetail, type AdminNurseDetail } from "../api/adminService";
 
 type AdminNurseDetailState = {
@@ -8,13 +8,16 @@ type AdminNurseDetailState = {
 };
 
 // Loads one nurse's full detail (profile + patients + activity feed). The server
-// records an admin.nurse.view audit event for this PHI-exposing read.
+// records an admin.nurse.view audit event for this PHI-exposing read. `reload`
+// re-fetches after an admin action mutates the nurse.
 export const useAdminNurseDetail = (nurseId: string | undefined) => {
   const [state, setState] = useState<AdminNurseDetailState>({
     detail: null,
     isLoading: true,
     error: "",
   });
+  const [reloadKey, setReloadKey] = useState(0);
+  const reload = useCallback(() => setReloadKey((key) => key + 1), []);
 
   useEffect(() => {
     if (!nurseId) {
@@ -42,7 +45,7 @@ export const useAdminNurseDetail = (nurseId: string | undefined) => {
     return () => {
       active = false;
     };
-  }, [nurseId]);
+  }, [nurseId, reloadKey]);
 
-  return state;
+  return { ...state, reload };
 };

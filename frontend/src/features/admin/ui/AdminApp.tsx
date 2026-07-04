@@ -2,6 +2,7 @@ import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-do
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { useAdminAuth } from "../hooks/useAdminAuth";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
+import { useAdminNurseActions } from "../hooks/useAdminNurseActions";
 import { useAdminNurseDetail } from "../hooks/useAdminNurseDetail";
 import AdminDashboardPage from "./AdminDashboardPage";
 import AdminNurseDetailPage from "./AdminNurseDetailPage";
@@ -27,7 +28,16 @@ const AdminDashboardRoute = () => {
 const AdminNurseDetailRoute = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { detail, isLoading, error } = useAdminNurseDetail(id);
+  const { detail, isLoading, error, reload } = useAdminNurseDetail(id);
+  const {
+    isBusy,
+    actionError,
+    temporaryPassword,
+    deactivate,
+    reactivate,
+    resetPassword,
+    dismissTemporaryPassword,
+  } = useAdminNurseActions(id, reload);
 
   return (
     <AdminNurseDetailPage
@@ -35,6 +45,13 @@ const AdminNurseDetailRoute = () => {
       isLoading={isLoading}
       error={error}
       onBack={() => navigate("/admin")}
+      isBusy={isBusy}
+      actionError={actionError}
+      temporaryPassword={temporaryPassword}
+      onDeactivate={() => void deactivate()}
+      onReactivate={() => void reactivate()}
+      onResetPassword={() => void resetPassword()}
+      onDismissTemporaryPassword={dismissTemporaryPassword}
     />
   );
 };
