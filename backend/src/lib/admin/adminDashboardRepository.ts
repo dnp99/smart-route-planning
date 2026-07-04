@@ -1,6 +1,12 @@
-import { and, desc, eq, gte, isNotNull, isNull, notExists, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, lt, notExists, sql } from "drizzle-orm";
 import { getDb } from "../../db";
-import { auditEvents, nurses, patients, recurringVisitTemplates } from "../../db/schema";
+import {
+  auditEvents,
+  nurses,
+  patients,
+  recurringVisitTemplates,
+  routeOptimizationRuns,
+} from "../../db/schema";
 
 export type AdminNurseSummary = {
   id: string;
@@ -311,4 +317,95 @@ export const getAdminMetrics = async (now = new Date()): Promise<AdminMetrics> =
     onboarding: { neverLoggedIn: neverLoggedIn?.n ?? 0, noClients: noClients?.n ?? 0 },
     signupTrend,
   };
+};
+
+export type AdminRouteRun = {
+  id: string;
+  planningDate: string;
+  createdAt: Date;
+  requestedVisitCount: number;
+  scheduledVisitCount: number;
+  unscheduledVisitCount: number;
+  onTimeVisitCount: number;
+  totalDurationSeconds: number;
+  totalDistanceMeters: number;
+  optimizationObjective: string | null;
+};
+
+const ROUTE_RUN_PAGE_SIZE = 30;
+const ROUTE_RUN_WINDOW_CAP = 100;
+const ROUTE_RUN_WINDOW_DAYS = 7;
+
+const routeRunColumns = {
+  id: routeOptimizationRuns.id,
+  planningDate: routeOptimizationRuns.planningDate,
+  createdAt: routeOptimizationRuns.createdAt,
+  requestedVisitCount: routeOptimizationRuns.requestedVisitCount,
+  scheduledVisitCount: routeOptimizationRuns.scheduledVisitCount,
+  unscheduledVisitCount: routeOptimizationRuns.unscheduledVisitCount,
+  onTimeVisitCount: routeOptimizationRuns.onTimeVisitCount,
+  totalDurationSeconds: routeOptimizationRuns.totalDurationSeconds,
+  totalDistanceMeters: routeOptimizationRuns.totalDistanceMeters,
+  optimizationObjective: routeOptimizationRuns.optimizationObjective,
+};
+
+// Paginated route-run history for one nurse. Only aggregate columns are read
+// (counts/durations/dates) — never the request/result payloads, which hold PHI.
+// First page (no cursor) = the last 7 days; "load more" pages older runs by
+// count via the returned nextCursor (an ISO createdAt).
+export const listNurseRouteRuns = async (
+  nurseId: string,
+  options: { before?: Date | null; now?: Date } = {},
+): Promise<{ runs: AdminRouteRun[]; nextCursor: string | null; hasMore: boolean }> => {
+  const db = getDb();
+
+  if (!options.before) {
+    const now = options.now ?? new Date();
+    const windowStart = new Date(now.getTime() - ROUTE_RUN_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+
+    const runs = await db
+      .select(routeRunColumns)
+      .from(routeOptimizationRuns)
+      .where(
+        and(
+          eq(routeOptimizationRuns.nurseId, nurseId),
+          gte(routeOptimizationRuns.createdAt, windowStart),
+        ),
+      )
+      .orderBy(desc(routeOptimizationRuns.createdAt))
+      .limit(ROUTE_RUN_WINDOW_CAP);
+
+    const older = await db
+      .select({ id: routeOptimizationRuns.id })
+      .from(routeOptimizationRuns)
+      .where(
+        and(
+          eq(routeOptimizationRuns.nurseId, nurseId),
+          lt(routeOptimizationRuns.createdAt, windowStart),
+        ),
+      )
+      .limit(1);
+    const hasMore = older.length > 0;
+
+    return { runs, nextCursor: hasMore ? windowStart.toISOString() : null, hasMore };
+  }
+
+  const rows = await db
+    .select(routeRunColumns)
+    .from(routeOptimizationRuns)
+    .where(
+      and(
+        eq(routeOptimizationRuns.nurseId, nurseId),
+        lt(routeOptimizationRuns.createdAt, options.before),
+      ),
+    )
+    .orderBy(desc(routeOptimizationRuns.createdAt))
+    .limit(ROUTE_RUN_PAGE_SIZE + 1);
+
+  const hasMore = rows.length > ROUTE_RUN_PAGE_SIZE;
+  const runs = rows.slice(0, ROUTE_RUN_PAGE_SIZE);
+  const nextCursor =
+    hasMore && runs.length > 0 ? runs[runs.length - 1].createdAt.toISOString() : null;
+
+  return { runs, nextCursor, hasMore };
 };
