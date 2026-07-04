@@ -1,4 +1,4 @@
-import { desc, eq, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { getDb } from "../../db";
 import { auditEvents, nurses, patients } from "../../db/schema";
 
@@ -152,3 +152,92 @@ export const listNurseActivity = async (
     .where(eq(auditEvents.actorNurseId, nurseId))
     .orderBy(desc(auditEvents.createdAt))
     .limit(Math.max(1, Math.min(500, limit)));
+
+export type AdminMetrics = {
+  nurses: { total: number; active: number };
+  signups: { total: number; last7Days: number; last30Days: number };
+  activeNurses: { dau: number; wau: number };
+  clientsAdded: { last7Days: number; last30Days: number };
+  signupTrend: { date: string; count: number }[];
+};
+
+const countInt = sql<number>`count(*)::int`;
+
+// In-app KPIs for the admin dashboard. Signup counts/trend come from
+// nurses.createdAt (accurate for accounts that predate the signup audit event);
+// DAU/WAU come from login audit events (forward-looking — only logins recorded
+// after that feature shipped count). No PHI is read here.
+export const getAdminMetrics = async (now = new Date()): Promise<AdminMetrics> => {
+  const db = getDb();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const since = (days: number) => new Date(now.getTime() - days * dayMs);
+
+  const [nurseTotals] = await db
+    .select({
+      total: countInt,
+      active: sql<number>`count(*) filter (where ${nurses.isActive})::int`,
+    })
+    .from(nurses);
+
+  const [signupTotal] = await db.select({ total: countInt }).from(nurses);
+  const [signups7] = await db
+    .select({ total: countInt })
+    .from(nurses)
+    .where(gte(nurses.createdAt, since(7)));
+  const [signups30] = await db
+    .select({ total: countInt })
+    .from(nurses)
+    .where(gte(nurses.createdAt, since(30)));
+
+  const distinctLoginActors = (days: number) =>
+    db
+      .select({ n: sql<number>`count(distinct ${auditEvents.actorNurseId})::int` })
+      .from(auditEvents)
+      .where(
+        and(
+          eq(auditEvents.action, "login"),
+          isNotNull(auditEvents.actorNurseId),
+          gte(auditEvents.createdAt, since(days)),
+        ),
+      );
+
+  const [dau] = await distinctLoginActors(1);
+  const [wau] = await distinctLoginActors(7);
+
+  const clientsAddedSince = (days: number) =>
+    db
+      .select({ n: countInt })
+      .from(auditEvents)
+      .where(
+        and(
+          eq(auditEvents.action, "patients.create"),
+          eq(auditEvents.outcome, "success"),
+          gte(auditEvents.createdAt, since(days)),
+        ),
+      );
+
+  const [clients7] = await clientsAddedSince(7);
+  const [clients30] = await clientsAddedSince(30);
+
+  const trendRows = await db
+    .select({
+      day: sql<string>`to_char(date_trunc('day', ${nurses.createdAt}), 'YYYY-MM-DD')`,
+      count: countInt,
+    })
+    .from(nurses)
+    .where(gte(nurses.createdAt, since(14)))
+    .groupBy(sql`date_trunc('day', ${nurses.createdAt})`)
+    .orderBy(sql`date_trunc('day', ${nurses.createdAt})`);
+
+  return {
+    nurses: { total: nurseTotals?.total ?? 0, active: nurseTotals?.active ?? 0 },
+    signups: {
+      total: signupTotal?.total ?? 0,
+      last7Days: signups7?.total ?? 0,
+      last30Days: signups30?.total ?? 0,
+    },
+    activeNurses: { dau: dau?.n ?? 0, wau: wau?.n ?? 0 },
+    clientsAdded: { last7Days: clients7?.n ?? 0, last30Days: clients30?.n ?? 0 },
+    signupTrend: trendRows.map((row) => ({ date: row.day, count: row.count })),
+  };
+};
