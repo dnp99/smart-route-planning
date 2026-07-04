@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, notExists, sql } from "drizzle-orm";
 import { getDb } from "../../db";
-import { auditEvents, nurses, patients } from "../../db/schema";
+import { auditEvents, nurses, patients, recurringVisitTemplates } from "../../db/schema";
 
 export type AdminNurseSummary = {
   id: string;
@@ -162,6 +162,10 @@ export type AdminMetrics = {
   signups: { total: number; last7Days: number; last30Days: number };
   activeNurses: { dau: number; wau: number };
   clientsAdded: { last7Days: number; last30Days: number };
+  routeRuns: { last7Days: number; last30Days: number };
+  templateCoverage: { covered: number; total: number };
+  onboarding: { neverLoggedIn: number; noClients: number };
+  // Dense 14-day series (zero-filled), oldest first, for the signup chart.
   signupTrend: { date: string; count: number }[];
 };
 
@@ -233,6 +237,66 @@ export const getAdminMetrics = async (now = new Date()): Promise<AdminMetrics> =
     .groupBy(sql`date_trunc('day', ${nurses.createdAt})`)
     .orderBy(sql`date_trunc('day', ${nurses.createdAt})`);
 
+  const routeRunsSince = (days: number) =>
+    db
+      .select({ n: countInt })
+      .from(auditEvents)
+      .where(
+        and(
+          eq(auditEvents.action, "optimize.v3"),
+          eq(auditEvents.outcome, "success"),
+          gte(auditEvents.createdAt, since(days)),
+        ),
+      );
+  const [runs7] = await routeRunsSince(7);
+  const [runs30] = await routeRunsSince(30);
+
+  // Template coverage across all active clients: how many have an active
+  // recurring template vs. the total active-client population.
+  const [coverageTotal] = await db
+    .select({ n: countInt })
+    .from(patients)
+    .where(eq(patients.isActive, true));
+  const [coverageCovered] = await db
+    .select({ n: sql<number>`count(distinct ${patients.id})::int` })
+    .from(patients)
+    .innerJoin(
+      recurringVisitTemplates,
+      and(
+        eq(recurringVisitTemplates.patientId, patients.id),
+        eq(recurringVisitTemplates.isActive, true),
+      ),
+    )
+    .where(eq(patients.isActive, true));
+
+  // Onboarding risk: active nurses who never logged in, or have no active clients.
+  const [neverLoggedIn] = await db
+    .select({ n: countInt })
+    .from(nurses)
+    .where(and(eq(nurses.isActive, true), isNull(nurses.lastLoginAt)));
+  const [noClients] = await db
+    .select({ n: countInt })
+    .from(nurses)
+    .where(
+      and(
+        eq(nurses.isActive, true),
+        notExists(
+          db
+            .select({ one: sql`1` })
+            .from(patients)
+            .where(and(eq(patients.nurseId, nurses.id), eq(patients.isActive, true))),
+        ),
+      ),
+    );
+
+  // Zero-fill the signup series to a full 14-day window so the chart has no gaps.
+  const countByDay = new Map(trendRows.map((row) => [row.day, row.count]));
+  const signupTrend: { date: string; count: number }[] = [];
+  for (let dayOffset = 13; dayOffset >= 0; dayOffset -= 1) {
+    const day = new Date(now.getTime() - dayOffset * dayMs).toISOString().slice(0, 10);
+    signupTrend.push({ date: day, count: countByDay.get(day) ?? 0 });
+  }
+
   return {
     nurses: { total: nurseTotals?.total ?? 0, active: nurseTotals?.active ?? 0 },
     signups: {
@@ -242,6 +306,9 @@ export const getAdminMetrics = async (now = new Date()): Promise<AdminMetrics> =
     },
     activeNurses: { dau: dau?.n ?? 0, wau: wau?.n ?? 0 },
     clientsAdded: { last7Days: clients7?.n ?? 0, last30Days: clients30?.n ?? 0 },
-    signupTrend: trendRows.map((row) => ({ date: row.day, count: row.count })),
+    routeRuns: { last7Days: runs7?.n ?? 0, last30Days: runs30?.n ?? 0 },
+    templateCoverage: { covered: coverageCovered?.n ?? 0, total: coverageTotal?.n ?? 0 },
+    onboarding: { neverLoggedIn: neverLoggedIn?.n ?? 0, noClients: noClients?.n ?? 0 },
+    signupTrend,
   };
 };
