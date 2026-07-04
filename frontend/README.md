@@ -31,6 +31,7 @@ This folder contains the Vite + React frontend for CareFlow.
 - Use cookie-based auth (`credentials: "include"`) with no JWT/token storage in localStorage/sessionStorage.
 - Enforce PHI-safe handling: never persist PHI to browser storage, URL params, logs, analytics, or telemetry.
 - Treat onboarding data with the same PHI safeguards as the rest of the product (no PHI storage/logging/telemetry leakage).
+- Host an isolated internal **Admin area** at `/admin` (`src/features/admin/`): its own login + admin session, rendered by `App.jsx` outside the nurse shell. KPI cards + signup chart + users table, and a per-nurse detail view (profile, audited actions with confirm dialogs, client table with search/sort/20-per-page pagination, route-run history, activity feed).
 
 ## Local development
 
@@ -107,3 +108,4 @@ or:
 - `src/features/route-planner/hooks/useRoutePlannerController.ts` - visit instance hydration, template matching, auto-seed, and orphan guard
 - `src/components/notifications/useNotifications.ts` - derives header notification items from the dashboard summary + auth user; module-cached summary fetch and localStorage unread tracking
 - `src/components/notifications/NotificationsMenu.tsx` - header bell + portaled notifications dropdown (view only)
+- `src/features/admin/` - isolated `/admin` area: `api/adminService.ts` (admin fetch client), `hooks/` (`useAdminAuth`, `useAdminDashboard`, `useAdminNurseDetail`, `useAdminNurseActions`, `useNurseRouteRuns`, `useClientTable`, `usePagination`), and `ui/` (`AdminApp`, login, dashboard, nurse detail, `NurseRouteRunsSection`, `SignupTrendChart`, `Pagination`)
