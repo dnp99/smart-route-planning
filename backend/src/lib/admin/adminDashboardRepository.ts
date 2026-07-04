@@ -46,14 +46,18 @@ export const listNursesWithSummary = async (): Promise<AdminNurseSummary[]> => {
   const lastActivity = await db
     .select({
       nurseId: auditEvents.actorNurseId,
-      lastAt: sql<Date>`max(${auditEvents.createdAt})`,
+      // A raw aggregate — postgres-js/Drizzle returns this as a string (only
+      // declared columns are mapped to Date), so coerce below.
+      lastAt: sql<string | Date>`max(${auditEvents.createdAt})`,
     })
     .from(auditEvents)
     .where(isNotNull(auditEvents.actorNurseId))
     .groupBy(auditEvents.actorNurseId);
 
   const countByNurse = new Map(activeCounts.map((row) => [row.nurseId, row.count]));
-  const activityByNurse = new Map(lastActivity.map((row) => [row.nurseId, row.lastAt]));
+  const activityByNurse = new Map(
+    lastActivity.map((row) => [row.nurseId, row.lastAt ? new Date(row.lastAt) : null]),
+  );
 
   return nurseRows.map((nurse) => ({
     ...nurse,
