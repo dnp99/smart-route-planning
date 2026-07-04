@@ -1,6 +1,7 @@
 # Admin Dashboard — Design & Plan
 
-Status: **Phase 1 complete.** Phase 2 next (needs the admin-UI-location confirm).
+Status: **Phase 1 complete. Phase 2 backend complete; Phase 2 frontend next.**
+Admin UI location confirmed: same app, gated `/admin/*` route tree.
 
 An internal admin surface for the app owner (data controller) to monitor and
 manage nurse accounts: new signups, per-user activity (logins, clients added,
@@ -149,10 +150,15 @@ resolves `admin_sessions` -> `admins`, rejects nurse sessions).
       helpers, signup/login audit events.
 
 ### Phase 2 — Read dashboard
-- [ ] `GET /api/admin/nurses`, `GET /api/admin/nurses/:id`, `GET /api/admin/metrics`.
-- [ ] `admin.patient.view` auditing on PHI-exposing reads.
-- [ ] Admin frontend: login, users table + KPIs, user-detail activity feed.
-- [ ] Tests: list/detail/metrics, PHI-view audit fires.
+- [x] `GET /api/admin/nurses` (list + summary counts).
+- [x] `GET /api/admin/nurses/:id` (profile + full patients + activity feed).
+- [x] `GET /api/admin/metrics` (nurse totals, signups + 14-day trend, DAU/WAU,
+      clients added).
+- [x] `admin.nurse.view` auditing on the PHI-exposing detail read.
+- [x] Backend tests: list/detail/metrics, incl. the PHI-view audit fires.
+- [ ] Admin frontend (same app, `/admin/*`): login screen, users table + KPIs,
+      user-detail (activity feed + full patient list). *(next)*
+- [ ] Frontend tests.
 
 ### Phase 3 — Admin actions
 - [ ] Deactivate / reactivate nurse (audited).
