@@ -117,3 +117,55 @@ export const fetchAdminMetrics = async (): Promise<AdminMetrics> => {
   const payload = (await getJson("/api/admin/metrics")) as { metrics?: AdminMetrics };
   return payload.metrics as AdminMetrics;
 };
+
+export type AdminNurseProfile = {
+  id: string;
+  email: string;
+  displayName: string;
+  isActive: boolean;
+  mustChangePassword: boolean;
+  homeAddress: string | null;
+  createdAt: string;
+  lastLoginAt: string | null;
+};
+
+export type AdminNursePatient = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  address: string;
+  isActive: boolean;
+  archivedAt: string | null;
+  createdAt: string;
+};
+
+export type AdminActivityEvent = {
+  id: string;
+  action: string;
+  resourceType: string;
+  resourceId: string | null;
+  outcome: string;
+  metadata: unknown;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+};
+
+export type AdminNurseDetail = {
+  nurse: AdminNurseProfile;
+  patients: AdminNursePatient[];
+  activity: AdminActivityEvent[];
+};
+
+export const fetchAdminNurseDetail = async (nurseId: string): Promise<AdminNurseDetail> => {
+  const payload = (await getJson(`/api/admin/nurses/${encodeURIComponent(nurseId)}`)) as {
+    nurse?: AdminNurseProfile;
+    patients?: AdminNursePatient[];
+    activity?: AdminActivityEvent[];
+  };
+  return {
+    nurse: payload.nurse as AdminNurseProfile,
+    patients: Array.isArray(payload.patients) ? payload.patients : [],
+    activity: Array.isArray(payload.activity) ? payload.activity : [],
+  };
+};

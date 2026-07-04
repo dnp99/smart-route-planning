@@ -1,8 +1,10 @@
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate, useParams } from "react-router-dom";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import { useAdminAuth } from "../hooks/useAdminAuth";
 import { useAdminDashboard } from "../hooks/useAdminDashboard";
+import { useAdminNurseDetail } from "../hooks/useAdminNurseDetail";
 import AdminDashboardPage from "./AdminDashboardPage";
+import AdminNurseDetailPage from "./AdminNurseDetailPage";
 import AdminLoginPage from "./AdminLoginPage";
 
 // Dashboard route container — wires the data hook to the view and navigation.
@@ -17,6 +19,22 @@ const AdminDashboardRoute = () => {
       isLoading={isLoading}
       error={error}
       onSelectNurse={(nurseId) => navigate(`/admin/nurses/${nurseId}`)}
+    />
+  );
+};
+
+// Nurse-detail route container. The read is audited server-side (admin.nurse.view).
+const AdminNurseDetailRoute = () => {
+  const navigate = useNavigate();
+  const { id } = useParams();
+  const { detail, isLoading, error } = useAdminNurseDetail(id);
+
+  return (
+    <AdminNurseDetailPage
+      detail={detail}
+      isLoading={isLoading}
+      error={error}
+      onBack={() => navigate("/admin")}
     />
   );
 };
@@ -65,6 +83,7 @@ const AdminApp = () => {
       <main className={responsiveStyles.adminContent}>
         <Routes>
           <Route path="/admin" element={<AdminDashboardRoute />} />
+          <Route path="/admin/nurses/:id" element={<AdminNurseDetailRoute />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
       </main>

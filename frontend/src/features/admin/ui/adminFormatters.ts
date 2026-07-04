@@ -39,3 +39,38 @@ export const formatRelative = (iso: string | null, now = new Date()): string => 
   }
   return formatDate(iso);
 };
+
+export const formatDateTime = (iso: string | null): string => {
+  if (!iso) {
+    return "—";
+  }
+  const date = new Date(iso);
+  if (isNaN(date.getTime())) {
+    return "—";
+  }
+  return date.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  signup: "Signed up",
+  login: "Logged in",
+  "patients.create": "Added a client",
+  "patients.update": "Edited a client",
+  "patients.archive": "Archived a client",
+  "patients.restore": "Restored a client",
+  "patients.permanent_delete": "Permanently deleted a client",
+  "recurring_templates.create": "Created a recurring template",
+  "recurring_templates.update": "Edited a recurring template",
+  "recurring_templates.delete": "Deleted a recurring template",
+  "optimize.v3": "Optimized a route",
+  "route.advisor": "Requested AI route advice",
+  reschedule: "Rescheduled a visit",
+  skip: "Skipped a visit",
+};
+
+export const describeAction = (action: string): string => ACTION_LABELS[action] ?? action;
