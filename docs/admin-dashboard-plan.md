@@ -1,9 +1,11 @@
 # Admin Dashboard — Design & Plan
 
-Status: **Phases 1–3 complete + Phase 4 analytics/metrics done.** Admin dashboard
-is fully functional (read + actions + charts), all verified end-to-end against
-the running server. Only Phase 4 email-reset & impersonation remain (deferred).
-Admin UI: same app, gated `/admin/*`.
+Status: **Shipped and in use.** Phases 1–3 complete; Phase 4 analytics/metrics
+done, plus post-plan polish (per-nurse route-run history, client table
+pagination + search + sort, confirm dialogs on actions, repository test
+coverage). All verified end-to-end against the running server. Only Phase 4
+email-based reset & impersonation remain (deferred). Admin UI: same app, gated
+`/admin/*`. **To create an admin (incl. prod), see [Creating an admin](#creating-an-admin).**
 
 An internal admin surface for the app owner (data controller) to monitor and
 manage nurse accounts: new signups, per-user activity (logins, clients added,
@@ -91,14 +93,13 @@ nurses.mustChangePassword   boolean not null default false
 ## New audit actions
 
 - On nurse registration: **`signup`** (actorNurseId, ip, ua).
-- Admin actions (actorAdminId): **`admin.login`**, **`admin.logout`**,
-  **`admin.patient.view`** (PHI access), **`admin.nurse.deactivate`** /
+- Admin actions (actorAdminId): **`admin.login`** (success + denied),
+  **`admin.nurse.view`** (PHI access), **`admin.nurse.deactivate`** /
   **`admin.nurse.reactivate`**, **`admin.nurse.password_reset`**.
 
-> PHI-view auditing: when the admin opens a nurse's full activity/detail that
-> exposes patient names/addresses, record an `admin.patient.view` event with the
-> viewed nurse/patient scope in metadata. Metadata never stores more PHI than the
-> event already concerns.
+> PHI-view auditing: opening a nurse's detail (which exposes patient
+> names/addresses) writes an `admin.nurse.view` event with scope only in
+> metadata (`{ patientCount, activityCount }`) — never the PHI itself.
 
 ## API surface
 
@@ -107,8 +108,13 @@ POST   /api/admin/auth/login       email + password -> admin session cookie
 POST   /api/admin/auth/logout
 GET    /api/admin/auth/me
 GET    /api/admin/nurses           list users: signup, last login, active, counts
-GET    /api/admin/nurses/:id       one nurse + activity feed (full detail)
-GET    /api/admin/metrics          in-app KPIs (signups, DAU/WAU, clients added)
+GET    /api/admin/nurses/:id       one nurse + full patients (PHI) + activity feed
+GET    /api/admin/nurses/:id/route-runs[?before=<ISO>]  paginated run history
+                                    (aggregate stats only — no PHI payloads);
+                                    first page = last 7 days, then cursor pages of 30
+GET    /api/admin/metrics          in-app KPIs (nurse totals, signups + 14-day
+                                    trend, DAU/WAU, clients added, route runs,
+                                    template coverage, onboarding risk)
 POST   /api/admin/nurses/:id/deactivate      (audited)
 POST   /api/admin/nurses/:id/reactivate      (audited)
 POST   /api/admin/nurses/:id/reset-password  -> temp password (audited)
@@ -119,9 +125,18 @@ resolves `admin_sessions` -> `admins`, rejects nurse sessions).
 
 ## Frontend
 
-- Separate `/admin/*` route tree with its own login screen and admin session.
-- Screens: **Login**, **Users** (table + KPIs), **User detail** (activity feed +
-  action buttons).
+- Separate `/admin/*` route tree (`src/features/admin/`) with its own login
+  screen and admin session; mounted by `App.jsx` outside the nurse shell.
+- Screens: **Login**, **Users** (KPI cards + signup bar chart + users table),
+  **User detail** (profile, action buttons, clients table, route-run history,
+  activity feed).
+- **Client table** on the detail page: search (name/address), sortable columns
+  (Name/Address/Added/Status), and 20-per-page numbered pagination — all
+  client-side over the loaded list (`useClientTable` + `Pagination`).
+- **Route-run history**: loads the last 7 days, then a **Load more** button
+  cursor-pages older runs (`NurseRouteRunsSection` + `useNurseRouteRuns`).
+- **Confirm dialogs** guard deactivate / reactivate / reset-password (shared
+  `ConfirmDialog`).
 - Styles per the design system (`responsiveStyles.ts` tokens; no inline Tailwind).
 
 ## Password reset flow (no email)
@@ -182,6 +197,58 @@ resolves `admin_sessions` -> `admins`, rejects nurse sessions).
 - [ ] Email provider → real self-service reset links. *(deferred — needs infra)*
 - [ ] Impersonation (only with a hard audit trail) if a support need appears.
       *(deferred — riskiest)*
+
+### Post-plan enhancements (shipped) ✅
+- [x] Per-nurse **route-run history** endpoint + UI (paginated; aggregate-only,
+      no PHI payloads).
+- [x] Client table **pagination (20/page) + search + sort**.
+- [x] **Confirm dialogs** on deactivate / reactivate / reset-password.
+- [x] **Repository unit tests** (chainable `getDb` stub) to keep global branch
+      coverage ≥ 80%.
+
+## Creating an admin
+
+There is **no self-signup** — admin accounts are created out-of-band. Log in at
+`/admin` with an account that exists in the target database's `admins` table.
+
+### Local / dev — seed script
+
+```sh
+cd backend
+npm run admin:create you@email.com "Your Name"      # prompts for the password (hidden)
+# or non-interactive:
+ADMIN_PASSWORD='…' npm run admin:create you@email.com "Your Name"
+```
+
+Reads `DATABASE_URL` from `backend/.env.local` (the dev DB). bcrypt cost 12,
+10-char minimum, fails on duplicate email.
+
+### Production — either method
+
+**A. Seed script against prod** — override `DATABASE_URL` inline with the prod
+value (from Vercel env vars; pooled URL is fine for this insert):
+
+```sh
+cd backend
+DATABASE_URL='postgres://…PROD…' node scripts/create-admin.mjs you@email.com "Your Name"
+```
+
+**B. Neon SQL editor** — bcrypt via `pgcrypto` (the app's bcryptjs verifies
+`$2a$` hashes; cost 12 matches the seed script):
+
+```sql
+create extension if not exists pgcrypto;
+insert into admins (email, display_name, password_hash)
+values (lower(trim('you@email.com')), 'Your Name',
+        crypt('YOUR_STRONG_PASSWORD', gen_salt('bf', 12)));
+```
+
+Reset an existing admin's password: `update admins set password_hash =
+crypt('NEW', gen_salt('bf', 12)), updated_at = now() where email = lower('…');`
+
+> The plaintext password appears in the script/SQL and lands in shell or Neon
+> query history — use a throwaway password and rotate after first login. Requires
+> the `admins` table to exist in prod (migration `0020`, auto-applied on deploy).
 
 ## Constraints & discipline
 
