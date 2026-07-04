@@ -1,6 +1,7 @@
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { AdminMetrics, AdminNurseSummary } from "../api/adminService";
 import { formatDate, formatRelative } from "./adminFormatters";
+import SignupTrendChart from "./SignupTrendChart";
 
 type AdminDashboardPageProps = {
   nurses: AdminNurseSummary[];
@@ -19,8 +20,11 @@ const buildKpis = (metrics: AdminMetrics | null): Kpi[] => {
       { label: "New signups (7d)", value: "—", hint: "—" },
       { label: "Active nurses (WAU)", value: "—", hint: "—" },
       { label: "Clients added (7d)", value: "—", hint: "—" },
+      { label: "Route runs (7d)", value: "—", hint: "—" },
+      { label: "Template coverage", value: "—", hint: "—" },
     ];
   }
+  const { covered, total } = metrics.templateCoverage;
   return [
     {
       label: "Nurses",
@@ -41,6 +45,16 @@ const buildKpis = (metrics: AdminMetrics | null): Kpi[] => {
       label: "Clients added (7d)",
       value: String(metrics.clientsAdded.last7Days),
       hint: `${metrics.clientsAdded.last30Days} in 30d`,
+    },
+    {
+      label: "Route runs (7d)",
+      value: String(metrics.routeRuns.last7Days),
+      hint: `${metrics.routeRuns.last30Days} in 30d`,
+    },
+    {
+      label: "Template coverage",
+      value: `${covered} / ${total}`,
+      hint: total > 0 ? `${Math.round((covered / total) * 100)}% covered` : "No clients",
     },
   ];
 };
@@ -69,6 +83,27 @@ const AdminDashboardPage = ({
           </div>
         ))}
       </section>
+
+      {metrics && <SignupTrendChart series={metrics.signupTrend} />}
+
+      {metrics && (metrics.onboarding.neverLoggedIn > 0 || metrics.onboarding.noClients > 0) && (
+        <section className={responsiveStyles.adminWarnCard}>
+          <h2 className={responsiveStyles.adminSectionTitle}>Onboarding follow-up</h2>
+          <p className={`${responsiveStyles.cardDescription} mt-1 mb-3`}>
+            Active nurses who may need a nudge.
+          </p>
+          <div className="flex flex-wrap gap-8">
+            <div>
+              <p className={responsiveStyles.adminStatValue}>{metrics.onboarding.neverLoggedIn}</p>
+              <p className={responsiveStyles.cardDescription}>never logged in</p>
+            </div>
+            <div>
+              <p className={responsiveStyles.adminStatValue}>{metrics.onboarding.noClients}</p>
+              <p className={responsiveStyles.cardDescription}>no active clients</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className={responsiveStyles.adminCard}>
         <h2 className={responsiveStyles.adminSectionTitle}>Users</h2>

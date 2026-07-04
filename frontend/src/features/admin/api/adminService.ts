@@ -94,6 +94,9 @@ export type AdminMetrics = {
   signups: { total: number; last7Days: number; last30Days: number };
   activeNurses: { dau: number; wau: number };
   clientsAdded: { last7Days: number; last30Days: number };
+  routeRuns: { last7Days: number; last30Days: number };
+  templateCoverage: { covered: number; total: number };
+  onboarding: { neverLoggedIn: number; noClients: number };
   signupTrend: { date: string; count: number }[];
 };
 

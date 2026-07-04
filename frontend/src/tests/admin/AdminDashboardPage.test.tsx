@@ -8,6 +8,9 @@ const metrics: AdminMetrics = {
   signups: { total: 3, last7Days: 1, last30Days: 3 },
   activeNurses: { dau: 1, wau: 2 },
   clientsAdded: { last7Days: 5, last30Days: 12 },
+  routeRuns: { last7Days: 4, last30Days: 9 },
+  templateCoverage: { covered: 2, total: 8 },
+  onboarding: { neverLoggedIn: 1, noClients: 2 },
   signupTrend: [{ date: "2026-07-01", count: 2 }],
 };
 
@@ -40,6 +43,16 @@ describe("AdminDashboardPage", () => {
     expect(screen.getByText("Nurse One")).toBeTruthy();
     expect(screen.getByText("nurse@example.com")).toBeTruthy();
     expect(screen.getByText("Active")).toBeTruthy();
+  });
+
+  it("renders the new metric cards, signup chart, and onboarding follow-up", () => {
+    render(<AdminDashboardPage {...baseProps} />);
+    expect(screen.getByText("Route runs (7d)")).toBeTruthy();
+    expect(screen.getByText("Template coverage")).toBeTruthy();
+    expect(screen.getByText("2 / 8")).toBeTruthy();
+    expect(screen.getByText("New signups")).toBeTruthy();
+    expect(screen.getByText("Onboarding follow-up")).toBeTruthy();
+    expect(screen.getByText("never logged in")).toBeTruthy();
   });
 
   it("invokes onSelectNurse when a row is clicked", () => {

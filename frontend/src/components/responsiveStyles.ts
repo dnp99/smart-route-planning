@@ -574,6 +574,13 @@ export const responsiveStyles = {
     "mt-4 rounded-xl border border-blue-200 bg-blue-50/60 p-4 dark:border-blue-900 dark:bg-blue-950/30",
   adminTempCode:
     "mt-2 block rounded-lg border border-slate-200 bg-white px-3 py-2 font-mono text-sm text-slate-900 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100",
+  adminChartRow: "mt-3 flex h-28 items-end gap-1",
+  adminChartBar: "flex-1 rounded-t bg-blue-500/80 dark:bg-blue-400/70",
+  adminChartAxis: "mt-1 flex justify-between text-[10px] text-slate-400 dark:text-slate-500",
+  // Amber-tinted highlight for onboarding risk (design §11: amber = warning).
+  adminWarnCard:
+    "rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm dark:border-amber-900 dark:bg-amber-950/30 sm:p-5",
+  adminStatValue: "m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100",
   dashboardKpiProgressTrack: "mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700",
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",
