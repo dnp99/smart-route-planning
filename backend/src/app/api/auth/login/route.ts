@@ -34,6 +34,7 @@ const toAuthUser = (value: {
   workingHours?: WeeklyWorkingHours | null;
   breakGapThresholdMinutes?: number | null;
   optimizationObjective?: string | null;
+  mustChangePassword?: boolean | null;
 }): AuthUser => ({
   id: value.id,
   email: value.email,
@@ -41,6 +42,7 @@ const toAuthUser = (value: {
   homeAddress: value.homeAddress ?? null,
   workingHours: value.workingHours ?? null,
   breakGapThresholdMinutes: value.breakGapThresholdMinutes ?? null,
+  mustChangePassword: value.mustChangePassword ?? false,
   optimizationObjective:
     value.optimizationObjective === "time" || value.optimizationObjective === "distance"
       ? value.optimizationObjective
@@ -211,6 +213,7 @@ export async function POST(request: Request) {
           workingHours: nurse.workingHours as WeeklyWorkingHours | null | undefined,
           breakGapThresholdMinutes: nurse.breakGapThresholdMinutes,
           optimizationObjective: nurse.optimizationObjective,
+          mustChangePassword: nurse.mustChangePassword,
         }),
       },
       {

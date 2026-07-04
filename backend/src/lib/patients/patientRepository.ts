@@ -176,6 +176,8 @@ export const updateNursePasswordHash = async (nurseId: string, passwordHash: str
     .update(nurses)
     .set({
       passwordHash,
+      // A self-service change satisfies any admin-forced reset.
+      mustChangePassword: false,
       updatedAt: new Date(),
     })
     .where(eq(nurses.id, nurseId))

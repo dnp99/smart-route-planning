@@ -254,6 +254,7 @@ describe("/api/auth/login route", () => {
         workingHours: null,
         breakGapThresholdMinutes: null,
         optimizationObjective: null,
+        mustChangePassword: false,
         setupMissing: ["workingHours", "optimizationObjective"],
         isSetupComplete: false,
       },

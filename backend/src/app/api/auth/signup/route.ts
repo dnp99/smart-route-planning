@@ -31,6 +31,7 @@ const toAuthUser = (value: {
   workingHours?: WeeklyWorkingHours | null;
   breakGapThresholdMinutes?: number | null;
   optimizationObjective?: string | null;
+  mustChangePassword?: boolean | null;
 }): AuthUser => ({
   id: value.id,
   email: value.email,
@@ -38,6 +39,7 @@ const toAuthUser = (value: {
   homeAddress: value.homeAddress ?? null,
   workingHours: value.workingHours ?? null,
   breakGapThresholdMinutes: value.breakGapThresholdMinutes ?? null,
+  mustChangePassword: value.mustChangePassword ?? false,
   optimizationObjective:
     value.optimizationObjective === "time" || value.optimizationObjective === "distance"
       ? value.optimizationObjective
