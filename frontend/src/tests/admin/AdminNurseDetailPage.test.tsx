@@ -97,6 +97,65 @@ describe("AdminNurseDetailPage", () => {
     expect(screen.queryByText("Client Number0")).toBeNull();
   });
 
+  const threeClients = {
+    ...detail,
+    patients: [
+      {
+        id: "a",
+        firstName: "Alice",
+        lastName: "Adams",
+        address: "1 Apple St",
+        isActive: true,
+        archivedAt: null,
+        createdAt: "2026-07-01T10:00:00.000Z",
+      },
+      {
+        id: "b",
+        firstName: "Bob",
+        lastName: "Baker",
+        address: "2 Banana Ave",
+        isActive: false,
+        archivedAt: null,
+        createdAt: "2026-07-02T10:00:00.000Z",
+      },
+      {
+        id: "c",
+        firstName: "Carol",
+        lastName: "Clark",
+        address: "3 Cherry Rd",
+        isActive: true,
+        archivedAt: null,
+        createdAt: "2026-07-03T10:00:00.000Z",
+      },
+    ],
+  };
+
+  const clientNamesInOrder = () =>
+    screen.getAllByText(/(Adams|Baker|Clark)/).map((element) => element.textContent);
+
+  it("filters clients by name or address", () => {
+    render(<AdminNurseDetailPage {...baseProps} detail={threeClients} />);
+
+    fireEvent.change(screen.getByLabelText("Search clients"), { target: { value: "banana" } });
+    expect(screen.getByText("Bob Baker")).toBeTruthy();
+    expect(screen.queryByText("Alice Adams")).toBeNull();
+    expect(screen.queryByText("Carol Clark")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Search clients"), { target: { value: "zzz" } });
+    expect(screen.getByText("No clients match your search.")).toBeTruthy();
+  });
+
+  it("sorts clients by name ascending then descending", () => {
+    render(<AdminNurseDetailPage {...baseProps} detail={threeClients} />);
+    const nameHeader = () => screen.getByRole("columnheader", { name: /Name/ });
+
+    fireEvent.click(nameHeader());
+    expect(clientNamesInOrder()).toEqual(["Alice Adams", "Bob Baker", "Carol Clark"]);
+
+    fireEvent.click(nameHeader());
+    expect(clientNamesInOrder()).toEqual(["Carol Clark", "Bob Baker", "Alice Adams"]);
+  });
+
   it("fires onBack when the back link is clicked", () => {
     const onBack = vi.fn();
     render(<AdminNurseDetailPage {...baseProps} onBack={onBack} />);

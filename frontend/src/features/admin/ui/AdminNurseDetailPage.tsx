@@ -5,7 +5,7 @@ import type { AdminNurseDetail } from "../api/adminService";
 import { describeAction, formatDate, formatDateTime } from "./adminFormatters";
 import NurseRouteRunsSection from "./NurseRouteRunsSection";
 import Pagination from "./Pagination";
-import { usePagination } from "../hooks/usePagination";
+import { useClientTable, type ClientSortKey } from "../hooks/useClientTable";
 
 const CLIENTS_PAGE_SIZE = 20;
 
@@ -64,7 +64,10 @@ const AdminNurseDetailPage = ({
   onDismissTemporaryPassword,
 }: AdminNurseDetailPageProps) => {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-  const clientsPage = usePagination(detail?.patients ?? [], CLIENTS_PAGE_SIZE);
+  const clientsTable = useClientTable(detail?.patients ?? [], CLIENTS_PAGE_SIZE);
+
+  const sortCaret = (key: ClientSortKey) =>
+    clientsTable.sortKey === key ? (clientsTable.sortDirection === "asc" ? " ↑" : " ↓") : "";
 
   const runners: Record<PendingAction, () => Promise<void>> = {
     deactivate: onDeactivate,
@@ -189,28 +192,60 @@ const AdminNurseDetailPage = ({
           </section>
 
           <section className={responsiveStyles.adminCard}>
-            <h2 className={responsiveStyles.adminSectionTitle}>
-              Clients ({detail.patients.length})
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className={responsiveStyles.adminSectionTitle}>
+                Clients ({detail.patients.length})
+              </h2>
+              <input
+                type="search"
+                value={clientsTable.search}
+                onChange={(event) => clientsTable.setSearch(event.target.value)}
+                placeholder="Search name or address"
+                aria-label="Search clients"
+                className={responsiveStyles.adminSearchInput}
+              />
+            </div>
             <div className={`${responsiveStyles.adminTableWrap} mt-3`}>
               <table className={responsiveStyles.adminTable}>
                 <thead>
                   <tr>
-                    <th className={responsiveStyles.adminTableHeadCell}>Name</th>
-                    <th className={responsiveStyles.adminTableHeadCell}>Address</th>
-                    <th className={responsiveStyles.adminTableHeadCell}>Added</th>
-                    <th className={responsiveStyles.adminTableHeadCell}>Status</th>
+                    <th
+                      className={responsiveStyles.adminSortHeader}
+                      onClick={() => clientsTable.toggleSort("name")}
+                    >
+                      Name{sortCaret("name")}
+                    </th>
+                    <th
+                      className={responsiveStyles.adminSortHeader}
+                      onClick={() => clientsTable.toggleSort("address")}
+                    >
+                      Address{sortCaret("address")}
+                    </th>
+                    <th
+                      className={responsiveStyles.adminSortHeader}
+                      onClick={() => clientsTable.toggleSort("createdAt")}
+                    >
+                      Added{sortCaret("createdAt")}
+                    </th>
+                    <th
+                      className={responsiveStyles.adminSortHeader}
+                      onClick={() => clientsTable.toggleSort("status")}
+                    >
+                      Status{sortCaret("status")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {detail.patients.length === 0 && (
+                  {clientsTable.filteredCount === 0 && (
                     <tr>
                       <td className={responsiveStyles.adminEmptyRow} colSpan={4}>
-                        No clients.
+                        {detail.patients.length === 0
+                          ? "No clients."
+                          : "No clients match your search."}
                       </td>
                     </tr>
                   )}
-                  {clientsPage.pageItems.map((patient) => (
+                  {clientsTable.pageItems.map((patient) => (
                     <tr key={patient.id}>
                       <td className={responsiveStyles.adminTableCell}>
                         {patient.firstName} {patient.lastName}
@@ -240,9 +275,9 @@ const AdminNurseDetailPage = ({
               </table>
             </div>
             <Pagination
-              page={clientsPage.page}
-              pageCount={clientsPage.pageCount}
-              onPageChange={clientsPage.setPage}
+              page={clientsTable.page}
+              pageCount={clientsTable.pageCount}
+              onPageChange={clientsTable.setPage}
             />
           </section>
 
