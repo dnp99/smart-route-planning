@@ -48,9 +48,9 @@ const AdminNurseDetailRoute = () => {
       isBusy={isBusy}
       actionError={actionError}
       temporaryPassword={temporaryPassword}
-      onDeactivate={() => void deactivate()}
-      onReactivate={() => void reactivate()}
-      onResetPassword={() => void resetPassword()}
+      onDeactivate={deactivate}
+      onReactivate={reactivate}
+      onResetPassword={resetPassword}
       onDismissTemporaryPassword={dismissTemporaryPassword}
     />
   );

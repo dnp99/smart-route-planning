@@ -48,9 +48,9 @@ const baseProps = {
   isBusy: false,
   actionError: "",
   temporaryPassword: null,
-  onDeactivate: () => undefined,
-  onReactivate: () => undefined,
-  onResetPassword: () => undefined,
+  onDeactivate: () => Promise.resolve(),
+  onReactivate: () => Promise.resolve(),
+  onResetPassword: () => Promise.resolve(),
   onDismissTemporaryPassword: () => undefined,
 };
 
@@ -79,11 +79,28 @@ describe("AdminNurseDetailPage", () => {
     expect(screen.getByText("Unable to load this nurse.")).toBeTruthy();
   });
 
-  it("shows Deactivate for an active nurse and fires the callback", () => {
-    const onDeactivate = vi.fn();
+  it("confirms before deactivating and only fires after confirm", () => {
+    const onDeactivate = vi.fn().mockResolvedValue(undefined);
+    render(<AdminNurseDetailPage {...baseProps} onDeactivate={onDeactivate} />);
+
+    fireEvent.click(screen.getByText("Deactivate"));
+    // Dialog opens; the action has not run yet.
+    expect(screen.getByText("Deactivate nurse?")).toBeTruthy();
+    expect(onDeactivate).not.toHaveBeenCalled();
+
+    // Confirm button in the dialog shares the "Deactivate" label — it's the last.
+    const deactivateButtons = screen.getAllByText("Deactivate");
+    fireEvent.click(deactivateButtons[deactivateButtons.length - 1]);
+    expect(onDeactivate).toHaveBeenCalled();
+  });
+
+  it("cancels the confirm without firing the action", () => {
+    const onDeactivate = vi.fn().mockResolvedValue(undefined);
     render(<AdminNurseDetailPage {...baseProps} onDeactivate={onDeactivate} />);
     fireEvent.click(screen.getByText("Deactivate"));
-    expect(onDeactivate).toHaveBeenCalled();
+    fireEvent.click(screen.getByText("Cancel"));
+    expect(onDeactivate).not.toHaveBeenCalled();
+    expect(screen.queryByText("Deactivate nurse?")).toBeNull();
   });
 
   it("shows Reactivate for an inactive nurse", () => {
@@ -93,12 +110,15 @@ describe("AdminNurseDetailPage", () => {
     expect(screen.queryByText("Deactivate")).toBeNull();
   });
 
-  it("fires reset password and renders the one-time temporary password", () => {
-    const onResetPassword = vi.fn();
+  it("confirms reset password and renders the one-time temporary password", () => {
+    const onResetPassword = vi.fn().mockResolvedValue(undefined);
     const { rerender } = render(
       <AdminNurseDetailPage {...baseProps} onResetPassword={onResetPassword} />,
     );
     fireEvent.click(screen.getByText("Reset password"));
+    expect(screen.getByText("Reset password?")).toBeTruthy();
+    const resetButtons = screen.getAllByText("Reset password");
+    fireEvent.click(resetButtons[resetButtons.length - 1]);
     expect(onResetPassword).toHaveBeenCalled();
 
     rerender(<AdminNurseDetailPage {...baseProps} temporaryPassword="Tmp3xample9zQ" />);

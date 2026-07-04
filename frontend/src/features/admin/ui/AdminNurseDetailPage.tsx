@@ -1,3 +1,5 @@
+import { useState } from "react";
+import ConfirmDialog from "../../../components/modals/ConfirmDialog";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { AdminNurseDetail } from "../api/adminService";
 import { describeAction, formatDate, formatDateTime } from "./adminFormatters";
@@ -10,10 +12,37 @@ type AdminNurseDetailPageProps = {
   isBusy: boolean;
   actionError: string;
   temporaryPassword: string | null;
-  onDeactivate: () => void;
-  onReactivate: () => void;
-  onResetPassword: () => void;
+  onDeactivate: () => Promise<void>;
+  onReactivate: () => Promise<void>;
+  onResetPassword: () => Promise<void>;
   onDismissTemporaryPassword: () => void;
+};
+
+type PendingAction = "deactivate" | "reactivate" | "resetPassword";
+
+const CONFIRM_COPY: Record<
+  PendingAction,
+  { title: string; message: string; confirmLabel: string; variant: "destructive" | "primary" }
+> = {
+  deactivate: {
+    title: "Deactivate nurse?",
+    message: "They won't be able to log in until an admin reactivates the account.",
+    confirmLabel: "Deactivate",
+    variant: "destructive",
+  },
+  reactivate: {
+    title: "Reactivate nurse?",
+    message: "They'll be able to log in again.",
+    confirmLabel: "Reactivate",
+    variant: "primary",
+  },
+  resetPassword: {
+    title: "Reset password?",
+    message:
+      "This sets a one-time temporary password and forces a change at next login. Their current password stops working immediately.",
+    confirmLabel: "Reset password",
+    variant: "destructive",
+  },
 };
 
 const AdminNurseDetailPage = ({
@@ -29,6 +58,26 @@ const AdminNurseDetailPage = ({
   onResetPassword,
   onDismissTemporaryPassword,
 }: AdminNurseDetailPageProps) => {
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+
+  const runners: Record<PendingAction, () => Promise<void>> = {
+    deactivate: onDeactivate,
+    reactivate: onReactivate,
+    resetPassword: onResetPassword,
+  };
+
+  const confirmPending = async () => {
+    if (!pendingAction) {
+      return;
+    }
+    const run = runners[pendingAction];
+    try {
+      await run();
+    } finally {
+      setPendingAction(null);
+    }
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <button type="button" className={responsiveStyles.adminBackLink} onClick={onBack}>
@@ -85,7 +134,7 @@ const AdminNurseDetailPage = ({
                 <button
                   type="button"
                   className={responsiveStyles.adminDangerButton}
-                  onClick={onDeactivate}
+                  onClick={() => setPendingAction("deactivate")}
                   disabled={isBusy}
                 >
                   Deactivate
@@ -94,7 +143,7 @@ const AdminNurseDetailPage = ({
                 <button
                   type="button"
                   className={responsiveStyles.adminActionButton}
-                  onClick={onReactivate}
+                  onClick={() => setPendingAction("reactivate")}
                   disabled={isBusy}
                 >
                   Reactivate
@@ -103,7 +152,7 @@ const AdminNurseDetailPage = ({
               <button
                 type="button"
                 className={responsiveStyles.adminActionButton}
-                onClick={onResetPassword}
+                onClick={() => setPendingAction("resetPassword")}
                 disabled={isBusy}
               >
                 Reset password
@@ -219,6 +268,19 @@ const AdminNurseDetailPage = ({
             )}
           </section>
         </>
+      )}
+
+      {pendingAction && (
+        <ConfirmDialog
+          title={CONFIRM_COPY[pendingAction].title}
+          message={CONFIRM_COPY[pendingAction].message}
+          confirmLabel={CONFIRM_COPY[pendingAction].confirmLabel}
+          confirmLoadingLabel="Working…"
+          confirmVariant={CONFIRM_COPY[pendingAction].variant}
+          isLoading={isBusy}
+          onConfirm={() => void confirmPending()}
+          onCancel={() => setPendingAction(null)}
+        />
       )}
     </div>
   );
