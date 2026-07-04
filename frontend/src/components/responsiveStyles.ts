@@ -523,6 +523,21 @@ export const responsiveStyles = {
     "route-loading-skeleton motion-reduce:animate-none h-6 rounded-lg bg-slate-200/80 dark:bg-slate-700/70",
   dashboardPanelSkeletonRowTall:
     "route-loading-skeleton motion-reduce:animate-none h-14 rounded-xl bg-slate-200/80 dark:bg-slate-700/70",
+  // Admin dashboard (isolated /admin/* area). White canvas + surfaceSecondary
+  // tiles per the design system; blue is the admin accent.
+  adminEyebrow:
+    "m-0 mb-1 text-xs font-semibold uppercase tracking-[0.14em] text-blue-600 dark:text-blue-400",
+  adminShell: "flex min-h-screen w-full flex-col bg-white dark:bg-slate-950",
+  adminTopBar:
+    "sticky top-0 z-20 border-b border-slate-200 bg-white/80 backdrop-blur-md dark:border-slate-800 dark:bg-slate-950/80",
+  adminTopBarInner:
+    "mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6",
+  adminBrand: "m-0 text-lg font-semibold text-slate-900 dark:text-slate-100",
+  adminTopBarMeta: "flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300",
+  adminSignOutButton:
+    "rounded-lg bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
+  adminContent: "mx-auto w-full max-w-7xl flex-1 px-4 py-6 sm:px-6",
+  adminSectionTitle: "m-0 text-base font-semibold text-slate-900 dark:text-slate-100",
   dashboardKpiProgressTrack: "mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700",
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",

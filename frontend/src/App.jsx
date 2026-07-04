@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
+import AdminApp from "./features/admin/ui/AdminApp";
 import {
   acknowledgeLegalNotice,
   fetchLegalNoticeStatus,
@@ -30,6 +32,7 @@ import AuthBootstrapLoader from "./components/shared/AuthBootstrapLoader";
 const AUTH_BOOTSTRAP_TIMEOUT_MS = 8000;
 
 function App() {
+  const location = useLocation();
   const [authUser, setAuthUser] = useState(() => getAuthUser());
   const [isAuthResolved, setIsAuthResolved] = useState(() => getSessionPresenceFlag());
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -166,6 +169,15 @@ function App() {
   // New users (no saved preference) default to "time" (Finish sooner).
   const optimizationObjective = authUser?.optimizationObjective ?? "time";
   const defaultProtectedPath = "/home";
+
+  // The /admin/* area is a fully isolated surface with its own auth/session and
+  // no nurse chrome — render it directly, bypassing the nurse shell and its
+  // bootstrap gate.
+  const isAdminArea =
+    location.pathname === "/admin" || location.pathname.startsWith("/admin/");
+  if (isAdminArea) {
+    return <AdminApp />;
+  }
 
   if (isBootstrapping) {
     return <AuthBootstrapLoader />;
