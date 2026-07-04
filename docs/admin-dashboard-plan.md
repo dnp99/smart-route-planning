@@ -1,8 +1,9 @@
 # Admin Dashboard — Design & Plan
 
-Status: **Phase 1, 2 & 3 complete** — admin dashboard is fully functional
-(read + actions), all verified end-to-end against the running server.
-Remaining work is Phase 4 (optional). Admin UI: same app, gated `/admin/*`.
+Status: **Phases 1–3 complete + Phase 4 analytics/metrics done.** Admin dashboard
+is fully functional (read + actions + charts), all verified end-to-end against
+the running server. Only Phase 4 email-reset & impersonation remain (deferred).
+Admin UI: same app, gated `/admin/*`.
 
 An internal admin surface for the app owner (data controller) to monitor and
 manage nurse accounts: new signups, per-user activity (logins, clients added,
@@ -175,9 +176,12 @@ resolves `admin_sessions` -> `admins`, rejects nurse sessions).
       verified end-to-end against the running server.
 
 ### Phase 4 — Later / optional
-- [ ] Richer analytics charts (trends, retention).
-- [ ] Email provider → real self-service reset links.
+- [x] Richer analytics charts + metrics: 14-day signup bar chart, Route runs
+      (7d/30d), Template coverage (global), Onboarding follow-up (never-logged-in
+      / no-clients). Backend `getAdminMetrics` + `SignupTrendChart`.
+- [ ] Email provider → real self-service reset links. *(deferred — needs infra)*
 - [ ] Impersonation (only with a hard audit trail) if a support need appears.
+      *(deferred — riskiest)*
 
 ## Constraints & discipline
 
