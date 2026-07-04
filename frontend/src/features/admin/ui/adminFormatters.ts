@@ -74,3 +74,16 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 export const describeAction = (action: string): string => ACTION_LABELS[action] ?? action;
+
+export const formatDuration = (totalSeconds: number): string => {
+  const minutes = Math.round(totalSeconds / 60);
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  return remainingMinutes === 0 ? `${hours}h` : `${hours}h ${remainingMinutes}m`;
+};
+
+export const formatDistanceKm = (totalMeters: number): string =>
+  `${(totalMeters / 1000).toFixed(1)} km`;

@@ -1,5 +1,11 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+
+// The detail page renders NurseRouteRunsSection, which fetches on mount — stub it.
+vi.mock("../../features/admin/api/adminService", () => ({
+  fetchNurseRouteRuns: vi.fn().mockResolvedValue({ runs: [], nextCursor: null, hasMore: false }),
+}));
+
 import AdminNurseDetailPage from "../../features/admin/ui/AdminNurseDetailPage";
 import type { AdminNurseDetail } from "../../features/admin/api/adminService";
 

@@ -3,6 +3,7 @@ import ConfirmDialog from "../../../components/modals/ConfirmDialog";
 import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { AdminNurseDetail } from "../api/adminService";
 import { describeAction, formatDate, formatDateTime } from "./adminFormatters";
+import NurseRouteRunsSection from "./NurseRouteRunsSection";
 
 type AdminNurseDetailPageProps = {
   detail: AdminNurseDetail | null;
@@ -234,6 +235,8 @@ const AdminNurseDetailPage = ({
               </table>
             </div>
           </section>
+
+          <NurseRouteRunsSection nurseId={detail.nurse.id} />
 
           <section className={responsiveStyles.adminCard}>
             <h2 className={responsiveStyles.adminSectionTitle}>

@@ -160,6 +160,40 @@ export type AdminNurseDetail = {
   activity: AdminActivityEvent[];
 };
 
+export type AdminRouteRun = {
+  id: string;
+  planningDate: string;
+  createdAt: string;
+  requestedVisitCount: number;
+  scheduledVisitCount: number;
+  unscheduledVisitCount: number;
+  onTimeVisitCount: number;
+  totalDurationSeconds: number;
+  totalDistanceMeters: number;
+  optimizationObjective: string | null;
+};
+
+export type AdminRouteRunsPage = {
+  runs: AdminRouteRun[];
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
+export const fetchNurseRouteRuns = async (
+  nurseId: string,
+  before?: string | null,
+): Promise<AdminRouteRunsPage> => {
+  const query = before ? `?before=${encodeURIComponent(before)}` : "";
+  const payload = (await getJson(
+    `/api/admin/nurses/${encodeURIComponent(nurseId)}/route-runs${query}`,
+  )) as { runs?: AdminRouteRun[]; nextCursor?: unknown; hasMore?: unknown };
+  return {
+    runs: Array.isArray(payload.runs) ? payload.runs : [],
+    nextCursor: typeof payload.nextCursor === "string" ? payload.nextCursor : null,
+    hasMore: payload.hasMore === true,
+  };
+};
+
 export const fetchAdminNurseDetail = async (nurseId: string): Promise<AdminNurseDetail> => {
   const payload = (await getJson(`/api/admin/nurses/${encodeURIComponent(nurseId)}`)) as {
     nurse?: AdminNurseProfile;
