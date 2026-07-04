@@ -581,6 +581,13 @@ export const responsiveStyles = {
   adminWarnCard:
     "rounded-2xl border border-amber-200 bg-amber-50/60 p-4 shadow-sm dark:border-amber-900 dark:bg-amber-950/30 sm:p-5",
   adminStatValue: "m-0 text-2xl font-semibold text-slate-900 dark:text-slate-100",
+  adminPaginationRow: "mt-4 flex flex-wrap items-center justify-center gap-1",
+  adminPageButton:
+    "inline-flex h-8 min-w-8 items-center justify-center rounded-lg px-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50",
+  adminPageButtonActive: "bg-blue-600 text-white",
+  adminPageButtonInactive:
+    "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800",
+  adminPageEllipsis: "px-1 text-sm text-slate-400 dark:text-slate-500",
   dashboardKpiProgressTrack: "mt-3 h-2 rounded-full bg-slate-200 dark:bg-slate-700",
   dashboardKpiProgressFill:
     "dashboard-kpi-progress-fill h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-600",

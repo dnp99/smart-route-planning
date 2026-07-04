@@ -71,6 +71,32 @@ describe("AdminNurseDetailPage", () => {
     expect(screen.getByText("Added a client")).toBeTruthy();
   });
 
+  it("paginates the clients table at 20 per page", () => {
+    const manyPatients = Array.from({ length: 25 }, (_, index) => ({
+      id: `p-${index}`,
+      firstName: "Client",
+      lastName: `Number${index}`,
+      address: `${index} Some St`,
+      isActive: true,
+      archivedAt: null,
+      createdAt: "2026-07-02T10:00:00.000Z",
+    }));
+    const detailManyClients = { ...detail, patients: manyPatients };
+
+    render(<AdminNurseDetailPage {...baseProps} detail={detailManyClients} />);
+
+    // Page 1 shows the first 20; the 21st (index 20) is not yet rendered.
+    expect(screen.getByText("Client Number0")).toBeTruthy();
+    expect(screen.getByText("Client Number19")).toBeTruthy();
+    expect(screen.queryByText("Client Number20")).toBeNull();
+
+    // Two pages for 25 rows; go to page 2.
+    fireEvent.click(screen.getByText("2"));
+    expect(screen.getByText("Client Number20")).toBeTruthy();
+    expect(screen.getByText("Client Number24")).toBeTruthy();
+    expect(screen.queryByText("Client Number0")).toBeNull();
+  });
+
   it("fires onBack when the back link is clicked", () => {
     const onBack = vi.fn();
     render(<AdminNurseDetailPage {...baseProps} onBack={onBack} />);

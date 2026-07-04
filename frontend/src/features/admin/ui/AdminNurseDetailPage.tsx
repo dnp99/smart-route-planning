@@ -4,6 +4,10 @@ import { responsiveStyles } from "../../../components/responsiveStyles";
 import type { AdminNurseDetail } from "../api/adminService";
 import { describeAction, formatDate, formatDateTime } from "./adminFormatters";
 import NurseRouteRunsSection from "./NurseRouteRunsSection";
+import Pagination from "./Pagination";
+import { usePagination } from "../hooks/usePagination";
+
+const CLIENTS_PAGE_SIZE = 20;
 
 type AdminNurseDetailPageProps = {
   detail: AdminNurseDetail | null;
@@ -60,6 +64,7 @@ const AdminNurseDetailPage = ({
   onDismissTemporaryPassword,
 }: AdminNurseDetailPageProps) => {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const clientsPage = usePagination(detail?.patients ?? [], CLIENTS_PAGE_SIZE);
 
   const runners: Record<PendingAction, () => Promise<void>> = {
     deactivate: onDeactivate,
@@ -205,7 +210,7 @@ const AdminNurseDetailPage = ({
                       </td>
                     </tr>
                   )}
-                  {detail.patients.map((patient) => (
+                  {clientsPage.pageItems.map((patient) => (
                     <tr key={patient.id}>
                       <td className={responsiveStyles.adminTableCell}>
                         {patient.firstName} {patient.lastName}
@@ -234,6 +239,11 @@ const AdminNurseDetailPage = ({
                 </tbody>
               </table>
             </div>
+            <Pagination
+              page={clientsPage.page}
+              pageCount={clientsPage.pageCount}
+              onPageChange={clientsPage.setPage}
+            />
           </section>
 
           <NurseRouteRunsSection nurseId={detail.nurse.id} />
