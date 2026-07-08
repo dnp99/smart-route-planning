@@ -3026,6 +3026,67 @@ describe("optimizeRouteV3 service", () => {
     expect(result.orderedStops[0]?.tasks[0]?.serviceStartTime).toBe("2026-03-13T09:10:00.000Z");
   });
 
+  it("treats a full-day (00:00-23:59) window as no preference so the day starts at workStart", async () => {
+    // Repro of an iOS payload: "any time" flexible visits sent as 00:00-23:59.
+    // These must NOT anchor the departure to midnight; the day should respect
+    // workStart (08:00), matching a web request that sends empty windows.
+    mockedGeocodeTargetsSequentially.mockResolvedValue([
+      { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
+      { address: "Visit A", coords: { lat: 43.7, lon: -79.7 } },
+      { address: "Visit B", coords: { lat: 43.75, lon: -79.75 } },
+      { address: "End", coords: { lat: 43.8, lon: -79.8 } },
+    ]);
+
+    mockedBuildDrivingRoute.mockImplementation(async (_, orderedStops) =>
+      buildDrivingRouteResult(orderedStops.map((stop) => stop.address)),
+    );
+
+    const result = await optimizeRouteV3(
+      {
+        planningDate: "2026-03-13",
+        timezone: "UTC",
+        start: { address: "Start" }, // no departureTime (like the iOS client)
+        end: { address: "End" },
+        visits: [
+          {
+            visitId: "visit-a",
+            patientId: "patient-a",
+            patientName: "Any Time A",
+            address: "Visit A",
+            windowStart: "00:00",
+            windowEnd: "23:59",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+          {
+            visitId: "visit-b",
+            patientId: "patient-b",
+            patientName: "Any Time B",
+            address: "Visit B",
+            windowStart: "00:00",
+            windowEnd: "23:59",
+            windowType: "flexible",
+            serviceDurationMinutes: 20,
+          },
+        ],
+        nurseWorkingHours: { workStart: "08:00", workEnd: "16:00" },
+        optimizationObjective: "time",
+      },
+      "google-key",
+    );
+
+    // Departure respects workStart; without the full-day guard the 00:00 window
+    // would anchor departure to midnight.
+    expect(result.start.departureTime).toBe("2026-03-13T08:00:00.000Z");
+    // No stop is serviced before the shift starts.
+    const serviceStarts = result.orderedStops
+      .flatMap((stop) => stop.tasks)
+      .map((task) => task.serviceStartTime);
+    serviceStarts.forEach((start) => {
+      expect(start >= "2026-03-13T08:00:00.000Z").toBe(true);
+    });
+  });
+
   it("preserves a client-supplied early departure when a fixed window requires leaving before workStart", async () => {
     mockedGeocodeTargetsSequentially.mockResolvedValue([
       { address: "Start", coords: { lat: 43.6, lon: -79.6 } },
