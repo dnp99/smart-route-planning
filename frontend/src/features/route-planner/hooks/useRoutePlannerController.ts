@@ -706,6 +706,7 @@ export function useRoutePlannerController({
   useEffect(() => {
     if (!pendingAutoOptimizeRef.current) return;
     if (!hasVisitInstancesLoaded) return;
+    if (manualTemplateSelectionLock) return;
     if (selectedDestinations.length === 0) return;
     if (!canOptimize) return;
     if (result || isLoading) return;
@@ -714,6 +715,7 @@ export function useRoutePlannerController({
     void triggerOptimize();
   }, [
     hasVisitInstancesLoaded,
+    manualTemplateSelectionLock,
     selectedDestinations.length,
     canOptimize,
     result,
