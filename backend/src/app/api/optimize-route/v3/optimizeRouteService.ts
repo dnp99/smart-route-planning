@@ -2669,8 +2669,13 @@ export const optimizeRouteV3 = async (
     : undefined;
 
   const visitsWithCoords: VisitWithCoords[] = request.visits.map((visit) => {
+    // A full-day window (e.g. an "any time" flexible visit some clients send as
+    // 00:00–23:59) carries no scheduling preference, so it must NOT anchor the
+    // departure or accrue lateness — treat it like a windowless visit.
+    const isFullDayWindow =
+      visit.windowStart === "00:00" && (visit.windowEnd === "23:59" || visit.windowEnd === "24:00");
     const hasPreferredWindow =
-      visit.windowStart.trim().length > 0 && visit.windowEnd.trim().length > 0;
+      visit.windowStart.trim().length > 0 && visit.windowEnd.trim().length > 0 && !isFullDayWindow;
 
     return {
       ...visit,

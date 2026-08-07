@@ -1479,6 +1479,18 @@ describe("RoutePlanner patient selection integration", () => {
     expect(optimizeRouteMock).not.toHaveBeenCalled();
   });
 
+  it("does not auto-optimize when a client is selected manually", async () => {
+    locationState.state = { autoOptimizeToday: true };
+
+    render(<RoutePlanner nurseHomeAddress="1 Home Way, Mississauga, ON" />);
+
+    fireEvent.click(screen.getAllByRole("button", { name: /John Smith/i })[0]);
+
+    await act(async () => {});
+
+    expect(optimizeRouteMock).not.toHaveBeenCalled();
+  });
+
   it("allows optimizing flexible patients without preferred windows", () => {
     render(<RoutePlanner />);
 

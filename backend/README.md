@@ -14,6 +14,7 @@ This folder contains the Next.js backend for CareFlow.
 - Fetch address suggestions through Google Places autocomplete.
 - Enforce authenticated access on business endpoints (cookie sessions), plus validation, timeouts, CORS, and lightweight rate limiting.
 - Reduce optimize-route latency with in-memory geocode and travel-matrix caching plus in-flight request deduplication.
+- Serve the internal **Admin API** (`/api/admin/*`): isolated admin auth/session, read dashboard (nurse list, per-nurse detail + route-run history, in-app metrics), and audited account actions (deactivate/reactivate, reset password). All admin actions and PHI views are written to `audit_events` with `actor_admin_id`.
 
 ## Local development
 
@@ -271,6 +272,49 @@ Authentication behavior:
   - Returns up to 5 suggestions
   - Uses Google Places autocomplete with short in-memory caching and per-client rate limiting
 
+### Admin
+
+Isolated from nurse auth: a separate `routefy_admin_session` HttpOnly cookie, its
+own `admins` / `admin_sessions` tables, and a `requireAdmin` guard that rejects
+nurse sessions outright. There is **no admin self-signup** (see _Creating an
+admin_ below). Every action and PHI view is audited with `actor_admin_id`.
+
+- `POST /api/admin/auth/login` — `{ email, password }` → sets `routefy_admin_session`; generic `401` on unknown/inactive/wrong-password; audits `admin.login` (success/denied).
+- `POST /api/admin/auth/logout` — revokes the admin session and clears the cookie.
+- `GET /api/admin/auth/me` — current admin, or `401` (clears a stale cookie).
+- `GET /api/admin/nurses` — nurse list with signup, last login, last activity, active-client count, status.
+- `GET /api/admin/nurses/:id` — profile + full client list (**PHI**) + recent activity feed; audits `admin.nurse.view`.
+- `GET /api/admin/nurses/:id/route-runs[?before=<ISO>]` — paginated route-run history, aggregate stats only (no request/result payloads → no PHI). First page = last 7 days; then cursor pages of 30 via `nextCursor`/`hasMore`.
+- `GET /api/admin/metrics` — nurse totals, signups (+14-day trend), DAU/WAU, clients added, route runs, template coverage, onboarding risk.
+- `POST /api/admin/nurses/:id/deactivate` / `/reactivate` — flips `nurses.is_active` (a deactivated nurse is rejected at login); audited.
+- `POST /api/admin/nurses/:id/reset-password` — generates a one-time temp password (returned once, never stored/logged), sets `nurses.must_change_password`; the nurse is forced to change it at next login; audited.
+
+#### Creating an admin
+
+Admins are created out-of-band with the seed script (bcrypt cost 12, 10-char
+minimum, duplicate-email safe):
+
+```bash
+# local/dev (reads DATABASE_URL from .env.local):
+npm run admin:create you@email.com "Your Name"     # prompts for password (hidden)
+
+# production (override DATABASE_URL with the prod value; ADMIN_PASSWORD optional):
+DATABASE_URL='postgres://…PROD…' node scripts/create-admin.mjs you@email.com "Your Name"
+```
+
+Prod alternative (Neon SQL editor) — the app's bcryptjs verifies pgcrypto `$2a$`
+hashes at cost 12:
+
+```sql
+create extension if not exists pgcrypto;
+insert into admins (email, display_name, password_hash)
+values (lower(trim('you@email.com')), 'Your Name',
+        crypt('YOUR_STRONG_PASSWORD', gen_salt('bf', 12)));
+```
+
+Then sign in at `/admin`. Full design + operational notes:
+[`docs/completed/admin-dashboard-plan.md`](../docs/completed/admin-dashboard-plan.md).
+
 ### Internal maintenance
 
 - `GET /api/internal/session-cleanup` / `POST /api/internal/session-cleanup`
@@ -287,6 +331,8 @@ Authentication behavior:
 - Scheduled session cleanup removes expired rows and revoked rows older than configured retention.
 - Legal acknowledgement is tracked per nurse via `nurses.legal_notice_accepted_at` and `nurses.legal_notice_accepted_version`.
 - Audit events are persisted in `audit_events` for patient read/write, optimize-route access, and dashboard access.
+- Admin auth is fully isolated from nurse auth (separate `admins`/`admin_sessions`, `routefy_admin_session` cookie, `requireAdmin`); every admin action and PHI view is audited with `actor_admin_id`, and `admins.password_hash` uses the same bcrypt (cost 12) as nurses.
+- Migration `0020_dapper_sugar_man.sql` adds `admins`, `admin_sessions`, `audit_events.actor_admin_id`, and `nurses.must_change_password`.
 - Route optimization history is minimized: identifying task fields (`patient_name`, `address`) are no longer written.
 - Existing identifying optimization-task fields are redacted by migration `0010_awesome_hairball.sql`.
 - Migration `0011_spicy_ben_parker.sql` adds legal acknowledgement fields to `nurses`.
@@ -414,5 +460,8 @@ The optimizer returns an optional `warnings[]` array:
 - `src/lib/recurrence/recurrenceRepository.ts` — template CRUD, expansion logic, occurrence key generation
 - `src/lib/recurrence/recurrenceDto.ts` — template and visit instance DTO mappers
 - `src/lib/recurrence/recurrenceValidation.ts` — request validators for templates and visit instances
+- `src/app/api/admin/` — admin API routes (auth, nurses list/detail/route-runs, metrics, actions)
+- `src/lib/admin/` — admin auth (session cookie/repo, `requireAdmin`), dashboard/nurse repositories, `logAdminAuditEvent`, temp-password generator
+- `scripts/create-admin.mjs` — one-off admin bootstrap (`npm run admin:create`)
 - `src/db/schema.ts`
 - `drizzle/`

@@ -34,6 +34,7 @@ Routefy is a route planning app for care workers, with a React frontend and Next
 - Clicking the Drive Hours or Total Distance KPI cards on desktop triggers a fun car animation that flies randomly across the screen.
 - Mobile-optimized route planner with wizard-style step flow and safe-area-aware sticky footer.
 - Uses in-memory geocoding and travel-matrix caching (with in-flight request deduplication) to reduce repeated optimization latency.
+- Internal **Admin Dashboard** at `/admin` (isolated login/session, no self-signup) for the data controller to monitor nurse signups/activity and manage accounts (deactivate/reactivate, reset password). Every admin action and PHI view is audited. See [Admin Dashboard design](docs/completed/admin-dashboard-plan.md), and the backend guide for account creation.
 
 ## Tech stack
 
@@ -77,6 +78,11 @@ Recent schema changes:
   - `POST /api/route-planner/advisor` (AI Route Advisor — PHI-free brief + suggestions; requires `ANTHROPIC_API_KEY`, else `503` and the UI hides the panel)
 - Address suggestions:
   - `GET /api/address-autocomplete?query=...`
+- Admin (isolated `routefy_admin_session`; behind `requireAdmin`):
+  - `POST /api/admin/auth/login` · `POST /api/admin/auth/logout` · `GET /api/admin/auth/me`
+  - `GET /api/admin/nurses` · `GET /api/admin/nurses/:id` · `GET /api/admin/nurses/:id/route-runs`
+  - `GET /api/admin/metrics`
+  - `POST /api/admin/nurses/:id/deactivate` · `.../reactivate` · `.../reset-password`
 
 Notes:
 
@@ -180,3 +186,4 @@ removed; the frontend always calls `v3`.
 - [Backend guide](backend/README.md)
 - [Frontend guide](frontend/README.md)
 - [Deployment notes](DEPLOYMENT.md)
+- [Admin Dashboard — design & operations](docs/completed/admin-dashboard-plan.md)
